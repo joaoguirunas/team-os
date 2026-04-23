@@ -1,0 +1,39 @@
+name: content
+description: Content site squad (5 agentes). Foco em produção editorial, SEO e publicação.
+project_archetypes: [content-site]
+agents:
+  - name: content-writer
+    archetype: implementer
+    persona: ""
+    role_title: Content Writer
+    description: "Escreve artigos, guias, documentação técnica. Segue brief do editor. Entrega em Markdown com frontmatter pronto pra publicação."
+    color: yellow
+    skills: [dev-technical-writing]
+  - name: content-editor
+    archetype: reviewer
+    persona: ""
+    role_title: Content Editor
+    description: "Quality gate editorial. Revisa clareza, tom, estrutura, fact-check. Veredictos formais PASS/CONCERNS/FAIL."
+    color: red
+    skills: []
+  - name: content-seo
+    archetype: researcher
+    persona: ""
+    role_title: SEO Specialist
+    description: "Research de keywords, análise de SERP, sugestões de estrutura para ranking. Não escreve conteúdo — entrega dados."
+    color: cyan
+    skills: [deep-research]
+  - name: content-designer
+    archetype: ux
+    persona: ""
+    role_title: Content Designer
+    description: "Design visual de posts, hero images, diagramas, templates visuais. Specs pro dev implementar."
+    color: pink
+    skills: [ui-ux-pro-max, accessibility]
+  - name: content-publisher
+    archetype: devops
+    persona: ""
+    role_title: Content Publisher
+    description: "Autoridade exclusiva de push/deploy do conteúdo. Gerencia CI/CD e publicação."
+    color: green
+    skills: [dev-git-workflow]

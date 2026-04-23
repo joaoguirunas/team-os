@@ -1,0 +1,74 @@
+name: sites
+description: Website/landing page squad (10 agentes). Cobre análise de mercado/SEO, arquitetura, UX, 3 implementers (frontend, backend, fullstack), hardening, QA, DevOps e Data.
+project_archetypes: [website, landing-page, portfolio, blog, saas-marketing]
+agents:
+  - name: sites-architect
+    archetype: architect
+    persona: Zael-S
+    role_title: Sites Architect
+    description: "Sites architect and story creator. Use for architecture decisions, tech stack selection, page structure, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), and module documentation for website projects."
+    color: purple
+    skills: [dev-technical-writing, dev-api-design, sites-seo-technical, sites-frontend-design]
+  - name: sites-analyst
+    archetype: researcher
+    persona: Lyra-S
+    role_title: Sites Research Analyst
+    description: "Research and analysis specialist for website projects. Use for keyword research, competitor analysis, tech stack feasibility, library comparison, SEO research, and market analysis before architectural decisions. On-demand only."
+    color: cyan
+    skills: [dev-defuddle, sites-seo-keywords]
+  - name: sites-ux
+    archetype: ux
+    persona: Vela-S
+    role_title: UX Specialist
+    description: "UX specialist for website projects (research, user flows, wireframes, component specs, accessibility, visual design). Use for UX research before complex features and UI specification before sites-dev-alpha implements."
+    color: pink
+    skills: [ui-ux-pro-max, accessibility, web-design-guidelines, sites-frontend-design, sites-ux-interaction, sites-canvas-design, sites-web-accessibility, sites-tailwind-design-system]
+  - name: sites-dev-alpha
+    archetype: implementer
+    persona: Nova-S
+    role_title: Frontend Developer
+    description: "Frontend developer for website projects (React, Next.js, Tailwind, shadcn/ui, UI components, landing pages, client-side logic). Use for frontend stories and UI implementation in website projects."
+    color: yellow
+    skills: [dev-typescript-patterns, dev-testing-strategy, sites-shadcn-ui, sites-tailwind-design-system, sites-frontend-design, sites-ux-interaction]
+  - name: sites-dev-beta
+    archetype: implementer
+    persona: Rex-S
+    role_title: Backend Developer
+    description: "Backend developer for website projects (APIs, CMS integrations, server-side logic, performance, third-party integrations). Use for backend stories in website projects."
+    color: orange
+    skills: [dev-typescript-patterns, dev-api-design, dev-security-patterns, sites-seo-technical]
+  - name: sites-dev-gamma
+    archetype: implementer
+    persona: Sera-S
+    role_title: Fullstack/Integration Developer
+    description: "Fullstack developer for website projects (cross-layer integration, CRO features, SEO implementation, analytics wiring). Use for stories that don't clearly belong to frontend or backend alone."
+    color: green
+    skills: [dev-typescript-patterns, dev-api-design, sites-page-cro, sites-seo-technical]
+  - name: sites-dev-delta
+    archetype: hardening
+    persona: Kron-S
+    role_title: Hardening & Resilience
+    description: "Hardening and resilience specialist for website projects. Use AFTER features are implemented to add error handling, performance hardening, Core Web Vitals fixes. Adversarial mindset — finds what breaks."
+    color: red
+    skills: [dev-error-handling, dev-testing-strategy, sites-seo-technical]
+  - name: sites-qa
+    archetype: reviewer
+    persona: Axis-S
+    role_title: QA Master
+    description: "Quality assurance master for website projects. Issues formal verdicts — PASS / CONCERNS / FAIL / WAIVED. Use for story reviews, QA gates, accessibility, copy quality, SEO validation, and performance checks."
+    color: red
+    skills: [dev-security-patterns, dev-testing-strategy, sites-copy-editing, sites-web-accessibility]
+  - name: sites-devops
+    archetype: devops
+    persona: Grav-S
+    role_title: DevOps Guardian
+    description: "DevOps and release guardian for website projects. EXCLUSIVE authority for git push, gh pr create/merge, CI/CD management, Vercel/Netlify deployments, and releases."
+    color: green
+    skills: [dev-git-workflow, sites-deployment]
+  - name: sites-data
+    archetype: data
+    persona: Byte-S
+    role_title: Data Engineer
+    description: "Database architect and data specialist for website projects (schema design, migrations, RLS policies, query optimization, indexing). Always follows safety protocol: snapshot → dry-run → apply → smoke-test."
+    color: orange
+    skills: [dev-database-patterns, dev-security-patterns]

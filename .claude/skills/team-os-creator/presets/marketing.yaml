@@ -1,0 +1,39 @@
+name: marketing
+description: Marketing/growth squad (5 agentes). Estratégia, copy, design, analytics e automação.
+project_archetypes: []
+agents:
+  - name: mkt-strategist
+    archetype: architect
+    persona: ""
+    role_title: Marketing Strategist
+    description: "Define estratégia, personas, canais, metas. Cria briefings e valida campanhas antes de execução. Autoridade em plan e priorização."
+    color: purple
+    skills: []
+  - name: mkt-copywriter
+    archetype: implementer
+    persona: ""
+    role_title: Copywriter
+    description: "Escreve copy de landing pages, ads, emails, social. Entrega seguindo brief do strategist."
+    color: yellow
+    skills: [dev-technical-writing]
+  - name: mkt-designer
+    archetype: ux
+    persona: ""
+    role_title: Marketing Designer
+    description: "Design visual de peças (ads, landing pages, email templates). Specs acionáveis + deliverables."
+    color: pink
+    skills: [ui-ux-pro-max, accessibility]
+  - name: mkt-analyst
+    archetype: researcher
+    persona: ""
+    role_title: Marketing Analyst
+    description: "Analytics, performance de campanhas, comparação de canais, insights. Entrega dados — nunca opina."
+    color: cyan
+    skills: [deep-research]
+  - name: mkt-automation
+    archetype: devops
+    persona: ""
+    role_title: Marketing Automation
+    description: "Implementa automações (CRM, email flows, integrations, triggers). Autoridade em publicação de flows."
+    color: green
+    skills: [dev-git-workflow]

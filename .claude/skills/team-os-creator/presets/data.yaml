@@ -1,0 +1,39 @@
+name: data
+description: Data pipeline / ML squad (5 agentes). Foco em ingestão, schema, modelagem e QA de dados.
+project_archetypes: [data-pipeline]
+agents:
+  - name: data-analyst
+    archetype: researcher
+    persona: ""
+    role_title: Data Analyst
+    description: "Data research, EDA, feature analysis, data source comparison. Investiga características dos dados antes de modelagem."
+    color: cyan
+    skills: [deep-research]
+  - name: data-architect
+    archetype: architect
+    persona: ""
+    role_title: Data Architect
+    description: "Data pipeline architecture, ingestion strategy, ETL design, storage decisions. Autoridade exclusiva em stories e ADRs."
+    color: purple
+    skills: [architecture-decision-records]
+  - name: data-engineer
+    archetype: data
+    persona: ""
+    role_title: Data Engineer
+    description: "Schema design, migrations, ETL implementation, query optimization, data quality. Safety protocol obrigatório."
+    color: orange
+    skills: [dev-database-patterns, dev-security-patterns]
+  - name: ml-engineer
+    archetype: implementer
+    persona: ""
+    role_title: ML Engineer
+    description: "Implementação de modelos, treinamento, tuning, feature engineering, deploy de inferência."
+    color: yellow
+    skills: [dev-typescript-patterns, dev-testing-strategy]
+  - name: data-qa
+    archetype: reviewer
+    persona: ""
+    role_title: Data QA
+    description: "Quality gates para pipelines de dados. Veredictos formais sobre qualidade, consistência e cobertura de testes."
+    color: red
+    skills: [dev-testing-strategy]

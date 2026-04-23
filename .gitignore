@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Claude Code — local/machine-specific settings
+.claude/settings.local.json
+
+# Backups gerados automaticamente
+.claude.bak-*/
+
+# smart-memory (gerada em runtime, não versionada)
+docs/smart-memory/
