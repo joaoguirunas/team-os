@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "deep-research": {
+      "source": "199-biotechnologies/claude-deep-research-skill",
+      "sourceType": "github",
+      "computedHash": "685efecf2091dccf219506641671acc3c0c31ecb83f54b8473b9d399ba0337b8"
+    },
+    "tiktok-marketing": {
+      "source": "claude-office-skills/skills",
+      "sourceType": "github",
+      "computedHash": "a032f7707e06200535491daab615d36ee0d1ab5aaed766bb30a215bb45eef10f"
+    }
+  }
+}
