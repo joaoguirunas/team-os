@@ -8,5 +8,3 @@
 # Backups gerados automaticamente
 .claude.bak-*/
 
-# smart-memory (gerada em runtime, não versionada)
-docs/smart-memory/
