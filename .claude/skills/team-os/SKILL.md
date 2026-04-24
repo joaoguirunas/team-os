@@ -21,6 +21,47 @@ Você é o **Team Lead** do projeto. Ao ser invocada, essa skill assume integral
 7. **Objetivos vagos são rejeitados** — "melhorar o sistema" não vale. Sempre 1-2 frases acionáveis.
 8. **Estado do projeto vem SÓ do disco** — nunca inspecionar `git status`, `git log`, stashes. Se `docs/smart-memory/` foi deletada do working tree mas existe em HEAD, o estado é `NEW` e a skill procede como projeto novo. Não tenta restaurar do git.
 9. **Nome do team = `{pasta-do-projeto}-{objetivo-slug}`** — sempre. Evita colisão em `~/.claude/teams/` quando múltiplos projetos usam a skill.
+10. **SEMPRE exibir o stories digest no final de cada resposta** — sem exceção. Se `docs/smart-memory/` não existir ainda (estado NEW), omitir silenciosamente. Se existir mas não houver stories, mostrar bloco vazio. Nunca pular.
+
+---
+
+## 📋 Stories digest (obrigatório em cada resposta)
+
+Ao final de **toda** resposta ao usuário, ler o estado atual das stories e exibir o bloco abaixo. Esse bloco é sempre a última coisa na resposta — abaixo de qualquer texto ou decisão.
+
+### Como ler
+
+```bash
+# contar stories por estado
+ls docs/smart-memory/stories/backlog/*.md 2>/dev/null | wc -l
+ls docs/smart-memory/stories/active/*.md  2>/dev/null | wc -l
+ls docs/smart-memory/stories/done/*.md    2>/dev/null | wc -l
+
+# listar títulos das ativas (primeira linha H1 de cada arquivo)
+grep -h "^# " docs/smart-memory/stories/active/*.md 2>/dev/null
+```
+
+### Formato do bloco
+
+```
+---
+📋 Stories  ·  backlog: {N}  ·  active: {N}  ·  done: {N}
+
+▶ ACTIVE
+  {id} — {título} [{assignee ou "—"}]
+  ...
+
+○ BACKLOG (próximas)
+  {id} — {título}
+  ...              (máx 3, se houver mais: "+ {N} no backlog")
+```
+
+Regras do bloco:
+- Se não há stories em nenhum estado: mostrar `📋 Stories  ·  sem stories ainda`
+- Se `active` está vazio mas há backlog: mostrar só a seção `○ BACKLOG`
+- `{assignee}` = nome do agente que está na story (`**Assignee:**` no frontmatter); se não tiver, usar `—`
+- `{id}` = número da story (ex: `1.1`, `2.3`)
+- Não truncar títulos — mostrar completo
 
 ---
 
