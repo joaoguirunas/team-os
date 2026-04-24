@@ -1,6 +1,6 @@
 # Claude Agent Teams
 
-A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 27 pre-built agents organized into squads (Dev, Sites, Social), 40+ skills, and the `team-os` orchestration system.
+A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 40+ skills, and the `team-os` orchestration system.
 
 > Built on top of Claude Code's experimental Agent Teams feature. Drop the `.claude/` folder into any project and get a full multi-agent squad working immediately.
 
@@ -10,10 +10,11 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 
 ```
 .claude/
-├── agents/                  # 27 teammate agents (3 squads)
+├── agents/                  # 37 teammate agents (4 squads)
 │   ├── dev-*.md             # Dev squad (10 agents)
 │   ├── sites-*.md           # Sites squad (10 agents)
-│   └── social-*.md          # Social squad (7 agents)
+│   ├── social-*.md          # Social squad (7 agents)
+│   └── traffic-*.md         # Traffic squad (10 agents)
 │
 ├── skills/                  # 40+ skills (slash commands)
 │   ├── team-os/             # Lead orchestrator (/team-os)
@@ -21,6 +22,7 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 │   ├── dev-*/               # Dev skills (TypeScript, API design, testing, etc.)
 │   ├── sites-*/             # Sites skills (SEO, CRO, Tailwind, shadcn/ui, etc.)
 │   ├── social-*/            # Social skills (copywriting, video, analytics, etc.)
+│   ├── traffic-*/           # Traffic skills (tbd)
 │   ├── ui-ux-pro-max/       # Design system (161 palettes, 57 fonts, 99 UX guidelines)
 │   ├── accessibility/       # WCAG 2.2 AA (Addy Osmani patterns)
 │   └── web-design-guidelines/
@@ -160,6 +162,23 @@ Mirror of the Dev squad but tuned for website/marketing projects (Next.js, Verce
 | `social-video` | FLUX — Reels, TikToks, Shorts via ffmpeg |
 | `social-publisher` | PULSE — publishes via Meta API after VERA approves |
 
+### Traffic Squad
+
+Cross-platform paid traffic squad (Google Ads, Meta Ads, TikTok Ads). Strategy-first flow: `traffic-strategist` creates the brief, `traffic-qa` must PASS before any campaign goes live.
+
+| Agent | Role |
+|---|---|
+| `traffic-strategist` | Campaign strategy, budget allocation, KPIs, briefings (exclusive story authority) |
+| `traffic-analyst` | Market intelligence — audiences, competitors, benchmarks, diagnosis |
+| `traffic-qa` | Pre-campaign QA — UTMs, pixels, compliance, creatives (PASS/FAIL exclusive) |
+| `traffic-bi` | BI & attribution — ROAS, LTV, CPA, multi-touch (official metrics source) |
+| `traffic-copywriter` | Ad copy — headlines, descriptions, CTAs, A/B variants per platform |
+| `traffic-designer` | Ad creatives — banners, carousels, video assets, Stories |
+| `traffic-google` | Google Ads — Search, Performance Max, Shopping, YouTube, Display |
+| `traffic-meta` | Meta Ads — Facebook + Instagram, Advantage+, retargeting, lookalike, CAPI |
+| `traffic-tiktok` | TikTok Ads — Spark Ads, In-Feed, TopView, Brand Takeover |
+| `traffic-automation` | Bulk ops scripts, Google/Meta/TikTok API integrations, data pipelines |
+
 ---
 
 ## Skills (slash commands)
@@ -196,6 +215,10 @@ Creates new agents following validated patterns (Agent Teams contract, skill wir
 ### Social skills
 
 `/social-copywriting` · `/social-scriptwriting` · `/social-carousel-design` · `/social-video-editing` · `/social-analytics` · `/social-key-visual` · `/social-format-specs` · `/social-editorial-validation` · `/social-apify-research` · `/social-freepik-generation` · `/social-stitch-workflow` · `/social-meta-publishing` · `/social-cinematic-composition`
+
+### Traffic skills
+
+`/tiktok-marketing`
 
 ### Design / Accessibility
 
