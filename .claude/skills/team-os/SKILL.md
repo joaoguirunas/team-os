@@ -99,11 +99,13 @@ Rodar `scripts/detect-state.sh`. Retorna um de 4 estados:
 | Estado | Significado | Próxima ação |
 |---|---|---|
 | `NEW` | `docs/smart-memory/` não existe | **Auto-propor `*bootstrap`** — time de descoberta imediato (ver seção dedicada abaixo) |
-| `NO_DISCOVERY` | Estrutura existe mas `project/modules.md` ausente, e há código no repo | Oferecer `*discover` |
+| `NO_DISCOVERY` | Estrutura existe mas discovery incompleto (< 2 de: modules.md, tech-stack.md, architecture.md) e há código no repo | Oferecer `*discover` |
 | `IN_PROGRESS` | Há stories em `stories/active/` | `*resume` automático — mostrar resumo |
 | `READY` | Smart-memory OK, sem stories ativas | Pedir nome + objetivo pra novo time |
 
 **Regra crítica:** Em estado `NEW`, a skill vai DIRETO para o bootstrap (sem pedir escolha 1/2/3). Apresenta o plano curto, pede confirmação `s/n` (default `s`), e procede. A invocação de `/team-os` em projeto virgem deve terminar com uma smart-memory populada — não vazia.
+
+**Fallback obrigatório:** Se `detect-state.sh` retornar valor inesperado ou falhar, tratar como `READY` e avisar o usuário: `"⚠️ Não foi possível detectar estado do projeto — assumindo READY. Rode *audit para verificar integridade."` Nunca bloquear em estado inválido.
 
 ### Etapa 2 — Intake (se estado = READY)
 
@@ -535,8 +537,16 @@ Depois confirmar:
 
 1. Rodar `*audit` final
 2. Arquivar smart-memory: `cp -r docs/smart-memory docs/smart-memory/archive/{nome-team}-{data}/`
-3. Executar cleanup nativo do Agent Teams: dizer "Clean up the team" (linguagem natural trigger)
-4. Registrar encerramento em `teams-log.md` com status final
+3. Encerrar o Agent Team via protocolo explícito (linguagem natural não é confiável — ver Regra 1):
+   ```
+   TeamDelete({ team_name: "{team_name_ativo}" })
+   ```
+   `{team_name_ativo}` = nome lido de `docs/smart-memory/ops/teams-log.md` (última entrada com `**Status:** ativo`)
+4. Registrar encerramento em `teams-log.md` com status final:
+   ```markdown
+   **Status:** encerrado
+   **Encerrado:** {ISO timestamp}
+   ```
 
 ---
 

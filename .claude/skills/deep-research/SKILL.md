@@ -56,7 +56,7 @@ Mode Selection
 
 1. **Phase 1-7:** Load [methodology.md](./reference/methodology.md) for detailed phase instructions
 2. **Phase 8 (Report):** Load [report-assembly.md](./reference/report-assembly.md) for progressive generation
-3. **HTML/PDF output:** Load [html-generation.md](./reference/html-generation.md)
+3. **HTML/PDF output:** Load [html-generation-guide.md](./reference/html-generation-guide.md)
 4. **Quality checks:** Load [quality-gates.md](./reference/quality-gates.md)
 5. **Long reports (>18K words):** Load [continuation.md](./reference/continuation.md)
 

@@ -13,27 +13,37 @@ Review files for compliance with Web Interface Guidelines.
 
 ## How It Works
 
-1. Fetch the latest guidelines from the source URL below
-2. Read the specified files (or prompt user for files/pattern)
-3. Check against all rules in the fetched guidelines
-4. Output findings in the terse `file:line` format
+1. Carregar guidelines (remoto com fallback local — ver abaixo)
+2. Ler os arquivos especificados (ou perguntar ao usuário)
+3. Checar contra todas as regras das guidelines
+4. Output findings no formato terse `file:line`
 
 ## Guidelines Source
 
-Fetch fresh guidelines before each review:
+**Estratégia: remoto primeiro, cache local como fallback**
 
 ```
-https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
+Fonte remota: https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
+Cache local:  .claude/skills/web-design-guidelines/guidelines-cache.md
 ```
 
-Use WebFetch to retrieve the latest rules. The fetched content contains all the rules and output format instructions.
+**Fluxo de carregamento:**
+1. Tentar WebFetch da URL remota
+2. Se fetch falhar (timeout, 404, GitHub indisponível): usar cache local (`guidelines-cache.md`)
+3. Se cache local também falhar: informar usuário e continuar com conhecimento interno
+
+O cache local foi gerado em 2026-05-03 e cobre a versão atual. Para atualizar o cache manualmente:
+```bash
+curl -s https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md \
+  > .claude/skills/web-design-guidelines/guidelines-cache.md
+```
 
 ## Usage
 
-When a user provides a file or pattern argument:
-1. Fetch guidelines from the source URL above
-2. Read the specified files
-3. Apply all rules from the fetched guidelines
-4. Output findings using the format specified in the guidelines
+Quando o usuário fornecer arquivo ou padrão como argumento:
+1. Carregar guidelines (remoto ou cache local)
+2. Ler os arquivos especificados
+3. Aplicar todas as regras das guidelines
+4. Output no formato especificado nas guidelines
 
-If no files specified, ask the user which files to review.
+Se nenhum arquivo especificado, perguntar ao usuário quais arquivos revisar.
