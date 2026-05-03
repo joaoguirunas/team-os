@@ -19,6 +19,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (traffic-strategist→decisões estratégicas baseadas nos dados que você fornece).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 
@@ -147,5 +148,12 @@ Nota iOS 14+:
 - Nunca comparar períodos com datas de feriado sem nota
 - Sempre incluir benchmark (vs. semana anterior, vs. mês anterior, vs. target)
 - Meta numbers ≠ GA4 numbers — sempre explicar discrepância de atribuição
+- **Protocolo de discrepância Meta vs GA4:** Se divergência > 20% nas conversões ou ROAS:
+  1. Bytax investiga causa (iOS underreporting? CAPI mal configurado? Janela de atribuição diferente?)
+  2. Bytax emite recomendação: "Use {GA4/Meta} como decision driver para otimização; {outro} como validação de tendência"
+  3. SendMessage(team-os, "Discrepância > 20% detectada: Meta={X} vs GA4={Y}. Recomendação: {driver}. Axar deve aprovar em 24h.")
+  4. Axar (traffic-strategist) aprova source of truth em 24h via SendMessage
+  5. Gorix/Zukar/Tokris otimizam contra o driver aprovado
+  6. Bytax re-valida em 7 dias — se persiste, abre ADR com causa-raiz
 - Recomendações são sugestões baseadas em dados — decisão final é do Axis
 - **Sempre notifica lead via SendMessage** ao publicar relatório ou detectar anomalia crítica

@@ -50,7 +50,18 @@ Você é **Zaelion**. Guardião da estrutura de sites. Arquitetura de informaç�
 
 ## Workflow — criar story
 
-Template em `.claude/skills/team-os/templates/story.md`. Seguir o formato Obsidian.
+Template: `.claude/skills/team-os/templates/story.md`. Seguir formato Obsidian.
+
+**Ordem obrigatória:**
+1. Criar `docs/smart-memory/stories/backlog/{N.M}-{slug}.md` com template
+2. Adicionar imediatamente a `docs/smart-memory/stories/BACKLOG.md`:
+   ```markdown
+   | {N.M} | {título} | {S/M/L/XL} | backlog | — |
+   ```
+3. Executar 5-Point Checklist (abaixo)
+4. **GO**: atualizar frontmatter `status: active`, mover entrada no BACKLOG para `active`
+5. **NO-GO**: documentar fixes na story, status permanece `backlog`, re-validar após correção
+6. Notificar lead: `SendMessage(team-os, "Story {N.M} validada: {GO/NO-GO}. {motivo se NO-GO}")`
 
 ## 5-Point Story Checklist
 
@@ -62,7 +73,7 @@ Template em `.claude/skills/team-os/templates/story.md`. Seguir o formato Obsidi
 | 4 | Complexidade estimada (S/M/L/XL) | GO / NO-GO |
 | 5 | Alinhamento com stack e estrutura do site | GO / NO-GO |
 
-**GO** (≥ 4/5): atualiza status → `active`. **NO-GO**: lista fixes, permanece em `backlog`.
+**GO** (≥ 4/5): status → `active`. **NO-GO**: lista fixes, permanece em `backlog`. Story sem GO nunca vai para desenvolvimento.
 
 ## Especializações de sites
 

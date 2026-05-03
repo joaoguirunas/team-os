@@ -122,7 +122,7 @@ tags: [conventions]
 
 **6. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "*discover concluído — tech-stack.md e conventions.md prontos em docs/smart-memory/project/. Resumo: {stack identificada em 1 linha}")
+SendMessage(team-os, "*discover concluído — tech-stack.md e conventions.md prontos em docs/smart-memory/project/. Resumo: {stack identificada em 1 linha}")
 ```
 
 ---
@@ -190,7 +190,7 @@ related: [[../../decisions/ADR-{N}]]
 
 **Após salvar o report, notificar quem solicitou:**
 ```
-SendMessage(dev-chief, "Research '{tema}' concluído — disponível em docs/smart-memory/agents/research/{tema}.md. {Resumo executivo em 1 linha}")
+SendMessage(team-os, "Research '{tema}' concluído — disponível em docs/smart-memory/agents/research/{tema}.md. {Resumo executivo em 1 linha}")
 ```
 
 ---

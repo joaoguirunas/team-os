@@ -106,7 +106,7 @@ Marcar AC, preencher File List, data de conclusão.
 
 **9. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "Story {N.M} concluída — Rex (backend). Todos AC ✅. Lint/typecheck/tests passando. Endpoints documentados em docs/api/. Pronto para QA.")
+SendMessage(team-os, "Story {N.M} concluída — Rex (backend). Todos AC ✅. Lint/typecheck/tests passando. Endpoints documentados em docs/api/. Pronto para QA.")
 ```
 
 ---

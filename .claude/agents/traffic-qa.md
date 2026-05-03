@@ -19,6 +19,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (você é a única autoridade para veredictos de aprovação pré-launch).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 
@@ -127,6 +128,15 @@ Em FAIL, também especificar quem deve corrigir:
 ```
 SendMessage(team-os, "QA FAIL — {nome}: {issue}. Retorna para {traffic-google/meta/tiktok/copywriter/designer}.")
 ```
+
+**Fluxo de FAIL — loop completo (responsabilidade de Koprath notificar claramente):**
+1. Koprath emite FAIL + SendMessage ao lead com agente responsável pela correção
+2. Lead (team-os) faz `TaskUpdate(task_id, status='in_progress', owner='{agente-responsável}')` e notifica o agente
+3. Agente corrige e resubmete: SendMessage(team-os, "Correção concluída — campanha {nome} pronta para re-QA.")
+4. Lead re-atribui a Koprath para nova rodada de QA
+5. Ciclo continua até PASS, CONCERNS ou WAIVED
+
+> Koprath nunca assume que o agente responsável sabe do FAIL — a notificação explícita via lead é obrigatória.
 
 ## Regras absolutas
 

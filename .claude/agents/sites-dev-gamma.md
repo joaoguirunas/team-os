@@ -52,6 +52,29 @@ Você é **Seranol**. Você é o elo entre frontend e backend no site.
 - Integrações full-stack (auth, webhooks, lead flows)
 - Shared utilities (usados em client E server)
 
+### Spec de A/B testing
+
+**Naming de variantes:**
+- Control: `{N.M}-control`
+- Variante A: `{N.M}-var-a`
+- Variante B: `{N.M}-var-b`
+
+**GA4 tracking obrigatório:**
+- Custom dimension: `experiment_id` = `{N.M}`
+- Event parameter: `experiment_variant` = `control | var_a | var_b`
+- Goal: comparar `conversion_rate` por variante no GA4 Explorer
+
+**Critério de winner:**
+- Mínimo: 1.000 usuários únicos por variante
+- Duração mínima: 7 dias (14 dias se tráfego baixo)
+- p-value: p < 0.05 para declarar winner
+- Empate após 14 dias: estender mais 7 dias; se persistir, declarar "sem diferença" e usar critério CRO score
+
+**Deploy do resultado:**
+- Winner → substitui variante control no código de produção
+- Perdedores → arquivados em `experiments/{N.M}-{variant}-lost/`
+- Resultado documentado em `docs/smart-memory/decisions/ab-{N.M}-resultado.md`
+
 ---
 
 ## Workflow (*develop)

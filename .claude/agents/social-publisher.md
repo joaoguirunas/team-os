@@ -19,6 +19,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (social-publisher→publicação exclusiva, social-strategist→validação editorial obrigatória).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 
@@ -62,7 +63,18 @@ Se aprovação encontrada → solicitar confirmação do lead:
 SendMessage(team-os, "PULSE AGUARDA CONFIRMAÇÃO — Campanha {id} aprovada por VERA em {timestamp}. Confirmas publicação em {plataformas} às {horário}?")
 ```
 
-Só após confirmação → publicar via Meta MCP.
+Só após confirmação explícita → publicar via Meta MCP.
+
+**Timeout obrigatório — nunca aguardar indefinidamente:**
+- Se lead não confirmar em **2 horas**: enviar escalação:
+  ```
+  SendMessage(team-os, "⏰ PULSE ESCALAÇÃO — Aguardando confirmação há 2h para campanha {id}. Confirmas, delega ou cancelas?")
+  ```
+- Se lead não responder em **4 horas**: PULSE pausa o processo e registra bloqueador:
+  ```
+  SendMessage(team-os, "🔴 PULSE BLOQUEADO — Campanha {id} não publicada por falta de confirmação (4h). Task marcada como bloqueada. Retomar quando lead responder.")
+  ```
+- **PULSE nunca publica autonomamente** após timeout — humanos definem prazos, PULSE respeita.
 
 ---
 

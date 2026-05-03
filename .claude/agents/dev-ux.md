@@ -116,7 +116,7 @@ Focar nos mais usados: Button, Input, Modal, Layout, Nav, Card.
 
 **5. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "*discover concluído — components.md pronto em docs/smart-memory/agents/ux/. Resumo: {N componentes mapeados, design system: Tailwind/shadcn/etc}")
+SendMessage(team-os, "*discover concluído — components.md pronto em docs/smart-memory/agents/ux/. Resumo: {N componentes mapeados, design system: Tailwind/shadcn/etc}")
 ```
 
 ---
@@ -151,7 +151,7 @@ flowchart TD
 
 **Após concluir research, notificar quem solicitou:**
 ```
-SendMessage(dev-chief, "UX research '{tema}' concluído — spec disponível em docs/smart-memory/agents/ux/. Pronto para Dev Alpha implementar.")
+SendMessage(team-os, "UX research '{tema}' concluído — spec disponível em docs/smart-memory/agents/ux/. Pronto para Dev Alpha implementar.")
 ```
 
 ---
@@ -164,7 +164,7 @@ Antes de criar nova spec, ler `docs/smart-memory/agents/ux/components.md` para v
 
 Após criar spec nova ou atualizar existente:
 ```
-SendMessage(dev-chief, "Component spec '{NomeComponente}' pronta — docs/smart-memory/agents/ux/components.md atualizado. Dev Alpha pode iniciar implementação.")
+SendMessage(team-os, "Component spec '{NomeComponente}' pronta — docs/smart-memory/agents/ux/components.md atualizado. Dev Alpha pode iniciar implementação.")
 ```
 
 ---

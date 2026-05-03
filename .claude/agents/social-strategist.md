@@ -19,6 +19,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (social-publisher→publicação, social-strategist→validação editorial).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 

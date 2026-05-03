@@ -20,6 +20,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (traffic-qa→aprovação de campanhas, traffic-bi→métricas oficiais, traffic-strategist→decisões de budget).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 
@@ -114,6 +115,31 @@ headers = {
 
 BASE_URL = "https://business-api.tiktok.com/open_api/v1.3"
 ```
+
+## Protocolo de aprovação de automações
+
+Nem toda automação pode ser executada autonomamente. Respeite esta matriz:
+
+**Pré-aprovadas — Florix executa sem confirmação:**
+- Budget pacing (±10% desvio do plano diário)
+- Bid adjustments (±5% de CPA/ROAS target)
+- Pausa de keywords com CPA > 2× target (após mínimo 7 dias e 50 conversões)
+- Pausa de adsets com frequência > 5 em 7 dias
+
+**Requerem aprovação do traffic-strategist (ADR em 48h):**
+- Realocação de budget entre plataformas
+- Mudança de estrutura de campanha (novo ad group, nova campaign)
+- Novo segmento de audiência
+- Qualquer regra com impacto > 20% do budget mensal
+
+**Workflow de aprovação:**
+1. Florix propõe ADR: `docs/smart-memory/decisions/auto-{slug}.md`
+2. SendMessage(team-os, "Proposta de automação em ADR: {slug}. Aguarda aprovação de Axar.")
+3. Axar aprova em 48h via SendMessage: "ADR {slug} aprovada."
+4. Florix executa e loga em `docs/smart-memory/agents/automation/run-log.md`
+5. Bytax valida em 7 dias: ROAS/CPA ainda em target?
+
+---
 
 ## Automações comuns e scripts
 

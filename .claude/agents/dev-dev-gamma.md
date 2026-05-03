@@ -107,7 +107,7 @@ Marcar AC, preencher File List, data de conclusão.
 
 **10. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "Story {N.M} concluída — Sera (fullstack). Todos AC ✅. Contrato validado ponta-a-ponta. Lint/typecheck/tests passando. Pronto para QA.")
+SendMessage(team-os, "Story {N.M} concluída — Sera (fullstack). Todos AC ✅. Contrato validado ponta-a-ponta. Lint/typecheck/tests passando. Pronto para QA.")
 ```
 
 ---

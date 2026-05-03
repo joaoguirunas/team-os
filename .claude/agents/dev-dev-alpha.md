@@ -108,7 +108,7 @@ Marcar checkboxes de AC: `[ ]` → `[x]`
 
 **8. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "Story {N.M} concluída — Nova (frontend). Todos AC ✅. Lint/typecheck/tests passando. Pronto para QA.")
+SendMessage(team-os, "Story {N.M} concluída — Nova (frontend). Todos AC ✅. Lint/typecheck/tests passando. Pronto para QA.")
 ```
 
 ---

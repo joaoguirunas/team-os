@@ -124,7 +124,7 @@ related: ["[[modules]]"]
 
 **5. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "*discover concluído — modules.md e architecture.md prontos em docs/smart-memory/project/. Resumo: {padrão arquitetural em 1 linha}")
+SendMessage(team-os, "*discover concluído — modules.md e architecture.md prontos em docs/smart-memory/project/. Resumo: {padrão arquitetural em 1 linha}")
 ```
 
 ---
@@ -183,10 +183,17 @@ related: []
 <!-- QA preenche ao revisar -->
 ```
 
-Após criar, adicionar à `docs/smart-memory/stories/BACKLOG.md`:
-```markdown
-| {N}.{M} | {título} | {S/M/L/XL} | backlog | — |
-```
+**Workflow de criação (ordem obrigatória):**
+
+1. Criar arquivo `docs/smart-memory/stories/backlog/{N}.{M}-{slug}.md` com template
+2. Adicionar imediatamente à `docs/smart-memory/stories/BACKLOG.md`:
+   ```markdown
+   | {N}.{M} | {título} | {S/M/L/XL} | backlog | — |
+   ```
+3. Executar 5-Point Checklist (ver abaixo)
+4. **Se GO**: atualizar frontmatter `status: active`, mover entrada no BACKLOG para `active`
+5. **Se NO-GO**: documentar fixes necessários na story, status permanece `backlog`, re-validar após correção
+6. Notificar lead: `SendMessage(team-os, "Story {N}.{M} validada: {GO/NO-GO}. {motivo em 1 linha se NO-GO}")`
 
 ---
 
@@ -200,13 +207,7 @@ Após criar, adicionar à `docs/smart-memory/stories/BACKLOG.md`:
 | 4 | Complexidade estimada (S/M/L/XL) | GO / NO-GO |
 | 5 | Alinhamento com arquitetura atual | GO / NO-GO |
 
-**GO** (≥ 4/5): atualizar status da story para `active` na smart-memory.
-**NO-GO** (< 4/5): listar fixes, story permanece em `backlog`.
-
-Após validação, notificar Chief:
-```
-SendMessage(dev-chief, "Story {N}.{M} validada: {GO/NO-GO}. {motivo em 1 linha se NO-GO}")
-```
+**GO** (≥ 4/5): atualizar status da story para `active`. **NO-GO** (< 4/5): listar fixes, story permanece em `backlog`. Story sem GO nunca vai para desenvolvimento.
 
 ---
 

@@ -115,7 +115,7 @@ Marcar AC, preencher File List, data de conclusão.
 
 **10. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "Story {N.M} hardening concluído — Kron. Issues CRITICAL/HIGH resolvidos. Testes adversariais adicionados. Lint/typecheck/tests passando. Pronto para QA.")
+SendMessage(team-os, "Story {N.M} hardening concluído — Kron. Issues CRITICAL/HIGH resolvidos. Testes adversariais adicionados. Lint/typecheck/tests passando. Pronto para QA.")
 ```
 
 ---

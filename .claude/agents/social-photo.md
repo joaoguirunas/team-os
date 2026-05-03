@@ -19,6 +19,7 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 6. **Respeite autoridades exclusivas** (social-publisher→publicação, social-strategist→validação editorial).
 7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
 8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
 
 ---
 
@@ -44,168 +45,45 @@ Você é **Irix**. Cada imagem conta uma história que o copy não consegue.
 
 ---
 
-## API Freepik Mystic — Referência completa
+## API Freepik — Referência rápida
 
-**Endpoint:** `POST /v1/ai/mystic`
-**Autenticação:** header `x-freepik-api-key`
-**Base URL:** `https://api.freepik.com`
-**Tipo:** assíncrona — retorna `task_id`, resultado disponível após polling/webhook
+> Referência completa de parâmetros, modelos, engines e LoRAs: use `/social-freepik-generation`.
 
-### Fluxo obrigatório (API é assíncrona)
+### Fluxo obrigatório (Mystic é assíncrona)
 
 ```
-1. POST /v1/ai/mystic          → recebe { task_id, status: "CREATED" }
-2. GET  /v1/ai/mystic/{task_id} → poll a cada 3-5s até status = "COMPLETED"
-3. Ler generated[] para URLs das imagens (válidas por 12h)
+1. mcp__freepik__generate-image  → recebe task_id
+2. Poll até status = "COMPLETED"
+3. Download de URLs imediatamente — expiram em 12h
 ```
 
-> ⚠️ URLs das imagens expiram em **12 horas**. Fazer download imediato após geração.
+### Rate limits
+- Free: **125 req/dia** · Premium: **6.000 req/dia**
 
-### Rate limits (Mystic)
-- Free: **125 req/dia**
-- Premium: **6.000 req/dia**
-- Geral: 50 req/s (janela 5s) · média 10 req/s (janela 2min)
+### Modelos — escolha rápida
 
----
-
-### Parâmetros do POST /v1/ai/mystic
-
-#### `prompt` (string, opcional)
-Texto descrevendo a imagem. Suporta sintaxe de character: `@character_name` ou `@character_name::strength`.
-
-#### `model` (string, default: `realism`)
-
-| Valor | Descrição | Melhor para |
-|---|---|---|
-| `realism` | Paleta realista, menos aspecto AI | Fotos naturais, lifestyle |
-| `fluid` | Melhor aderência ao prompt, qualidade média alta. Usa Google Imagen 3 — pode rejeitar prompts pela moderação | Copy-heavy, conceitual |
-| `zen` | Resultados limpos e suaves, menos objetos na cena | Minimalismo, backgrounds |
-| `flexible` | Boa aderência, mais saturado e HDR | Ads coloridos, impacto visual |
-| `super_real` | Máximo realismo, versatilidade próxima do Flexible | Product shots, retratos |
-| `editorial_portraits` | Estado da arte para retratos editoriais. Excelente em close/medium shot; fraco em plano aberto/distante | Retratos de pessoa |
-
-#### `engine` (string, default: `automatic`)
-
-| Valor | Descrição |
+| `model` | Melhor para |
 |---|---|
-| `automatic` | Escolha padrão para uso geral |
-| `magnific_illusio` | Ilustrações suaves, paisagens, natureza |
-| `magnific_sharpy` | Imagens realistas fotográficas, mais granular, mais nítido e detalhado |
-| `magnific_sparkle` | Meio-termo entre Illusio e Sharpy — realismo moderado |
+| `realism` | Fotos naturais, lifestyle (default) |
+| `super_real` | Product shots, retratos com máximo realismo |
+| `editorial_portraits` | Retratos editoriais close/medium shot |
+| `flexible` | Ads coloridos, impacto visual, HDR |
+| `zen` | Minimalismo, backgrounds limpos |
+| `fluid` | Copy-heavy, conceitual (usa Imagen 3 — pode rejeitar prompts) |
 
-#### `resolution` (string, default: `2k`)
-Valores: `1k` · `2k` · `4k`
+### `aspect_ratio` — formatos sociais
 
-#### `aspect_ratio` (string, default: `square_1_1`)
-
-| Valor | Uso ideal |
+| Valor | Uso |
 |---|---|
-| `square_1_1` | Feed quadrado Instagram |
 | `social_post_4_5` | Feed vertical Instagram (recomendado) |
 | `social_story_9_16` | Stories e Reels |
-| `social_5_4` | Feed ligeiramente horizontal |
+| `square_1_1` | Feed quadrado |
 | `widescreen_16_9` | YouTube thumbnail, banner |
-| `smartphone_horizontal_20_9` | Banner mobile horizontal |
-| `smartphone_vertical_9_20` | Banner mobile vertical |
-| `classic_4_3` | Formato clássico horizontal |
-| `traditional_3_4` | Formato clássico vertical |
-| `standard_3_2` | Fotografia padrão horizontal |
-| `portrait_2_3` | Fotografia padrão vertical |
-| `horizontal_2_1` | Banner wide |
-| `vertical_1_2` | Banner tall |
+| `portrait_2_3` | Retrato padrão |
 
-#### `creative_detailing` (integer, 0–100, default: 33)
-Intensidade de detalhe. Valores altos = mais detalhe e aspecto HDR.
-
-#### `fixed_generation` (boolean, default: false)
-`true` = geração determinística (mesmas configurações → mesma imagem).
-
-#### `filter_nsfw` (boolean, default: true)
-Sempre ativo. Não pode ser desativado no plano padrão.
-
----
-
-### Referências de estrutura e estilo
-
-#### `structure_reference` (base64, opcional)
-Imagem base64 para influenciar a **forma/composição** do output.
-
-#### `structure_strength` (integer, 0–100, default: 50)
-Força da influência da structure_reference. Só funciona com `structure_reference`.
-
-#### `style_reference` (base64, opcional)
-Imagem base64 para influenciar o **estilo visual/estética** do output.
-
-#### `adherence` (integer, 0–100, default: 50)
-Só com `style_reference`. Valores altos = mais fiel ao prompt.
-
-#### `hdr` (integer, 0–100, default: 50)
-Só com `style_reference`. Valores altos = mais detalhe, aspecto mais AI.
-
-> ⚠️ **LoRAs são ignorados silenciosamente** quando `structure_reference` ou `style_reference` são fornecidos, ou quando model é `fluid`, `flexible`, `super_real` ou `editorial_portraits`.
-
----
-
-### `styling` (objeto opcional)
-
-#### `styling.styles` (array, máx 1 item)
-```json
-{ "name": "vintage-japanese", "strength": 100 }
-```
-- `name`: obtido via `GET /v1/ai/loras`
-- `strength`: 0–200 (default: 100)
-
-#### `styling.characters` (array, máx 1 item)
-```json
-{ "id": "character_id", "strength": 100 }
-```
-- `id`: obtido via `GET /v1/ai/loras`
-- `strength`: 0–200 (default: 100) — acima de 100 aumenta presença
-
-#### `styling.colors` (array, 1–5 itens)
-```json
-{ "color": "#FF5733", "weight": 0.8 }
-```
-- `color`: hex `#RRGGBB` (maiúsculas)
-- `weight`: 0.05–1.0
-
-#### Como descobrir LoRAs disponíveis
-```
-GET /v1/ai/loras
-```
-Retorna `default` (LoRAs Freepik) e `customs` (LoRAs do usuário).
-Cada LoRA tem: `id`, `name`, `description`, `category`, `type` (`style` ou `character`), `preview` (URL).
-
----
-
-### `webhook_url` (URI, opcional)
-Callback assíncrono. Recebe o mesmo payload do GET de status, sem o campo `data`.
-
----
-
-## API Freepik Upscaler — Referência completa
-
-**Endpoint:** `POST /v1/ai/image-upscaler`
-**Polling:** `GET /v1/ai/image-upscaler/{task-id}`
-
-### Parâmetros
-
-| Parâmetro | Tipo | Default | Valores/Range | Descrição |
-|---|---|---|---|---|
-| `image` | base64 | — | — | **Obrigatório.** Máx output: 25,3 milhões de pixels |
-| `scale_factor` | string | `2x` | `2x`, `4x`, `8x`, `16x` | Fator de ampliação |
-| `optimized_for` | string | `standard` | ver abaixo | Preset de otimização |
-| `prompt` | string | — | texto | Reusar o prompt original melhora resultado em imagens AI |
-| `creativity` | integer | `0` | -10 a 10 | Criatividade da AI |
-| `hdr` | integer | `0` | -10 a 10 | Definição e detalhe |
-| `resemblance` | integer | `0` | -10 a 10 | Fidelidade ao original |
-| `fractality` | integer | `0` | -10 a 10 | Força do prompt por pixel |
-| `engine` | string | `automatic` | `automatic`, `magnific_illusio`, `magnific_sharpy`, `magnific_sparkle` | Mesmo engine do Mystic |
-| `filter_nsfw` | boolean | `false` | — | Filtragem NSFW no output |
-| `webhook_url` | URI | — | — | Callback assíncrono |
-
-#### `optimized_for` valores
-`standard` · `soft_portraits` · `hard_portraits` · `art_n_illustration` · `videogame_assets` · `nature_n_landscapes` · `films_n_photography` · `3d_renders` · `science_fiction_n_horror`
+### Upscaler — uso via `mcp__freepik__upscale-image`
+Scale factors: `2x` `4x` `8x` `16x`. Reusar o prompt original da geração melhora resultado.
+Presets `optimized_for`: `standard` · `soft_portraits` · `hard_portraits` · `films_n_photography` · e outros — ver `/social-freepik-generation` para lista completa.
 
 ---
 

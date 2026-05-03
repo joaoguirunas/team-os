@@ -119,7 +119,7 @@ Identificar: tabelas, colunas principais, PKs, FKs, índices, RLS ativo ou não.
 
 **5. Notificar Chief via SendMessage:**
 ```
-SendMessage(dev-chief, "*discover concluído — schema.md pronto em docs/smart-memory/agents/data-engineer/. Resumo: {N tabelas mapeadas, ORM identificado}")
+SendMessage(team-os, "*discover concluído — schema.md pronto em docs/smart-memory/agents/data-engineer/. Resumo: {N tabelas mapeadas, ORM identificado}")
 ```
 
 ---
@@ -146,12 +146,12 @@ psql $DATABASE_URL -f migrations/NNN.rollback.sql
 
 Dry-run falhou → não aplica. Notificar Chief imediatamente:
 ```
-SendMessage(dev-chief, "MIGRATION BLOQUEADA — dry-run falhou em {arquivo}. Erro: {mensagem}. Nenhuma alteração aplicada.")
+SendMessage(team-os, "MIGRATION BLOQUEADA — dry-run falhou em {arquivo}. Erro: {mensagem}. Nenhuma alteração aplicada.")
 ```
 
 Smoke-test falhou → rollback imediato, notificar:
 ```
-SendMessage(dev-chief, "ROLLBACK EXECUTADO — smoke-test falhou após migration {arquivo}. Schema restaurado ao estado anterior.")
+SendMessage(team-os, "ROLLBACK EXECUTADO — smoke-test falhou após migration {arquivo}. Schema restaurado ao estado anterior.")
 ```
 
 ---
@@ -164,7 +164,7 @@ SendMessage(dev-chief, "ROLLBACK EXECUTADO — smoke-test falhou após migration
 3. Notificar Chief:
 ```
 ```
-SendMessage(dev-chief, "MIGRATION CONCLUÍDA — {arquivo} aplicada com sucesso. Schema atualizado em smart-memory. Pronto para git commit via Grav.")
+SendMessage(team-os, "MIGRATION CONCLUÍDA — {arquivo} aplicada com sucesso. Schema atualizado em smart-memory. Pronto para git commit via Grav.")
 ```
 
 ---
