@@ -102,6 +102,44 @@ else
   echo "  ✅ presente"
 fi
 
+# Check 5: Wikilinks circulares (A → B → A)
+echo "• Verificando wikilinks circulares..."
+CIRCULAR=0
+declare -A LINKS_MAP
+
+# Construir mapa de links: arquivo → lista de targets
+while IFS= read -r f; do
+  key=$(basename "$f" .md)
+  targets=$(grep -oE '\[\[[^]|]+' "$f" 2>/dev/null | sed 's/\[\[//' | tr '\n' ',' | sed 's/,$//')
+  LINKS_MAP["$key"]="$targets"
+done < <(find "$SM" -name "*.md" -type f 2>/dev/null)
+
+# Detectar ciclos de 2 nós: A → B e B → A
+for node_a in "${!LINKS_MAP[@]}"; do
+  IFS=',' read -ra targets_a <<< "${LINKS_MAP[$node_a]}"
+  for node_b in "${targets_a[@]}"; do
+    node_b=$(basename "$node_b" .md | xargs)
+    [ -z "$node_b" ] && continue
+    if [[ -n "${LINKS_MAP[$node_b]}" ]]; then
+      IFS=',' read -ra targets_b <<< "${LINKS_MAP[$node_b]}"
+      for back in "${targets_b[@]}"; do
+        back=$(basename "$back" .md | xargs)
+        if [ "$back" = "$node_a" ]; then
+          echo "  ⚠️  ciclo: [[$node_a]] ↔ [[$node_b]]"
+          CIRCULAR=$((CIRCULAR + 1))
+        fi
+      done
+    fi
+  done
+done
+
+if [ $CIRCULAR -eq 0 ]; then
+  echo "  ✅ sem ciclos"
+else
+  echo "  ℹ️  $CIRCULAR ciclo(s) bidirecional(is) — verificar se são links intencionais"
+  PROBLEMS=$((PROBLEMS + CIRCULAR))
+fi
+
 echo ""
 if [ $PROBLEMS -eq 0 ]; then
   echo "✅ Auditoria OK — sem problemas"
