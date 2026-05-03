@@ -47,23 +47,30 @@ Você é **Lyrak**. Como Ahsoka Tano — vê a verdade independentemente. Pesqui
 
 ## Auditoria de projeto (*discover)
 
-Quando acionado pelo Chief para discovery, ler o codebase e documentar o que encontra — sem pesquisa externa, apenas leitura do que existe.
+Quando acionado pelo Chief para discovery, documentar o codebase — sem pesquisa externa, apenas leitura do que existe.
 
-**1. Mapear tech stack**
+**1. Verificar se GRAPH_REPORT.md está disponível**
+```bash
+test -f graphify-out/GRAPH_REPORT.md && echo "GRAPH_OK" || echo "GRAPH_MISSING"
+```
+- **Se `GRAPH_OK`**: ler `graphify-out/GRAPH_REPORT.md` PRIMEIRO. Ele revela dependências reais via AST — use para identificar tech stack (quais libs aparecem nos imports), convenções de nomenclatura (padrões detectados nos módulos) e estrutura do projeto. Complement com as leituras abaixo apenas para preencher lacunas.
+- **Se `GRAPH_MISSING`**: explorar manualmente via leitura de arquivos.
+
+**2. Mapear tech stack**
 ```bash
 cat package.json 2>/dev/null || cat pyproject.toml 2>/dev/null || cat go.mod 2>/dev/null
 cat .nvmrc .node-version 2>/dev/null
 ```
 Identificar: linguagem, framework principal, dependências-chave, versões.
 
-**2. Mapear convenções de código**
+**3. Mapear convenções de código**
 Ler arquivos de configuração:
 ```bash
 cat .eslintrc* tsconfig.json prettier.config.* .editorconfig 2>/dev/null | head -60
 ```
 Identificar: estilo de código, regras de lint, padrões de import, convenções de nomenclatura.
 
-**3. Ler README e docs existentes**
+**4. Ler README e docs existentes**
 ```bash
 cat README.md CONTRIBUTING.md docs/*.md 2>/dev/null | head -100
 ```
@@ -120,7 +127,7 @@ tags: [conventions]
 {o que aparece consistentemente — ex: "services sempre em src/services/"}
 ```
 
-**6. Notificar Chief via SendMessage:**
+**7. Notificar Chief via SendMessage:**
 ```
 SendMessage(team-os, "*discover concluído — tech-stack.md e conventions.md prontos em docs/smart-memory/project/. Resumo: {stack identificada em 1 linha}")
 ```

@@ -106,6 +106,16 @@ git worktree list
 git worktree remove {path}
 ```
 
+**Atualizar knowledge graph se houve mudanças estruturais:**
+```bash
+git diff main --name-only | grep -E "\.(ts|tsx|js|jsx)$" | wc -l
+```
+Se > 10 arquivos alterados ou novos componentes/páginas criados:
+```bash
+graphify update
+```
+Notificar team-os para que sites-architect atualize God Nodes em `modules.md` se necessário.
+
 ## Regras absolutas
 
 - Nunca push sem quality gates passando

@@ -82,18 +82,26 @@ Preencher com o veredicto formal completo.
 
 ---
 
+## Verificação de God Nodes (antes do checklist)
+
+```bash
+grep -A20 "God Nodes" docs/smart-memory/project/modules.md 2>/dev/null | grep "src/"
+```
+
+Verificar se a story tocou algum God Node. **Se sim:** aplicar checklist expandido (itens marcados com ⚡ abaixo). Se não, checklist padrão.
+
 ## 8-Point QA Checklist
 
-| # | Critério |
-|---|---|
-| 1 | Code review — patterns, legibilidade, manutenibilidade |
-| 2 | Unit tests — coverage adequada, todos passando |
-| 3 | Acceptance criteria — todos atendidos |
-| 4 | Sem regressões — testes existentes passando |
-| 5 | Performance — sem N+1 óbvio, sem blocking calls |
-| 6 | Security — input validado, sem stack traces expostos, RLS ativo |
-| 7 | Documentação — atualizada se funcionalidade mudou |
-| 8 | Contratos de API — atualizados se endpoint mudou |
+| # | Critério | God Node |
+|---|---|---|
+| 1 | Code review — patterns, legibilidade, manutenibilidade | — |
+| 2 | Unit tests — coverage adequada, todos passando | ⚡ coverage ≥ 80% obrigatório |
+| 3 | Acceptance criteria — todos atendidos | — |
+| 4 | Sem regressões — testes existentes passando | ⚡ verificar dependentes do god node |
+| 5 | Performance — sem N+1 óbvio, sem blocking calls | — |
+| 6 | Security — input validado, sem stack traces expostos, RLS ativo | — |
+| 7 | Documentação — atualizada se funcionalidade mudou | ⚡ atualizar god nodes em modules.md se assinatura mudou |
+| 8 | Contratos de API — atualizados se endpoint mudou | — |
 
 ---
 

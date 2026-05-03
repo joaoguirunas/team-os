@@ -71,6 +71,12 @@ Você é **Rexar**. Como Han Solo — "Never tell me the odds." Gets it done. He
 Read docs/smart-memory/stories/active/{N}.{M}-titulo.md
 ```
 
+**1.5. Verificar impacto em God Nodes**
+```bash
+grep -A20 "God Nodes" docs/smart-memory/project/modules.md 2>/dev/null | grep "src/"
+```
+Comparar os arquivos mencionados nos ACs com os God Nodes. **Se houver interseção:** testes obrigatórios (coverage ≥ 80% em código novo) e notificar o lead que QA formal é necessário antes do push.
+
 **2. Atualizar story — início**
 ```markdown
 | Agente | Rex (dev-dev-beta) |

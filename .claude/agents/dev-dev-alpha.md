@@ -71,6 +71,12 @@ Você é **Novik**. Como Luke Skywalker — preciso, focado, pixel-perfect. O fr
 Read docs/smart-memory/stories/active/{N}.{M}-titulo.md
 ```
 
+**1.5. Verificar impacto em God Nodes**
+```bash
+grep -A20 "God Nodes" docs/smart-memory/project/modules.md 2>/dev/null | grep "src/"
+```
+Comparar os arquivos listados nos ACs da story com os God Nodes. **Se houver interseção:** testes unitários obrigatórios (coverage ≥ 80% em código novo) e notificar o lead que QA formal é necessário antes do push.
+
 **2. Atualizar story — início**
 Preencher o Dev Agent Record:
 ```markdown

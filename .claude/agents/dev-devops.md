@@ -148,9 +148,20 @@ git worktree list
 git worktree remove {path}  # limpar worktrees dos devs
 ```
 
+**Atualizar knowledge graph se houve mudanças estruturais:**
+```bash
+# Verificar se há novos módulos, arquivos movidos ou dependências alteradas
+git diff main --name-only | grep -E "\.(ts|tsx|js|jsx|py|go)$" | wc -l
+```
+Se > 10 arquivos alterados ou novos módulos criados:
+```bash
+graphify update  # re-analisa apenas arquivos alterados (rápido)
+```
+Notificar team-os para que dev-architect atualize a seção God Nodes de `modules.md` se necessário.
+
 Após cleanup:
 ```
-SendMessage(team-os, "CLEANUP concluído — branch e worktree de feature/{N}-{M}-{descricao} removidos")
+SendMessage(team-os, "CLEANUP concluído — branch e worktree de feature/{N}-{M}-{descricao} removidos. {graphify update rodado / knowledge graph sem mudanças}")
 ```
 
 ---

@@ -306,6 +306,25 @@ find . -name "*.sql" -o -name "schema.prisma" -o -path "*/migrations/*" -not -pa
 find . -name "*.tsx" -o -name "*.jsx" -o -path "*/components/*" -not -path "*/node_modules/*" 2>/dev/null | head -3
 ```
 
+**Passo 2.5 — Gerar knowledge graph do codebase (Graphify)**
+
+Antes de spawnar qualquer teammate, extrair o grafo de dependências reais do projeto via AST:
+
+```bash
+# Verificar/instalar graphify (isolado via uv, não contamina o projeto)
+which graphify 2>/dev/null || uv tool install graphifyy
+
+# Gerar grafo — analisa todos os arquivos via AST (sem custo de API)
+graphify . --output graphify-out/
+```
+
+O arquivo `graphify-out/GRAPH_REPORT.md` contém:
+- **God nodes** — arquivos com mais dependências (mudança aqui tem impacto amplo)
+- **Clusters** — grupos de módulos que trabalham juntos
+- **Dependency edges** — quem importa quem, com precisão AST
+
+Este arquivo é passado para os teammates no prompt de spawn. Após o discovery concluir, `graphify-out/` é removido — o resultado vive em `docs/smart-memory/project/modules.md`.
+
 **Passo 3 — Compor time de descoberta dinamicamente**
 
 Baseado nos sinais:
@@ -332,8 +351,11 @@ Agent({
   team_name: "{folder}-discovery",
   name: "dev-architect",
   prompt: "Sua task: *discover — mapeie módulos e arquitetura deste projeto.
-  Produza docs/smart-memory/project/modules.md e docs/smart-memory/project/architecture.md
-  conforme os templates do seu prompt. NÃO escreva tech-stack.md (é responsabilidade da dev-analyst).
+  IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
+  Ele contém god nodes (arquivos mais críticos), clusters (grupos de módulos) e dependency edges (quem importa quem) com precisão AST.
+  Use esses dados para popular docs/smart-memory/project/modules.md e docs/smart-memory/project/architecture.md
+  com as seções God Nodes, Clusters e Dependencies já preenchidas — conforme template no seu prompt.
+  NÃO escreva tech-stack.md (responsabilidade da dev-analyst).
   Avise-me via SendMessage ao concluir."
 })
 
@@ -342,6 +364,8 @@ Agent({
   team_name: "{folder}-discovery",
   name: "dev-analyst",
   prompt: "Sua task: *discover — mapeie tech stack, dependências e convenções de código.
+  IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
+  Ele contém a estrutura real do projeto via AST — use para confirmar tech stack e identificar convenções de import/nomenclatura.
   Produza docs/smart-memory/project/tech-stack.md e docs/smart-memory/project/conventions.md.
   Avise-me via SendMessage ao concluir."
 })
@@ -360,6 +384,14 @@ Após os spawns, os teammates ficam ativos em paralelo (visíveis em Shift+Tab) 
 **Passo 5 — (não precisa despachar separadamente)**
 
 As instruções já foram embutidas no `prompt` de cada `Agent()`. Não precisa fazer `SendMessage` imediato após spawn — eles já sabem o que fazer.
+
+**Passo 5.5 — Limpar graphify-out após conclusão dos teammates**
+
+Após receber todos os retornos de discovery:
+```bash
+rm -rf graphify-out/
+```
+O knowledge graph agora vive em `docs/smart-memory/project/modules.md` — `graphify-out/` não precisa persistir.
 
 **Passo 6 — Aguardar retornos**
 
@@ -448,7 +480,7 @@ Informar ao usuário: "Smart-memory inicializada. Pronto pra *discover ou *plan.
 
 ### `*discover` — Audita projeto existente
 
-Usa a mesma lógica dos Passos 2-7 do `*bootstrap`, sem o passo de criar estrutura (pressupõe que `*init` já foi rodado antes).
+Usa a mesma lógica dos Passos 2-7 do `*bootstrap`, sem o passo de criar estrutura (pressupõe que `*init` já foi rodado antes). **Inclui obrigatoriamente o Passo 2.5 (Graphify)** antes de spawnar teammates.
 
 Se o usuário chamar `*discover` num projeto em estado `NEW`, redirecionar pro `*bootstrap` (não faz sentido descobrir sem estrutura).
 
@@ -465,9 +497,13 @@ Se não há architect disponível, lead faz inline — usa o template.
 
 1. Ler `docs/smart-memory/stories/BACKLOG.md`
 2. Selecionar stories validadas (5-point GO)
-3. Criar tasks via `TaskCreate` — uma por story, com dependências quando apropriado
-4. Teammates vão fazer self-claim — lead apenas monitora
-5. Atualizar `shared-context.md`
+3. **Verificar god nodes**: ler seção `## ⚡ God Nodes` de `docs/smart-memory/project/modules.md`
+   - Para cada story, verificar se os arquivos mencionados nos ACs intersectam os God Nodes
+   - **Se sim**: marcar story com flag `god-node: true` no frontmatter e **incluir dev-qa obrigatoriamente** na composição do time, mesmo que a story seja pequena. Adicionar nota no prompt do dev: "Esta story toca um God Node — testes obrigatórios e QA formal antes do push."
+   - **Se não**: fluxo normal, dev-qa opcional
+4. Criar tasks via `TaskCreate` — uma por story, com dependências quando apropriado
+5. Teammates vão fazer self-claim — lead apenas monitora
+6. Atualizar `shared-context.md`
 
 ### `*status` — Estado atual
 
@@ -484,6 +520,19 @@ Rodar em paralelo:
 scripts/audit-smart-memory.sh
 scripts/audit-teammate-compliance.sh
 ```
+
+Verificações adicionais de knowledge graph:
+```bash
+# modules.md tem seção God Nodes?
+grep -q "God Nodes" docs/smart-memory/project/modules.md 2>/dev/null || echo "MISSING_GOD_NODES"
+
+# God nodes ainda existem no filesystem? (podem ter sido renomeados)
+# Extrair paths da seção God Nodes e verificar cada um
+grep -A20 "God Nodes" docs/smart-memory/project/modules.md 2>/dev/null | grep "src/" | awk '{print $2}' | xargs -I{} test -f {} || echo "STALE_GOD_NODES"
+```
+
+Se `MISSING_GOD_NODES`: sugerir re-rodar `*discover` para enriquecer o smart memory com knowledge graph.
+Se `STALE_GOD_NODES`: God nodes desatualizados — sugerir `graphify update` + atualização de `modules.md`.
 
 Consolidar output. Se achar problemas, perguntar:
 ```
