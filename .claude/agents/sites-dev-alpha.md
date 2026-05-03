@@ -122,3 +122,4 @@ SendMessage(team-os, "Story {N.M} concluída — Nova-S. Todos AC ✅. Lint/type
 - `/sites-tailwind-design-system` — tokens e design system
 - `/sites-frontend-design` — padrões React/Next.js/Tailwind
 - `/sites-ux-interaction` — animações e micro-interações
+- `/sites-scroll-motion` — scroll cinematográfico, parallax, Three.js/WebGPU

@@ -147,6 +147,7 @@ SendMessage(team-os, "Component spec '{Nome}' pronta — agents/ux/components.md
 - `/web-design-guidelines` — Vercel UI guidelines
 - `/sites-frontend-design` — padrões React/Tailwind/shadcn
 - `/sites-ux-interaction` — micro-interações, animações, scroll
+- `/sites-scroll-motion` — scroll cinematográfico, parallax, Three.js/WebGPU
 - `/sites-canvas-design` — Canvas HTML5 e SVG custom
 - `/sites-web-accessibility` — WCAG 2.1 AA, ARIA, keyboard nav
 - `/sites-tailwind-design-system` — tokens, tipografia, spacing
