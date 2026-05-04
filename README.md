@@ -1,6 +1,6 @@
 # Claude Agent Teams
 
-A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 40+ skills, and the `team-os` orchestration system.
+A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 45+ skills, and the `team-os` orchestration system — with built-in **Graphify knowledge graph** integration for structural project awareness.
 
 > Built on top of Claude Code's experimental Agent Teams feature. Drop the `.claude/` folder into any project and get a full multi-agent squad working immediately.
 
@@ -16,11 +16,12 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 │   ├── social-*.md          # Social squad (7 agents)
 │   └── traffic-*.md         # Traffic squad (10 agents)
 │
-├── skills/                  # 40+ skills (slash commands)
+├── skills/                  # 45+ skills (slash commands)
 │   ├── team-os/             # Lead orchestrator (/team-os)
 │   ├── team-os-creator/     # Agent factory (/team-os-creator)
 │   ├── dev-*/               # Dev skills (TypeScript, API design, testing, etc.)
 │   ├── sites-*/             # Sites skills (SEO, CRO, Tailwind, shadcn/ui, etc.)
+│   │   └── sites-scroll-motion/  # Scroll cinematográfico, parallax, Three.js/WebGPU
 │   ├── social-*/            # Social skills (copywriting, video, analytics, etc.)
 │   ├── traffic-*/           # Traffic skills (tbd)
 │   ├── ui-ux-pro-max/       # Design system (161 palettes, 57 fonts, 99 UX guidelines)
@@ -32,6 +33,9 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 │   ├── check-story-progress.sh
 │   └── check-social-progress.sh
 │
+├── scripts/
+│   └── propagate-graphify.py  # Propagates Graphify integration across projects
+│
 └── settings.json            # Enables CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
 
@@ -42,6 +46,7 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 - **Claude Code** — latest version ([download](https://claude.ai/code))
 - **Claude Pro or Team plan** — Agent Teams requires API access
 - macOS, Linux, or Windows (WSL2)
+- **Graphify** (optional, for knowledge graph) — `uv tool install graphifyy`
 
 ---
 
@@ -102,9 +107,27 @@ This package uses Claude Code's native Agent Teams: agents run in parallel, comm
 ### Smart-memory
 
 A shared `docs/smart-memory/` directory (Obsidian-compatible) acts as the source of truth between agents. It holds:
-- Project modules, architecture, tech stack
+- Project modules, architecture, tech stack — enriched with **God Nodes** (high-impact files)
 - Story backlog and active stories
 - Delegation log and team history
+
+### Graphify knowledge graph (3-layer integration)
+
+At bootstrap, `team-os` runs [Graphify](https://github.com/safishamsi/graphify) (`uv tool install graphifyy`) against the project to build a structural knowledge graph using AST parsing — zero API cost, pure static analysis.
+
+**Layer 1 — Discovery:** `graphify` outputs `graphify-out/GRAPH_REPORT.md` with god nodes (highest-connectivity files), dependency clusters, and module boundaries. `dev-architect` and `dev-analyst` consume this before creating the smart-memory. Then `graphify-out/` is deleted (transient, not persisted).
+
+**Layer 2 — Implementation:** Every dev agent has a **step 1.5** that checks god nodes in `modules.md` before touching any code. If the story intersects a god node: coverage ≥ 80% mandatory, formal QA required.
+
+**Layer 3 — Maintenance:** After each merge, `dev-devops` / `sites-devops` checks if > 10 files changed and runs `graphify update` to refresh the graph, notifying team-os so `modules.md` stays current.
+
+**God Nodes in `modules.md`:**
+```markdown
+## ⚡ God Nodes
+| Arquivo | Conexões | Impacto |
+|---|---|---|
+| src/lib/auth.ts | 14 | autenticação, sessões, middleware |
+```
 
 ### Team naming
 
@@ -210,7 +233,24 @@ Creates new agents following validated patterns (Agent Teams contract, skill wir
 
 ### Sites skills
 
-`/sites-seo-technical` · `/sites-seo-keywords` · `/sites-frontend-design` · `/sites-ux-interaction` · `/sites-copywriting` · `/sites-page-cro` · `/sites-content-strategy` · `/sites-deployment` · `/sites-shadcn-ui` · `/sites-tailwind-design-system` · `/sites-canvas-design` · `/sites-copy-editing` · `/sites-web-accessibility`
+`/sites-seo-technical` · `/sites-seo-keywords` · `/sites-frontend-design` · `/sites-ux-interaction` · `/sites-copywriting` · `/sites-page-cro` · `/sites-content-strategy` · `/sites-deployment` · `/sites-shadcn-ui` · `/sites-tailwind-design-system` · `/sites-canvas-design` · `/sites-copy-editing` · `/sites-web-accessibility` · `/sites-scroll-motion`
+
+#### `/sites-scroll-motion` — Scroll cinematográfico, parallax e 3D
+
+10-section reference for scroll-driven animation on the web, from CSS to Three.js WebGPU. Used by `sites-ux`, `sites-dev-alpha`, and `sites-dev-gamma`.
+
+| Section | Topics |
+|---|---|
+| 1. IntersectionObserver + CSS | `data-visible`, transition classes, staggered reveals |
+| 2. CSS Scroll Snap | `scroll-snap-type`, mandatory vs proximity, mobile behaviour |
+| 3. Dual-ref scroll (no re-render) | `scrollRef` + `progressRef` via `useRef` — zero React re-renders |
+| 4. Framer Motion | `useScroll`, `useTransform`, `useSpring`, `MotionValue` pipes |
+| 5. Keyframe camera path | 3D camera positions, `smoothstep`/`lerp`, normalised progress |
+| 6. Per-stage interpolation | Ranges, `mapRange`, multi-stop value curves |
+| 7. Three.js / R3F setup | `<Canvas>`, `useFrame`, `ScrollControls`, `useScroll` (R3F) |
+| 8. Three.js WebGPU + TSL | Compute shaders, DoF post-processing, sky gradient node materials |
+| 9. Performance rules | 11 rules — GPU budget, `will-change`, passive listeners, RAF |
+| 10. Decision guide | When to use each technique; complexity vs. impact matrix |
 
 ### Social skills
 
@@ -233,10 +273,11 @@ You               team-os (skill)          Agents (in parallel)
  │                      │                        │
  ├─ /team-os ──────────►│                        │
  │                      ├─ detect state          │
+ │                      ├─ graphify (AST scan)   │  ← builds knowledge graph
  │                      ├─ TeamCreate()           │
- │                      ├─ Agent(dev-architect)──►│ maps modules
+ │                      ├─ Agent(dev-architect)──►│ maps modules + god nodes
  │                      ├─ Agent(dev-analyst) ───►│ maps tech stack
- │                      │                        │
+ │                      │  rm -rf graphify-out/  │  ← transient, not persisted
  │◄─────────────────────┤◄─── SendMessage ────────┤ (agents report back)
  │                      │                        │
  ├─ /team-os *plan ─────►│                        │
@@ -244,9 +285,10 @@ You               team-os (skill)          Agents (in parallel)
  │                      │◄─── stories created ────┤
  │                      │                        │
  ├─ /team-os *dispatch ──►│                        │
- │                      ├─ Agent(dev-dev-beta) ───►│ implements
- │                      ├─ Agent(dev-qa) ─────────►│ reviews
- │                      ├─ Agent(dev-devops) ─────►│ pushes PR
+ │                      ├─ Agent(dev-dev-beta) ───►│ checks god nodes (step 1.5)
+ │                      │                        │  implements
+ │                      ├─ Agent(dev-qa) ─────────►│ expanded checklist if god node
+ │                      ├─ Agent(dev-devops) ─────►│ pushes PR + graphify update
 ```
 
 ---
