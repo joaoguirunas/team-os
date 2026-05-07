@@ -1,8 +1,8 @@
 # Claude Agent Teams
 
-A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 45+ skills, and the `team-os` orchestration system — with built-in **Graphify knowledge graph** integration for structural project awareness.
+A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 43 skills, and the `team-os` orchestration system — with built-in **Graphify knowledge graph** integration for structural project awareness.
 
-> Built on top of Claude Code's experimental Agent Teams feature. Drop the `.claude/` folder into any project and get a full multi-agent squad working immediately.
+> Built on top of Claude Code's experimental Agent Teams feature. Drop `.claude/` into any project, run `/team-os-creator *install`, and get a full multi-agent squad working immediately.
 
 ---
 
@@ -16,25 +16,21 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 │   ├── social-*.md          # Social squad (7 agents)
 │   └── traffic-*.md         # Traffic squad (10 agents)
 │
-├── skills/                  # 45+ skills (slash commands)
-│   ├── team-os/             # Lead orchestrator (/team-os)
-│   ├── team-os-creator/     # Agent factory (/team-os-creator)
+├── skills/                  # 43 skills (slash commands)
+│   ├── team-os/             # Lead orchestrator (/team-os)  ← smart-memory owner
+│   ├── team-os-creator/     # Agent factory + installer (/team-os-creator)
 │   ├── dev-*/               # Dev skills (TypeScript, API design, testing, etc.)
-│   ├── sites-*/             # Sites skills (SEO, CRO, Tailwind, shadcn/ui, etc.)
-│   │   └── sites-scroll-motion/  # Scroll cinematográfico, parallax, Three.js/WebGPU
+│   ├── sites-*/             # Sites skills (SEO, CRO, Tailwind, shadcn/ui, scroll-motion, etc.)
 │   ├── social-*/            # Social skills (copywriting, video, analytics, etc.)
-│   ├── traffic-*/           # Traffic skills (tbd)
+│   ├── traffic-*/           # Traffic skills (TikTok, paid ads)
 │   ├── ui-ux-pro-max/       # Design system (161 palettes, 57 fonts, 99 UX guidelines)
 │   ├── accessibility/       # WCAG 2.2 AA (Addy Osmani patterns)
 │   └── web-design-guidelines/
 │
-├── hooks/                   # Automation hooks
-│   ├── block-git-push.sh    # Blocks direct pushes (only dev-devops can push)
+├── hooks/                   # Automation hooks (squad-filtered on install)
+│   ├── block-git-push.sh    # Blocks direct pushes (only devops agents can push)
 │   ├── check-story-progress.sh
 │   └── check-social-progress.sh
-│
-├── scripts/
-│   └── propagate-graphify.py  # Propagates Graphify integration across projects
 │
 └── settings.json            # Enables CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
@@ -50,37 +46,42 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 
 ---
 
-## Install
+## Install into a project
 
-### Option 1 — Clone directly into a project
+### Option A — Use `/team-os-creator` (recommended)
+
+Clone this repo as your Centro de Treinamento, open Claude Code inside it, and run:
+
+```
+/team-os-creator *install
+```
+
+The skill will:
+1. Scan sibling projects automatically
+2. Let you choose the target project and which squads to install
+3. Copy the right agents + skills (always includes `team-os` as a core dependency)
+4. Create `.claude/settings.json` with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+5. Filter hooks to only include what's relevant for the selected squads
+
+Then open Claude Code **inside the target project** and run `/team-os`.
+
+### Option B — Clone directly
 
 ```bash
 cd your-project
-git clone https://github.com/joaoguirunas/claude-agent-teams.git /tmp/claude-agent-teams
-cp -R /tmp/claude-agent-teams/.claude .
+git clone https://github.com/joaoguirunas/claude-agent-teams.git /tmp/cat
+cp -R /tmp/cat/.claude .
 ```
 
-### Option 2 — Clone and symlink (to keep it updated)
+### Option C — Symlink (stays updated)
 
 ```bash
 git clone https://github.com/joaoguirunas/claude-agent-teams.git ~/claude-agent-teams
-
 cd your-project
 ln -s ~/claude-agent-teams/.claude .claude
 ```
 
-### Option 3 — Use as a starting point
-
-```bash
-git clone https://github.com/joaoguirunas/claude-agent-teams.git my-project
-cd my-project
-```
-
-After installing, reload Claude Code in the project directory and run:
-
-```
-/team-os
-```
+After installing via B or C, reload Claude Code in the project directory and run `/team-os`.
 
 ---
 
@@ -90,11 +91,11 @@ After installing, reload Claude Code in the project directory and run:
 /team-os
 ```
 
-Claude Code detects the project state and guides you from there:
+Claude Code detects the project state and routes automatically:
 
-- **New project** → proposes a discovery bootstrap (maps modules, architecture, tech stack)
-- **Existing smart-memory** → resumes in-progress work
-- **Ready state** → asks for your objective and assembles the right team
+- **New project** (`docs/smart-memory/` absent) → proposes a full bootstrap: Graphify scan + parallel discovery team populates smart-memory with real data
+- **Existing smart-memory** with active stories → resumes in-progress work
+- **Ready state** → asks for your objective and assembles the minimum viable team
 
 ---
 
@@ -104,9 +105,19 @@ Claude Code detects the project state and guides you from there:
 
 This package uses Claude Code's native Agent Teams: agents run in parallel, communicate via `SendMessage`, and share a task list. The team lead (`/team-os` skill) is always the main session — nested orchestration is not used.
 
+### Separation of responsibilities
+
+| Responsibility | Owner |
+|---|---|
+| Create agents, install squads, wire settings | `/team-os-creator` |
+| Initialize smart-memory, run discovery, orchestrate work | `/team-os` |
+| Writing code, research, QA, deploys | Agents |
+
+**`/team-os-creator` never touches `docs/smart-memory/`** — if it did, `team-os`'s state detection would see the structure as existing and skip the real bootstrap. Smart-memory is initialized with actual project data when the user first runs `/team-os`.
+
 ### Smart-memory
 
-A shared `docs/smart-memory/` directory (Obsidian-compatible) acts as the source of truth between agents. It holds:
+A shared `docs/smart-memory/` directory (Obsidian-compatible) acts as the source of truth between agents. Created and owned exclusively by `/team-os`. It holds:
 - Project modules, architecture, tech stack — enriched with **God Nodes** (high-impact files)
 - Story backlog and active stories
 - Delegation log and team history
@@ -208,13 +219,13 @@ Cross-platform paid traffic squad (Google Ads, Meta Ads, TikTok Ads). Strategy-f
 
 ### `/team-os` — Lead orchestrator
 
-The main skill. Detects project state and manages the full agent team lifecycle.
+The main skill. Detects project state and manages the full agent team lifecycle. **Exclusive owner of `docs/smart-memory/`.**
 
 | Command | Description |
 |---|---|
 | `/team-os` | Smart detection — routes to bootstrap / resume / new team |
-| `/team-os *bootstrap` | Full init + discovery team (for new projects) |
-| `/team-os *init` | Creates empty `docs/smart-memory/` structure |
+| `/team-os *bootstrap` | Full init + discovery team (new projects) |
+| `/team-os *init` | Creates empty `docs/smart-memory/` structure only |
 | `/team-os *discover` | Runs discovery audit on existing project |
 | `/team-os *plan "objective"` | Breaks objective into stories, populates backlog |
 | `/team-os *dispatch` | Forms team and starts work on active stories |
@@ -223,9 +234,30 @@ The main skill. Detects project state and manages the full agent team lifecycle.
 | `/team-os *resume` | Reads smart-memory and resumes in-progress work |
 | `/team-os *close` | Archives smart-memory and closes the team |
 
-### `/team-os-creator` — Agent factory
+### `/team-os-creator` — Agent factory + installer
 
-Creates new agents following validated patterns (Agent Teams contract, skill wiring, smart-memory integration).
+Creates agents following validated patterns and installs squads into other projects. **Never touches smart-memory.**
+
+| Command | Description |
+|---|---|
+| `/team-os-creator` | Menu: create team / propagate updates / install in project |
+| `/team-os-creator *install` | Install squads + skills into a target project |
+| `/team-os-creator *propagate` | Update agents across all projects in the Centro de Treinamento |
+| `/team-os-creator *create <role>` | Create a single agent interactively |
+| `/team-os-creator *squad <preset>` | Create a full preset squad (dev/sites/social/custom) |
+| `/team-os-creator *audit` | Validate compliance of all installed agents |
+
+**What `*install` always does:**
+- Copies `team-os` skill (required for `/team-os` to appear in the command menu)
+- Creates `settings.json` with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+- Filters hooks to the selected squads only
+
+**Internal scripts** (`skills/team-os-creator/scripts/`):
+- `install-to-project.sh` — copies agents/skills/hooks/settings to a target project
+- `scan-ct-projects.sh` — discovers all projects in the Centro de Treinamento root
+- `diff-agents.sh` — compares agent versions between source and target
+- `detect-project-signals.sh` — detects stack and archetype for squad suggestions
+- `validate-agent.sh` — validates agent compliance after creation
 
 ### Dev skills
 
@@ -235,7 +267,7 @@ Creates new agents following validated patterns (Agent Teams contract, skill wir
 
 `/sites-seo-technical` · `/sites-seo-keywords` · `/sites-frontend-design` · `/sites-ux-interaction` · `/sites-copywriting` · `/sites-page-cro` · `/sites-content-strategy` · `/sites-deployment` · `/sites-shadcn-ui` · `/sites-tailwind-design-system` · `/sites-canvas-design` · `/sites-copy-editing` · `/sites-web-accessibility` · `/sites-scroll-motion`
 
-#### `/sites-scroll-motion` — Scroll cinematográfico, parallax e 3D
+#### `/sites-scroll-motion` — Cinematic scroll, parallax and 3D
 
 10-section reference for scroll-driven animation on the web, from CSS to Three.js WebGPU. Used by `sites-ux`, `sites-dev-alpha`, and `sites-dev-gamma`.
 
@@ -269,33 +301,33 @@ Creates new agents following validated patterns (Agent Teams contract, skill wir
 ## How it works end-to-end
 
 ```
-You               team-os (skill)          Agents (in parallel)
- │                      │                        │
- ├─ /team-os ──────────►│                        │
- │                      ├─ detect state          │
- │                      ├─ graphify (AST scan)   │  ← builds knowledge graph
- │                      ├─ TeamCreate()           │
- │                      ├─ Agent(dev-architect)──►│ maps modules + god nodes
- │                      ├─ Agent(dev-analyst) ───►│ maps tech stack
- │                      │  rm -rf graphify-out/  │  ← transient, not persisted
- │◄─────────────────────┤◄─── SendMessage ────────┤ (agents report back)
- │                      │                        │
- ├─ /team-os *plan ─────►│                        │
- │  "add auth module"    ├─ SendMessage ──────────►│ dev-architect creates stories
- │                      │◄─── stories created ────┤
- │                      │                        │
- ├─ /team-os *dispatch ──►│                        │
- │                      ├─ Agent(dev-dev-beta) ───►│ checks god nodes (step 1.5)
- │                      │                        │  implements
- │                      ├─ Agent(dev-qa) ─────────►│ expanded checklist if god node
- │                      ├─ Agent(dev-devops) ─────►│ pushes PR + graphify update
+You                   team-os (skill)            Agents (in parallel)
+ │                          │                          │
+ ├─ /team-os ──────────────►│                          │
+ │                          ├─ detect state            │
+ │                          ├─ graphify (AST scan)     │  ← builds knowledge graph
+ │                          ├─ TeamCreate()             │
+ │                          ├─ Agent(dev-architect) ───►│ maps modules + god nodes
+ │                          ├─ Agent(dev-analyst) ─────►│ maps tech stack
+ │                          │  rm -rf graphify-out/    │  ← transient, not persisted
+ │◄─────────────────────────┤◄─── SendMessage ──────────┤ (agents report back)
+ │                          │                          │
+ ├─ /team-os *plan ─────────►│                          │
+ │  "add auth module"        ├─ SendMessage ────────────►│ dev-architect creates stories
+ │                          │◄─── stories created ──────┤
+ │                          │                          │
+ ├─ /team-os *dispatch ──────►│                          │
+ │                          ├─ Agent(dev-dev-beta) ─────►│ checks god nodes (step 1.5)
+ │                          │                          │  implements
+ │                          ├─ Agent(dev-qa) ───────────►│ expanded checklist if god node
+ │                          ├─ Agent(dev-devops) ───────►│ pushes PR + graphify update
 ```
 
 ---
 
 ## Configuration
 
-`settings.json` sets the required env var:
+`settings.json` sets the required env var (created automatically by `/team-os-creator *install`):
 
 ```json
 {
