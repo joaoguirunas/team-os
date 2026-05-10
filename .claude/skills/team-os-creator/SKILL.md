@@ -14,7 +14,7 @@ Seu output é arquivos `.md` em `.claude/agents/` + instalação de skills relev
 ## 🛡️ Regras absolutas
 
 1. **NUNCA criar agente sem `memory: project`** no frontmatter — quebra smart-memory.
-1a. **SEMPRE instalar a skill `team-os` no destino** — sem ela o comando `/team-os` não aparece e o time fica sem orquestrador. Obrigatório em qualquer instalação (criação, propagação ou install).
+1a. **SEMPRE copiar a skill `team-os` para o destino** — sem ela o comando `/team-os` não aparece e o time fica sem orquestrador. Obrigatório em qualquer instalação (criação, propagação ou install). A skill `team-os-creator` **NUNCA** é copiada para projetos destino — ela só existe no projeto de origem (este projeto).
 2. **NUNCA criar agente sem "Contrato com team-os"** injetado — quebra coordenação.
 3. **SEMPRE validar compliance** após criar (rodar `validate-agent.sh`).
 4. **SEMPRE propor skills** do skills.sh baseadas no role do agente — mesmo que usuário pule.
@@ -24,6 +24,7 @@ Seu output é arquivos `.md` em `.claude/agents/` + instalação de skills relev
 8. **Não duplicar team-os** — NUNCA criar agente de "orquestração/chief/lead". Esse papel é da skill `/team-os`.
 9. **NUNCA scaffoldar smart-memory** — essa responsabilidade é exclusiva da skill `/team-os`. O creator só instala agentes, skills e `settings.json`. Quando o creator scaffolda smart-memory com templates vazios, o `detect-state.sh` do team-os detecta a estrutura como existente e pula o `*bootstrap` — o discovery real nunca acontece. Ao final da instalação, **apenas instruir o usuário a rodar `/team-os` para inicializar a smart-memory com dados reais**.
 10. **NUNCA criar squad docs** em `docs/smart-memory/` — mesma razão da regra 9.
+11. **Skills são SEMPRE instaladas junto com agentes** — não existe opção "agentes apenas". Todo install/propagate copia agentes + skills correspondentes + `team-os` obrigatória. O script `install-to-project.sh` não aceita `--include-skills` como flag opcional — skills são sempre incluídas por padrão. A skill `team-os-creator` é excluída da cópia — ela fica apenas no projeto de origem.
 
 ---
 
@@ -79,30 +80,75 @@ Arquivos YAML em `presets/`. Fácil adicionar novos.
 
 ## 🔁 Fluxo default (`/team-os-creator` sem args)
 
-### Etapa 0 — Menu principal
+### Etapa 0 — Auto-scan + Menu principal
 
-**SEMPRE mostrar este menu primeiro**, antes de qualquer análise:
+**SEMPRE executar o scan automático antes de mostrar o menu.** O scan transforma o menu num painel inteligente que já sabe o que precisa ser feito.
+
+#### Passo 0a — Scan silencioso
+
+Rodar em sequência (sem mostrar saída bruta ao usuário):
+1. `scripts/scan-ct-projects.sh` — mapeia todos os projetos do CT
+2. `scripts/diff-agents.sh <fonte> <target1> <target2> ...` — compara agentes
+
+Com os resultados, construir uma lista de **ações sugeridas**:
+- Para cada projeto sem agentes → sugerir "Instalar squads no projeto X"
+- Para cada projeto com agentes desatualizados → sugerir "Atualizar N agentes no projeto X" (listando quais squads têm diff)
+- Para cada projeto sem a skill `team-os` → incluir na sugestão de instalação
+
+#### Passo 0b — Mostrar painel com sugestões + menu
+
+Formato do output:
 
 ```
-Olá! O que você quer fazer?
+🔍 Escaneando projetos do Centro de Treinamento...
 
-  1. Criar um time novo
-        → Monta squad do zero com agentes + skills + settings.json
-        → Analisa o projeto e propõe o preset ideal
-        → Smart-memory é inicializada depois pelo /team-os
+📊 Situação detectada:
 
-  2. Atualizar os times
-        → Propaga agentes atualizados para outros projetos do Centro de Treinamento
-        → Detecta o que está desatualizado ou faltando
+  claude  — 37 agentes, squads: dev, sites, social, traffic  ← projeto atual (fonte)
+  aiox    — 0 agentes, 20 skills
+    → Nenhuma squad instalada
 
-  3. Incluir times em um novo projeto
-        → Instala squads e skills em outro projeto
-        → Pergunta quais squads e qual projeto destino
+  [outros projetos com status resumido]
+
+─────────────────────────────────────────────────────────
+
+💡 Ações sugeridas:
+
+  1. Instalar squads dev + sites + social + traffic no projeto aiox
+        → 37 agentes + skills correspondentes + team-os
+  2. [próxima ação se houver mais projetos]
+  3. [ex: Atualizar 5 agentes desatualizados (dev-analyst, dev-architect...) no projeto xyz]
+
+─────────────────────────────────────────────────────────
+
+Ou escolha manualmente:
+
+  A. Criar um time novo (neste projeto)
+        → Analisa stack e monta squad do zero
+  B. Atualizar os times (propagar com controle)
+        → Escolhe squads, projetos e agentes individualmente
+  C. Instalar em outro projeto
+        → Escolhe destino e squads manualmente
+
+Digite o número de uma ação sugerida, ou A/B/C para controle manual:
 ```
 
-- Opção 1 → executa etapas 1 a 7 (fluxo de criação)
-- Opção 2 → executa fluxo `*propagate`
-- Opção 3 → executa fluxo `*install`
+**Regras de geração das ações sugeridas:**
+- Numerar de 1 em diante (máx 9 ações)
+- Prioridade: projetos sem agentes primeiro, depois projetos com desatualizações
+- Cada ação deve ser executável com 1 confirmação — sem perguntas intermediárias
+- Se não há nada a fazer (todos os projetos estão sincronizados), mostrar: `✅ Todos os projetos estão sincronizados` e ir direto ao menu A/B/C
+- Se `scan-ct-projects.sh` encontrar apenas o projeto atual, avisar e ir direto ao menu A/B/C
+
+**Ao usuário digitar um número de ação sugerida:**
+- Mostrar preview da ação (agentes + skills que serão copiados)
+- Pedir confirmação (s/n)
+- Executar `install-to-project.sh` com os parâmetros corretos
+- Mostrar relatório final
+
+- Opção A → executa etapas 1 a 8 (fluxo de criação)
+- Opção B → executa fluxo `*propagate`
+- Opção C → executa fluxo `*install`
 
 ---
 
@@ -175,12 +221,11 @@ Antes de gerar, mostra tabela com cada agente proposto:
 Pergunta:
 ```
 Ações:
-  1. Criar tudo (agentes + skills + settings.json)  ← recomendado
-  2. Criar só agentes (skills depois)
-  3. Ajustar agente específico
-  4. Remover agente
-  5. Adicionar agente extra
-  6. Cancelar
+  1. Criar tudo (agentes + skills + settings.json)  ← único modo disponível
+  2. Ajustar agente específico
+  3. Remover agente
+  4. Adicionar agente extra
+  5. Cancelar
 ```
 
 #### Etapa 5 — Gerar agentes
@@ -312,7 +357,7 @@ Confirmação:
 
 **Passo 6 — Executar**
 
-Rodar `scripts/install-to-project.sh --source <fonte> --target <destino> --squads <lista>` para cada projeto destino selecionado.
+Rodar `scripts/install-to-project.sh --source <fonte> --target <destino> --squads <lista>` para cada projeto destino selecionado. Skills são sempre copiadas — não é necessário nenhuma flag adicional.
 
 **Passo 7 — Relatório**
 
@@ -321,12 +366,13 @@ Rodar `scripts/install-to-project.sh --source <fonte> --target <destino> --squad
 
   aiox:
     • 37 agentes copiados
+    • {N} skills copiadas (+ team-os obrigatória)
     • 0 atualizados
     • 0 ignorados (já em dia)
 
 Próximos passos:
-  • Se quiser instalar skills também: /team-os-creator *install
   • Para verificar compliance: /team-os-creator *audit
+  • Abra o projeto destino e rode /team-os para inicializar a smart-memory
 ```
 
 ---
@@ -369,15 +415,16 @@ Squads disponíveis para instalar:
 Quais squads instalar? (ex: "dev sites" ou "tudo")
 ```
 
-**Passo 3 — Selecionar o que instalar**
+**Passo 3 — Selecionar extras**
 
 ```
-O que instalar além dos agentes?
-(team-os skill + settings.json são sempre incluídos)
+Agentes + skills correspondentes + team-os são sempre instalados.
+(team-os-creator nunca é copiado para projetos destino)
 
-  1. Agentes apenas
-  2. Agentes + skills correspondentes  ← recomendado
-  3. Agentes + skills + hooks
+Quer incluir também os hooks?
+
+  1. Não (padrão)
+  2. Sim — copiar hooks filtrados por squad
 ```
 
 > Smart-memory NÃO é scaffoldada aqui — o `/team-os` faz isso com dados reais na primeira execução.

@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
+# Skills são SEMPRE copiadas (incluindo team-os obrigatória). Sem opção "agentes apenas".
 # Usage: install-to-project.sh --source <path> --target <path> [options]
 #
 # Options:
 #   --squads dev,sites,social,traffic   squads a instalar (default: all)
-#   --include-skills                    copia também as skills
 #   --include-hooks                     copia também os hooks
 #   --dry-run                           simula sem copiar nada
 
 SOURCE=""
 TARGET=""
 SQUADS="all"
-INCLUDE_SKILLS=0
 INCLUDE_HOOKS=0
 DRY_RUN=0
 
@@ -20,9 +19,9 @@ while [[ $# -gt 0 ]]; do
     --source)       SOURCE="$2";   shift 2 ;;
     --target)       TARGET="$2";   shift 2 ;;
     --squads)       SQUADS="$2";   shift 2 ;;
-    --include-skills) INCLUDE_SKILLS=1; shift ;;
     --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
+    --include-skills) shift ;;  # ignorado — skills são sempre incluídas
     *) shift ;;
   esac
 done
@@ -119,48 +118,59 @@ echo "AGENTS_UPDATED=$agents_updated"
 echo "AGENTS_SKIPPED=$agents_skipped"
 echo "AGENTS_LIST=${agents_list# }"
 
-# ── Skills ───────────────────────────────────────────────────────────────────
+# ── Skills — sempre copiadas (incluindo team-os obrigatória) ─────────────────
 
-if [ $INCLUDE_SKILLS -eq 1 ] && [ -d "$SOURCE/.claude/skills" ]; then
-  do_mkdir "$TARGET/.claude/skills"
+do_mkdir "$TARGET/.claude/skills"
 
-  skills_copied=0
-  skills_skipped=0
-  skills_list=""
+skills_copied=0
+skills_skipped=0
+skills_list=""
 
-  for skill_path in "$SOURCE/.claude/skills"/*/; do
-    [ -d "$skill_path" ] || continue
-    skill_name=$(basename "$skill_path")
+for skill_path in "$SOURCE/.claude/skills"/*/; do
+  [ -d "$skill_path" ] || continue
+  skill_name=$(basename "$skill_path")
 
-    # Filtra por squad (skills core e sem prefixo de squad são sempre incluídas)
-    if [ "$SQUADS" != "all" ]; then
-      match=0
-      for squad in $(echo "$SQUADS" | tr ',' ' '); do
-        [[ "$skill_name" == ${squad}-* ]] && { match=1; break; }
-      done
-      # Skills sem prefixo squad (ex: accessibility, deep-research) — sempre incluir
-      [[ "$skill_name" != *-* ]] && match=1
-      # Skills core do Agent Teams — sempre incluir independente de squad
-      [[ "$skill_name" == "team-os" || "$skill_name" == "team-os-creator" ]] && match=1
-      [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
-    fi
+  # team-os-creator nunca é copiada para projetos destino
+  [[ "$skill_name" == "team-os-creator" ]] && { skills_skipped=$((skills_skipped + 1)); continue; }
 
-    # Pula se já existe no destino e é mais novo
-    target_skill="$TARGET/.claude/skills/$skill_name"
-    if [ -d "$target_skill" ]; then
-      skills_skipped=$((skills_skipped + 1))
-      continue
-    fi
+  # Filtra por squad (skills core e sem prefixo de squad são sempre incluídas)
+  if [ "$SQUADS" != "all" ]; then
+    match=0
+    for squad in $(echo "$SQUADS" | tr ',' ' '); do
+      [[ "$skill_name" == ${squad}-* ]] && { match=1; break; }
+    done
+    # Skills sem prefixo squad (ex: accessibility, deep-research) — sempre incluir
+    [[ "$skill_name" != *-* ]] && match=1
+    # team-os é sempre incluída; team-os-creator fica só no projeto de origem
+    [[ "$skill_name" == "team-os" ]] && match=1
+    [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+  fi
 
-    do_cp_r "$skill_path" "$target_skill"
-    skills_copied=$((skills_copied + 1))
-    skills_list="$skills_list $skill_name"
-  done
+  # Pula se já existe no destino (não sobrescreve)
+  target_skill="$TARGET/.claude/skills/$skill_name"
+  if [ -d "$target_skill" ]; then
+    skills_skipped=$((skills_skipped + 1))
+    continue
+  fi
 
-  echo "SKILLS_COPIED=$skills_copied"
-  echo "SKILLS_SKIPPED=$skills_skipped"
-  echo "SKILLS_LIST=${skills_list# }"
+  do_cp_r "$skill_path" "$target_skill"
+  skills_copied=$((skills_copied + 1))
+  skills_list="$skills_list $skill_name"
+done
+
+# Garante team-os no destino (obrigatória para /team-os funcionar)
+if [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
+  do_cp_r "$SOURCE/.claude/skills/team-os" "$TARGET/.claude/skills/team-os"
+  skills_copied=$((skills_copied + 1))
+  skills_list="$skills_list team-os"
+  echo "TEAM_OS_FORCED=1"
+elif [ ! -d "$TARGET/.claude/skills/team-os" ]; then
+  echo "TEAM_OS_WARNING=skill team-os não encontrada na fonte — instale manualmente"
 fi
+
+echo "SKILLS_COPIED=$skills_copied"
+echo "SKILLS_SKIPPED=$skills_skipped"
+echo "SKILLS_LIST=${skills_list# }"
 
 # ── Settings.json ────────────────────────────────────────────────────────────
 
