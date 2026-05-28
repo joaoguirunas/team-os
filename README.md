@@ -1,6 +1,6 @@
 # Claude Agent Teams
 
-A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 37 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 43 skills, and the `team-os` orchestration system — with built-in **Graphify knowledge graph** integration for structural project awareness.
+A complete configuration package for [Claude Code](https://claude.ai/code) with **Agent Teams** — 39 pre-built agents organized into squads (Dev, Sites, Social, Traffic), 48 skills, and the `team-os` orchestration system — with built-in **Graphify knowledge graph** integration for structural project awareness.
 
 > Built on top of Claude Code's experimental Agent Teams feature. Drop `.claude/` into any project, run `/team-os-creator *install`, and get a full multi-agent squad working immediately.
 
@@ -11,7 +11,7 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 ```
 .claude/
 ├── agents/                  # 37 teammate agents (4 squads)
-│   ├── dev-*.md             # Dev squad (10 agents)
+│   ├── dev-*.md             # Dev squad (12 agents)
 │   ├── sites-*.md           # Sites squad (10 agents)
 │   ├── social-*.md          # Social squad (7 agents)
 │   └── traffic-*.md         # Traffic squad (10 agents)
@@ -166,6 +166,8 @@ Only `dev-devops` (or `sites-devops`) can run `git push` and create PRs. The `bl
 | `dev-qa` | Quality gates — issues formal PASS / CONCERNS / FAIL verdicts |
 | `dev-devops` | Git push, PR creation, CI/CD (exclusive authority) |
 | `dev-data-engineer` | Schema design, migrations, RLS, query optimization |
+| `dev-bi` | Kairo — SELECT-only DB queries, analytics engineering, metric dictionary, KPIs, OKRs, dashboard specs, Big Data strategy |
+| `dev-data-performance` | Sigma — performance insights, anomaly detection, trend forecasting, EDA, ML on-demand, strategic recommendations |
 
 ### Sites Squad
 
@@ -262,6 +264,18 @@ Creates agents following validated patterns and installs squads into other proje
 ### Dev skills
 
 `/dev-api-design` · `/dev-database-patterns` · `/dev-error-handling` · `/dev-testing-strategy` · `/dev-typescript-patterns` · `/dev-git-workflow` · `/dev-security-patterns` · `/dev-technical-writing` · `/dev-defuddle`
+
+#### BI & Data Science skills (for `dev-bi` and `dev-data-performance`)
+
+`/data-analytics-engineering` · `/data-sql-optimization` · `/data-lake-platform` · `/ai-ml-data-science` · `/ai-ml-timeseries`
+
+| Skill | Used by | Purpose |
+|---|---|---|
+| `/data-analytics-engineering` | Kairo | Metric dictionary, semantic layer, dbt/SQLMesh, data contracts, governance |
+| `/data-sql-optimization` | Kairo | Analytical query tuning, EXPLAIN/ANALYZE, anti-patterns, indexing |
+| `/data-lake-platform` | Kairo | Medallion architecture, data mesh, Iceberg/Delta, ClickHouse, Dagster |
+| `/ai-ml-data-science` | Sigma | EDA, feature engineering, LightGBM, model evaluation, MLOps (CI/CD/CT/CM) |
+| `/ai-ml-timeseries` | Sigma | Forecasting, backtesting, lag features, seasonality, drift detection |
 
 ### Sites skills
 
