@@ -1,6 +1,36 @@
 {
   "version": 1,
   "skills": {
+    "ai-ml-data-science": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "skillPath": "frameworks/shared-skills/skills/ai-ml-data-science/SKILL.md",
+      "computedHash": "7df3e2c22f461c5ba31bd5c9400cedc7c0e91d219c4d331748b56a5955b60ffa"
+    },
+    "ai-ml-timeseries": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "skillPath": "frameworks/shared-skills/skills/ai-ml-timeseries/SKILL.md",
+      "computedHash": "d3947278138e5d2d6692fc40720d8b7425bc80066a6a8180ca1ae48fe3be85c4"
+    },
+    "data-analytics-engineering": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "skillPath": "frameworks/shared-skills/skills/data-analytics-engineering/SKILL.md",
+      "computedHash": "3e2b814d8fccba12b1a4c17edff3fd019f9e267cbb4cc30da4205be3e3ae3ab1"
+    },
+    "data-lake-platform": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "skillPath": "frameworks/shared-skills/skills/data-lake-platform/SKILL.md",
+      "computedHash": "6a9c4a297d5ac7b05fbe5ef8d17b704e25c8bd2344e81d82c1b0cbb1a0112ece"
+    },
+    "data-sql-optimization": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "skillPath": "frameworks/shared-skills/skills/data-sql-optimization/SKILL.md",
+      "computedHash": "09141014aaba4afb34262710491879ea21c76d320c16300188ad657ebb7dd94a"
+    },
     "deep-research": {
       "source": "199-biotechnologies/claude-deep-research-skill",
       "sourceType": "github",
