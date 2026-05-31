@@ -8,3 +8,14 @@
 # Backups gerados automaticamente
 .claude.bak-*/
 
+# Skills dependencies (like node_modules — restored via `npx skills install`)
+.agents/
+
+# Smart-memory — project-specific context, not for the public repo
+docs/smart-memory/
+
+# Environment variables — never commit credentials
+.env
+.env.*
+!.env.example
+
