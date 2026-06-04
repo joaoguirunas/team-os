@@ -38,7 +38,7 @@ A complete configuration package for [Claude Code](https://claude.ai/code) with 
 
 > **Note on skills dependencies:** Skills installed via `npx skills add` are stored as symlinks in `.claude/skills/` pointing to `.agents/skills/`. After cloning, restore them with:
 > ```bash
-> npx skills install
+> npx skills experimental_install
 > ```
 
 ---
