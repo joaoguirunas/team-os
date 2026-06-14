@@ -1,9 +1,10 @@
 ---
 title: "Story {N}.{M}: {Título}"
 type: story
-status: backlog
+status: backlog  # backlog | active | in-review | done
 epic: {N}
 complexity: S | M | L | XL
+mode: yolo | interactive | pre-flight
 agent: dev-architect
 created: {data}
 updated: {data}

@@ -33,9 +33,10 @@ Ao final de **toda** resposta ao usuário, ler o estado atual das stories e exib
 
 ```bash
 # contar stories por estado
-ls docs/smart-memory/stories/backlog/*.md 2>/dev/null | wc -l
-ls docs/smart-memory/stories/active/*.md  2>/dev/null | wc -l
-ls docs/smart-memory/stories/done/*.md    2>/dev/null | wc -l
+ls docs/smart-memory/stories/backlog/*.md   2>/dev/null | wc -l
+ls docs/smart-memory/stories/active/*.md    2>/dev/null | wc -l
+ls docs/smart-memory/stories/in-review/*.md 2>/dev/null | wc -l
+ls docs/smart-memory/stories/done/*.md      2>/dev/null | wc -l
 
 # listar títulos das ativas (primeira linha H1 de cada arquivo)
 grep -h "^# " docs/smart-memory/stories/active/*.md 2>/dev/null
@@ -45,9 +46,13 @@ grep -h "^# " docs/smart-memory/stories/active/*.md 2>/dev/null
 
 ```
 ---
-📋 Stories  ·  backlog: {N}  ·  active: {N}  ·  done: {N}
+📋 Stories  ·  backlog: {N}  ·  active: {N}  ·  in-review: {N}  ·  done: {N}
 
 ▶ ACTIVE
+  {id} — {título} [{assignee ou "—"}]
+  ...
+
+◐ IN-REVIEW (aguardando QA)
   {id} — {título} [{assignee ou "—"}]
   ...
 
@@ -58,7 +63,8 @@ grep -h "^# " docs/smart-memory/stories/active/*.md 2>/dev/null
 
 Regras do bloco:
 - Se não há stories em nenhum estado: mostrar `📋 Stories  ·  sem stories ainda`
-- Se `active` está vazio mas há backlog: mostrar só a seção `○ BACKLOG`
+- Se `active` e `in-review` estão vazios mas há backlog: mostrar só a seção `○ BACKLOG`
+- Se há stories em `in-review/`: mostrar a seção `◐ IN-REVIEW` (omitir se vazia)
 - `{assignee}` = nome do agente que está na story (`**Assignee:**` no frontmatter); se não tiver, usar `—`
 - `{id}` = número da story (ex: `1.1`, `2.3`)
 - Não truncar títulos — mostrar completo
@@ -100,7 +106,7 @@ Rodar `scripts/detect-state.sh`. Retorna um de 4 estados:
 |---|---|---|
 | `NEW` | `docs/smart-memory/` não existe | **Auto-propor `*bootstrap`** — time de descoberta imediato (ver seção dedicada abaixo) |
 | `NO_DISCOVERY` | Estrutura existe mas discovery incompleto (< 2 de: modules.md, tech-stack.md, architecture.md) e há código no repo | Oferecer `*discover` |
-| `IN_PROGRESS` | Há stories em `stories/active/` | `*resume` automático — mostrar resumo |
+| `IN_PROGRESS` | Há stories em `stories/active/` ou `stories/in-review/` | `*resume` automático — mostrar resumo |
 | `READY` | Smart-memory OK, sem stories ativas | Pedir nome + objetivo pra novo time |
 
 **Regra crítica:** Em estado `NEW`, a skill vai DIRETO para o bootstrap (sem pedir escolha 1/2/3). Apresenta o plano curto, pede confirmação `s/n` (default `s`), e procede. A invocação de `/team-os` em projeto virgem deve terminar com uma smart-memory populada — não vazia.
@@ -463,7 +469,7 @@ Parar sem criar nada. Voltar o controle ao usuário.
 Cria estrutura completa em `docs/smart-memory/`:
 
 ```bash
-mkdir -p docs/smart-memory/{project,stories/{backlog,active,done},decisions,ops,archive,agents/{data-engineer,qa,ux,research}}
+mkdir -p docs/smart-memory/{project,stories/{backlog,active,in-review,done},decisions,ops,archive,agents/{data-engineer,qa,ux,research}}
 ```
 
 Copiar templates de `.claude/skills/team-os/templates/`:
@@ -497,13 +503,48 @@ Se não há architect disponível, lead faz inline — usa o template.
 
 1. Ler `docs/smart-memory/stories/BACKLOG.md`
 2. Selecionar stories validadas (5-point GO)
-3. **Verificar god nodes**: ler seção `## ⚡ God Nodes` de `docs/smart-memory/project/modules.md`
+3. **Wave analysis — agrupar stories por dependência ANTES de criar tasks:**
+
+   Para cada story selecionada, ler o campo `related:` do frontmatter. Se aponta para outra story do mesmo dispatch, é dependência.
+
+   - **Wave 1:** stories sem dependência entre si → rodam em paralelo (spawn simultâneo)
+   - **Wave 2+:** stories que dependem de uma da wave anterior → só após conclusão
+
+   Registrar a análise no chat antes de despachar:
+   ```
+   Wave 1 (paralelas): Story 2.1, Story 2.3
+   Wave 2 (aguardam Wave 1): Story 2.2 (depende de 2.1), Story 2.4 (depende de 2.3)
+   ```
+
+   Aplicar no `TaskCreate`: stories de Wave 2+ recebem `addBlockedBy: [task_id_da_wave_anterior]`. Se todas são independentes, ignorar (dispatch em bloco único).
+
+4. **Verificar god nodes**: ler seção `## ⚡ God Nodes` de `docs/smart-memory/project/modules.md`
    - Para cada story, verificar se os arquivos mencionados nos ACs intersectam os God Nodes
    - **Se sim**: marcar story com flag `god-node: true` no frontmatter e **incluir dev-qa obrigatoriamente** na composição do time, mesmo que a story seja pequena. Adicionar nota no prompt do dev: "Esta story toca um God Node — testes obrigatórios e QA formal antes do push."
    - **Se não**: fluxo normal, dev-qa opcional
-4. Criar tasks via `TaskCreate` — uma por story, com dependências quando apropriado
-5. Teammates vão fazer self-claim — lead apenas monitora
-6. Atualizar `shared-context.md`
+5. Criar tasks via `TaskCreate` — uma por story, com `addBlockedBy` aplicado conforme wave analysis (item 3)
+6. **Dev mode por complexity — incluir instrução no prompt de spawn de cada teammate:**
+
+   | Complexity | Modo | Instrução a injetar no prompt |
+   |---|---|---|
+   | S  | yolo        | "Complexity S — execute direto, sem perguntas prévias" |
+   | M  | interactive | "Complexity M — até 2–3 perguntas ao lead antes de começar, se necessário" |
+   | L  | pre-flight  | "Complexity L — liste todas as dúvidas sobre os ACs **antes** de implementar. Aguarde resposta do lead." |
+   | XL | pre-flight  | "Complexity XL — pre-flight obrigatório. Divida em sub-tarefas, valide cada uma com o lead antes de começar." |
+
+   Stories com `god-node: true` no frontmatter: tratar como complexity +1 (M→L, L→XL).
+
+7. **Quality gate antes de mover para `in-review/` — injetar no prompt do dev:**
+
+   "Ao concluir a implementação, ANTES de mover a story para `stories/in-review/`, execute e confirme:
+   - `npm run lint` (ou equivalente do projeto) sem erros
+   - `npm run typecheck` (ou equivalente) sem erros
+   - Testes relevantes passando (onde existirem)
+
+   Sem isso, a story permanece em `stories/active/`. Dev-qa pode devolver `in-review → active` se encontrar falha que deveria ter sido pega antes."
+
+8. Teammates fazem self-claim — lead apenas monitora
+9. Atualizar `shared-context.md`
 
 ### `*status` — Estado atual
 
