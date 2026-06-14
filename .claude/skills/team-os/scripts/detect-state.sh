@@ -3,8 +3,8 @@
 # Output: uma das strings:
 #   NEW             → docs/smart-memory/ não existe
 #   NO_DISCOVERY    → existe estrutura mas discovery incompleto e há código no repo
-#   IN_PROGRESS     → há stories em stories/active/
-#   READY           → smart-memory ok, sem stories ativas
+#   IN_PROGRESS     → há stories em stories/active/ ou stories/in-review/
+#   READY           → smart-memory ok, sem stories ativas ou em review
 #
 # Discovery considerado completo quando ao menos 2 dos 3 arquivos existem:
 #   project/modules.md, project/tech-stack.md, project/architecture.md
@@ -17,13 +17,17 @@ if [ ! -d "$SM" ]; then
   exit 0
 fi
 
-# Estado IN_PROGRESS: stories ativas presentes (tem precedência sobre NO_DISCOVERY)
-if [ -d "$SM/stories/active" ]; then
-  ACTIVE_COUNT=$(find "$SM/stories/active" -maxdepth 1 -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
-  if [ "$ACTIVE_COUNT" -gt 0 ]; then
-    echo "IN_PROGRESS"
-    exit 0
+# Estado IN_PROGRESS: stories ativas ou em review presentes (tem precedência sobre NO_DISCOVERY)
+ACTIVE_COUNT=0
+for dir in "$SM/stories/active" "$SM/stories/in-review"; do
+  if [ -d "$dir" ]; then
+    COUNT=$(find "$dir" -maxdepth 1 -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+    ACTIVE_COUNT=$((ACTIVE_COUNT + COUNT))
   fi
+done
+if [ "$ACTIVE_COUNT" -gt 0 ]; then
+  echo "IN_PROGRESS"
+  exit 0
 fi
 
 # Contar arquivos de discovery presentes no disco (estado atual, ignora git)

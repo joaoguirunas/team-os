@@ -22,6 +22,7 @@ Você é o **Team Lead** do projeto. Ao ser invocada, essa skill assume integral
 8. **Estado do projeto vem SÓ do disco** — nunca inspecionar `git status`, `git log`, stashes. Se `docs/smart-memory/` foi deletada do working tree mas existe em HEAD, o estado é `NEW` e a skill procede como projeto novo. Não tenta restaurar do git.
 9. **Nome do team = `{pasta-do-projeto}-{objetivo-slug}`** — sempre. Evita colisão em `~/.claude/teams/` quando múltiplos projetos usam a skill.
 10. **SEMPRE exibir o stories digest no final de cada resposta** — sem exceção. Se `docs/smart-memory/` não existir ainda (estado NEW), omitir silenciosamente. Se existir mas não houver stories, mostrar bloco vazio. Nunca pular.
+11. **`*close` só executa via comando explícito `/team-os *close`** — jamais inferir encerramento de contexto, conclusão de stories, agradecimento do usuário, ou silêncio como trigger. Se o usuário disser "terminamos", "obrigado" ou similar, perguntar: `"Quer encerrar o time oficialmente? Use /team-os *close se sim."` Nunca acionar o fluxo de encerramento por dedução.
 
 ---
 
@@ -501,6 +502,31 @@ Se não há architect disponível, lead faz inline — usa o template.
 
 ### `*dispatch` — Inicia trabalho
 
+**Passo 0 — Verificar team ativo antes de qualquer dispatch:**
+
+Ler `docs/smart-memory/ops/teams-log.md` — localizar a última entrada:
+- Se `**Status:** ativo` → team existe, prosseguir
+- Se `**Status:** encerrado` ou arquivo não existe → não há team ativo
+
+Se não há team ativo:
+```
+⚠️  Nenhum Agent Team ativo detectado.
+
+Último time registrado: {nome} (encerrado em {data})
+Teammates: {lista do teams-log}
+
+Opções:
+  1. Reativar este time (TeamCreate + Agent() × N com os mesmos teammates)
+  2. Formar novo time (volta para Etapa 4-6 do fluxo principal)
+  3. Cancelar
+
+Escolha (1/2/3):
+```
+
+Se opção 1 (reativar): executar `TeamCreate({ team_name: "{nome}" })` + `Agent()` para cada teammate do último time registrado, com prompt: `"Retomando trabalho — leia docs/smart-memory/shared-context.md e stories/active/ para se atualizar. Avise via SendMessage ao concluir sua task."` Depois prosseguir para o passo 1.
+
+Se opção 2: ir para Etapa 4 do fluxo principal. Se opção 3: cancelar.
+
 1. Ler `docs/smart-memory/stories/BACKLOG.md`
 2. Selecionar stories validadas (5-point GO)
 3. **Wave analysis — agrupar stories por dependência ANTES de criar tasks:**
@@ -588,21 +614,53 @@ Quais aplicar? (todos/específicos/nenhum)
 ### `*resume` — Retoma trabalho
 
 1. Ler `shared-context.md` → quem estava fazendo o quê
-2. Ler `stories/active/` → o que estava em progresso
+2. Ler `stories/active/` e `stories/in-review/` → o que estava em progresso
 3. Ler `delegation-log.md` → últimas delegações
-4. Mostrar resumo:
+4. Ler `ops/teams-log.md` → nome do time e lista de teammates
+5. Mostrar resumo:
    ```
    📋 Estado anterior detectado:
    - Team ativo: {nome} ({data de criação})
-   - {N} stories em progresso
+   - {N} stories em progresso / {N} em review
    - {N} tasks pendentes
    - Último agente ativo: {nome} ({tempo} atrás)
+   - Teammates do time: {lista do teams-log}
    
    Opções:
-     1. Retomar este team
+     1. Retomar este team (reativa teammates via TeamCreate + Agent())
      2. Arquivar e iniciar novo
      3. Auditar antes de decidir (*audit)
    ```
+
+**Se opção 1 (Retomar):**
+
+Executar o protocolo explícito de reativação — teammates NÃO persistem entre sessões:
+
+**A. Recriar o team:**
+```
+TeamCreate({ team_name: "{nome-do-time-do-teams-log}" })
+```
+
+**B. Respawnar cada teammate registrado no times-log (em paralelo):**
+```
+Agent({
+  subagent_type: "{teammate}",
+  team_name: "{nome-do-time}",
+  name: "{teammate}",
+  prompt: "Retomando trabalho interrompido.
+  Leia docs/smart-memory/shared-context.md para se contextualizar.
+  Leia docs/smart-memory/stories/active/ e stories/in-review/ para ver o que está em progresso.
+  Consulte TaskList para ver sua task atribuída.
+  Continue de onde parou. Avise o lead via SendMessage ao concluir."
+})
+```
+
+Após os spawns, avisar o usuário:
+```
+✅ Time {nome} reativado com {N} teammates.
+   Cada teammate foi recontextualizado com o estado anterior.
+   Use /team-os *status para ver o estado atual.
+```
 
 ### `*unblock <agente>`
 
@@ -624,6 +682,24 @@ Depois confirmar:
 ```
 
 ### `*close`
+
+**⚠️ Guard de confirmação — executar ANTES de qualquer outro passo:**
+
+Ler `docs/smart-memory/ops/teams-log.md` → última entrada com `**Status:** ativo` → extrair `{team_name_ativo}`.
+
+Exibir:
+```
+⚠️  Confirmar encerramento do time "{team_name_ativo}"?
+
+  Isso irá:
+  - Arquivar docs/smart-memory/ em docs/smart-memory/archive/
+  - Encerrar todos os teammates (TeamDelete)
+  - Registrar encerramento no teams-log
+
+  Confirmar? (s/n, default n):
+```
+
+Se resposta **não** for `s` ou afirmativa explícita → **cancelar imediatamente**. Não executar nenhum passo abaixo. Responder: `"Encerramento cancelado. Time {team_name_ativo} continua ativo."`
 
 1. Rodar `*audit` final
 2. Arquivar smart-memory: `cp -r docs/smart-memory docs/smart-memory/archive/{nome-team}-{data}/`
