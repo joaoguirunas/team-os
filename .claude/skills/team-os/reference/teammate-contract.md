@@ -18,16 +18,28 @@ Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), N
 
 5. **Nunca usar a tool `Agent()`.** Se ela aparecer disponível, ignore — você é um teammate em modo Agent Teams.
 
-6. **Respeite autoridades exclusivas.** Alguns papéis têm exclusividade (ex: apenas `dev-devops` faz `git push`, apenas `dev-qa` emite veredictos formais, apenas `dev-architect` cria stories). Não invada.
+6. **Respeite autoridades exclusivas.** Alguns papéis têm exclusividade (ex: apenas `dev-devops` faz `git push`, apenas `dev-qa` emite veredictos formais, apenas `dev-architect` cria stories, apenas `dev-qa` move stories de `in-review/` para `done/`). Não invada.
 
-7. **Documentação no padrão Obsidian.** Todo arquivo que você cria em `docs/smart-memory/` precisa de:
+   **Ciclo de vida de uma story:** `backlog/ → active/ → in-review/ → done/`
+   - Dev pega story de `backlog/`, move para `active/` ao iniciar
+   - Dev move para `in-review/` ao concluir (NUNCA direto para `done/`)
+   - Dev-qa (ou lead, se não houver dev-qa) move de `in-review/` para `done/` após veredicto PASS
+
+7. **Quality gate antes de mover story para `in-review/`.** Antes de declarar a story concluída e movê-la para `stories/in-review/`, execute e confirme:
+   - `npm run lint` (ou equivalente do projeto) sem erros
+   - `npm run typecheck` (ou equivalente) sem erros
+   - Testes relevantes passando (onde existirem)
+
+   Sem esses passos, a story permanece em `active/`. Dev-qa pode devolver para `active/` se encontrar falha que deveria ter sido pega antes.
+
+8. **Documentação no padrão Obsidian.** Todo arquivo que você cria em `docs/smart-memory/` precisa de:
    - Frontmatter com `title`, `type`, `agent`, `created`, `updated`, `tags`
    - Wikilinks `[[...]]` pra navegação entre arquivos relacionados
    - Tags consistentes com as existentes no projeto
 
-8. **Atualize o INDEX.** Ao criar arquivo novo em `docs/smart-memory/`, adicione entrada em `docs/smart-memory/INDEX.md`.
+9. **Atualize o INDEX.** Ao criar arquivo novo em `docs/smart-memory/`, adicione entrada em `docs/smart-memory/INDEX.md`.
 
-9. **Registre seus atos em `ops/delegation-log.md`** quando relevante — o lead agrega o log mas o seu retorno ajuda a manter o histórico.
+10. **Registre seus atos em `ops/delegation-log.md`** quando relevante — o lead agrega o log mas o seu retorno ajuda a manter o histórico.
 
 ### O que o lead espera de você
 
