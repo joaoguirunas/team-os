@@ -9,6 +9,19 @@ Você é o **Team Lead** do projeto. Ao ser invocada, essa skill assume integral
 
 ---
 
+## ⚡ PRÉ-CONDIÇÃO CRÍTICA — executar ANTES de qualquer outra coisa
+
+`TeamCreate`, `SendMessage`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `TaskStop` e `TeamDelete` são **ferramentas deferidas** — seus schemas NÃO são carregados por padrão. Chamá-las sem essa etapa falha com `InputValidationError`.
+
+**A PRIMEIRA ação ao ser invocada** (antes de qualquer script, antes do preflight):
+```
+ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+```
+
+Somente após confirmar que as ferramentas foram carregadas prosseguir para o fluxo normal.
+
+---
+
 ## 🛡️ Regras absolutas (nunca violar)
 
 1. **`Agent()` sem `team_name` é PROIBIDO** (isso spawna subagent isolado).
@@ -187,6 +200,12 @@ Se "ajustar": perguntar quem adicionar/remover, voltar pra etapa 5.
 
 ⚠️ Linguagem natural como trigger **não é confiável sozinha**. Use o protocolo explícito abaixo, nesta ordem exata:
 
+**Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO antes de qualquer passo):**
+```
+ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+```
+`TeamCreate` e `SendMessage` são deferidas — sem esse passo, falham silenciosamente com InputValidationError e nenhum team é formado.
+
 **Passo A — Criar o team:**
 ```
 TeamCreate({ team_name: "{folder}-{objetivo-slug}" })
@@ -344,6 +363,12 @@ Se algum agente esperado não existir, seguir apenas com os disponíveis. Nunca 
 **Passo 4 — Formar Agent Team (protocolo explícito)**
 
 Team name: `{folder}-discovery` (onde `{folder}` vem de `basename "$PWD"`).
+
+**Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO):**
+```
+ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+```
+Sem isso, TeamCreate falha com InputValidationError e o bootstrap nunca forma o team real.
 
 **A. TeamCreate primeiro:**
 ```
@@ -523,7 +548,7 @@ Opções:
 Escolha (1/2/3):
 ```
 
-Se opção 1 (reativar): executar `TeamCreate({ team_name: "{nome}" })` + `Agent()` para cada teammate do último time registrado, com prompt: `"Retomando trabalho — leia docs/smart-memory/shared-context.md e stories/active/ para se atualizar. Avise via SendMessage ao concluir sua task."` Depois prosseguir para o passo 1.
+Se opção 1 (reativar): carregar ferramentas deferidas primeiro (`ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })`), depois executar `TeamCreate({ team_name: "{nome}" })` + `Agent()` para cada teammate do último time registrado, com prompt: `"Retomando trabalho — leia docs/smart-memory/shared-context.md e stories/active/ para se atualizar. Avise via SendMessage ao concluir sua task."` Depois prosseguir para o passo 1.
 
 Se opção 2: ir para Etapa 4 do fluxo principal. Se opção 3: cancelar.
 
@@ -636,6 +661,11 @@ Quais aplicar? (todos/específicos/nenhum)
 
 Executar o protocolo explícito de reativação — teammates NÃO persistem entre sessões:
 
+**Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO):**
+```
+ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+```
+
 **A. Recriar o team:**
 ```
 TeamCreate({ team_name: "{nome-do-time-do-teams-log}" })
@@ -703,8 +733,9 @@ Se resposta **não** for `s` ou afirmativa explícita → **cancelar imediatamen
 
 1. Rodar `*audit` final
 2. Arquivar smart-memory: `cp -r docs/smart-memory docs/smart-memory/archive/{nome-team}-{data}/`
-3. Encerrar o Agent Team via protocolo explícito (linguagem natural não é confiável — ver Regra 1):
+3. Carregar ferramentas deferidas e encerrar o Agent Team:
    ```
+   ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
    TeamDelete({ team_name: "{team_name_ativo}" })
    ```
    `{team_name_ativo}` = nome lido de `docs/smart-memory/ops/teams-log.md` (última entrada com `**Status:** ativo`)
