@@ -1,0 +1,65 @@
+/* Squad Monitor — Base styles (Story 1.1 skeleton) */
+/* Identidade visual Growth Sales AI sera aplicada na Story 1.5 */
+
+:root {
+  --bg: #000000;
+  --surface: #0d0d0d;
+  --border: #1a1a1a;
+  --text: #e0e0e0;
+  --muted: #555;
+  --ember: #FF3A0E;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.logo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ember);
+  letter-spacing: 0.15em;
+}
+
+.status-connected { color: var(--green); font-size: 11px; }
+.status-disconnected { color: var(--muted); font-size: 11px; }
+
+#events-log {
+  padding: 16px 20px;
+  max-height: calc(100vh - 50px);
+  overflow-y: auto;
+}
+
+.event-line {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.event-ts { color: var(--muted); flex-shrink: 0; font-size: 11px; }
+.event-kind { color: var(--ember); flex-shrink: 0; min-width: 100px; }
+.event-session { color: var(--muted); flex-shrink: 0; font-size: 11px; }
+.event-agent { color: var(--text); flex-shrink: 0; }
+.event-detail { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.empty { color: var(--muted); padding: 24px 0; text-align: center; }

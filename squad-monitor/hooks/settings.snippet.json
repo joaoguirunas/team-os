@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "http",
+        "url": "http://localhost:3099/ingest"
+      }
+    ]
+  }
+}

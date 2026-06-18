@@ -1,8 +1,7 @@
 // CT Dashboard Server — Bun/Node
-// Monitora Agent Teams em tempo real via claude agents --json + filesystem
-// Porta 3002 (hooks server já usa 3001)
+// Monitora sessoes background e Agent Teams via filesystem ~/.claude/
+// Porta 3099 (hooks server já usa 3001)
 
-import { execSync, exec } from "child_process";
 import { readFileSync, readdirSync, existsSync, statSync } from "fs";
 import { join, resolve } from "path";
 import { createServer } from "http";
@@ -11,9 +10,8 @@ import { dirname } from "path";
 
 const PORT = parseInt(process.env.PORT || "3099");
 const CLAUDE_DIR = join(process.env.HOME, ".claude");
+const SESSIONS_DIR = join(CLAUDE_DIR, "sessions");
 const TEAMS_DIR = join(CLAUDE_DIR, "teams");
-const TASKS_DIR = join(CLAUDE_DIR, "tasks");
-const JOBS_DIR = join(CLAUDE_DIR, "jobs");
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // SSE clients
@@ -35,21 +33,17 @@ function safeReadDir(dir) {
   }
 }
 
-// Roda `claude agents --json` e retorna resultado
-async function getSessions() {
-  return new Promise((resolve) => {
-    exec("claude agents --json 2>/dev/null", { timeout: 5000 }, (err, stdout) => {
-      if (err || !stdout.trim()) return resolve([]);
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        resolve([]);
-      }
-    });
-  });
+// Le sessoes ativas de ~/.claude/sessions/*.json
+// Cada arquivo e um processo ativo com: pid, sessionId, cwd, startedAt, kind
+function getSessions() {
+  return safeReadDir(SESSIONS_DIR)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => readJsonFile(join(SESSIONS_DIR, f)))
+    .filter(Boolean);
 }
 
-// Lê teams de ~/.claude/teams/
+// Le teams de ~/.claude/teams/
+// Cada team tem config.json com name, description, members[], leadSessionId
 function getTeams() {
   const teams = [];
   const dirs = safeReadDir(TEAMS_DIR);
@@ -61,20 +55,7 @@ function getTeams() {
   return teams;
 }
 
-// Lê tasks de ~/.claude/tasks/
-function getTasks() {
-  const result = {};
-  const teamDirs = safeReadDir(TASKS_DIR);
-  for (const teamDir of teamDirs) {
-    const taskDir = join(TASKS_DIR, teamDir);
-    if (!statSync(taskDir).isDirectory()) continue;
-    const files = safeReadDir(taskDir).filter((f) => f.endsWith(".json"));
-    result[teamDir] = files.map((f) => readJsonFile(join(taskDir, f))).filter(Boolean);
-  }
-  return result;
-}
-
-// Lê stories de um projeto
+// Le stories de um projeto
 function getStories(projectPath) {
   if (!projectPath) return null;
   const storiesBase = resolve(projectPath, "docs/smart-memory/stories");
@@ -101,20 +82,17 @@ function getStories(projectPath) {
 }
 
 // Coleta todos os dados para o dashboard
-async function collectData(projectPath) {
-  const [sessions, teams, tasks] = await Promise.all([
-    getSessions(),
-    Promise.resolve(getTeams()),
-    Promise.resolve(getTasks()),
-  ]);
+function collectData(projectPath) {
+  const sessions = getSessions();
+  const teams = getTeams();
   const stories = getStories(projectPath);
-  return { sessions, teams, tasks, stories, timestamp: new Date().toISOString() };
+  return { sessions, teams, stories, timestamp: new Date().toISOString() };
 }
 
 // Push SSE para todos os clientes
-async function pushUpdate(projectPath) {
+function pushUpdate(projectPath) {
   if (sseClients.size === 0) return;
-  const data = await collectData(projectPath);
+  const data = collectData(projectPath);
   const msg = `data: ${JSON.stringify(data)}\n\n`;
   for (const client of sseClients) {
     try {
@@ -163,7 +141,7 @@ const server = createServer(async (req, res) => {
     // Enviar dados iniciais imediatamente
     const projectPathParam = url.searchParams.get("project");
     if (projectPathParam) projectPath = projectPathParam;
-    const data = await collectData(projectPath);
+    const data = collectData(projectPath);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
 
     req.on("close", () => sseClients.delete(res));
@@ -172,21 +150,14 @@ const server = createServer(async (req, res) => {
 
   // API: sessions
   if (path === "/api/sessions") {
-    const sessions = await getSessions();
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify(sessions));
+    return res.end(JSON.stringify(getSessions()));
   }
 
   // API: teams
   if (path === "/api/teams") {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(getTeams()));
-  }
-
-  // API: tasks
-  if (path === "/api/tasks") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify(getTasks()));
   }
 
   // API: stories
@@ -221,8 +192,9 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 CT Dashboard rodando em http://localhost:${PORT}`);
-  console.log(`   Monitorando: ${CLAUDE_DIR}`);
+  console.log(`\nCT Dashboard rodando em http://localhost:${PORT}`);
+  console.log(`   Monitorando sessoes: ${SESSIONS_DIR}`);
+  console.log(`   Monitorando teams: ${TEAMS_DIR}`);
   if (projectPath) console.log(`   Projeto: ${projectPath}`);
   console.log(`\n   Para setar o projeto:\n   CT_PROJECT_PATH="/caminho/do/projeto" bun dashboard/server.js\n`);
 });
