@@ -40,20 +40,24 @@ Somente após confirmar que as ferramentas foram carregadas prosseguir para o fl
 
 ---
 
-## 📺 Monitoramento do time (Agent View)
+## 📺 Monitoramento do time (Agent Panel)
 
-A partir da v2.1.139, o Claude Code tem **Agent View** — painel unificado de todas as sessões background.
+O Claude Code mostra teammates no **agent panel** abaixo do prompt input.
 
 **Informar o usuário após cada spawn de time:**
 ```
 💡 Para monitorar o time em tempo real:
-   claude agents          → painel com todas as sessões (Working / Needs Input / Done)
-   claude agents --json   → JSON com estado de cada sessão (útil para scripts)
-   Shift+Down             → ciclar entre teammates no terminal atual
-   Space                  → peek no output de uma sessão sem abrir completo
+   ↑↓ (setas)   → selecionar teammate no agent panel (abaixo do prompt)
+   Enter        → abrir sessão do teammate e enviar mensagem diretamente
+   Escape       → interromper o turn atual do teammate selecionado
+   x            → parar o teammate selecionado
+   Ctrl+T       → toggle da task list
+
+   Nota: após 30s em idle, a linha do teammate desaparece —
+   ele continua ativo. Mande uma mensagem para reaparecer.
 ```
 
-Quando usar `*status`, complementar com saída de `claude agents --json` se disponível no ambiente.
+> `claude agents --json` NÃO existe. Não referenciar. Para estado das tasks usar `TaskList`.
 
 ---
 
@@ -230,13 +234,14 @@ Para CADA teammate decidido na composição, chamar:
 Agent({
   subagent_type: "{teammate-name}",
   name: "{teammate-name}",
+  run_in_background: true,
   prompt: "Instruções iniciais: sua task é {X}. Leia docs/smart-memory/{path-relevante} antes de começar. Consulte TaskList para ver sua task atribuída. Avise o lead via SendMessage quando concluir."
 })
 ```
 
 O time é criado automaticamente quando o primeiro `Agent()` é executado. Todos os teammates ficam:
 - Addressable via `SendMessage({to: "teammate-name"})`
-- Visíveis no painel do usuário (Shift+Down no terminal ou `claude agents` para painel completo)
+- Visíveis no agent panel abaixo do prompt (navegue com ↑↓, Enter para abrir, x para parar)
 - Rodando em paralelo em background
 
 **Passo B — Criar tasks:**
@@ -385,6 +390,7 @@ ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,T
 Agent({
   subagent_type: "dev-architect",
   name: "dev-architect",
+  run_in_background: true,
   prompt: "Sua task: *discover — mapeie módulos e arquitetura deste projeto.
   IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
   Ele contém god nodes (arquivos mais críticos), clusters (grupos de módulos) e dependency edges (quem importa quem) com precisão AST.
@@ -397,6 +403,7 @@ Agent({
 Agent({
   subagent_type: "dev-analyst",
   name: "dev-analyst",
+  run_in_background: true,
   prompt: "Sua task: *discover — mapeie tech stack, dependências e convenções de código.
   IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
   Ele contém a estrutura real do projeto via AST — use para confirmar tech stack e identificar convenções de import/nomenclatura.
@@ -407,12 +414,14 @@ Agent({
 {se DB} Agent({
   subagent_type: "dev-data-engineer",
   name: "dev-data-engineer",
+  run_in_background: true,
   prompt: "Sua task: *discover — mapeie schema existente. Produza docs/smart-memory/agents/data-engineer/schema.md. Avise via SendMessage ao concluir."
 })
 
 {se frontend} Agent({
   subagent_type: "dev-ux",
   name: "dev-ux",
+  run_in_background: true,
   prompt: "Sua task: *discover — catalogue componentes existentes. Produza docs/smart-memory/agents/ux/components.md. Avise via SendMessage ao concluir."
 })
 ```
@@ -420,8 +429,10 @@ Agent({
 Após os spawns, os teammates ficam ativos em paralelo. Informar ao usuário:
 ```
 💡 Time de descoberta ativo. Para acompanhar:
-   claude agents   → painel de todas as sessões
-   Shift+Down      → ciclar entre teammates no terminal
+   ↑↓ (setas)   → selecionar teammate no agent panel (abaixo do prompt)
+   Enter        → abrir sessão do teammate
+   Escape       → interromper turn atual
+   x            → parar o teammate
 ```
 
 **Passo 5 — (não precisa despachar separadamente)**
@@ -616,10 +627,11 @@ Mostrar:
 - Blockers registrados
 - Últimas 5 entradas do `delegation-log.md`
 
-Complementar com dados do Agent View quando disponível:
-```bash
-claude agents --json 2>/dev/null | jq '.[] | {id, state, name, waitingFor}' 2>/dev/null || echo "(agent view não disponível neste contexto)"
+Complementar com dados de tasks quando disponível:
 ```
+TaskList()  → lista tasks ativas e seus assignees
+```
+> `claude agents --json` NÃO existe. Para estado dos teammates usar `TaskList` e `shared-context.md`.
 
 ### `*audit` — Guardião do smart-memory
 
@@ -653,6 +665,8 @@ Quais aplicar? (todos/específicos/nenhum)
 ```
 
 ### `*resume` — Retoma trabalho
+
+> **Limitação oficial do Agent Teams:** `/resume` e `/rewind` do Claude Code NÃO restauram teammates in-process. Cada sessão começa com teammates zerados. O `*resume` sempre respawna — isso é o comportamento correto, não um workaround.
 
 1. Ler `shared-context.md` → quem estava fazendo o quê
 2. Ler `stories/active/` e `stories/in-review/` → o que estava em progresso
