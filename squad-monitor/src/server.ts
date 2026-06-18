@@ -7,7 +7,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { normalizeHook } from "./ingest.js";
 import { addEvent, getSnapshot } from "./store.js";
-import { appendEvent } from "./persistence.js";
+import { appendEvent, listSessions, replaySession } from "./persistence.js";
 import { initClient, addClient, removeClient, broadcastEvent, broadcastSnapshot } from "./sse.js";
 import { readAgentTranscript } from "./transcript.js";
 
@@ -148,12 +148,17 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
   }
 
   // GET /agent/:id → detalhe do agente via transcript (RF-06)
+  // Query params:
+  //   sessionId      — usado para resolver path via encodeProjectPath (fallback)
+  //   transcriptPath — path direto do .jsonl (preferencia, vem de AgentState.transcriptPath)
+  //   cwd            — cwd do projeto (fallback quando transcriptPath nao disponivel)
   const agentMatch = pathname.match(/^\/agent\/([^/]+)$/);
   if (method === "GET" && agentMatch) {
     const agentId = decodeURIComponent(agentMatch[1]);
     const sessionId = url.searchParams.get("sessionId") ?? "";
-    const cwd = url.searchParams.get("cwd") ?? undefined;
-    const detail = readAgentTranscript(sessionId, agentId, cwd);
+    const directPath = url.searchParams.get("transcriptPath") ?? undefined;
+    const projectCwd = url.searchParams.get("cwd") ?? undefined;
+    const detail = readAgentTranscript(sessionId, agentId, { directPath, projectCwd });
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(detail));
     return;
@@ -169,6 +174,37 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
   res.writeHead(404);
   res.end("Not found");
 });
+
+// Replay das sessoes do dia corrente ao subir o servidor (RF-08)
+// Reconstroi estado em memoria para que novos clientes SSE recebam snapshot completo
+function replayTodaySessions(): void {
+  const todayPrefix = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+  const allSessions = listSessions();
+
+  // Filtra sessoes cujo filename contem data de hoje OU replay all (fallback: ultima sessao)
+  // Como o filename e sanitizado do sessionId (nao contem data), fazemos replay de todas
+  // as sessoes encontradas — idempotente, estado duplicado nao e gerado (addEvent e idempotente
+  // para sessoes ja vistas pela chave sessionId/ts)
+  let replayed = 0;
+  for (const sessionId of allSessions) {
+    const events = replaySession(sessionId);
+    for (const ev of events) {
+      addEvent(ev);
+    }
+    if (events.length > 0) {
+      replayed++;
+      console.log(`[replay] sessao ${sessionId.slice(0, 8)}... — ${events.length} eventos restaurados`);
+    }
+  }
+  if (replayed === 0) {
+    console.log("[replay] Nenhuma sessao anterior encontrada em .runs/");
+  } else {
+    console.log(`[replay] ${replayed} sessao(oes) restaurada(s) em memoria`);
+  }
+  void todayPrefix; // suprime aviso de variavel inutilizada (reservado para filtro futuro)
+}
+
+replayTodaySessions();
 
 server.listen(PORT, () => {
   console.log(`\nSquad Monitor em http://localhost:${PORT}`);
