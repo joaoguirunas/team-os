@@ -1,21 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Squad Monitor</title>
-<link rel="stylesheet" href="/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squad Monitor</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div id="app">
-  <header>
-    <span class="logo">SQUAD MONITOR</span>
-    <span id="status" class="status-disconnected">disconnected</span>
+
+  <!-- ZONA 1: Header ─────────────────────────────────────────── -->
+  <header id="header">
+    <div class="header-brand">
+      <span class="header-title">Squad Monitor</span>
+      <span class="header-version">v0.1</span>
+    </div>
+
+    <div class="header-stats">
+      <!-- Active agents -->
+      <div class="stat-group">
+        <span class="stat-label">Ativos</span>
+        <span class="stat-value highlight" id="stat-active">0</span>
+      </div>
+
+      <!-- Done agents -->
+      <div class="stat-group">
+        <span class="stat-label">Concluídos</span>
+        <span class="stat-value" id="stat-done">0</span>
+      </div>
+
+      <!-- Tool calls -->
+      <div class="stat-group">
+        <span class="stat-label">Calls</span>
+        <span class="stat-value" id="stat-calls">0</span>
+      </div>
+
+      <!-- Tokens (quando disponível via transcript) -->
+      <div class="stat-group">
+        <span class="stat-label">Tokens</span>
+        <span class="stat-value" id="stat-tokens">—</span>
+      </div>
+
+      <!-- Connection status -->
+      <div class="connection-wrap">
+        <span class="connection-dot connecting" id="conn-dot"></span>
+        <span class="connection-label" id="conn-label">conectando</span>
+      </div>
+    </div>
   </header>
-  <div id="events-log">
-    <div class="empty">Aguardando conexao com o servidor SSE...</div>
+
+  <!-- Body ────────────────────────────────────────────────────── -->
+  <div id="body">
+
+    <!-- ZONA 2: Sidebar — Sessões ─────────────────────────────── -->
+    <aside id="sidebar-sessions">
+      <div class="sidebar-header">
+        <span class="panel-label">Sessões</span>
+      </div>
+      <div id="sessions-list">
+        <div class="sessions-empty">Aguardando sessões...</div>
+      </div>
+    </aside>
+
+    <!-- ZONA 3: Main panel ─────────────────────────────────────── -->
+    <main id="main-panel">
+
+      <!-- 3a: Agents grid (upper) ──────────────────────────────── -->
+      <section id="main-agents">
+        <div class="agents-topbar">
+          <span class="panel-label">Agentes</span>
+          <span class="agents-session-tag" id="agents-session-tag"></span>
+        </div>
+
+        <div id="agents-grid">
+          <div class="placeholder-center">
+            <span class="placeholder-title">Nenhuma sessão selecionada</span>
+            <span class="placeholder-sub">Selecione uma sessão na sidebar</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3b: Timeline drawer (lower) ──────────────────────────── -->
+      <section id="timeline-panel">
+        <div class="timeline-topbar">
+          <span class="panel-label">Timeline</span>
+          <span class="timeline-agent-label" id="timeline-agent-label">—</span>
+          <span class="timeline-tools-count" id="timeline-tools-count"></span>
+        </div>
+
+        <div id="timeline-list">
+          <div class="timeline-empty">Selecione um agente para ver a timeline</div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /#body -->
+
+</div><!-- /#app -->
+
+<!-- Agent detail drawer (fixed overlay, fechado por default) ─── -->
+<aside id="agent-detail-drawer">
+  <div class="drawer-header">
+    <span class="drawer-title" id="drawer-agent-title">Agente</span>
+    <button class="drawer-close" id="drawer-close-btn" aria-label="Fechar">&times;</button>
   </div>
-</div>
-<script src="/app.js"></script>
+  <div class="drawer-body" id="drawer-body">
+    <div class="drawer-loading">Carregando detalhes...</div>
+  </div>
+</aside>
+
+<script type="module" src="/app.js"></script>
 </body>
 </html>
