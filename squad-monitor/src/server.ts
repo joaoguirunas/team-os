@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { normalizeHook } from "./ingest.js";
 import { addEvent, getSnapshot } from "./store.js";
 import { appendEvent } from "./persistence.js";
-import { addClient, removeClient, broadcastEvent, broadcastSnapshot } from "./sse.js";
+import { initClient, addClient, removeClient, broadcastEvent, broadcastSnapshot } from "./sse.js";
 import { readAgentTranscript } from "./transcript.js";
 
 const PORT = parseInt(process.env.PORT ?? "3099", 10);
@@ -103,8 +103,9 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 
   // GET /events → SSE stream
   if (method === "GET" && pathname === "/events") {
-    addClient(res);
-    // Envia snapshot inicial ao cliente ao conectar
+    initClient(res);   // seta headers + envia ": connected\n\n"
+    addClient(res);    // registra no conjunto de destinatarios
+    // Envia snapshot inicial ao cliente recem-conectado
     const snapshot = getSnapshot();
     broadcastSnapshot(snapshot, res);
     req.on("close", () => removeClient(res));
