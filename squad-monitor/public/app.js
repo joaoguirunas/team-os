@@ -370,7 +370,14 @@ async function openDrawer(agentId) {
 
   try {
     const params = new URLSearchParams({ sessionId: agent.sessionId });
-    if (agent.transcriptPath) params.set('cwd', agent.transcriptPath);
+    // Preferencia: usar transcriptPath direto (vem do hook SubagentStop via AgentState)
+    if (agent.transcriptPath) {
+      params.set('transcriptPath', agent.transcriptPath);
+    } else {
+      // Fallback: passar cwd da sessao para resolucao de path via encodeProjectPath
+      const session = state.sessions.get(agent.sessionId);
+      if (session?.cwd) params.set('cwd', session.cwd);
+    }
     const res  = await fetch(`/agent/${encodeURIComponent(agentId)}?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -396,6 +403,7 @@ function renderDrawerContent(agent, detail) {
   const outputTokens = detail?.totalOutputTokens ?? 0;
   const totalTokens  = inputTokens + outputTokens;
   const prompt       = detail?.prompt ?? null;
+  const result       = detail?.result ?? null;
   const toolList     = detail?.entries ?? [];
 
   const promptHtml = prompt
@@ -430,6 +438,13 @@ function renderDrawerContent(agent, detail) {
              </div>`).join('')}
            ${toolList.length > 40 ? `<div class="drawer-loading">+${toolList.length - 40} omitidos</div>` : ''}
          </div>
+       </div>`
+    : '';
+
+  const resultHtml = result
+    ? `<div class="drawer-section">
+         <div class="drawer-section-label">Resultado final</div>
+         <pre class="drawer-prompt-block">${escHtml(truncate(result, 600))}</pre>
        </div>`
     : '';
 
@@ -474,6 +489,7 @@ function renderDrawerContent(agent, detail) {
     ${promptHtml}
     ${tokensHtml}
     ${toolRowsHtml}
+    ${resultHtml}
     ${noDetailMsg}
   `;
 }

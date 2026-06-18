@@ -268,15 +268,26 @@ export type AgentTranscriptDetail = {
   totalOutputTokens: number;
   toolCallCount: number;
   found: boolean;
+  prompt?: string;   // primeira mensagem user (prompt inicial do agente)
+  result?: string;   // ultima mensagem assistant (resultado final)
 };
 
-// Wrapper compativel — server.ts chama readAgentTranscript(sessionId, agentId, cwd)
+// Wrapper compativel — server.ts chama readAgentTranscript(sessionId, agentId, opts?)
+// opts.directPath: path completo do .jsonl (preferencia — vem de AgentState.transcriptPath)
+// opts.projectCwd: cwd do projeto para resolucao de path via encodeProjectPath (fallback)
 export function readAgentTranscript(
   sessionId: string,
   agentId: string,
-  projectCwd?: string
+  opts?: { projectCwd?: string; directPath?: string }
 ): AgentTranscriptDetail {
-  const detail = readAgentDetail(agentId, sessionId, projectCwd);
+  // Tentar path direto primeiro (mais preciso — evita ambiguidades de encoding)
+  if (opts?.directPath && existsSync(opts.directPath)) {
+    const detail = readAgentDetailFromPath(agentId, sessionId, opts.directPath);
+    if (detail) return toCompatDetail(detail);
+  }
+
+  // Fallback: resolver via cwd do projeto
+  const detail = readAgentDetail(agentId, sessionId, opts?.projectCwd);
   if (!detail) {
     return {
       agentId,
@@ -289,6 +300,11 @@ export function readAgentTranscript(
       found: false,
     };
   }
+  return toCompatDetail(detail);
+}
+
+// Helper: converte AgentDetail para o formato legado
+function toCompatDetail(detail: AgentDetail): AgentTranscriptDetail {
   return {
     agentId: detail.agentId,
     sessionId: detail.sessionId,
@@ -298,5 +314,107 @@ export function readAgentTranscript(
     totalOutputTokens: detail.outputTokens,
     toolCallCount: detail.toolCalls.length,
     found: true,
+    prompt: detail.prompt,
+    result: detail.result,
   };
+}
+
+// Le e processa um transcript dado o path completo (sem resolucao)
+export function readAgentDetailFromPath(
+  agentId: string,
+  sessionId: string,
+  transcriptPath: string
+): AgentDetail | null {
+  if (!existsSync(transcriptPath)) return null;
+
+  const metaPath = transcriptPath.replace(/\.jsonl$/, ".meta.json");
+  let agentType = "unknown";
+  if (existsSync(metaPath)) {
+    try {
+      const meta = JSON.parse(readFileSync(metaPath, "utf8")) as MetaJson;
+      agentType = meta.agentType ?? "unknown";
+    } catch {
+      // meta.json invalido — usar fallback
+    }
+  }
+
+  const detail: AgentDetail = {
+    agentId,
+    agentType,
+    sessionId,
+    transcriptPath,
+    toolCalls: [],
+    inputTokens: 0,
+    outputTokens: 0,
+  };
+
+  try {
+    const raw = readFileSync(transcriptPath, "utf8");
+    const lines = raw.split("\n");
+    const pendingTools = new Map<string, { ts: number; toolName: string; input: unknown }>();
+    let lastAssistantText = "";
+    let firstUserText: string | undefined;
+    let firstUserFound = false;
+
+    for (const rawLine of lines) {
+      if (!rawLine.trim()) continue;
+      let line: TranscriptLine;
+      try {
+        line = JSON.parse(rawLine) as TranscriptLine;
+      } catch {
+        continue;
+      }
+      if (line.message?.usage) {
+        detail.inputTokens += line.message.usage.input_tokens ?? 0;
+        detail.outputTokens += line.message.usage.output_tokens ?? 0;
+      }
+      if (!firstUserFound && line.type === "user") {
+        const text = extractText(line.message?.content);
+        if (text) { firstUserText = text.slice(0, 500); firstUserFound = true; }
+      }
+      if (line.type === "assistant") {
+        const ts = tsFromLine(line);
+        const content = line.message?.content;
+        const assistantText = extractText(content);
+        if (assistantText) lastAssistantText = assistantText;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (!block || typeof block !== "object") continue;
+            const b = block as Record<string, unknown>;
+            if (b.type === "tool_use" && typeof b.name === "string") {
+              const toolId = typeof b.id === "string" ? b.id : `${b.name}-${ts}`;
+              pendingTools.set(toolId, { ts, toolName: b.name, input: b.input });
+            }
+          }
+        }
+      }
+      if (line.type === "user") {
+        const content = line.message?.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (!block || typeof block !== "object") continue;
+            const b = block as Record<string, unknown>;
+            if (b.type === "tool_result" && typeof b.tool_use_id === "string") {
+              const pending = pendingTools.get(b.tool_use_id);
+              if (pending) {
+                detail.toolCalls.push({ ts: pending.ts, toolName: pending.toolName, input: pending.input, response: b.content });
+                pendingTools.delete(b.tool_use_id);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (const [, pending] of pendingTools) {
+      detail.toolCalls.push({ ts: pending.ts, toolName: pending.toolName, input: pending.input });
+    }
+    if (firstUserText) detail.prompt = firstUserText;
+    if (lastAssistantText) detail.result = lastAssistantText.slice(0, 1000);
+  } catch (err) {
+    console.warn(`[transcript] Failed to read ${transcriptPath}: ${err}`);
+    return null;
+  }
+
+  return detail;
 }
