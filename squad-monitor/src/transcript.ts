@@ -113,6 +113,7 @@ export function resolveTranscriptPath(
 }
 
 // Le e processa o transcript de um agente on-demand
+// Resolve o path via encodeProjectPath e delega a readAgentDetailFromPath
 // Retorna null se arquivo nao encontrado (nao derruba o servidor)
 export function readAgentDetail(
   agentId: string,
@@ -120,140 +121,7 @@ export function readAgentDetail(
   projectPath?: string
 ): AgentDetail | null {
   const transcriptPath = resolveTranscriptPath(agentId, sessionId, projectPath);
-
-  if (!existsSync(transcriptPath)) {
-    return null;
-  }
-
-  // Tenta ler metadados do .meta.json adjacente
-  const metaPath = transcriptPath.replace(/\.jsonl$/, ".meta.json");
-  let agentType = "unknown";
-  if (existsSync(metaPath)) {
-    try {
-      const meta = JSON.parse(readFileSync(metaPath, "utf8")) as MetaJson;
-      agentType = meta.agentType ?? "unknown";
-    } catch {
-      // meta.json invalido — usar fallback
-    }
-  }
-
-  const detail: AgentDetail = {
-    agentId,
-    agentType,
-    sessionId,
-    transcriptPath,
-    toolCalls: [],
-    inputTokens: 0,
-    outputTokens: 0,
-  };
-
-  try {
-    const raw = readFileSync(transcriptPath, "utf8");
-    const lines = raw.split("\n");
-
-    // Para montar tool calls: acumular PreToolUse e casar com PostToolUse
-    // O transcript nao usa esses nomes — tool calls ficam em content blocks assistant
-    // type: "tool_use" (input) e type: "tool_result" (output em mensagem user seguinte)
-    const pendingTools = new Map<string, { ts: number; toolName: string; input: unknown }>();
-    let lastAssistantText = "";
-    let firstUserText: string | undefined;
-    let firstUserFound = false;
-
-    for (const rawLine of lines) {
-      if (!rawLine.trim()) continue;
-
-      let line: TranscriptLine;
-      try {
-        line = JSON.parse(rawLine) as TranscriptLine;
-      } catch {
-        // Linha corrompida — ignorar graciosamente
-        continue;
-      }
-
-      // Acumula tokens de entradas assistant
-      if (line.message?.usage) {
-        detail.inputTokens += line.message.usage.input_tokens ?? 0;
-        detail.outputTokens += line.message.usage.output_tokens ?? 0;
-      }
-
-      // Extrai prompt inicial (primeira mensagem user com texto)
-      if (!firstUserFound && line.type === "user") {
-        const text = extractText(line.message?.content);
-        if (text) {
-          firstUserText = text.slice(0, 500); // limitar tamanho
-          firstUserFound = true;
-        }
-      }
-
-      // Processa mensagens assistant: extrai tool_use blocks e texto
-      if (line.type === "assistant") {
-        const ts = tsFromLine(line);
-        const content = line.message?.content;
-
-        // Extrai texto do assistant para "result"
-        const assistantText = extractText(content);
-        if (assistantText) {
-          lastAssistantText = assistantText;
-        }
-
-        // Extrai tool_use blocks
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (!block || typeof block !== "object") continue;
-            const b = block as Record<string, unknown>;
-            if (b.type === "tool_use" && typeof b.name === "string") {
-              const toolId = typeof b.id === "string" ? b.id : `${b.name}-${ts}`;
-              pendingTools.set(toolId, {
-                ts,
-                toolName: b.name,
-                input: b.input,
-              });
-            }
-          }
-        }
-      }
-
-      // Processa mensagens user: extrai tool_result blocks para casar com tool_use
-      if (line.type === "user") {
-        const content = line.message?.content;
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (!block || typeof block !== "object") continue;
-            const b = block as Record<string, unknown>;
-            if (b.type === "tool_result" && typeof b.tool_use_id === "string") {
-              const pending = pendingTools.get(b.tool_use_id);
-              if (pending) {
-                detail.toolCalls.push({
-                  ts: pending.ts,
-                  toolName: pending.toolName,
-                  input: pending.input,
-                  response: b.content,
-                });
-                pendingTools.delete(b.tool_use_id);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Tool calls sem resposta (tool em execucao ou interrupcao)
-    for (const [, pending] of pendingTools) {
-      detail.toolCalls.push({
-        ts: pending.ts,
-        toolName: pending.toolName,
-        input: pending.input,
-      });
-    }
-
-    if (firstUserText) detail.prompt = firstUserText;
-    if (lastAssistantText) detail.result = lastAssistantText.slice(0, 1000);
-  } catch (err) {
-    console.warn(`[transcript] Failed to read ${transcriptPath}: ${err}`);
-    return null;
-  }
-
-  return detail;
+  return readAgentDetailFromPath(agentId, sessionId, transcriptPath);
 }
 
 // ------- Compatibilidade com server.ts (pre-refactor) -------
