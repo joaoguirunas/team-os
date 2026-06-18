@@ -369,13 +369,15 @@ async function openDrawer(agentId) {
   dom.drawer.classList.add('open');
 
   try {
-    const res  = await fetch(`/agent/${encodeURIComponent(agentId)}`);
+    const params = new URLSearchParams({ sessionId: agent.sessionId });
+    if (agent.transcriptPath) params.set('cwd', agent.transcriptPath);
+    const res  = await fetch(`/agent/${encodeURIComponent(agentId)}?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     renderDrawerContent(agent, data);
   } catch (err) {
     console.warn('[squad-monitor] Drawer fetch failed:', err);
-    renderDrawerContent(agent, null);
+    renderDrawerContent(agent, { found: false, entries: [], totalInputTokens: 0, totalOutputTokens: 0 });
   }
 }
 
@@ -385,9 +387,16 @@ async function openDrawer(agentId) {
  */
 function renderDrawerContent(agent, detail) {
   const elapsed  = formatElapsed(agent.startedAt, agent.endedAt);
-  const tokens   = detail?.tokens ?? agent.tokens ?? null;
-  const prompt   = detail?.prompt ?? null;
-  const toolList = detail?.toolCalls ?? [];
+
+  // GET /agent/:id retorna: { found, agentId, sessionId, transcriptPath,
+  //   totalInputTokens, totalOutputTokens, toolCallCount, entries: ToolCall[] }
+  // ToolCall shape: { ts, toolName, input, response? }
+  const found        = detail?.found ?? false;
+  const inputTokens  = detail?.totalInputTokens  ?? 0;
+  const outputTokens = detail?.totalOutputTokens ?? 0;
+  const totalTokens  = inputTokens + outputTokens;
+  const prompt       = detail?.prompt ?? null;
+  const toolList     = detail?.entries ?? [];
 
   const promptHtml = prompt
     ? `<div class="drawer-section">
@@ -396,31 +405,36 @@ function renderDrawerContent(agent, detail) {
        </div>`
     : '';
 
-  const tokensHtml = tokens != null
+  const tokensHtml = found && totalTokens > 0
     ? `<div class="drawer-section">
          <div class="drawer-section-label">Tokens</div>
          <div class="drawer-token-row">
-           <span class="token-number">${Number(tokens).toLocaleString('pt-BR')}</span>
-           <span class="token-unit">tokens (preTokens)</span>
+           <span class="token-number">${totalTokens.toLocaleString('pt-BR')}</span>
+           <span class="token-unit">total</span>
+         </div>
+         <div style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:4px">
+           ${inputTokens.toLocaleString('pt-BR')} in · ${outputTokens.toLocaleString('pt-BR')} out
          </div>
        </div>`
     : '';
 
+  // entries shape: { ts, toolName, input, response? }
   const toolRowsHtml = toolList.length > 0
     ? `<div class="drawer-section">
          <div class="drawer-section-label">Tool calls (${toolList.length})</div>
          <div class="drawer-tool-list">
-           ${toolList.map((t) => `
+           ${toolList.slice(0, 40).map((t) => `
              <div class="drawer-tool-row">
-               <span class="dtool-name">${escHtml(t.name ?? '?')}</span>
-               <span class="dtool-input">${escHtml(truncate(t.inputSummary ?? '', 70))}</span>
+               <span class="dtool-name">${escHtml(t.toolName ?? '?')}</span>
+               <span class="dtool-input">${escHtml(truncate(typeof t.input === 'string' ? t.input : JSON.stringify(t.input ?? {}), 70))}</span>
              </div>`).join('')}
+           ${toolList.length > 40 ? `<div class="drawer-loading">+${toolList.length - 40} omitidos</div>` : ''}
          </div>
        </div>`
     : '';
 
-  const noDetailMsg = !detail
-    ? `<div class="drawer-loading">Transcript não disponível — o agente pode estar em execução ou o path ainda não foi indexado.</div>`
+  const noDetailMsg = !found
+    ? `<div class="drawer-loading">Transcript não disponível — o agente pode estar em execução ou o path ainda foi indexado.</div>`
     : '';
 
   dom.drawerBody.innerHTML = `
