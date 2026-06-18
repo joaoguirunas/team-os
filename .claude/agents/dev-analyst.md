@@ -3,6 +3,7 @@ name: dev-analyst
 description: Research and analysis specialist. Use for technical research, library comparison, CVE investigation, market analysis, dependency research, or feasibility analysis before architectural decisions. On-demand only.
 model: sonnet
 memory: project
+effort: medium
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: cyan
 ---

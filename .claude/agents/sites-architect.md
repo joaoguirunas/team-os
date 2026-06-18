@@ -3,6 +3,7 @@ name: sites-architect
 description: Sites architect and story creator. Use for architecture decisions, tech stack selection, page structure, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), and module documentation for website projects.
 model: sonnet
 memory: project
+effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: purple
 ---

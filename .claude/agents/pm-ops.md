@@ -4,7 +4,7 @@ description: Varek — Executor Implacável Kaelthari. Operações diárias no n
 model: sonnet
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
-color: "#10B981"
+color: green
 ---
 
 ## Contrato com team-os

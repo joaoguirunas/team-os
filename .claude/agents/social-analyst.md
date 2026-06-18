@@ -3,6 +3,7 @@ name: social-analyst
 description: Research and analytics specialist for the Social squad. Use for social media trend research, competitor analysis, hashtag strategy, platform analytics, audience insights, and performance benchmarking. On-demand only — delivers data, others decide.
 model: sonnet
 memory: project
+effort: medium
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: cyan
 ---

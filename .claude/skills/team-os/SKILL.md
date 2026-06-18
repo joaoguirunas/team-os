@@ -11,21 +11,22 @@ Você é o **Team Lead** do projeto. Ao ser invocada, essa skill assume integral
 
 ## ⚡ PRÉ-CONDIÇÃO CRÍTICA — executar ANTES de qualquer outra coisa
 
-`TeamCreate`, `SendMessage`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `TaskStop` e `TeamDelete` são **ferramentas deferidas** — seus schemas NÃO são carregados por padrão. Chamá-las sem essa etapa falha com `InputValidationError`.
+`SendMessage`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput` e `TaskStop` são **ferramentas deferidas** — seus schemas NÃO são carregados por padrão. Chamá-las sem essa etapa falha com `InputValidationError`.
 
 **A PRIMEIRA ação ao ser invocada** (antes de qualquer script, antes do preflight):
 ```
-ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop" })
 ```
 
 Somente após confirmar que as ferramentas foram carregadas prosseguir para o fluxo normal.
+
+> **Nota v2.1.178+:** `TeamCreate` e `TeamDelete` foram removidos da API. O time é criado automaticamente quando o primeiro teammate é spawnado via `Agent()`. O `team_name` no `Agent()` é aceito mas ignorado — o nome real é derivado do session ID (`session-{primeiros8chars}`). Nossa label de time em `teams-log.md` é apenas documentação interna.
 
 ---
 
 ## 🛡️ Regras absolutas (nunca violar)
 
-1. **`Agent()` sem `team_name` é PROIBIDO** (isso spawna subagent isolado).
-   **`Agent()` com `team_name` é o único jeito oficial** de adicionar teammates a um team ativo, após `TeamCreate`. Use `Agent({team_name, name, subagent_type, prompt})` — é o protocolo da spec de Agent Teams.
+1. **Spawn de teammates via `Agent({name, subagent_type, prompt})`** — sem `team_name` (ignorado desde v2.1.178). O time é formado automaticamente com o primeiro spawn.
 2. **NUNCA tentar spawnar teammate a partir de outro teammate** — nested teams são bloqueados por spec. O lead é sempre a main session (essa skill).
 3. **SEMPRE verificar `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`** antes de qualquer formação.
 4. **SEMPRE operar sobre smart-memory** em `docs/smart-memory/` — fonte de verdade compartilhada no padrão Obsidian.
@@ -33,9 +34,26 @@ Somente após confirmar que as ferramentas foram carregadas prosseguir para o fl
 6. **Coordenação exclusivamente via `SendMessage` + Task tools** — jamais via outras vias.
 7. **Objetivos vagos são rejeitados** — "melhorar o sistema" não vale. Sempre 1-2 frases acionáveis.
 8. **Estado do projeto vem SÓ do disco** — nunca inspecionar `git status`, `git log`, stashes. Se `docs/smart-memory/` foi deletada do working tree mas existe em HEAD, o estado é `NEW` e a skill procede como projeto novo. Não tenta restaurar do git.
-9. **Nome do team = `{pasta-do-projeto}-{objetivo-slug}`** — sempre. Evita colisão em `~/.claude/teams/` quando múltiplos projetos usam a skill.
+9. **Label do time = `{pasta-do-projeto}-{objetivo-slug}`** — usada APENAS em `teams-log.md` para rastreamento interno. Não é passada para `Agent()`.
 10. **SEMPRE exibir o stories digest no final de cada resposta** — sem exceção. Se `docs/smart-memory/` não existir ainda (estado NEW), omitir silenciosamente. Se existir mas não houver stories, mostrar bloco vazio. Nunca pular.
 11. **`*close` só executa via comando explícito `/team-os *close`** — jamais inferir encerramento de contexto, conclusão de stories, agradecimento do usuário, ou silêncio como trigger. Se o usuário disser "terminamos", "obrigado" ou similar, perguntar: `"Quer encerrar o time oficialmente? Use /team-os *close se sim."` Nunca acionar o fluxo de encerramento por dedução.
+
+---
+
+## 📺 Monitoramento do time (Agent View)
+
+A partir da v2.1.139, o Claude Code tem **Agent View** — painel unificado de todas as sessões background.
+
+**Informar o usuário após cada spawn de time:**
+```
+💡 Para monitorar o time em tempo real:
+   claude agents          → painel com todas as sessões (Working / Needs Input / Done)
+   claude agents --json   → JSON com estado de cada sessão (útil para scripts)
+   Shift+Down             → ciclar entre teammates no terminal atual
+   Space                  → peek no output de uma sessão sem abrir completo
+```
+
+Quando usar `*status`, complementar com saída de `claude agents --json` se disponível no ambiente.
 
 ---
 
@@ -102,7 +120,7 @@ Invocação do usuário → comportamento:
 | `/team-os *resume` | Lê smart-memory e retoma trabalho em progresso |
 | `/team-os *unblock <agente>` | Resolve blocker específico |
 | `/team-os *enroll <agente>` | Instala "Contrato com team-os" num agente novo |
-| `/team-os *close` | Cleanup: arquiva smart-memory, encerra team |
+| `/team-os *close` | Cleanup: arquiva smart-memory, encerra time (sem TeamDelete — só documentação) |
 
 ---
 
@@ -133,7 +151,7 @@ Rodar `scripts/detect-state.sh`. Retorna um de 4 estados:
 ```bash
 basename "$PWD"
 ```
-Chamar esse valor de `{folder}` — usado no nome do team.
+Chamar esse valor de `{folder}` — usado na label do time.
 
 Perguntar em texto puro:
 ```
@@ -141,15 +159,14 @@ Para formar o time, preciso do objetivo:
 
 Objetivo principal (1-2 frases acionáveis): ___
 
-Nome do time será: {folder}-{objetivo-slug}
+Label do time: {folder}-{objetivo-slug}
 (ex: pasta="rev-os", objetivo="refactor auth" → "rev-os-refactor-auth")
 ```
 
 Validar:
 - Objetivo: mínimo 20 chars, rejeitar genéricos ("melhorar X", "refatorar tudo")
 - Derivar `{objective-slug}` do objetivo (kebab-case, máx 4 palavras, sem stopwords)
-- Montar `team_name = "{folder}-{objective-slug}"`
-- Se colidir com `~/.claude/teams/{team_name}/`, sufixar com `-2`, `-3`, etc.
+- Montar `team_label = "{folder}-{objective-slug}"` (para registro interno em teams-log.md)
 
 ### Etapa 3 — Auditoria automática
 
@@ -202,40 +219,34 @@ Se "ajustar": perguntar quem adicionar/remover, voltar pra etapa 5.
 
 **Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO antes de qualquer passo):**
 ```
-ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop" })
 ```
-`TeamCreate` e `SendMessage` são deferidas — sem esse passo, falham silenciosamente com InputValidationError e nenhum team é formado.
+`SendMessage` e task tools são deferidas — sem esse passo, falham silenciosamente com InputValidationError.
 
-**Passo A — Criar o team:**
-```
-TeamCreate({ team_name: "{folder}-{objetivo-slug}" })
-```
-Cria `~/.claude/teams/{team_name}/` com config e inboxes vazias. Troca o contexto da TaskList para a do team (TaskList é 1:1 com team).
-
-**Passo B — Spawn dos teammates (em paralelo):**
+**Passo A — Spawn dos teammates (em paralelo):**
 
 Para CADA teammate decidido na composição, chamar:
 ```
 Agent({
   subagent_type: "{teammate-name}",
-  team_name: "{folder}-{objetivo-slug}",
   name: "{teammate-name}",
   prompt: "Instruções iniciais: sua task é {X}. Leia docs/smart-memory/{path-relevante} antes de começar. Consulte TaskList para ver sua task atribuída. Avise o lead via SendMessage quando concluir."
 })
 ```
 
-Após os N spawns, todos os teammates ficam:
+O time é criado automaticamente quando o primeiro `Agent()` é executado. Todos os teammates ficam:
 - Addressable via `SendMessage({to: "teammate-name"})`
-- Visíveis no painel do usuário (Shift+Tab)
+- Visíveis no painel do usuário (Shift+Down no terminal ou `claude agents` para painel completo)
 - Rodando em paralelo em background
 
-**Passo C — Criar tasks DEPOIS do TeamCreate:**
-TaskList é 1:1 com team. Se você chamar `TaskCreate` ANTES do `TeamCreate`, as tasks vão pra TaskList default e desaparecem quando o team é criado. Ordem correta:
-1. TeamCreate
-2. Agent() × N (spawn teammates com prompt inicial já contendo a instrução)
-3. (Opcional) TaskCreate pra formalizar tasks no task list do team — mas teammates geralmente já criam as próprias via auto-organização.
+**Passo B — Criar tasks:**
+TaskList é vinculada automaticamente à sessão atual. Criar tasks APÓS os spawns:
+```
+TaskCreate({ title: "{titulo}", description: "{desc}", assignee: "{teammate}" })
+```
+Teammates também auto-organizam suas próprias tasks via TaskCreate.
 
-**Passo D — Coordenação contínua:**
+**Passo C — Coordenação contínua:**
 - `SendMessage({to: "teammate-name", message: "..."})` para direcionar
 - Teammates avisam automaticamente via SendMessage quando concluem — chega como novo turno
 - Não fazer polling
@@ -247,21 +258,20 @@ TaskList é 1:1 com team. Se você chamar `TaskCreate` ANTES do `TeamCreate`, as
 Antes de chamar as tools acima, pode anunciar ao usuário (em texto normal) para contexto:
 
 ```
-Criando Agent Team "{folder}-{objetivo-slug}" para: "{objetivo}"
+Criando Agent Team "{team_label}" para: "{objetivo}"
 
 Teammates: {lista}
 
 Smart-memory compartilhada: docs/smart-memory/
+Para monitorar: claude agents
 ```
-
-Isso é só informativo — a ativação real é via TeamCreate + Agent() como acima.
 
 ### Etapa 7 — Registrar no smart-memory
 
 Escrever entrada em `docs/smart-memory/ops/teams-log.md`:
 
 ```markdown
-## {data} — Team {nome}
+## {data} — Team {team_label}
 
 **Objetivo:** {objetivo}
 **Lead:** team-os (skill)
@@ -278,9 +288,9 @@ Atualizar `docs/smart-memory/shared-context.md` com estado inicial dos teammates
 ### Etapa 8 — Handoff inicial
 
 Dependendo do objetivo:
-- Se envolve arquitetura/stories novas → `SendMessage(dev-architect, "{objetivo}. Quebre em stories e popule backlog em docs/smart-memory/stories/")`
-- Se é bug/hardening → `SendMessage(dev-dev-delta, ...)`
-- Se é research → `SendMessage(dev-analyst, ...)`
+- Se envolve arquitetura/stories novas → `SendMessage({to: "dev-architect", message: "{objetivo}. Quebre em stories e popule backlog em docs/smart-memory/stories/"})`
+- Se é bug/hardening → `SendMessage({to: "dev-dev-delta", message: ...})`
+- Se é research → `SendMessage({to: "dev-analyst", message: ...})`
 - Generic fallback → criar story(ies) via `*plan` e despachar via `*dispatch`
 
 ---
@@ -293,14 +303,14 @@ Quando `detect-state.sh` retorna `NEW`, **a skill NÃO deve apenas oferecer `*in
 
 #### Mensagem de abertura (exata)
 
-Derivar `{folder}` via `basename "$PWD"`. Team name será `{folder}-discovery`.
+Derivar `{folder}` via `basename "$PWD"`. Label do time será `{folder}-discovery`.
 
 ```
 🆕 Smart-memory não existe neste projeto.
 
 Vou inicializar smart-memory + formar team de descoberta:
 
-  Team: {folder}-discovery
+  Label: {folder}-discovery
   Tarefas em paralelo:
     • modules + architecture (dev-architect, se disponível)
     • tech-stack + conventions (dev-analyst, se disponível)
@@ -362,25 +372,18 @@ Se algum agente esperado não existir, seguir apenas com os disponíveis. Nunca 
 
 **Passo 4 — Formar Agent Team (protocolo explícito)**
 
-Team name: `{folder}-discovery` (onde `{folder}` vem de `basename "$PWD"`).
+Label: `{folder}-discovery`.
 
 **Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO):**
 ```
-ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
-```
-Sem isso, TeamCreate falha com InputValidationError e o bootstrap nunca forma o team real.
-
-**A. TeamCreate primeiro:**
-```
-TeamCreate({ team_name: "{folder}-discovery" })
+ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop" })
 ```
 
-**B. Spawn dos teammates com instruções embutidas no prompt inicial** (em paralelo — uma chamada `Agent()` por teammate):
+**A. Spawn dos teammates com instruções embutidas no prompt inicial** (em paralelo — uma chamada `Agent()` por teammate):
 
 ```
 Agent({
   subagent_type: "dev-architect",
-  team_name: "{folder}-discovery",
   name: "dev-architect",
   prompt: "Sua task: *discover — mapeie módulos e arquitetura deste projeto.
   IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
@@ -393,7 +396,6 @@ Agent({
 
 Agent({
   subagent_type: "dev-analyst",
-  team_name: "{folder}-discovery",
   name: "dev-analyst",
   prompt: "Sua task: *discover — mapeie tech stack, dependências e convenções de código.
   IMPORTANTE: graphify-out/GRAPH_REPORT.md foi gerado pelo lead — leia-o PRIMEIRO antes de explorar arquivos.
@@ -402,16 +404,25 @@ Agent({
   Avise-me via SendMessage ao concluir."
 })
 
-{se DB} Agent({ subagent_type: "dev-data-engineer", team_name: "{folder}-discovery", name: "dev-data-engineer",
+{se DB} Agent({
+  subagent_type: "dev-data-engineer",
+  name: "dev-data-engineer",
   prompt: "Sua task: *discover — mapeie schema existente. Produza docs/smart-memory/agents/data-engineer/schema.md. Avise via SendMessage ao concluir."
 })
 
-{se frontend} Agent({ subagent_type: "dev-ux", team_name: "{folder}-discovery", name: "dev-ux",
+{se frontend} Agent({
+  subagent_type: "dev-ux",
+  name: "dev-ux",
   prompt: "Sua task: *discover — catalogue componentes existentes. Produza docs/smart-memory/agents/ux/components.md. Avise via SendMessage ao concluir."
 })
 ```
 
-Após os spawns, os teammates ficam ativos em paralelo (visíveis em Shift+Tab) e auto-organizam suas próprias tasks via TaskCreate.
+Após os spawns, os teammates ficam ativos em paralelo. Informar ao usuário:
+```
+💡 Time de descoberta ativo. Para acompanhar:
+   claude agents   → painel de todas as sessões
+   Shift+Down      → ciclar entre teammates no terminal
+```
 
 **Passo 5 — (não precisa despachar separadamente)**
 
@@ -520,7 +531,7 @@ Se o usuário chamar `*discover` num projeto em estado `NEW`, redirecionar pro `
 
 Se existe dev-architect disponível:
 ```
-SendMessage(dev-architect, "*plan {objetivo}. Quebre em stories 1.1, 1.2, ... crie arquivos em docs/smart-memory/stories/backlog/. Use template em .claude/skills/team-os/templates/story.md")
+SendMessage({to: "dev-architect", message: "*plan {objetivo}. Quebre em stories 1.1, 1.2, ... crie arquivos em docs/smart-memory/stories/backlog/. Use template em .claude/skills/team-os/templates/story.md"})
 ```
 
 Se não há architect disponível, lead faz inline — usa o template.
@@ -530,25 +541,25 @@ Se não há architect disponível, lead faz inline — usa o template.
 **Passo 0 — Verificar team ativo antes de qualquer dispatch:**
 
 Ler `docs/smart-memory/ops/teams-log.md` — localizar a última entrada:
-- Se `**Status:** ativo` → team existe, prosseguir
-- Se `**Status:** encerrado` ou arquivo não existe → não há team ativo
+- Se `**Status:** ativo` → team existe (nesta sessão), prosseguir
+- Se `**Status:** encerrado` ou arquivo não existe → não há team ativo nesta sessão
 
 Se não há team ativo:
 ```
-⚠️  Nenhum Agent Team ativo detectado.
+⚠️  Nenhum Agent Team ativo detectado nesta sessão.
 
-Último time registrado: {nome} (encerrado em {data})
+Último time registrado: {team_label} (encerrado em {data})
 Teammates: {lista do teams-log}
 
 Opções:
-  1. Reativar este time (TeamCreate + Agent() × N com os mesmos teammates)
+  1. Reativar este time (respawnar os mesmos teammates)
   2. Formar novo time (volta para Etapa 4-6 do fluxo principal)
   3. Cancelar
 
 Escolha (1/2/3):
 ```
 
-Se opção 1 (reativar): carregar ferramentas deferidas primeiro (`ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })`), depois executar `TeamCreate({ team_name: "{nome}" })` + `Agent()` para cada teammate do último time registrado, com prompt: `"Retomando trabalho — leia docs/smart-memory/shared-context.md e stories/active/ para se atualizar. Avise via SendMessage ao concluir sua task."` Depois prosseguir para o passo 1.
+Se opção 1 (reativar): carregar ferramentas deferidas primeiro (`ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop" })`), depois executar `Agent()` para cada teammate do último time registrado (sem `team_name`), com prompt: `"Retomando trabalho — leia docs/smart-memory/shared-context.md e stories/active/ para se atualizar. Avise via SendMessage ao concluir sua task."` Depois prosseguir para o passo 1.
 
 Se opção 2: ir para Etapa 4 do fluxo principal. Se opção 3: cancelar.
 
@@ -605,6 +616,11 @@ Mostrar:
 - Blockers registrados
 - Últimas 5 entradas do `delegation-log.md`
 
+Complementar com dados do Agent View quando disponível:
+```bash
+claude agents --json 2>/dev/null | jq '.[] | {id, state, name, waitingFor}' 2>/dev/null || echo "(agent view não disponível neste contexto)"
+```
+
 ### `*audit` — Guardião do smart-memory
 
 Rodar em paralelo:
@@ -641,18 +657,18 @@ Quais aplicar? (todos/específicos/nenhum)
 1. Ler `shared-context.md` → quem estava fazendo o quê
 2. Ler `stories/active/` e `stories/in-review/` → o que estava em progresso
 3. Ler `delegation-log.md` → últimas delegações
-4. Ler `ops/teams-log.md` → nome do time e lista de teammates
+4. Ler `ops/teams-log.md` → label do time e lista de teammates
 5. Mostrar resumo:
    ```
    📋 Estado anterior detectado:
-   - Team ativo: {nome} ({data de criação})
+   - Team: {team_label} ({data de criação})
    - {N} stories em progresso / {N} em review
    - {N} tasks pendentes
    - Último agente ativo: {nome} ({tempo} atrás)
    - Teammates do time: {lista do teams-log}
    
    Opções:
-     1. Retomar este team (reativa teammates via TeamCreate + Agent())
+     1. Retomar este time (respawnar teammates com contexto anterior)
      2. Arquivar e iniciar novo
      3. Auditar antes de decidir (*audit)
    ```
@@ -663,19 +679,13 @@ Executar o protocolo explícito de reativação — teammates NÃO persistem ent
 
 **Passo 0 — Carregar ferramentas deferidas (OBRIGATÓRIO):**
 ```
-ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
+ToolSearch({ query: "select:SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop" })
 ```
 
-**A. Recriar o team:**
-```
-TeamCreate({ team_name: "{nome-do-time-do-teams-log}" })
-```
-
-**B. Respawnar cada teammate registrado no times-log (em paralelo):**
+**A. Respawnar cada teammate registrado no times-log (em paralelo):**
 ```
 Agent({
   subagent_type: "{teammate}",
-  team_name: "{nome-do-time}",
   name: "{teammate}",
   prompt: "Retomando trabalho interrompido.
   Leia docs/smart-memory/shared-context.md para se contextualizar.
@@ -687,14 +697,15 @@ Agent({
 
 Após os spawns, avisar o usuário:
 ```
-✅ Time {nome} reativado com {N} teammates.
+✅ Time {team_label} reativado com {N} teammates.
    Cada teammate foi recontextualizado com o estado anterior.
+   Para monitorar: claude agents
    Use /team-os *status para ver o estado atual.
 ```
 
 ### `*unblock <agente>`
 
-1. Enviar `SendMessage({agente}, "Reporte blocker atual em detalhe")`
+1. Enviar `SendMessage({to: "{agente}", message: "Reporte blocker atual em detalhe"})`
 2. Analisar retorno
 3. Decidir: reassignar, fornecer contexto, ou escalar ao usuário
 4. Registrar decisão em `delegation-log.md`
@@ -715,35 +726,29 @@ Depois confirmar:
 
 **⚠️ Guard de confirmação — executar ANTES de qualquer outro passo:**
 
-Ler `docs/smart-memory/ops/teams-log.md` → última entrada com `**Status:** ativo` → extrair `{team_name_ativo}`.
+Ler `docs/smart-memory/ops/teams-log.md` → última entrada com `**Status:** ativo` → extrair `{team_label_ativo}`.
 
 Exibir:
 ```
-⚠️  Confirmar encerramento do time "{team_name_ativo}"?
+⚠️  Confirmar encerramento do time "{team_label_ativo}"?
 
   Isso irá:
   - Arquivar docs/smart-memory/ em docs/smart-memory/archive/
-  - Encerrar todos os teammates (TeamDelete)
-  - Registrar encerramento no teams-log
+  - Registrar encerramento no teams-log (teammates param naturalmente ao fim da sessão)
 
   Confirmar? (s/n, default n):
 ```
 
-Se resposta **não** for `s` ou afirmativa explícita → **cancelar imediatamente**. Não executar nenhum passo abaixo. Responder: `"Encerramento cancelado. Time {team_name_ativo} continua ativo."`
+Se resposta **não** for `s` ou afirmativa explícita → **cancelar imediatamente**. Não executar nenhum passo abaixo. Responder: `"Encerramento cancelado. Time {team_label_ativo} continua ativo."`
 
 1. Rodar `*audit` final
-2. Arquivar smart-memory: `cp -r docs/smart-memory docs/smart-memory/archive/{nome-team}-{data}/`
-3. Carregar ferramentas deferidas e encerrar o Agent Team:
-   ```
-   ToolSearch({ query: "select:TeamCreate,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet,TaskOutput,TaskStop,TeamDelete" })
-   TeamDelete({ team_name: "{team_name_ativo}" })
-   ```
-   `{team_name_ativo}` = nome lido de `docs/smart-memory/ops/teams-log.md` (última entrada com `**Status:** ativo`)
-4. Registrar encerramento em `teams-log.md` com status final:
+2. Arquivar smart-memory: `cp -r docs/smart-memory docs/smart-memory/archive/{team_label_ativo}-{data}/`
+3. Registrar encerramento em `teams-log.md` com status final:
    ```markdown
    **Status:** encerrado
    **Encerrado:** {ISO timestamp}
    ```
+   > Nota: teammates param naturalmente ao encerrar a sessão. Não há `TeamDelete` — o time é descartado automaticamente pelo Claude Code.
 
 ---
 
@@ -761,7 +766,6 @@ Se resposta **não** for `s` ou afirmativa explícita → **cancelar imediatamen
 |---|---|
 | Env var Teams inativa | Parar, instruir usuário a adicionar em settings.json, pedir reload |
 | Nenhum agente em `agents/` | Parar, instruir a criar pelo menos 1 agente |
-| Nome de time colide com existente | Pedir outro nome |
 | Objetivo genérico | Pedir refinamento com exemplo de objetivo aceitável |
 | Teammate não conforme | Oferecer `*enroll` automático ou continuar com risco |
 | SendMessage falha | Registrar em `delegation-log.md` como erro e tentar fallback (outro agente ou lead inline) |

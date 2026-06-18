@@ -4,7 +4,7 @@ description: Lyrith — Meeting Intelligence Kaelthari. Ponto de entrada para TO
 model: sonnet
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
-color: "#F59E0B"
+color: yellow
 ---
 
 ## Contrato com team-os

@@ -1,0 +1,8 @@
+{
+  "name": "ct-dashboard",
+  "type": "module",
+  "scripts": {
+    "start": "bun server.js",
+    "dev": "PORT=3099 CT_PROJECT_PATH=$PWD/.. bun server.js"
+  }
+}

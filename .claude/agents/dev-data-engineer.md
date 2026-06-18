@@ -3,6 +3,7 @@ name: dev-data-engineer
 description: Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.
 model: sonnet
 memory: project
+effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: orange
 ---

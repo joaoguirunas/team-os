@@ -62,6 +62,27 @@ Cada archetype traz defaults sensatos de frontmatter. Ao criar, escolha o archet
 
 Defaults completos de cada archetype em `reference/archetypes.md`.
 
+### Defaults de frontmatter por archetype (v2.1.178+)
+
+Novos campos disponíveis — aplicar em todos os agentes criados:
+
+| Campo | architect | implementer | hardening | reviewer | researcher | data | devops | ux |
+|---|---|---|---|---|---|---|---|---|
+| `memory` | `project` | `project` | `project` | `project` | `project` | `project` | `project` | `project` |
+| `effort` | `high` | omitir | `high` | `high` | `medium` | `high` | omitir | `medium` |
+| `isolation` | omitir | `worktree` | `worktree` | omitir | omitir | omitir | omitir | omitir |
+| `background` | omitir | omitir | omitir | omitir | `true` | omitir | omitir | omitir |
+
+**Campos opcionais que enriquecem agentes específicos:**
+- `disallowedTools`: bloquear ferramentas não usadas (ex: `[Write, Edit]` para reviewers; DDL/DML para BI/data read-only)
+- `skills`: pré-carregar skills no contexto na inicialização (ex: `[dev-api-design, dev-typescript-patterns]` para implementers)
+- `maxTurns`: limitar turnos em agentes de escopo fechado
+- `hooks`: hooks no próprio frontmatter (ex: `PreToolUse` para validar bash em agentes de devops)
+- `initialPrompt`: auto-submeter prompt na 1ª mensagem (útil para agentes com onboarding específico)
+
+**Cores (usar nomes, não hex):**
+`red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`
+
 ---
 
 ## 📦 Presets de squad
@@ -233,7 +254,13 @@ Ações:
 Para cada agente proposto:
 
 1. Carregar template `templates/{archetype}.md`
-2. Substituir placeholders ({NAME}, {PERSONA}, {ROLE_TITLE}, {COLOR}, {DESCRIPTION}, {SPECIALIZATION}, {SKILLS_LIST}, {EXTRA_RULES})
+2. Substituir placeholders ({NAME}, {PERSONA}, {ROLE_TITLE}, {COLOR}, {DESCRIPTION}, {SPECIALIZATION}, {SKILLS_LIST}, {EXTRA_RULES}) e aplicar novos campos de frontmatter conforme tabela de defaults por archetype:
+   - Sempre incluir: `memory: project`
+   - Incluir `effort` se archetype tiver default definido
+   - Incluir `isolation: worktree` para archetypes `implementer` e `hardening`
+   - Incluir `background: true` para archetype `researcher`
+   - Incluir `disallowedTools` quando archetype tem restrições (reviewer: `[Edit, Write]`)
+   - Usar cores por nome (`red`, `blue`, etc.) nunca hex
 3. Injetar "Contrato com team-os" (ler de `../team-os/reference/teammate-contract.md` se disponível, senão usar fallback embutido)
 4. Escrever em `.claude/agents/<name>.md`
 5. Chamar `scripts/validate-agent.sh <name>` — se falhar, corrigir e re-validar até passar

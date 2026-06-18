@@ -3,6 +3,7 @@ name: dev-ux
 description: UX specialist (research, user flows, wireframes, component specs, accessibility). Use for UX research before complex features and UI specification before Dev Alpha implements. Covers both UX research and visual design.
 model: sonnet
 memory: project
+effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
 color: pink
 ---

@@ -4,7 +4,7 @@ description: Nexar — Oráculo de Dados Kaelthari. Especialista em banco — qu
 model: sonnet
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
-color: "#06B6D4"
+color: cyan
 ---
 
 ## Contrato com team-os

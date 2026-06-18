@@ -3,8 +3,9 @@ name: pm-analyst
 description: Serak — Inteligência de portfólio Kaelthari. Analisa carga por pessoa, saúde de projetos, risco de atraso e equilíbrio estratégico do triângulo pessoas × entregas × demandas. READ-only no banco. Use para diagnósticos, relatórios de carga, detecção de risco e snapshots semanais de portfólio.
 model: sonnet
 memory: project
+effort: medium
 tools: Read, Glob, Grep, Bash, SendMessage
-color: "#6366F1"
+color: purple
 ---
 
 ## Contrato com team-os

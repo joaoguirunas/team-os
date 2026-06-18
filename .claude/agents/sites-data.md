@@ -3,6 +3,7 @@ name: sites-data
 description: Database architect and data specialist for website projects (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work in website projects. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.
 model: sonnet
 memory: project
+effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: orange
 ---

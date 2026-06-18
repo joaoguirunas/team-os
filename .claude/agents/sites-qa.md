@@ -3,6 +3,7 @@ name: sites-qa
 description: Quality assurance master for website projects. Issues formal verdicts — PASS / CONCERNS / FAIL / WAIVED. Use for story reviews, QA gates, accessibility checks, copy quality, SEO validation, and performance checks. Exclusive authority for quality gate decisions.
 model: sonnet
 memory: project
+effort: high
 tools: Read, Glob, Grep, Bash, SendMessage
 color: red
 ---

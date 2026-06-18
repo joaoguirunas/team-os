@@ -4,7 +4,7 @@ description: Aevon — Sábio das Metodologias Kaelthari. Scrum Master nativo e 
 model: sonnet
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
-color: "#F97316"
+color: orange
 ---
 
 ## Contrato com team-os

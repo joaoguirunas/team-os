@@ -4,7 +4,7 @@ description: Faelor — Forjador de Sistemas Kaelthari. Cria e mantém templates
 model: sonnet
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
-color: "#0EA5E9"
+color: blue
 ---
 
 ## Contrato com team-os

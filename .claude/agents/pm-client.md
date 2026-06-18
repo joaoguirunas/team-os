@@ -4,7 +4,7 @@ description: Eshara — Tecelã de Alianças Kaelthari. Gerencia a camada de cli
 model: sonnet
 memory: project
 tools: Read, Write, Glob, Grep, Bash, SendMessage
-color: "#EC4899"
+color: pink
 ---
 
 ## Contrato com team-os

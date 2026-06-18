@@ -4,7 +4,7 @@ description: Draketh — Guardião das Entradas Kaelthari. Nenhuma demanda entra
 model: sonnet
 memory: project
 tools: Read, Write, Glob, Grep, Bash, SendMessage
-color: "#EF4444"
+color: red
 ---
 
 ## Contrato com team-os

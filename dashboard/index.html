@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CT Dashboard — Agent Teams</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --muted: #666;
+    --accent: #7c6af7;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --orange: #f97316;
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 13px; line-height: 1.5; }
+
+  /* Header */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; }
+  .header-meta { display: flex; gap: 16px; align-items: center; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .clock { color: var(--muted); font-size: 12px; }
+
+  /* Project selector */
+  .project-bar { padding: 8px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .project-bar label { color: var(--muted); font-size: 11px; }
+  .project-bar input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 4px; font-family: inherit; font-size: 12px; width: 460px; }
+  .project-bar button { background: var(--accent); border: none; color: white; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+  /* Layout */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 1px; background: var(--border); min-height: calc(100vh - 80px); }
+  .panel { background: var(--bg); padding: 0; overflow: hidden; }
+  .panel-full { grid-column: 1 / -1; }
+
+  /* Panel header */
+  .panel-header { padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .panel-header h2 { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .panel-count { font-size: 11px; color: var(--accent); background: #1a1640; padding: 2px 8px; border-radius: 10px; }
+  .panel-body { padding: 12px 16px; max-height: 280px; overflow-y: auto; }
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Sessions */
+  .session-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .session-row:last-child { border-bottom: none; }
+  .session-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+  .session-info { flex: 1; min-width: 0; }
+  .session-name { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .session-summary { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .session-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .badge-working  { background: #1a3a1a; color: var(--green); }
+  .badge-blocked  { background: #3a2a00; color: var(--yellow); }
+  .badge-done     { background: #1a2a1a; color: #86efac; }
+  .badge-failed   { background: #3a1a1a; color: var(--red); }
+  .badge-stopped  { background: #1a1a1a; color: var(--muted); }
+  .badge-idle     { background: #1a1a1a; color: var(--muted); }
+
+  /* Teams */
+  .team-card { margin-bottom: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .team-name { padding: 8px 12px; font-weight: 600; color: var(--accent); font-size: 12px; border-bottom: 1px solid var(--border); }
+  .team-members { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .member-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+  /* Tasks */
+  .task-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .task-row:last-child { border-bottom: none; }
+  .task-status-icon { flex-shrink: 0; font-size: 13px; }
+  .task-title { flex: 1; min-width: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-assignee { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .task-group-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 0 4px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+
+  /* Stories */
+  .stories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+  .stories-col { background: var(--bg); }
+  .stories-col-header { padding: 8px 12px; background: var(--surface); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .stories-col-body { padding: 8px 12px; max-height: 220px; overflow-y: auto; }
+  .story-item { padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .story-item:last-child { border-bottom: none; }
+  .story-title { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .story-assignee { font-size: 11px; color: var(--muted); }
+  .col-backlog .stories-col-header { color: var(--muted); }
+  .col-active .stories-col-header { color: var(--green); }
+  .col-review .stories-col-header { color: var(--yellow); }
+  .col-done .stories-col-header { color: var(--cyan); }
+
+  /* Empty states */
+  .empty { color: var(--muted); font-size: 12px; padding: 16px 0; text-align: center; }
+
+  /* Colors for agent names */
+  .c-red    { color: var(--red); }
+  .c-blue   { color: var(--blue); }
+  .c-green  { color: var(--green); }
+  .c-yellow { color: var(--yellow); }
+  .c-purple { color: var(--purple); }
+  .c-orange { color: var(--orange); }
+  .c-pink   { color: var(--pink); }
+  .c-cyan   { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ CT Dashboard — Agent Teams</h1>
+  <div class="header-meta">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText" style="font-size:11px;color:var(--muted)">connecting…</span>
+    <span class="clock" id="clock"></span>
+  </div>
+</header>
+
+<div class="project-bar">
+  <label>Projeto:</label>
+  <input type="text" id="projectInput" placeholder="/caminho/absoluto/do/projeto (ex: /Users/joao/Desktop/Projetos/meu-app)" />
+  <button onclick="setProject()">Setar</button>
+</div>
+
+<div class="grid">
+  <!-- Sessions -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>🖥 Sessões Background</h2>
+      <span class="panel-count" id="sessionsCount">0</span>
+    </div>
+    <div class="panel-body" id="sessionsList">
+      <div class="empty">Aguardando dados…</div>
+    </div>
+  </div>
+
+  <!-- Teams -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>👥 Agent Teams</h2>
+      <span class="panel-count" id="teamsCount">0</span>
+    </div>
+    <div class="panel-body" id="teamsList">
+      <div class="empty">Nenhum time ativo</div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>✅ Tasks</h2>
+      <span class="panel-count" id="tasksCount">0</span>
+    </div>
+    <div class="panel-body" id="tasksList">
+      <div class="empty">Nenhuma task</div>
+    </div>
+  </div>
+
+  <!-- Stories (full width) -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>📋 Smart-Memory Stories</h2>
+      <span class="panel-count" id="storiesCount">—</span>
+    </div>
+    <div id="storiesContainer">
+      <div class="stories-grid">
+        <div class="stories-col col-backlog">
+          <div class="stories-col-header"><span>○ Backlog</span><span id="cntBacklog">0</span></div>
+          <div class="stories-col-body" id="colBacklog"><div class="empty">—</div></div>
+        </div>
+        <div class="stories-col col-active">
+          <div class="stories-col-header"><span>▶ Active</span><span id="cntActive">0</span></div>
+          <div class="stories-col-body" id="colActive"><div class="empty">—</div></div>
+        </div>
+        <div class="stories-col col-review">
+          <div class="stories-col-header"><span>◐ In-Review</span><span id="cntReview">0</span></div>
+          <div class="stories-col-body" id="colReview"><div class="empty">—</div></div>
+        </div>
+        <div class="stories-col col-done">
+          <div class="stories-col-header"><span>✓ Done</span><span id="cntDone">0</span></div>
+          <div class="stories-col-body" id="colDone"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR');
+}, 1000);
+
+// State icons
+const STATE_ICONS = {
+  working: '✻',
+  blocked: '⚠',
+  done: '✓',
+  failed: '✗',
+  stopped: '·',
+  idle: '○',
+};
+
+function sessionIcon(state) {
+  return STATE_ICONS[state] || '·';
+}
+
+function sessionBadgeClass(state) {
+  return `badge-${state}` || 'badge-idle';
+}
+
+function agentColor(name) {
+  const colorMap = {
+    analyst: 'cyan', architect: 'purple', qa: 'red', devops: 'green',
+    ux: 'pink', 'dev-alpha': 'yellow', 'dev-beta': 'orange',
+    'dev-delta': 'red', 'dev-gamma': 'green', 'data-engineer': 'orange',
+    bi: 'purple', 'data-performance': 'orange', strategist: 'red',
+    publisher: 'green', content: 'yellow', design: 'pink',
+    photo: 'cyan', video: 'orange', coach: 'orange', reporter: 'yellow',
+    planner: 'purple', demand: 'red', engineer: 'blue',
+    google: 'blue', meta: 'cyan', tiktok: 'pink', automation: 'purple',
+    copywriter: 'yellow', designer: 'green', 'traffic-bi': 'orange',
+  };
+  for (const [key, color] of Object.entries(colorMap)) {
+    if (name.includes(key)) return color;
+  }
+  return 'text';
+}
+
+// Render sessions
+function renderSessions(sessions) {
+  const el = document.getElementById('sessionsList');
+  const countEl = document.getElementById('sessionsCount');
+  if (!sessions || sessions.length === 0) {
+    el.innerHTML = '<div class="empty">Nenhuma sessão background ativa</div>';
+    countEl.textContent = '0';
+    return;
+  }
+  countEl.textContent = sessions.length;
+  el.innerHTML = sessions.map(s => `
+    <div class="session-row">
+      <div class="session-icon" style="color: var(--${stateColor(s.state)})">${sessionIcon(s.state)}</div>
+      <div class="session-info">
+        <div class="session-name">${s.name || s.id || 'sessão'}</div>
+        <div class="session-summary">${s.waitingFor ? '⚠ ' + s.waitingFor : (s.cwd ? s.cwd.split('/').slice(-2).join('/') : '')}</div>
+      </div>
+      <span class="session-badge ${sessionBadgeClass(s.state)}">${s.state || 'idle'}</span>
+    </div>
+  `).join('');
+}
+
+function stateColor(state) {
+  const m = { working: 'green', blocked: 'yellow', done: 'cyan', failed: 'red', stopped: 'muted', idle: 'muted' };
+  return m[state] || 'muted';
+}
+
+// Render teams
+function renderTeams(teams) {
+  const el = document.getElementById('teamsList');
+  const countEl = document.getElementById('teamsCount');
+  if (!teams || teams.length === 0) {
+    el.innerHTML = '<div class="empty">Nenhum Agent Team ativo</div>';
+    countEl.textContent = '0';
+    return;
+  }
+  countEl.textContent = teams.length;
+  el.innerHTML = teams.map(t => {
+    const members = t.members || [];
+    const memberChips = members.map(m => {
+      const color = agentColor(m.name || m.agent_type || '');
+      return `<span class="member-chip c-${color}">${m.name || m.agent_type || 'teammate'}</span>`;
+    }).join('');
+    return `
+      <div class="team-card">
+        <div class="team-name">⬡ ${t.id || t.name || 'team'}</div>
+        <div class="team-members">${memberChips || '<span style="color:var(--muted);font-size:11px">sem membros registrados</span>'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Render tasks
+function renderTasks(tasks) {
+  const el = document.getElementById('tasksList');
+  const countEl = document.getElementById('tasksCount');
+
+  const allTasks = [];
+  for (const [teamId, taskList] of Object.entries(tasks || {})) {
+    for (const t of (taskList || [])) {
+      if (t) allTasks.push({ ...t, teamId });
+    }
+  }
+
+  if (allTasks.length === 0) {
+    el.innerHTML = '<div class="empty">Nenhuma task no task list</div>';
+    countEl.textContent = '0';
+    return;
+  }
+
+  countEl.textContent = allTasks.length;
+
+  // Agrupar por status
+  const groups = { 'in_progress': [], 'pending': [], 'completed': [] };
+  for (const t of allTasks) {
+    const status = t.status || 'pending';
+    if (!groups[status]) groups[status] = [];
+    groups[status].push(t);
+  }
+
+  const labels = { in_progress: '▶ Em andamento', pending: '○ Pendentes', completed: '✓ Concluídas' };
+  const icons = { in_progress: '▶', pending: '○', completed: '✓' };
+  const colors = { in_progress: 'var(--green)', pending: 'var(--muted)', completed: 'var(--cyan)' };
+
+  let html = '';
+  for (const [status, label] of Object.entries(labels)) {
+    const list = groups[status] || [];
+    if (list.length === 0) continue;
+    html += `<div class="task-group-label">${label} (${list.length})</div>`;
+    html += list.map(t => `
+      <div class="task-row">
+        <span class="task-status-icon" style="color:${colors[status]}">${icons[status]}</span>
+        <span class="task-title">${t.title || t.description || 'task'}</span>
+        <span class="task-assignee">${t.assignee || ''}</span>
+      </div>
+    `).join('');
+  }
+
+  el.innerHTML = html || '<div class="empty">Nenhuma task</div>';
+}
+
+// Render stories
+function renderStories(stories) {
+  const countEl = document.getElementById('storiesCount');
+  if (!stories) {
+    countEl.textContent = '—';
+    return;
+  }
+
+  const states = [
+    { key: 'backlog', elId: 'colBacklog', cntId: 'cntBacklog' },
+    { key: 'active', elId: 'colActive', cntId: 'cntActive' },
+    { key: 'in-review', elId: 'colReview', cntId: 'cntReview' },
+    { key: 'done', elId: 'colDone', cntId: 'cntDone' },
+  ];
+
+  let total = 0;
+  for (const { key, elId, cntId } of states) {
+    const items = stories[key] || [];
+    total += items.length;
+    document.getElementById(cntId).textContent = items.length;
+    const el = document.getElementById(elId);
+    if (items.length === 0) {
+      el.innerHTML = '<div class="empty">—</div>';
+    } else {
+      el.innerHTML = items.map(s => `
+        <div class="story-item">
+          <div class="story-title" title="${escHtml(s.title)}">${escHtml(s.title)}</div>
+          ${s.assignee ? `<div class="story-assignee">${escHtml(s.assignee)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+  }
+  countEl.textContent = total;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// SSE connection
+let evtSource = null;
+let projectPath = '';
+
+function connect() {
+  if (evtSource) evtSource.close();
+  const url = '/events' + (projectPath ? `?project=${encodeURIComponent(projectPath)}` : '');
+  evtSource = new EventSource(url);
+
+  evtSource.onopen = () => {
+    document.getElementById('statusDot').className = 'status-dot connected';
+    document.getElementById('statusText').textContent = 'conectado';
+  };
+
+  evtSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      renderSessions(data.sessions);
+      renderTeams(data.teams);
+      renderTasks(data.tasks);
+      renderStories(data.stories);
+    } catch {}
+  };
+
+  evtSource.onerror = () => {
+    document.getElementById('statusDot').className = 'status-dot';
+    document.getElementById('statusText').textContent = 'reconectando…';
+    setTimeout(connect, 3000);
+  };
+}
+
+function setProject() {
+  projectPath = document.getElementById('projectInput').value.trim();
+  connect();
+}
+
+// Inicializar
+connect();
+document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR');
+</script>
+</body>
+</html>
