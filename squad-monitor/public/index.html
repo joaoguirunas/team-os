@@ -9,100 +9,110 @@
 <body>
 <div id="app">
 
-  <!-- ZONA 1: Header ─────────────────────────────────────────── -->
+  <!-- Header (64px) ─────────────────────────────────────────────── -->
   <header id="header">
     <div class="header-brand">
-      <span class="header-title">Squad Monitor</span>
-      <span class="header-version">v0.1</span>
+      <span class="brand-triangle"></span>
+      <span class="brand-wordmark">Squad <em>Monitor</em></span>
+      <span class="brand-eyebrow">claude · teams</span>
     </div>
 
-    <div class="header-stats">
-      <!-- Active agents -->
-      <div class="stat-group">
-        <span class="stat-label">Ativos</span>
-        <span class="stat-value highlight" id="stat-active">0</span>
-      </div>
+    <div class="header-right">
+      <!-- Live toggle -->
+      <button class="live-toggle" id="live-toggle" aria-label="Toggle live feed">
+        <span class="live-dot" id="live-dot"></span>
+        <span class="live-label" id="live-label">CONECTANDO</span>
+      </button>
 
-      <!-- Done agents -->
-      <div class="stat-group">
-        <span class="stat-label">Concluídos</span>
-        <span class="stat-value" id="stat-done">0</span>
-      </div>
-
-      <!-- Tool calls -->
-      <div class="stat-group">
-        <span class="stat-label">Calls</span>
-        <span class="stat-value" id="stat-calls">0</span>
-      </div>
-
-      <!-- Tokens (quando disponível via transcript) -->
-      <div class="stat-group">
-        <span class="stat-label">Tokens</span>
-        <span class="stat-value" id="stat-tokens">—</span>
-      </div>
-
-      <!-- Connection status -->
-      <div class="connection-wrap">
-        <span class="connection-dot connecting" id="conn-dot"></span>
-        <span class="connection-label" id="conn-label">conectando</span>
+      <!-- Metrics group -->
+      <div class="metrics-group">
+        <div class="metric-item">
+          <span class="metric-label">Ativos</span>
+          <span class="metric-value metric-ember" id="stat-active">0</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Done</span>
+          <span class="metric-value" id="stat-done">0</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Calls</span>
+          <span class="metric-value" id="stat-calls">0</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Tokens</span>
+          <span class="metric-value" id="stat-tokens">—</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Sessão</span>
+          <span class="metric-value" id="stat-dur">—:—</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Body ────────────────────────────────────────────────────── -->
+  <!-- Body ──────────────────────────────────────────────────────── -->
   <div id="body">
 
-    <!-- ZONA 2: Sidebar — Sessões ─────────────────────────────── -->
-    <aside id="sidebar-sessions">
-      <div class="sidebar-header">
-        <span class="panel-label">Sessões</span>
+    <!-- Aside: Sessions ──────────────────────────────────────────── -->
+    <aside id="sessions-aside">
+      <div class="sessions-sticky-header">
+        <span class="panel-mono-label">Sessões</span>
       </div>
       <div id="sessions-list">
         <div class="sessions-empty">Aguardando sessões...</div>
       </div>
+      <div class="sessions-footer">
+        <span class="sessions-footer-label">FONTE</span>
+        <span class="sessions-footer-text">SSE /events</span>
+      </div>
     </aside>
 
-    <!-- ZONA 3: Main panel ─────────────────────────────────────── -->
-    <main id="main-panel">
+    <!-- Section: Main ────────────────────────────────────────────── -->
+    <section id="main-section">
 
-      <!-- 3a: Agents grid (upper) ──────────────────────────────── -->
-      <section id="main-agents">
+      <!-- Agents area (1fr) ─────────────────────────────────────── -->
+      <div id="agents-area">
         <div class="agents-topbar">
-          <span class="panel-label">Agentes</span>
-          <span class="agents-session-tag" id="agents-session-tag"></span>
+          <span class="topbar-label ember">AGENTES</span>
+          <span class="topbar-session-tag" id="agents-session-tag"></span>
+          <span class="topbar-count" id="agents-count-label"></span>
         </div>
-
         <div id="agents-grid">
           <div class="placeholder-center">
             <span class="placeholder-title">Nenhuma sessão selecionada</span>
             <span class="placeholder-sub">Selecione uma sessão na sidebar</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- 3b: Timeline drawer (lower) ──────────────────────────── -->
-      <section id="timeline-panel">
+      <!-- Timeline area (236px) ─────────────────────────────────── -->
+      <div id="timeline-area">
         <div class="timeline-topbar">
-          <span class="panel-label">Timeline</span>
+          <span class="topbar-label ember">TIMELINE</span>
           <span class="timeline-agent-label" id="timeline-agent-label">—</span>
-          <span class="timeline-tools-count" id="timeline-tools-count"></span>
+          <span class="timeline-kind-label" id="timeline-list-header">PreToolUse / PostToolUse</span>
         </div>
-
         <div id="timeline-list">
           <div class="timeline-empty">Selecione um agente para ver a timeline</div>
         </div>
-      </section>
+      </div>
 
-    </main>
+    </section>
   </div><!-- /#body -->
 
 </div><!-- /#app -->
 
-<!-- Agent detail drawer (fixed overlay, fechado por default) ─── -->
+<!-- Backdrop ──────────────────────────────────────────────────── -->
+<div id="drawer-backdrop"></div>
+
+<!-- Drawer ────────────────────────────────────────────────────── -->
 <aside id="agent-detail-drawer">
   <div class="drawer-header">
-    <span class="drawer-title" id="drawer-agent-title">Agente</span>
-    <button class="drawer-close" id="drawer-close-btn" aria-label="Fechar">&times;</button>
+    <div class="drawer-header-left">
+      <span class="drawer-agent-title" id="drawer-agent-title">Agente</span>
+      <span class="drawer-agent-meta" id="drawer-agent-meta"></span>
+    </div>
+    <button class="drawer-close-btn" id="drawer-close-btn" aria-label="Fechar">ESC ✕</button>
   </div>
   <div class="drawer-body" id="drawer-body">
     <div class="drawer-loading">Carregando detalhes...</div>

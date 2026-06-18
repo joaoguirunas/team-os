@@ -12,13 +12,13 @@
  *                   effort?, toolCalls, currentTool?, worktree?, transcriptPath? }
  */
 
-// ─── State ─────────────────────────────────────────────────────
+// ─── State ──────────────────────────────────────────────────────────
 const state = {
-  /** @type {Map<string, import('./types').Session>} */
+  /** @type {Map<string, object>} */
   sessions: new Map(),
-  /** @type {Map<string, import('./types').AgentState>} */
+  /** @type {Map<string, object>} */
   agents: new Map(),
-  /** @type {Map<string, import('./types').MonitorEvent[]>} timeline per agentId */
+  /** @type {Map<string, object[]>} timeline per agentId */
   timelines: new Map(),
   /** Currently selected session id */
   selectedSessionId: null,
@@ -27,31 +27,39 @@ const state = {
   /** Aggregate totals */
   totalCalls: 0,
   totalTokens: 0,
+  /** Pause state: when paused, SSE still runs but UI doesn't re-render */
+  paused: false,
+  /** Connection status */
+  connectionStatus: 'connecting',
 };
 
-// ─── DOM refs ──────────────────────────────────────────────────
+// ─── DOM refs ────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
 
 const dom = {
+  liveDot:             $('live-dot'),
+  liveLabel:           $('live-label'),
+  liveToggle:          $('live-toggle'),
   statActive:          $('stat-active'),
   statDone:            $('stat-done'),
   statCalls:           $('stat-calls'),
   statTokens:          $('stat-tokens'),
-  connDot:             $('conn-dot'),
-  connLabel:           $('conn-label'),
+  statDur:             $('stat-dur'),
   sessionsList:        $('sessions-list'),
-  agentsGrid:          $('agents-grid'),
   agentsSessionTag:    $('agents-session-tag'),
-  timelineList:        $('timeline-list'),
+  agentsCountLabel:    $('agents-count-label'),
+  agentsGrid:          $('agents-grid'),
   timelineAgentLabel:  $('timeline-agent-label'),
-  timelineToolsCount:  $('timeline-tools-count'),
+  timelineList:        $('timeline-list'),
+  backdrop:            $('drawer-backdrop'),
   drawer:              $('agent-detail-drawer'),
   drawerTitle:         $('drawer-agent-title'),
+  drawerMeta:          $('drawer-agent-meta'),
   drawerBody:          $('drawer-body'),
   drawerCloseBtn:      $('drawer-close-btn'),
 };
 
-// ─── Helpers ───────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────
 
 /**
  * Format epoch ms duration as MM:SS.
@@ -60,7 +68,8 @@ const dom = {
  * @returns {string}
  */
 function formatElapsed(startMs, endMs) {
-  const diffMs = (endMs ?? Date.now()) - startMs;
+  if (!startMs) return '—:—';
+  const diffMs   = (endMs ?? Date.now()) - startMs;
   const totalSec = Math.max(0, Math.floor(diffMs / 1000));
   const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
   const ss = String(totalSec % 60).padStart(2, '0');
@@ -68,14 +77,14 @@ function formatElapsed(startMs, endMs) {
 }
 
 /**
- * Format epoch ms as HH:MM:SS offset from agent start, or absolute if no base.
+ * Format elapsed offset from agent start.
  * @param {number} ts
  * @param {number} [baseTs]
  * @returns {string}
  */
 function formatOffset(ts, baseTs) {
   if (baseTs == null) return formatElapsed(0, ts);
-  return formatElapsed(baseTs, ts);
+  return '+' + formatElapsed(baseTs, ts);
 }
 
 /**
@@ -116,25 +125,115 @@ function shortId(id) {
   return id.slice(0, 8);
 }
 
-// ─── Render: connection status ──────────────────────────────────
-/**
- * @param {'connected' | 'connecting' | 'disconnected'} status
- */
-function setConnectionStatus(status) {
-  dom.connDot.className = `connection-dot ${status}`;
-  const labels = {
-    connected:    'conectado',
-    connecting:   'conectando',
-    disconnected: 'desconectado',
-  };
-  dom.connLabel.textContent = labels[status] ?? status;
+// ─── Escape HTML ─────────────────────────────────────────────────────
+const escDiv = document.createElement('div');
+function escHtml(str) {
+  if (!str) return '';
+  escDiv.textContent = str;
+  return escDiv.innerHTML;
 }
 
-// ─── Render: stats header ───────────────────────────────────────
+// ─── Normalizers ──────────────────────────────────────────────────────
+
+/**
+ * Normalise a session object from either snake_case or camelCase shapes.
+ * @param {object} raw
+ */
+function normalizeSession(raw) {
+  return {
+    sessionId: raw.sessionId ?? raw.session_id ?? '',
+    cwd:       raw.cwd ?? '',
+    startedAt: raw.startedAt ?? raw.firstSeenAt ?? raw.first_seen_at ?? Date.now(),
+  };
+}
+
+/**
+ * Ensure agent has expected fields.
+ * @param {object} raw
+ * @returns {object}
+ */
+function normalizeAgent(raw) {
+  return {
+    agentId:        raw.agentId ?? raw.agent_id ?? '',
+    agentType:      raw.agentType ?? raw.agent_type ?? '',
+    sessionId:      raw.sessionId ?? raw.session_id ?? '',
+    status:         raw.status ?? 'running',
+    startedAt:      raw.startedAt ?? raw.started_at ?? Date.now(),
+    endedAt:        raw.endedAt ?? raw.ended_at,
+    effort:         raw.effort,
+    toolCalls:      raw.toolCalls ?? 0,
+    currentTool:    raw.currentTool,
+    worktree:       raw.worktree,
+    transcriptPath: raw.transcriptPath,
+  };
+}
+
+/**
+ * Normalise an event from either snake_case or camelCase shapes.
+ * @param {object} raw
+ */
+function normalizeEvent(raw) {
+  return {
+    ts:        raw.ts ?? Date.now(),
+    sessionId: raw.sessionId ?? raw.session_id ?? '',
+    cwd:       raw.cwd ?? '',
+    kind:      raw.kind ?? '',
+    agentId:   raw.agentId ?? raw.agent_id,
+    agentType: raw.agentType ?? raw.agent_type,
+    effort:    raw.effort,
+    tool:      raw.tool,
+    worktree:  raw.worktree,
+  };
+}
+
+// ─── Render: connection / live status ────────────────────────────────
+/**
+ * @param {'connected' | 'connecting' | 'disconnected' | 'paused'} status
+ */
+function setConnectionStatus(status) {
+  state.connectionStatus = status;
+
+  const dot   = dom.liveDot;
+  const label = dom.liveLabel;
+
+  // Remove all status classes
+  dot.className   = 'live-dot';
+  label.className = 'live-label';
+
+  const labels = {
+    connected:    'AO VIVO',
+    connecting:   'CONECTANDO',
+    paused:       'PAUSADO',
+    disconnected: 'DESCONECTADO',
+  };
+
+  dot.classList.add(`status-${status}`);
+  label.classList.add(`status-${status}`);
+  label.textContent = labels[status] ?? status;
+
+  // Blink animation on connected/connecting
+  if (status === 'connected' || status === 'connecting') {
+    dot.classList.add('lblink-live');
+    label.classList.add('lblink-live');
+  }
+}
+
+// ─── Live toggle ──────────────────────────────────────────────────────
+dom.liveToggle.addEventListener('click', () => {
+  state.paused = !state.paused;
+  if (state.paused) {
+    setConnectionStatus('paused');
+  } else {
+    setConnectionStatus(state.connectionStatus === 'paused' ? 'connected' : state.connectionStatus);
+    renderAll();
+  }
+});
+
+// ─── Render: stats header ─────────────────────────────────────────────
 function renderStats() {
   let activeCount = 0;
-  let doneCount = 0;
-  let callsCount = 0;
+  let doneCount   = 0;
+  let callsCount  = 0;
 
   for (const agent of state.agents.values()) {
     if (agent.status === 'running') activeCount++;
@@ -148,9 +247,21 @@ function renderStats() {
   dom.statTokens.textContent = state.totalTokens > 0
     ? state.totalTokens.toLocaleString('pt-BR')
     : '—';
+
+  // Session duration
+  if (state.selectedSessionId) {
+    const session = state.sessions.get(state.selectedSessionId);
+    if (session?.startedAt) {
+      dom.statDur.textContent = formatElapsed(session.startedAt);
+    } else {
+      dom.statDur.textContent = '—:—';
+    }
+  } else {
+    dom.statDur.textContent = '—:—';
+  }
 }
 
-// ─── Render: sessions sidebar ──────────────────────────────────
+// ─── Render: sessions sidebar ─────────────────────────────────────────
 function renderSessions() {
   if (state.sessions.size === 0) {
     dom.sessionsList.innerHTML =
@@ -164,29 +275,29 @@ function renderSessions() {
 
     // Count running agents in this session
     let runningInSession = 0;
+    let totalInSession   = 0;
     for (const a of state.agents.values()) {
-      if (a.sessionId === sid && a.status === 'running') runningInSession++;
+      if (a.sessionId === sid) {
+        totalInSession++;
+        if (a.status === 'running') runningInSession++;
+      }
     }
 
-    // Count all agents in this session
-    let agentCount = 0;
-    for (const a of state.agents.values()) {
-      if (a.sessionId === sid) agentCount++;
-    }
-
-    const dotClass = runningInSession > 0 ? 'session-dot has-running' : 'session-dot';
+    const dotClass  = runningInSession > 0 ? 'session-dot has-running' : 'session-dot';
     const itemClass = isSelected ? 'session-item selected' : 'session-item';
-    const name = cwdLabel(session.cwd ?? sid);
-    const cwd  = session.cwd ?? '';
+    const name      = cwdLabel(session.cwd ?? sid);
+    const cwd       = session.cwd ?? '';
+    const countStr  = `${runningInSession}/${totalInSession}`;
 
     html.push(`
-      <div class="${itemClass}" data-session-id="${sid}">
-        <span class="${dotClass}"></span>
-        <div class="session-info">
-          <div class="session-name" title="${sid}">${escHtml(name)}</div>
-          ${cwd ? `<div class="session-cwd" title="${escHtml(cwd)}">${escHtml(cwd)}</div>` : ''}
+      <div class="${itemClass}" data-session-id="${escHtml(sid)}">
+        <div class="session-row-top">
+          <span class="${dotClass}"></span>
+          <span class="session-name" title="${escHtml(sid)}">${escHtml(name)}</span>
+          <span class="session-count">${countStr}</span>
         </div>
-        <span class="session-count">${agentCount}</span>
+        <span class="session-kind">session</span>
+        ${cwd ? `<span class="session-cwd" title="${escHtml(cwd)}">${escHtml(cwd)}</span>` : ''}
       </div>
     `);
   }
@@ -198,15 +309,16 @@ function renderSessions() {
     el.addEventListener('click', () => {
       const sid = el.dataset.sessionId;
       state.selectedSessionId = sid;
-      state.selectedAgentId = null;
+      state.selectedAgentId   = null;
       renderSessions();
       renderAgents();
       renderTimeline();
+      renderStats();
     });
   });
 }
 
-// ─── Render: agents grid ────────────────────────────────────────
+// ─── Render: agents grid ──────────────────────────────────────────────
 function renderAgents() {
   if (!state.selectedSessionId) {
     dom.agentsGrid.innerHTML = `
@@ -214,7 +326,8 @@ function renderAgents() {
         <span class="placeholder-title">Nenhuma sessão selecionada</span>
         <span class="placeholder-sub">Selecione uma sessão na sidebar</span>
       </div>`;
-    dom.agentsSessionTag.textContent = '';
+    dom.agentsSessionTag.textContent  = '';
+    dom.agentsCountLabel.textContent  = '';
     return;
   }
 
@@ -222,11 +335,14 @@ function renderAgents() {
     .filter((a) => a.sessionId === state.selectedSessionId)
     .sort((a, b) => a.startedAt - b.startedAt);
 
-  const sid = state.selectedSessionId;
+  const sid     = state.selectedSessionId;
   const session = state.sessions.get(sid);
-  dom.agentsSessionTag.textContent = session?.cwd
-    ? cwdLabel(session.cwd)
-    : shortId(sid);
+  const tagText = session?.cwd ? cwdLabel(session.cwd) : shortId(sid);
+
+  dom.agentsSessionTag.textContent = tagText;
+  dom.agentsCountLabel.textContent = sessionAgents.length > 0
+    ? `${sessionAgents.length} agente${sessionAgents.length !== 1 ? 's' : ''}`
+    : '';
 
   if (sessionAgents.length === 0) {
     dom.agentsGrid.innerHTML = `
@@ -237,95 +353,120 @@ function renderAgents() {
     return;
   }
 
-  const now = Date.now();
+  const now  = Date.now();
   const html = sessionAgents.map((agent) => {
-    const isSelected = agent.agentId === state.selectedAgentId;
+    const isSelected  = agent.agentId === state.selectedAgentId;
     const statusClass = `state-${agent.status}`;
-    const cardClass = [
-      'agent-card',
-      statusClass,
-      isSelected ? 'selected' : '',
-    ].filter(Boolean).join(' ');
+    const cardClasses = ['agent-card', statusClass, isSelected ? 'selected' : '']
+      .filter(Boolean)
+      .join(' ');
 
-    const elapsed = formatElapsed(agent.startedAt, agent.endedAt ?? now);
-    const tool    = agent.currentTool ?? '';
-    const worktree = agent.worktree
-      ? `<span class="agent-worktree-tag">${escHtml(agent.worktree)}</span>`
-      : '';
+    const elapsed   = formatElapsed(agent.startedAt, agent.endedAt ?? now);
+    const tool      = agent.currentTool ?? '';
+    const toolLabel = tool || '—';
+    const toolCalls = agent.toolCalls ?? 0;
+    const hasWorktree = agent.worktree ? true : false;
+    const effortStr  = agent.effort ?? '';
+
+    // Sub line: #short · effort · [⌥ worktree]
+    const subParts = [`#${shortId(agent.agentId)}`];
+    if (effortStr)        subParts.push(effortStr);
+    if (hasWorktree)      subParts.push(`⌥ ${agent.worktree}`);
+    const subLine = subParts.join(' · ');
+
+    // Status label text
+    const statusLabels = { running: 'RUNNING', done: 'DONE', error: 'ERROR' };
+    const statusText   = statusLabels[agent.status] ?? agent.status.toUpperCase();
+
+    const toolNameClass = tool ? 'agent-tool-name tool-active' : 'agent-tool-name';
 
     return `
-      <div class="${cardClass}" data-agent-id="${agent.agentId}">
-        <span class="agent-dot"></span>
-        <div class="agent-identity">
-          <div class="agent-type">${escHtml(agent.agentType ?? agent.agentId)}</div>
-          <div class="agent-meta">
-            <span class="agent-id-tag">${escHtml(shortId(agent.agentId))}</span>
-            ${worktree}
-          </div>
+      <div class="${cardClasses}" data-agent-id="${escHtml(agent.agentId)}">
+        <div class="agent-card-top">
+          <span class="agent-dot${agent.status === 'running' ? ' adot-run' : ''}"></span>
+          <span class="agent-type">${escHtml(agent.agentType ?? agent.agentId)}</span>
+          <span class="agent-status-label">${statusText}</span>
         </div>
-        <span class="agent-status">${agent.status}</span>
-        <span class="agent-elapsed">${elapsed}</span>
-        <span class="agent-tool">${escHtml(tool)}</span>
+        <div class="agent-card-sub">${escHtml(subLine)}</div>
+        <div class="agent-card-divider"></div>
+        <div class="agent-card-tool">
+          <span class="agent-tool-label">TOOL</span>
+          <span class="${toolNameClass}">${escHtml(toolLabel)}</span>
+          <span class="agent-tool-calls">${toolCalls} calls</span>
+        </div>
+        <div class="agent-card-footer">
+          <span class="agent-elapsed" data-agent-id="${escHtml(agent.agentId)}">${elapsed}</span>
+          <button class="agent-detail-btn" data-agent-id="${escHtml(agent.agentId)}">DETALHE ↗</button>
+        </div>
       </div>`;
   });
 
-  dom.agentsGrid.innerHTML = html.join('');
+  dom.agentsGrid.innerHTML = `<div class="agents-cards-inner">${html.join('')}</div>`;
 
-  // Bind click handlers
+  // Bind card click → select agent (timeline)
   dom.agentsGrid.querySelectorAll('.agent-card').forEach((el) => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      // Don't trigger select when clicking the detail button
+      if (e.target.closest('.agent-detail-btn')) return;
       const aid = el.dataset.agentId;
-      if (state.selectedAgentId === aid) {
-        // Second click on same agent: open drawer
-        openDrawer(aid);
-        return;
-      }
       state.selectedAgentId = aid;
       renderAgents();
       renderTimeline();
     });
   });
+
+  // Bind DETALHE ↗ button → open drawer
+  dom.agentsGrid.querySelectorAll('.agent-detail-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDrawer(btn.dataset.agentId);
+    });
+  });
 }
 
-// ─── Elapsed ticker ─────────────────────────────────────────────
-// Re-render elapsed times every second for running agents
+// ─── Elapsed ticker ───────────────────────────────────────────────────
 let tickerRef = null;
 
 function startElapsedTicker() {
   if (tickerRef) return;
   tickerRef = setInterval(() => {
-    // Only update elapsed spans, skip full re-render to avoid flicker
-    const cards = dom.agentsGrid.querySelectorAll('.agent-card.state-running');
-    cards.forEach((card) => {
-      const aid = card.dataset.agentId;
+    if (state.paused) return;
+
+    // Update per-agent elapsed in cards
+    const elapsedEls = dom.agentsGrid.querySelectorAll('.agent-elapsed[data-agent-id]');
+    elapsedEls.forEach((el) => {
+      const aid   = el.dataset.agentId;
       const agent = state.agents.get(aid);
-      if (!agent) return;
-      const el = card.querySelector('.agent-elapsed');
-      if (el) el.textContent = formatElapsed(agent.startedAt);
+      if (!agent || agent.status !== 'running') return;
+      el.textContent = formatElapsed(agent.startedAt);
     });
+
+    // Update session duration in header
+    if (state.selectedSessionId) {
+      const session = state.sessions.get(state.selectedSessionId);
+      if (session?.startedAt) {
+        dom.statDur.textContent = formatElapsed(session.startedAt);
+      }
+    }
   }, 1000);
 }
 
-// ─── Render: timeline ───────────────────────────────────────────
+// ─── Render: timeline ─────────────────────────────────────────────────
 function renderTimeline() {
   if (!state.selectedAgentId) {
     dom.timelineList.innerHTML =
       '<div class="timeline-empty">Selecione um agente para ver a timeline</div>';
     dom.timelineAgentLabel.textContent = '—';
-    dom.timelineToolsCount.textContent = '';
     return;
   }
 
   const agent    = state.agents.get(state.selectedAgentId);
   const events   = state.timelines.get(state.selectedAgentId) ?? [];
   const agentLabel = agent
-    ? (agent.agentType ?? shortId(agent.agentId))
-    : shortId(state.selectedAgentId);
+    ? `${agent.agentType ?? shortId(agent.agentId)} · #${shortId(state.selectedAgentId)}`
+    : `#${shortId(state.selectedAgentId)}`;
 
   dom.timelineAgentLabel.textContent = agentLabel;
-  dom.timelineToolsCount.textContent = events.length > 0
-    ? `${events.length} eventos`
-    : '';
 
   if (events.length === 0) {
     dom.timelineList.innerHTML =
@@ -334,47 +475,57 @@ function renderTimeline() {
   }
 
   const baseTs = agent?.startedAt;
-  const html = events.map((ev) => {
-    const isPre  = ev.kind === 'tool.pre';
-    const kindClass = isPre ? 'kind-pre' : 'kind-post';
-    const kindLabel = isPre ? 'PreTool' : 'PostTool';
-    const toolName  = ev.tool?.name ?? '—';
-    const summary   = isPre
+
+  // newest first
+  const reversed = [...events].reverse();
+
+  const html = reversed.map((ev) => {
+    const isPre       = ev.kind === 'tool.pre';
+    const kindClass   = isPre ? '' : 'kind-post';
+    const kindLabel   = isPre ? 'PRE' : 'POST';
+    const toolName    = ev.tool?.name ?? '—';
+    const inputText   = isPre
       ? summaryText(ev.tool?.inputSummary)
-      : (ev.tool?.responseSummary ? '✓ ' + summaryText(ev.tool.responseSummary) : '✓');
-    const timeStr   = formatOffset(ev.ts, baseTs);
+      : summaryText(ev.tool?.responseSummary ?? '');
+    const timeStr     = formatOffset(ev.ts, baseTs);
+    const markClass   = isPre ? '' : 'mark-ok';
+    const markChar    = isPre ? '' : '✓';
 
     return `
-      <div class="tl-row ${kindClass}">
-        <span class="tl-time">${timeStr}</span>
-        <span class="tl-kind">${kindLabel}</span>
+      <div class="tl-row">
+        <span class="tl-time">${escHtml(timeStr)}</span>
+        <span class="tl-kind ${kindClass}">${kindLabel}</span>
         <span class="tl-tool">${escHtml(toolName)}</span>
-        <span class="tl-summary">${escHtml(summary)}</span>
+        <span class="tl-input">${escHtml(inputText)}</span>
+        <span class="tl-mark ${markClass}">${markChar}</span>
       </div>`;
   });
 
   dom.timelineList.innerHTML = html.join('');
-
-  // Scroll to bottom so latest events are visible
-  dom.timelineList.scrollTop = dom.timelineList.scrollHeight;
 }
 
-// ─── Drawer ─────────────────────────────────────────────────────
+// ─── Drawer ───────────────────────────────────────────────────────────
 async function openDrawer(agentId) {
   const agent = state.agents.get(agentId);
   if (!agent) return;
 
+  // Set header content
   dom.drawerTitle.textContent = agent.agentType ?? shortId(agentId);
-  dom.drawerBody.innerHTML    = '<div class="drawer-loading">Carregando detalhes...</div>';
+  dom.drawerMeta.textContent  = `#${shortId(agentId)} · ${
+    state.sessions.get(agent.sessionId)
+      ? cwdLabel(state.sessions.get(agent.sessionId).cwd ?? agent.sessionId)
+      : shortId(agent.sessionId)
+  }`;
+
+  dom.drawerBody.innerHTML = '<div class="drawer-loading">Carregando detalhes...</div>';
   dom.drawer.classList.add('open');
+  dom.backdrop.classList.add('open');
 
   try {
     const params = new URLSearchParams({ sessionId: agent.sessionId });
-    // Preferencia: usar transcriptPath direto (vem do hook SubagentStop via AgentState)
     if (agent.transcriptPath) {
       params.set('transcriptPath', agent.transcriptPath);
     } else {
-      // Fallback: passar cwd da sessao para resolucao de path via encodeProjectPath
       const session = state.sessions.get(agent.sessionId);
       if (session?.cwd) params.set('cwd', session.cwd);
     }
@@ -384,128 +535,157 @@ async function openDrawer(agentId) {
     renderDrawerContent(agent, data);
   } catch (err) {
     console.warn('[squad-monitor] Drawer fetch failed:', err);
-    renderDrawerContent(agent, { found: false, entries: [], totalInputTokens: 0, totalOutputTokens: 0 });
+    renderDrawerContent(agent, {
+      found: false,
+      entries: [],
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+    });
   }
 }
 
 /**
- * @param {import('./types').AgentState} agent
+ * @param {object} agent
  * @param {object | null} detail - response from GET /agent/:id
  */
 function renderDrawerContent(agent, detail) {
-  const elapsed  = formatElapsed(agent.startedAt, agent.endedAt);
+  const elapsed       = formatElapsed(agent.startedAt, agent.endedAt);
+  const found         = detail?.found ?? false;
+  const inputTokens   = detail?.totalInputTokens  ?? 0;
+  const outputTokens  = detail?.totalOutputTokens ?? 0;
+  const totalTokens   = inputTokens + outputTokens;
+  const prompt        = detail?.prompt ?? null;
+  const result        = detail?.result ?? null;
+  const errorMsg      = detail?.error ?? null;
+  const toolList      = detail?.entries ?? [];
 
-  // GET /agent/:id retorna: { found, agentId, sessionId, transcriptPath,
-  //   totalInputTokens, totalOutputTokens, toolCallCount, entries: ToolCall[] }
-  // ToolCall shape: { ts, toolName, input, response? }
-  const found        = detail?.found ?? false;
-  const inputTokens  = detail?.totalInputTokens  ?? 0;
-  const outputTokens = detail?.totalOutputTokens ?? 0;
-  const totalTokens  = inputTokens + outputTokens;
-  const prompt       = detail?.prompt ?? null;
-  const result       = detail?.result ?? null;
-  const toolList     = detail?.entries ?? [];
+  // ── Stats grid (3x2) ──
+  const worktreeVal = agent.worktree ?? '—';
+  const effortVal   = agent.effort   ?? '—';
+  const statusLabels = { running: 'Running', done: 'Done', error: 'Error' };
+  const statusVal   = statusLabels[agent.status] ?? agent.status;
 
-  const promptHtml = prompt
+  const statsGrid = `
+    <div class="drawer-stats-grid">
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Status</span>
+        <span class="drawer-stat-value">${escHtml(statusVal)}</span>
+      </div>
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Effort</span>
+        <span class="drawer-stat-value">${escHtml(effortVal)}</span>
+      </div>
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Decorrido</span>
+        <span class="drawer-stat-value">${escHtml(elapsed)}</span>
+      </div>
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Tool Calls</span>
+        <span class="drawer-stat-value">${agent.toolCalls ?? 0}</span>
+      </div>
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Tokens</span>
+        <span class="drawer-stat-value">${totalTokens > 0 ? totalTokens.toLocaleString('pt-BR') : '—'}</span>
+      </div>
+      <div class="drawer-stat-cell">
+        <span class="drawer-stat-label">Worktree</span>
+        <span class="drawer-stat-value">${escHtml(worktreeVal)}</span>
+      </div>
+    </div>`;
+
+  // ── Prompt section ──
+  const promptSection = prompt
     ? `<div class="drawer-section">
-         <div class="drawer-section-label">Prompt inicial</div>
-         <pre class="drawer-prompt-block">${escHtml(truncate(prompt, 400))}</pre>
+         <span class="drawer-section-label">Prompt inicial</span>
+         <pre class="drawer-prompt-pre">${escHtml(truncate(prompt, 800))}</pre>
        </div>`
     : '';
 
-  const tokensHtml = found && totalTokens > 0
+  // ── Tool history ──
+  const toolSection = toolList.length > 0
     ? `<div class="drawer-section">
-         <div class="drawer-section-label">Tokens</div>
-         <div class="drawer-token-row">
-           <span class="token-number">${totalTokens.toLocaleString('pt-BR')}</span>
-           <span class="token-unit">total</span>
-         </div>
-         <div style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:4px">
-           ${inputTokens.toLocaleString('pt-BR')} in · ${outputTokens.toLocaleString('pt-BR')} out
-         </div>
-       </div>`
-    : '';
-
-  // entries shape: { ts, toolName, input, response? }
-  const toolRowsHtml = toolList.length > 0
-    ? `<div class="drawer-section">
-         <div class="drawer-section-label">Tool calls (${toolList.length})</div>
+         <span class="drawer-section-label">Histórico de tools (${toolList.length})</span>
          <div class="drawer-tool-list">
-           ${toolList.slice(0, 40).map((t) => `
-             <div class="drawer-tool-row">
-               <span class="dtool-name">${escHtml(t.toolName ?? '?')}</span>
-               <span class="dtool-input">${escHtml(truncate(typeof t.input === 'string' ? t.input : JSON.stringify(t.input ?? {}), 70))}</span>
-             </div>`).join('')}
-           ${toolList.length > 40 ? `<div class="drawer-loading">+${toolList.length - 40} omitidos</div>` : ''}
+           ${toolList.slice(0, 50).map((t) => {
+             const inputStr = typeof t.input === 'string'
+               ? t.input
+               : JSON.stringify(t.input ?? {});
+             const respStr  = typeof t.response === 'string'
+               ? t.response
+               : (t.response ? JSON.stringify(t.response) : '');
+             const hasResp  = !!respStr;
+             return `
+               <div class="drawer-tool-step">
+                 <span class="dstep-mark${hasResp ? ' ok' : ''}">
+                   ${hasResp ? '✓' : '·'}
+                 </span>
+                 <span class="dstep-tool">${escHtml(t.toolName ?? '?')}</span>
+                 <span class="dstep-input">${escHtml(truncate(inputStr, 80))}</span>
+                 <span class="dstep-resp">${hasResp ? escHtml(truncate(respStr, 30)) : ''}</span>
+               </div>`;
+           }).join('')}
+           ${toolList.length > 50
+             ? `<div class="drawer-loading">+${toolList.length - 50} omitidos</div>`
+             : ''}
          </div>
        </div>`
     : '';
 
-  const resultHtml = result
+  // ── Result section ──
+  const resultSection = result
     ? `<div class="drawer-section">
-         <div class="drawer-section-label">Resultado final</div>
-         <pre class="drawer-prompt-block">${escHtml(truncate(result, 600))}</pre>
+         <span class="drawer-section-label ember">Resultado final</span>
+         <p class="drawer-result-text">${escHtml(truncate(result, 1000))}</p>
        </div>`
     : '';
 
+  // ── Error section ──
+  const errorSection = errorMsg
+    ? `<div class="drawer-section">
+         <span class="drawer-section-label" style="color:var(--error-color)">Erro</span>
+         <div class="drawer-error-block">${escHtml(errorMsg)}</div>
+       </div>`
+    : '';
+
+  // ── Tokens section ──
+  const tokensSection = found && totalTokens > 0
+    ? `<div class="drawer-section">
+         <span class="drawer-section-label">Tokens consumidos</span>
+         <span class="drawer-tokens-big">${totalTokens.toLocaleString('pt-BR')}</span>
+         <span class="drawer-tokens-note">${inputTokens.toLocaleString('pt-BR')} in · ${outputTokens.toLocaleString('pt-BR')} out</span>
+       </div>`
+    : '';
+
+  // ── No detail message ──
   const noDetailMsg = !found
-    ? `<div class="drawer-loading">Transcript não disponível — o agente pode estar em execução ou o path ainda foi indexado.</div>`
+    ? `<div class="drawer-loading">Transcript não disponível — o agente pode estar em execução ou o path ainda não foi indexado.</div>`
     : '';
 
   dom.drawerBody.innerHTML = `
-    <div class="drawer-section">
-      <div class="drawer-section-label">Resumo</div>
-      <div class="drawer-meta-grid">
-        <div class="drawer-meta-item">
-          <span class="meta-label">ID</span>
-          <span class="meta-value">${escHtml(shortId(agent.agentId))}</span>
-        </div>
-        <div class="drawer-meta-item">
-          <span class="meta-label">Tipo</span>
-          <span class="meta-value">${escHtml(agent.agentType ?? '—')}</span>
-        </div>
-        <div class="drawer-meta-item">
-          <span class="meta-label">Status</span>
-          <span class="meta-value">${agent.status}</span>
-        </div>
-        <div class="drawer-meta-item">
-          <span class="meta-label">Duração</span>
-          <span class="meta-value">${elapsed}</span>
-        </div>
-        <div class="drawer-meta-item">
-          <span class="meta-label">Tool calls</span>
-          <span class="meta-value">${agent.toolCalls ?? 0}</span>
-        </div>
-        ${agent.effort ? `<div class="drawer-meta-item">
-          <span class="meta-label">Effort</span>
-          <span class="meta-value">${escHtml(agent.effort)}</span>
-        </div>` : ''}
-        ${agent.worktree ? `<div class="drawer-meta-item">
-          <span class="meta-label">Worktree</span>
-          <span class="meta-value">${escHtml(agent.worktree)}</span>
-        </div>` : ''}
-      </div>
-    </div>
-    ${promptHtml}
-    ${tokensHtml}
-    ${toolRowsHtml}
-    ${resultHtml}
+    ${statsGrid}
+    ${promptSection}
+    ${toolSection}
+    ${resultSection}
+    ${errorSection}
+    ${tokensSection}
     ${noDetailMsg}
   `;
 }
 
 function closeDrawer() {
   dom.drawer.classList.remove('open');
+  dom.backdrop.classList.remove('open');
 }
 
 dom.drawerCloseBtn.addEventListener('click', closeDrawer);
+dom.backdrop.addEventListener('click', closeDrawer);
 
 // Close drawer on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDrawer();
 });
 
-// ─── State mutations ────────────────────────────────────────────
+// ─── State mutations ──────────────────────────────────────────────────
 
 /**
  * Apply a full snapshot from the server.
@@ -517,11 +697,11 @@ function applySnapshot(payload) {
   state.timelines.clear();
 
   for (const s of (payload.sessions ?? [])) {
-    state.sessions.set(s.sessionId, s);
+    state.sessions.set(s.sessionId ?? s.session_id, normalizeSession(s));
   }
 
   for (const a of (payload.agents ?? [])) {
-    state.agents.set(a.agentId, normalizeAgent(a));
+    state.agents.set(a.agentId ?? a.agent_id, normalizeAgent(a));
   }
 
   // Rebuild timelines from recentEvents
@@ -534,7 +714,7 @@ function applySnapshot(payload) {
     state.selectedSessionId = [...state.sessions.keys()][0];
   }
 
-  renderAll();
+  if (!state.paused) renderAll();
 }
 
 /**
@@ -547,12 +727,11 @@ function applyEvent(raw) {
   switch (ev.kind) {
     case 'session.start':
       if (!state.sessions.has(ev.sessionId)) {
-        state.sessions.set(ev.sessionId, {
+        state.sessions.set(ev.sessionId, normalizeSession({
           sessionId: ev.sessionId,
-          cwd: ev.cwd,
+          cwd:       ev.cwd,
           startedAt: ev.ts,
-        });
-        // Auto-select if first
+        }));
         if (!state.selectedSessionId) {
           state.selectedSessionId = ev.sessionId;
         }
@@ -560,13 +739,12 @@ function applyEvent(raw) {
       break;
 
     case 'session.end':
-      // Keep session in map so history is visible
+      // Keep session in map so history remains visible
       break;
 
     case 'agent.start': {
       if (!ev.agentId) break;
-      const existing = state.agents.get(ev.agentId);
-      if (!existing) {
+      if (!state.agents.has(ev.agentId)) {
         state.agents.set(ev.agentId, normalizeAgent({
           agentId:   ev.agentId,
           agentType: ev.agentType,
@@ -576,7 +754,6 @@ function applyEvent(raw) {
           effort:    ev.effort,
           toolCalls: 0,
         }));
-        // Auto-select session if unset
         if (!state.selectedSessionId) {
           state.selectedSessionId = ev.sessionId;
         }
@@ -588,8 +765,8 @@ function applyEvent(raw) {
       if (!ev.agentId) break;
       const agent = state.agents.get(ev.agentId);
       if (agent) {
-        agent.status    = 'done';
-        agent.endedAt   = ev.ts;
+        agent.status      = 'done';
+        agent.endedAt     = ev.ts;
         agent.currentTool = undefined;
       }
       break;
@@ -629,7 +806,7 @@ function applyEvent(raw) {
       break;
   }
 
-  renderAll();
+  if (!state.paused) renderAll();
 }
 
 /**
@@ -645,48 +822,7 @@ function applyEventToTimeline(ev) {
   state.timelines.get(ev.agentId).push(ev);
 }
 
-// ─── Normalizers ────────────────────────────────────────────────
-
-/**
- * Ensure agent has expected fields.
- * @param {object} raw
- * @returns {import('./types').AgentState}
- */
-function normalizeAgent(raw) {
-  return {
-    agentId:      raw.agentId ?? raw.agent_id ?? '',
-    agentType:    raw.agentType ?? raw.agent_type ?? '',
-    sessionId:    raw.sessionId ?? raw.session_id ?? '',
-    status:       raw.status ?? 'running',
-    startedAt:    raw.startedAt ?? raw.started_at ?? Date.now(),
-    endedAt:      raw.endedAt ?? raw.ended_at,
-    effort:       raw.effort,
-    toolCalls:    raw.toolCalls ?? 0,
-    currentTool:  raw.currentTool,
-    worktree:     raw.worktree,
-    transcriptPath: raw.transcriptPath,
-  };
-}
-
-/**
- * Normalise an event from either snake_case or camelCase shapes.
- * @param {object} raw
- */
-function normalizeEvent(raw) {
-  return {
-    ts:        raw.ts ?? Date.now(),
-    sessionId: raw.sessionId ?? raw.session_id ?? '',
-    cwd:       raw.cwd ?? '',
-    kind:      raw.kind ?? '',
-    agentId:   raw.agentId ?? raw.agent_id,
-    agentType: raw.agentType ?? raw.agent_type,
-    effort:    raw.effort,
-    tool:      raw.tool,
-    worktree:  raw.worktree,
-  };
-}
-
-// ─── Render all ─────────────────────────────────────────────────
+// ─── Render all ───────────────────────────────────────────────────────
 function renderAll() {
   renderStats();
   renderSessions();
@@ -694,8 +830,8 @@ function renderAll() {
   renderTimeline();
 }
 
-// ─── SSE connection ─────────────────────────────────────────────
-let evtSource = null;
+// ─── SSE connection ───────────────────────────────────────────────────
+let evtSource  = null;
 let backoffMs  = 1000;
 const MAX_BACKOFF_MS = 30_000;
 
@@ -710,7 +846,7 @@ function connect() {
   evtSource = new EventSource('/events');
 
   evtSource.onopen = () => {
-    setConnectionStatus('connected');
+    if (!state.paused) setConnectionStatus('connected');
     backoffMs = 1000;
     startElapsedTicker();
     console.log('[squad-monitor] SSE connected');
@@ -733,7 +869,7 @@ function connect() {
   };
 
   evtSource.onerror = () => {
-    setConnectionStatus('disconnected');
+    if (!state.paused) setConnectionStatus('disconnected');
     evtSource.close();
     evtSource = null;
     console.warn(`[squad-monitor] SSE error — reconnecting in ${backoffMs}ms`);
@@ -744,13 +880,5 @@ function connect() {
   };
 }
 
-// ─── Escape HTML ────────────────────────────────────────────────
-const escDiv = document.createElement('div');
-function escHtml(str) {
-  if (!str) return '';
-  escDiv.textContent = str;
-  return escDiv.innerHTML;
-}
-
-// ─── Boot ───────────────────────────────────────────────────────
+// ─── Boot ─────────────────────────────────────────────────────────────
 connect();
