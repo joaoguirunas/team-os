@@ -59,60 +59,15 @@ chore(deps): upgrade Next.js to 15.2.0
 | **`git push`** | **EXCLUSIVO dev-devops (Grav)** |
 | **`gh pr create/merge`** | **EXCLUSIVO dev-devops (Grav)** |
 
-**Garantia técnica:** Os agentes `dev-dev-alpha`, `dev-dev-beta`, `dev-dev-gamma` e `dev-dev-delta` têm o hook `~/.claude/hooks/block-git-push.sh` configurado via `PreToolUse`. Qualquer tentativa de `git push` nesses agentes é bloqueada automaticamente antes de executar — não é apenas uma regra no prompt, é uma barreira técnica.
+**Garantia técnica:** Os agentes `dev-dev-alpha`, `dev-dev-beta`, `dev-dev-gamma` e `dev-dev-delta` têm o hook `block-git-push.sh` configurado via `PreToolUse` no frontmatter. Qualquer tentativa de `git push` nesses agentes é bloqueada automaticamente antes de executar — não é apenas uma regra no prompt, é uma barreira técnica.
+
+O hook está em `.claude/hooks/block-git-push.sh` no projeto e é referenciado diretamente no frontmatter de cada agente implementer via `$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh`.
 
 Se `git push` for necessário em algum desses agentes, o fluxo correto é:
 1. Dev completa o commit local
 2. Dev notifica lead via SendMessage
 3. Lead delega ao Grav (dev-devops)
 4. Grav executa os quality gates e faz o push
-
-### Instalação do hook block-git-push.sh (obrigatório antes de spawnar dev agents)
-
-O hook deve existir **antes** de formar qualquer Agent Team com agentes dev. Sem ele, a exclusividade de git push não é tecnicamente garantida.
-
-**Passo 1 — Criar o hook:**
-```bash
-mkdir -p ~/.claude/hooks
-cat > ~/.claude/hooks/block-git-push.sh << 'EOF'
-#!/usr/bin/env bash
-# Bloqueia git push em agentes que não sejam dev-devops
-# Configurado via PreToolUse em .claude/settings.json
-
-TOOL_NAME="${CLAUDE_TOOL_NAME:-}"
-TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
-
-if [[ "$TOOL_NAME" == "Bash" ]]; then
-  if echo "$TOOL_INPUT" | grep -qE '(^|[[:space:]])git[[:space:]]+push'; then
-    echo "❌ git push é exclusivo de dev-devops (Grav). Notifique o lead via SendMessage." >&2
-    exit 1
-  fi
-fi
-
-exit 0
-EOF
-chmod +x ~/.claude/hooks/block-git-push.sh
-```
-
-**Passo 2 — Registrar em `.claude/settings.json` do projeto** (via `/update-config`):
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "~/.claude/hooks/block-git-push.sh" }]
-      }
-    ]
-  }
-}
-```
-
-**Passo 3 — Verificar:**
-```bash
-bash -c 'CLAUDE_TOOL_NAME=Bash CLAUDE_TOOL_INPUT="git push origin main" ~/.claude/hooks/block-git-push.sh'
-# Deve retornar exit 1 com mensagem de bloqueio
-```
 
 ## Worktree por Dev
 

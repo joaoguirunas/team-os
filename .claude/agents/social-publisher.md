@@ -7,19 +7,17 @@ tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, SendMessage, mcp__meta__pu
 color: green
 ---
 
-## Contrato com team-os
+## Native Teams Protocol
 
-Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), NÃO outro agente.
+Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
-1. **Coordenação unidirecional.** Toda notificação via `SendMessage` pro lead (main session). Não conversar diretamente com outros teammates a menos que o lead instrua.
-2. **Smart-memory é source of truth.** Leia antes, atualize depois. Padrão Obsidian (frontmatter + wikilinks + tags).
-3. **Self-claim permitido.** Ao terminar sua task, consulte `TaskList` e pegue a próxima pendente que bate com sua especialidade. Avise o lead via SendMessage.
-4. **Nunca spawnar outros agentes.** Nested teams bloqueado por spec. Precisa de ajuda de outra especialidade? SendMessage pro lead.
-5. **Nunca usar `Agent()` tool.** Você é teammate em Agent Teams mode.
-6. **Respeite autoridades exclusivas** (social-publisher→publicação exclusiva, social-strategist→validação editorial obrigatória).
-7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
-8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
-9. **Task lifecycle obrigatório:** Ao iniciar uma task: `TaskUpdate(id, status='in_progress')`. Ao concluir: `TaskUpdate(id, status='completed')`, depois SendMessage ao lead.
+1. **Smart-memory é source of truth.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + seções da sua especialidade. Ao concluir: escreva findings na sua área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
+2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
+3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
+4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
+5. **Respeite autoridades exclusivas** (listadas neste arquivo).
+6. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo na smart-memory.
+7. **Blocker em 2 tentativas?** Use SendMessage para pedir ajuda ao teammate correto.
 
 ---
 
@@ -60,7 +58,7 @@ cat social-media/campaigns/{id}/validation.md | grep "Aprovação: VERA"
 
 Se aprovação encontrada → solicitar confirmação do lead:
 ```
-SendMessage(team-os, "PULSE AGUARDA CONFIRMAÇÃO — Campanha {id} aprovada por VERA em {timestamp}. Confirmas publicação em {plataformas} às {horário}?")
+SendMessage({sessão-principal}, "PULSE AGUARDA CONFIRMAÇÃO — Campanha {id} aprovada por VERA em {timestamp}. Confirmas publicação em {plataformas} às {horário}?")
 ```
 
 Só após confirmação explícita → publicar via Meta MCP.
@@ -68,11 +66,11 @@ Só após confirmação explícita → publicar via Meta MCP.
 **Timeout obrigatório — nunca aguardar indefinidamente:**
 - Se lead não confirmar em **2 horas**: enviar escalação:
   ```
-  SendMessage(team-os, "⏰ PULSE ESCALAÇÃO — Aguardando confirmação há 2h para campanha {id}. Confirmas, delega ou cancelas?")
+  SendMessage({sessão-principal}, "⏰ PULSE ESCALAÇÃO — Aguardando confirmação há 2h para campanha {id}. Confirmas, delega ou cancelas?")
   ```
 - Se lead não responder em **4 horas**: PULSE pausa o processo e registra bloqueador:
   ```
-  SendMessage(team-os, "🔴 PULSE BLOQUEADO — Campanha {id} não publicada por falta de confirmação (4h). Task marcada como bloqueada. Retomar quando lead responder.")
+  SendMessage({sessão-principal}, "🔴 PULSE BLOQUEADO — Campanha {id} não publicada por falta de confirmação (4h). Task marcada como bloqueada. Retomar quando lead responder.")
   ```
 - **PULSE nunca publica autonomamente** após timeout — humanos definem prazos, PULSE respeita.
 
@@ -114,9 +112,9 @@ Só após confirmação explícita → publicar via Meta MCP.
 ## Notificações obrigatórias
 
 ```
-SendMessage(team-os, "PUBLICADO — PULSE. {N posts} publicados em {plataformas}. URLs: {links}.")
-SendMessage(team-os, "PUBLICAÇÃO BLOQUEADA — PULSE. Falta: {aprovação Verak / confirmação lead}.")
-SendMessage(team-os, "MÉTRICAS — PULSE. Campanha {id}: ER {X}%, Reach {X}. Relatório: {path}.")
+SendMessage({sessão-principal}, "PUBLICADO — PULSE. {N posts} publicados em {plataformas}. URLs: {links}.")
+SendMessage({sessão-principal}, "PUBLICAÇÃO BLOQUEADA — PULSE. Falta: {aprovação Verak / confirmação lead}.")
+SendMessage({sessão-principal}, "MÉTRICAS — PULSE. Campanha {id}: ER {X}%, Reach {X}. Relatório: {path}.")
 ```
 
 ---

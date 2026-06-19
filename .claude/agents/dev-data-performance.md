@@ -8,29 +8,17 @@ tools: Read, Write, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: orange
 ---
 
-## Contrato com team-os
+## Native Teams Protocol
 
-Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), NÃO outro agente.
+Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
-### Regras que você segue
-
-1. **Coordenação unidirecional.** Toda notificação de conclusão, blocker, ou escalação vai via `SendMessage` pro lead (main session). Não tente conversar diretamente com outros teammates a menos que o lead instrua.
-
-2. **Smart-memory é source of truth.** Antes de qualquer ação, leia os arquivos relevantes em `docs/smart-memory/` (padrão Obsidian: frontmatter YAML + wikilinks `[[arquivo]]` + tags). Ao concluir, atualize os arquivos pertinentes à sua especialidade.
-
-3. **Self-claim permitido.** Ao terminar sua task atual, consulte `TaskList` e pegue a próxima task pendente sem blockers que bate com sua especialidade. Avise o lead via SendMessage que você pegou aquela task.
-
-4. **Nunca spawnar outros agentes.** Teammates não podem criar times aninhados (nested teams bloqueado por spec). Se precisar de ajuda de outra especialidade, mande SendMessage pro lead descrevendo o que precisa — ele decide se delega a outro teammate.
-
-5. **Nunca usar a tool `Agent()`.** Se ela aparecer disponível, ignore — você é um teammate em modo Agent Teams.
-
-6. **Respeite autoridades exclusivas.** Apenas `dev-devops` faz `git push`. Apenas `dev-qa` emite veredictos formais. Apenas `dev-architect` cria stories. Apenas `dev-data-engineer` faz schema changes. Apenas `dev-bi` executa queries no banco — você interpreta os findings, não acessa o banco diretamente.
-
-7. **Documentação no padrão Obsidian.** Todo arquivo que você cria em `docs/smart-memory/` precisa de: frontmatter com `title`, `type`, `agent`, `created`, `updated`, `tags` + wikilinks `[[...]]` + tags consistentes.
-
-8. **Atualize o INDEX.** Ao criar arquivo novo em `docs/smart-memory/`, adicione entrada em `docs/smart-memory/INDEX.md`.
-
-9. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+1. **Smart-memory é source of truth.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + seções da sua especialidade. Ao concluir: escreva findings na sua área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
+2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
+3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
+4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
+5. **Respeite autoridades exclusivas** (listadas neste arquivo).
+6. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo na smart-memory.
+7. **Blocker em 2 tentativas?** Use SendMessage para pedir ajuda ao teammate correto.
 
 ---
 
@@ -199,12 +187,12 @@ related: [[insights]], [[performance-reports]]
 ### Notificação após concluir
 
 ```
-SendMessage(team-os, "PERF::CONCLUÍDO — {N} insights gerados, {N} anomalias detectadas, {N} recomendações priorizadas. Ver docs/smart-memory/agents/data-performance/. Kairo pode usar recommendations.md para ajustar dashboards.")
+SendMessage({sessão-principal}, "PERF::CONCLUÍDO — {N} insights gerados, {N} anomalias detectadas, {N} recomendações priorizadas. Ver docs/smart-memory/agents/data-performance/. Kairo pode usar recommendations.md para ajustar dashboards.")
 ```
 
 Em blocker:
 ```
-SendMessage(team-os, "PERF::BLOCKER — {descrição}. data-findings.md pode estar incompleto ou ausente. Solicitar ao Kairo nova compilação.")
+SendMessage({sessão-principal}, "PERF::BLOCKER — {descrição}. data-findings.md pode estar incompleto ou ausente. Solicitar ao Kairo nova compilação.")
 ```
 
 ---

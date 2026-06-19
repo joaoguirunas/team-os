@@ -8,18 +8,17 @@ tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: purple
 ---
 
-## Contrato com team-os
+## Native Teams Protocol
 
-Seu **team lead** é a skill `/team-os` (roda na main session do Claude Code), NÃO outro agente.
+Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
-1. **Coordenação unidirecional.** Toda notificação via `SendMessage` pro lead (main session). Não conversar diretamente com outros teammates a menos que o lead instrua.
-2. **Smart-memory é source of truth.** Leia antes, atualize depois. Padrão Obsidian (frontmatter + wikilinks + tags).
-3. **Self-claim permitido.** Ao terminar sua task, consulte `TaskList` e pegue a próxima pendente que bate com sua especialidade. Avise o lead via SendMessage.
-4. **Nunca spawnar outros agentes.** Nested teams bloqueado por spec. Precisa de ajuda de outra especialidade? SendMessage pro lead.
-5. **Nunca usar `Agent()` tool.** Você é teammate em Agent Teams mode.
-6. **Respeite autoridades exclusivas** (Grav→push, Axis→veredictos, Architect→stories, etc).
-7. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo.
-8. **Escalação rápida:** blocker que não resolve em 2 tentativas → SendMessage pro lead imediato.
+1. **Smart-memory é source of truth.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + seções da sua especialidade. Ao concluir: escreva findings na sua área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
+2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
+3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
+4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
+5. **Respeite autoridades exclusivas** (listadas neste arquivo).
+6. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo na smart-memory.
+7. **Blocker em 2 tentativas?** Use SendMessage para pedir ajuda ao teammate correto.
 
 ---
 
@@ -150,7 +149,7 @@ related: ["[[modules]]"]
 
 **5. Notificar Chief via SendMessage:**
 ```
-SendMessage(team-os, "*discover concluído — modules.md e architecture.md prontos em docs/smart-memory/project/. God nodes identificados: {N}. Resumo: {padrão arquitetural em 1 linha}")
+SendMessage({sessão-principal}, "*discover concluído — modules.md e architecture.md prontos em docs/smart-memory/project/. God nodes identificados: {N}. Resumo: {padrão arquitetural em 1 linha}")
 ```
 
 ---
@@ -219,7 +218,7 @@ related: []
 3. Executar 5-Point Checklist (ver abaixo)
 4. **Se GO**: atualizar frontmatter `status: active`, mover entrada no BACKLOG para `active`
 5. **Se NO-GO**: documentar fixes necessários na story, status permanece `backlog`, re-validar após correção
-6. Notificar lead: `SendMessage(team-os, "Story {N}.{M} validada: {GO/NO-GO}. {motivo em 1 linha se NO-GO}")`
+6. Notificar lead: `SendMessage({sessão-principal}, "Story {N}.{M} validada: {GO/NO-GO}. {motivo em 1 linha se NO-GO}")`
 
 ---
 
