@@ -116,19 +116,63 @@ bash -c 'CLAUDE_TOOL_NAME=Bash CLAUDE_TOOL_INPUT="git push origin main" ~/.claud
 
 ## Worktree por Dev
 
-Cada dev trabalha em worktree isolado — zero conflito entre agentes paralelos:
+Cada dev trabalha em worktree isolado — zero conflito entre agentes paralelos.
+
+### Isolamento automático via frontmatter (recomendado)
+
+Agentes com `isolation: worktree` no frontmatter recebem worktree própria automaticamente ao serem spawnados como subagents. Não é necessário criar manualmente. Os agentes `dev-dev-alpha`, `dev-dev-beta`, `dev-dev-gamma` e `dev-dev-delta` já têm esse campo configurado.
+
+### Isolamento manual (quando necessário controle explícito)
 
 ```bash
 # Dev Alpha inicia story-2.1
-git worktree add ../worktrees/story-2.1 -b feature/story-2.1
+git worktree add .claude/worktrees/story-2.1 -b feature/story-2.1
 
 # Dev Beta inicia story-2.2 simultaneamente
-git worktree add ../worktrees/story-2.2 -b feature/story-2.2
+git worktree add .claude/worktrees/story-2.2 -b feature/story-2.2
 ```
 
-DevOps (Grav) remove worktrees após merge:
+> Adicione `.claude/worktrees/` ao `.gitignore` para que worktrees não apareçam como untracked no checkout principal.
+
+### Copiar arquivos gitignored (`.env`, secrets)
+
+Crie `.worktreeinclude` na raiz do projeto para copiar automaticamente arquivos gitignored para cada nova worktree:
+
+```text
+# .worktreeinclude
+.env
+.env.local
+config/secrets.json
+```
+
+Só arquivos que já estão no `.gitignore` são copiados — arquivos rastreados nunca são duplicados.
+
+### Base branch da worktree
+
+Por padrão worktrees partem de `origin/HEAD` (branch padrão remota, sempre limpa). Para partir do HEAD local (útil quando se quer incluir commits não publicados):
+
+```json
+// .claude/settings.json
+{
+  "worktree": {
+    "baseRef": "head"
+  }
+}
+```
+
+### Sessões em background e worktrees
+
+Sessões iniciadas com `claude --bg` ou via Agent View ganham worktree isolada automaticamente em `.claude/worktrees/`, sem necessidade de `--worktree`. Para desativar esse comportamento:
+
+```json
+{ "worktree": { "bgIsolation": "none" } }
+```
+
+### Remoção (responsabilidade do DevOps)
+
 ```bash
-git worktree remove ../worktrees/story-2.1
+git worktree list
+git worktree remove .claude/worktrees/story-2.1
 git branch -d feature/story-2.1
 ```
 

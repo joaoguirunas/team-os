@@ -57,7 +57,7 @@ O Claude Code mostra teammates no **agent panel** abaixo do prompt input.
    ele continua ativo. Mande uma mensagem para reaparecer.
 ```
 
-> `claude agents --json` NÃO existe. Não referenciar. Para estado das tasks usar `TaskList`.
+> **`claude agents --json` existe**, mas lista **sessões em background** (`claude --bg`), não teammates do Agent Team. Para estado dos teammates usar `TaskList` e `shared-context.md`. Para ver todas as sessões ativas da máquina: `claude agents --json --cwd .`
 
 ---
 
@@ -217,6 +217,8 @@ Confirma? (s/n/ajustar)
 
 Se "ajustar": perguntar quem adicionar/remover, voltar pra etapa 5.
 
+> **Modelo dos teammates:** teammates **não herdam** o modelo do lead. Para garantir consistência, especifique o modelo no prompt de spawn (ex: "use Sonnet") ou configure o "Default teammate model" em `/config`. Se não especificado, cada teammate usa o default da sessão, que pode diferir do lead.
+
 ### Etapa 6 — Ativação do Agent Team (PROTOCOLO EXPLÍCITO)
 
 ⚠️ Linguagem natural como trigger **não é confiável sozinha**. Use o protocolo explícito abaixo, nesta ordem exata:
@@ -238,6 +240,8 @@ Agent({
   prompt: "Instruções iniciais: sua task é {X}. Leia docs/smart-memory/{path-relevante} antes de começar. Consulte TaskList para ver sua task atribuída. Avise o lead via SendMessage quando concluir."
 })
 ```
+
+> **Nota sobre skills:** O campo `skills:` no frontmatter do agente é ignorado quando ele roda como teammate — é uma limitação da API. Skills são carregadas do project settings (`.claude/skills/`) ou user settings (`~/.claude/skills/`), que é onde o `team-os-creator` as instala. O comportamento na prática está correto, mas o frontmatter não é a fonte de carregamento em contexto de teammate.
 
 O time é criado automaticamente quando o primeiro `Agent()` é executado. Todos os teammates ficam:
 - Addressable via `SendMessage({to: "teammate-name"})`
@@ -596,25 +600,35 @@ Se opção 2: ir para Etapa 4 do fluxo principal. Se opção 3: cancelar.
    - **Se sim**: marcar story com flag `god-node: true` no frontmatter e **incluir dev-qa obrigatoriamente** na composição do time, mesmo que a story seja pequena. Adicionar nota no prompt do dev: "Esta story toca um God Node — testes obrigatórios e QA formal antes do push."
    - **Se não**: fluxo normal, dev-qa opcional
 5. Criar tasks via `TaskCreate` — uma por story, com `addBlockedBy` aplicado conforme wave analysis (item 3)
-6. **Dev mode por complexity — incluir instrução no prompt de spawn de cada teammate:**
+6. **Dev mode por complexity:**
 
-   | Complexity | Modo | Instrução a injetar no prompt |
+   | Complexity | Modo | Como spawnar |
    |---|---|---|
-   | S  | yolo        | "Complexity S — execute direto, sem perguntas prévias" |
-   | M  | interactive | "Complexity M — até 2–3 perguntas ao lead antes de começar, se necessário" |
-   | L  | pre-flight  | "Complexity L — liste todas as dúvidas sobre os ACs **antes** de implementar. Aguarde resposta do lead." |
-   | XL | pre-flight  | "Complexity XL — pre-flight obrigatório. Divida em sub-tarefas, valide cada uma com o lead antes de começar." |
+   | S  | direto | `Agent({..., prompt: "Complexity S — execute direto, sem perguntas prévias"})` |
+   | M  | interativo | `Agent({..., prompt: "Complexity M — até 2–3 perguntas ao lead antes de começar, se necessário"})` |
+   | L  | plan approval | `Agent({..., mode: "plan", prompt: "..."})` — teammate fica em read-only até lead aprovar o plano |
+   | XL | plan approval | Igual a L. Se possível, quebrar em sub-stories menores antes de despachar. |
+
+   **Como funciona plan approval (L/XL):** o teammate trabalha em modo read-only, elabora o plano e envia uma solicitação de aprovação ao lead. O lead aprova (teammate implementa) ou rejeita com feedback (teammate revisa e resubmete). O lead pode ser instruído com critérios: "só aprove se o plano incluir cobertura de testes".
 
    Stories com `god-node: true` no frontmatter: tratar como complexity +1 (M→L, L→XL).
 
-7. **Quality gate antes de mover para `in-review/` — injetar no prompt do dev:**
+7. **Quality gate — hook `TaskCompleted` (mecanismo nativo, recomendado):**
 
-   "Ao concluir a implementação, ANTES de mover a story para `stories/in-review/`, execute e confirme:
-   - `npm run lint` (ou equivalente do projeto) sem erros
-   - `npm run typecheck` (ou equivalente) sem erros
-   - Testes relevantes passando (onde existirem)
+   Configurar em `.claude/settings.json` do projeto (se ainda não existir):
+   ```json
+   {
+     "hooks": {
+       "TaskCompleted": [{
+         "type": "command",
+         "command": "npm run lint && npm run typecheck"
+       }]
+     }
+   }
+   ```
+   O Claude Code executa automaticamente ao marcar task como concluída. Exit code 2 bloqueia a conclusão e envia o erro de volta ao teammate — ele não pode avançar sem corrigir.
 
-   Sem isso, a story permanece em `stories/active/`. Dev-qa pode devolver `in-review → active` se encontrar falha que deveria ter sido pega antes."
+   **Fallback via prompt** (se o hook não estiver configurado): injetar no prompt do dev: "Antes de mover para `stories/in-review/`, confirme: lint sem erros, typecheck sem erros, testes passando. Sem isso, a story permanece em `stories/active/`."
 
 8. Teammates fazem self-claim — lead apenas monitora
 9. Atualizar `shared-context.md`
@@ -631,7 +645,7 @@ Complementar com dados de tasks quando disponível:
 ```
 TaskList()  → lista tasks ativas e seus assignees
 ```
-> `claude agents --json` NÃO existe. Para estado dos teammates usar `TaskList` e `shared-context.md`.
+> **`claude agents --json`** existe mas lista sessões em background (`claude --bg`), não teammates. Não usar para monitorar o time — usar `TaskList` e `shared-context.md`.
 
 ### `*audit` — Guardião do smart-memory
 

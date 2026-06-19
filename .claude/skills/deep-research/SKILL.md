@@ -5,6 +5,24 @@ description: Use when the user needs multi-source research with citation trackin
 
 # Deep Research
 
+## Workflow nativo vs esta skill
+
+O Claude Code tem um workflow bundled `/deep-research` que faz fan-out de web searches, cross-check de fontes e entrega um relatório citado. **Use o workflow nativo quando:**
+- A pergunta é factual e baseada em web (notícias, documentação pública, comparações rápidas)
+- Velocidade importa mais que rigor
+- Não precisa de persistência estruturada (evidence.jsonl, claims.jsonl)
+
+**Use esta skill quando:**
+- Precisa de rastreamento de evidências persistido em disco (`evidence.jsonl`, `claims.jsonl`)
+- Precisa de verificação de claims no nível atômico com ledger auditável
+- Relatório final em formato McKinsey (HTML/PDF com citações inline)
+- Research de múltiplas fases com critique e refinement
+- O rigor importa mais que a velocidade
+
+Para ativar o workflow nativo: `/deep-research <pergunta>` ou use a keyword `ultracode` no prompt. Monitore com `/workflows`.
+
+---
+
 ## Core Purpose
 
 Deliver citation-tracked research reports through a structured pipeline with evidence persistence, source identity management, claim-level verification, and progressive context management.
