@@ -379,12 +379,17 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 │   └── check-social-progress.sh
 └── skills/              ← 48 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
+    │   ├── templates/story.md           ← template canônico de story
+    │   ├── reference/obsidian-patterns.md
+    │   └── scripts/discovery.sh         ← Smart-Memory Discovery Engine (self-contained)
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 8 templates de archetype
         ├── reference/           ← archetypes, smart-memory, catálogo de skills
-        ├── scripts/             ← validate-agent.sh, scan/diff/install
+        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install
         ├── presets/             ← presets de squad
         └── hooks/
+
+.github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push
 
 docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 ├── INDEX.md             ← MOC raiz (todos leem ao iniciar)

@@ -143,16 +143,17 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 
 ## Fluxo default — Command Center
 
-### Passo 0 — Scan silencioso
+### Passo 0 — Render do Command Center (determinístico)
 
-Rodar sem output:
-1. `scripts/scan-ct-projects.sh` — mapeia os projetos irmãos no root do CT e, por projeto, reporta:
-   `team-os` instalada? (✓/✗) · nº de agentes + **drift vs CT** (atualizados / desatualizados / ausentes / extra) · smart-memory presente? (✓/✗) · squads detectadas.
-2. `scripts/diff-agents.sh` — compara conteúdo (hash) dos agentes fonte vs cada destino.
+Rodar o script que escaneia e renderiza o painel:
+```bash
+bash .claude/skills/team-os-creator/scripts/dashboard.sh
+```
+Ele chama o `scan-ct-projects.sh` (que reporta, por projeto: `team-os` instalada, nº de agentes, smart-memory e **drift vs CT por hash** — em dia / desatualizados / ausentes) e imprime o painel + as 3 ações. Mostre a saída ao usuário.
 
-### Passo 1 — Dashboard de abertura
+### Passo 1 — Layout do painel (referência)
 
-Mostrar SEMPRE este painel antes de qualquer ação:
+O `dashboard.sh` produz exatamente este formato:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
@@ -239,8 +240,9 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ├── scripts/
 │   ├── preflight.sh
 │   ├── detect-project-signals.sh
-│   ├── validate-agent.sh
-│   ├── scan-ct-projects.sh
+│   ├── validate-agent.sh           ← *audit
+│   ├── scan-ct-projects.sh         ← status + drift por hash
+│   ├── dashboard.sh                ← Command Center (render do painel)
 │   ├── diff-agents.sh
 │   └── install-to-project.sh
 └── templates/

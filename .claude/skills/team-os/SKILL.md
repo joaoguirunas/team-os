@@ -250,17 +250,14 @@ Flag por sessão: `claude --teammate-mode auto`
 Quando `docs/smart-memory/` não existe, o team-os **não cria scaffolding vazio** — ele faz *discovery* do projeto real e popula a base com conteúdo verdadeiro. Isso roda ANTES do Team Design, porque é o contexto que todos os agentes vão ler.
 
 **Processo de discovery:**
-1. **Detectar stack** — rodar `.claude/skills/team-os-creator/scripts/detect-project-signals.sh` (se presente) + ler `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `requirements.txt`, configs (`next.config`, `tsconfig`, `.env.example`) e o `README` do projeto.
-2. **Mapear estrutura** — varrer a árvore de diretórios (`src/`, `app/`, `lib/`, `packages/`…) para identificar módulos e fronteiras.
-3. **Popular a smart-memory** com conteúdo real (não placeholders):
-   - `project/overview.md` — o que o projeto é, domínio, objetivo (confirmar pontos incertos com o usuário).
-   - `project/tech-stack.md` — stack detectado (linguagens, frameworks, libs, DB, deploy).
-   - `project/conventions.md` — padrões observados (estrutura de pastas, naming, lint/tsconfig).
-   - `modules/` — um arquivo por módulo relevante, com responsabilidade e arquivos-chave.
-   - `architecture/overview.md` — diagrama Mermaid da arquitetura inferida.
-   - `INDEX.md` — MOC raiz com wikilinks para tudo acima.
-4. **Acelerar com paralelismo** — em codebase grande, delegue a discovery a teammates `*-analyst`/`*-architect` em paralelo (um por área), cada um gravando sua seção.
-5. **Validar com o usuário** — apresentar um resumo do que foi inferido e pedir correção do que estiver impreciso antes de seguir.
+1. **Rodar o script determinístico** (faz a detecção e gera a base populada):
+   ```bash
+   bash .claude/skills/team-os/scripts/discovery.sh          # ou --dry-run para só inspecionar
+   ```
+   Ele detecta stack (linguagens, frameworks, styling/UI, DB/ORM, testes, tooling, pkg manager, monorepo), mapeia os módulos e gera `INDEX.md` + `project/{overview,tech-stack,conventions}.md` + `modules/*.md` + `architecture/overview.md` + a estrutura de `stories/`, `decisions/`, `research/`, `qa/`. É self-contained (só depende da skill team-os).
+2. **Enriquecer os `<!-- TODO -->`** — o script deixa marcados os pontos que o código não revela (domínio/propósito do projeto, responsabilidade de cada módulo). Você (ou um teammate `*-analyst`/`*-architect`) preenche lendo o código e o README.
+3. **Acelerar com paralelismo** — em codebase grande, delegue o enriquecimento a teammates em paralelo (um por área/módulo), cada um gravando sua seção.
+4. **Validar com o usuário** — apresentar o resumo do que foi inferido e pedir correção do que estiver impreciso antes de seguir.
 
 Use `team-os/reference/obsidian-patterns.md` para o padrão de frontmatter/wikilinks/tags. Só depois da smart-memory populada → Fase 4 (Team Design).
 
