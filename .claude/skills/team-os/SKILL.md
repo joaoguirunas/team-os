@@ -169,10 +169,27 @@ Baseado no objetivo + contexto da smart-memory + agentes disponíveis:
 | Review/Audit | Validar código existente | Revisores com lentes diferentes simultaneamente |
 | Mixed | Pesquisa → design → implementação → QA | Pipeline com dependências explícitas |
 
-**4b. Mapear paralelismo real:**
+**4b. Casting — escolher o archetype CERTO por tipo de trabalho (não chute):**
+
+Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
+
+| Trabalho | Archetype certo | NUNCA use |
+|---|---|---|
+| Pesquisar/comparar/levantar dados | `analyst`/`researcher` | — |
+| **Escrever entregável** (código, tutorial, doc, copy, spec) | `dev-*`/implementer (ou writer/copywriter da squad) | ❌ analyst (analyst só pesquisa, não escreve entregável) |
+| **Abrir/gerenciar PR, push, release** | **`devops`** (autoridade EXCLUSIVA) | ❌ analyst, ❌ implementer (bloqueado por hook de push) |
+| Validar/QA com veredicto | `qa`/reviewer | — |
+| Arquitetura/stories | `architect` | — |
+
+**Erros de casting que causam falha real:**
+- "analyst escreve o conteúdo" → analyst entrega pesquisa, não o entregável. Use um `dev-*`/writer.
+- "cada agente abre seu próprio PR" → push é gated: só `devops` empurra; implementers têm o hook que bloqueia. Padrão correto: escritores **commitam na worktree** → handoff (`SendMessage`) ao `devops` → ele abre os PRs.
+- Se a squad não tem o papel ideal (ex.: sites sem copywriter dedicado), use o implementer mais próximo (`dev-gamma`) e avise o usuário — não force um analyst.
+
+**4b.1 Mapear paralelismo real:**
 - O que pode rodar SIMULTANEAMENTE? (sem dependência de dados/arquivos)
 - O que tem dependência direta? (A deve completar antes de B começar)
-- Quais agentes disponíveis em `.claude/agents/` batem com cada subtarefa?
+- Quais agentes disponíveis em `.claude/agents/` batem com cada subtarefa (pelo casting acima)?
 
 **4c. Dimensionamento — paralelismo máximo por workstream independente:**
 
