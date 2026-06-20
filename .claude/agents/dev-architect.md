@@ -210,7 +210,7 @@ related: []
 
 **Workflow de criação (ordem obrigatória):**
 
-1. Criar arquivo `docs/smart-memory/stories/backlog/{N}.{M}-{slug}.md` com template
+1. Criar arquivo `docs/smart-memory/stories/backlog/{N}.{M}-{slug}.md` a partir do template canônico `.claude/skills/team-os/templates/story.md`
 2. Adicionar imediatamente à `docs/smart-memory/stories/BACKLOG.md`:
    ```markdown
    | {N}.{M} | {título} | {S/M/L/XL} | backlog | — |

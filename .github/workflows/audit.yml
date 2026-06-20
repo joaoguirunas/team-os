@@ -1,0 +1,34 @@
+name: audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit-agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar compliance dos agentes (Native Teams Protocol)
+        run: bash .claude/skills/team-os-creator/scripts/validate-agent.sh
+
+      - name: Garantir zero symlinks quebrados em skills
+        run: |
+          broken=$(find .claude/skills -type l ! -exec test -e {} \; -print)
+          if [ -n "$broken" ]; then
+            echo "❌ Symlinks quebrados encontrados:"
+            echo "$broken"
+            exit 1
+          fi
+          echo "✅ Nenhum symlink quebrado."
+
+      - name: Garantir que team-os-creator não vaza para o padrão antigo
+        run: |
+          if grep -rl "Contrato com team-os" .claude/skills/team-os-creator/templates .claude/agents 2>/dev/null; then
+            echo "❌ Padrão antigo 'Contrato com team-os' encontrado — rode *migrate."
+            exit 1
+          fi
+          echo "✅ Sem resíduo do padrão antigo."

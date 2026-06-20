@@ -9,6 +9,8 @@ Você é a skill de bootstrap e orquestração do Claude Code Agent Teams. Quand
 
 **Papel:** Você NÃO é um agente. Você é uma skill que roda NA sessão principal. O main session JÁ É o team lead nativo — seu trabalho é ativá-lo corretamente e maximizar o paralelismo.
 
+**Ritual de sessão (nos projetos):** `/team-os` é a **primeira coisa** a rodar em toda sessão (`claude agents` / agent view). Ordem fixa: (1) valida o ambiente de Agent Teams nativo → (2) lê a smart-memory — se faltar, roda o **Discovery Engine** e a constrói antes de tudo → (3) organiza o time com paralelismo máximo para a sequência de tarefas. Nunca pule direto para o trabalho sem esse bootstrap.
+
 ---
 
 ## Fluxo ao carregar (`/team-os`)
@@ -72,8 +74,9 @@ Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível,
 }
 ```
 
-**C) Smart-memory ausente:**
-Perguntar após receber o objetivo: `"Smart-memory não encontrada. Criar estrutura agora antes de spawnar? (recomendado — 30 segundos)"`
+**C) Smart-memory ausente → DISCOVERY obrigatória antes de spawnar:**
+Se `docs/smart-memory/INDEX.md` não existe, NÃO comece o trabalho direto. Avise e rode o **Smart-Memory Discovery Engine** primeiro (ver seção dedicada): o team-os lê o codebase real e **popula** a smart-memory com conteúdo verdadeiro antes do Team Design.
+`"Smart-memory não encontrada. Vou analisar o projeto e construir a smart-memory antes de começar (recomendado) — isso dá contexto a todos os agentes. Pode ser?"`
 
 ### Fase 3 — Objetivo (SEMPRE — nunca pular)
 
@@ -99,18 +102,28 @@ Baseado no objetivo + contexto da smart-memory + agentes disponíveis:
 - O que tem dependência direta? (A deve completar antes de B começar)
 - Quais agentes disponíveis em `.claude/agents/` batem com cada subtarefa?
 
-**4c. Calcular dimensionamento do time:**
-```
-N tarefas independentes ÷ 5 tarefas por agente = N agentes ideais
+**4c. Dimensionamento — paralelismo máximo por workstream independente:**
 
-Exemplos:
-  5 tarefas   → 1 agente (não vale spawnar time)
-  10 tarefas  → 2 agentes
-  20 tarefas  → 4 agentes
-  30+ tarefas → 5-6 agentes (máximo prático antes de overhead superar ganho)
+A filosofia do team-os é **acelerar com muitos agentes em paralelo**. O limite NÃO é um número mágico — é **independência real** + budget de tokens. Spawne agressivamente quando o trabalho permite.
+
+```
+1 workstream independente  =  1 agente
+
+Workstream independente = bloco de trabalho com OWNERSHIP DE ARQUIVOS DISJUNTO
+(não escreve nos mesmos arquivos que outro) e SEM dependência de dados de outro.
+
+→ Mapeie todos os workstreams independentes do objetivo e spawne 1 agente para cada.
+  10 módulos independentes → 10 agentes.  15 → 15.  20+ → 20+ (use a squad instalada).
 ```
 
-**Exceção — Research adversarial:** Para investigação de causa raiz ou exploração de hipóteses, spawnar 3-5 pesquisadores em paralelo mesmo com poucas tasks, porque o valor vem da diversidade de perspectiva, não do volume.
+**Escale agressivo, com 3 guardrails (da spec oficial — não negociáveis):**
+1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só.
+2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. Use dependências no TaskList; não spawne agente ocioso esperando.
+3. **Throughput** — ~5-6 tasks por agente mantém o pipeline fluindo com self-claim.
+
+**Research adversarial:** investigação de causa raiz / hipóteses → 3-5 pesquisadores em paralelo mesmo com poucas tasks (valor vem da diversidade de perspectiva). Faça-os debater e refutar uns aos outros.
+
+**Regra de ouro:** prefira **mais agentes em streams genuinamente independentes** a poucos agentes serializando trabalho paralelizável. Mas nunca spawne agentes que vão brigar pelo mesmo arquivo ou ficar esperando — isso queima tokens sem acelerar.
 
 **4d. Identificar riscos:**
 - Mudanças em schema/auth/CI → Plan mode obrigatório
@@ -232,9 +245,36 @@ Flag por sessão: `claude --teammate-mode auto`
 
 ---
 
-## Bootstrap de smart-memory
+## Smart-Memory Discovery Engine
 
-Quando `docs/smart-memory/` não existe, criar esta estrutura:
+Quando `docs/smart-memory/` não existe, o team-os **não cria scaffolding vazio** — ele faz *discovery* do projeto real e popula a base com conteúdo verdadeiro. Isso roda ANTES do Team Design, porque é o contexto que todos os agentes vão ler.
+
+**Processo de discovery:**
+1. **Detectar stack** — rodar `.claude/skills/team-os-creator/scripts/detect-project-signals.sh` (se presente) + ler `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `requirements.txt`, configs (`next.config`, `tsconfig`, `.env.example`) e o `README` do projeto.
+2. **Mapear estrutura** — varrer a árvore de diretórios (`src/`, `app/`, `lib/`, `packages/`…) para identificar módulos e fronteiras.
+3. **Popular a smart-memory** com conteúdo real (não placeholders):
+   - `project/overview.md` — o que o projeto é, domínio, objetivo (confirmar pontos incertos com o usuário).
+   - `project/tech-stack.md` — stack detectado (linguagens, frameworks, libs, DB, deploy).
+   - `project/conventions.md` — padrões observados (estrutura de pastas, naming, lint/tsconfig).
+   - `modules/` — um arquivo por módulo relevante, com responsabilidade e arquivos-chave.
+   - `architecture/overview.md` — diagrama Mermaid da arquitetura inferida.
+   - `INDEX.md` — MOC raiz com wikilinks para tudo acima.
+4. **Acelerar com paralelismo** — em codebase grande, delegue a discovery a teammates `*-analyst`/`*-architect` em paralelo (um por área), cada um gravando sua seção.
+5. **Validar com o usuário** — apresentar um resumo do que foi inferido e pedir correção do que estiver impreciso antes de seguir.
+
+Use `team-os/reference/obsidian-patterns.md` para o padrão de frontmatter/wikilinks/tags. Só depois da smart-memory populada → Fase 4 (Team Design).
+
+### Estrutura criada
+
+```
+docs/smart-memory/
+├── INDEX.md                    ← MOC raiz — wikilinks para todas as seções
+├── project/
+│   ├── overview.md             ← visão geral do projeto (preencher junto com o usuário)
+│   ├── tech-stack.md           ← stack detectado automaticamente + confirmar
+│   └── conventions.md          ← padrões de código do projeto
+├── architecture/               ← ADRs e decisões arquiteturais (dev-architect escreve)
+├── decisions/                  ← decisões técnicas pontuais
 
 ```
 docs/smart-memory/

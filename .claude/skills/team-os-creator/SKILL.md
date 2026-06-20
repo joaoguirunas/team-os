@@ -20,10 +20,10 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 5. **Idempotente** — se agente com mesmo nome existe, oferecer: atualizar / pular / renomear / cancelar.
 6. **Squad focada** — máx 10 agentes por squad. "Essencial" = 5, "completa" = preset.
 7. **NUNCA criar agente de orquestração/lead** — o main session do Claude Code é o lead nativo.
-8. **`team-os-creator` nunca é copiado para projetos destino** — existe só no CT.
-9. **`*install` sempre inclui bootstrap de smart-memory** — criar `docs/smart-memory/` com estrutura padrão + injetar protocolo no `CLAUDE.md` do destino.
+8. **`team-os-creator` nunca é copiado para projetos destino** — existe SÓ no CT. É a única skill exclusiva do CT.
+9. **`*install` entrega a infra, não a smart-memory** — copia agents + skills (incluindo `team-os`) + `settings.json` (+ hooks opcionais). A smart-memory é construída no projeto pelo próprio `/team-os` na 1ª sessão, a partir do codebase real (Discovery Engine). `*bootstrap` continua disponível para criação manual/no CT.
 10. **`*migrate` converte agentes antigos** — remove "Contrato com team-os", injeta "Native Teams Protocol".
-11. **`team-os` é skill exclusiva do CT** — NÃO copiar para projetos destino. O usuário carrega `/team-os` via `claude agents` quando quiser orquestrar.
+11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
 
 ---
 
@@ -31,7 +31,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 
 | Input | Ação |
 |---|---|
-| `/team-os-creator` | Menu principal — scan automático + sugestões |
+| `/team-os-creator` | **Command Center** — escaneia as pastas irmãs, mostra status por projeto e abre 3 ações: Criar / Atualizar / Instalar |
 | `/team-os-creator *analyze` | Só análise: archetype detectado, sem criar |
 | `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`traffic`/`pm`/`custom`) |
 | `/team-os-creator *create <role>` | Cria UM agente interativamente |
@@ -40,7 +40,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *skills <agente>` | Enriquece agente existente com skills relevantes |
 | `/team-os-creator *audit` | Valida compliance de todos os agentes |
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
-| `/team-os-creator *install` | Instala squads + skills + smart-memory em projeto destino |
+| `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino |
 
 ---
 
@@ -141,15 +141,42 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 
 ---
 
-## Fluxo default
+## Fluxo default — Command Center
 
-### Passo 0 — Scan automático
+### Passo 0 — Scan silencioso
 
-Rodar silenciosamente:
-1. `scripts/scan-ct-projects.sh` — mapeia projetos do CT
-2. `scripts/diff-agents.sh` — compara agentes fonte vs destinos
+Rodar sem output:
+1. `scripts/scan-ct-projects.sh` — mapeia os projetos irmãos no root do CT e, por projeto, reporta:
+   `team-os` instalada? (✓/✗) · nº de agentes + **drift vs CT** (atualizados / desatualizados / ausentes / extra) · smart-memory presente? (✓/✗) · squads detectadas.
+2. `scripts/diff-agents.sh` — compara conteúdo (hash) dos agentes fonte vs cada destino.
 
-Mostrar painel com situação e ações sugeridas.
+### Passo 1 — Dashboard de abertura
+
+Mostrar SEMPRE este painel antes de qualquer ação:
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║  team-os-creator  ·  Command Center  ·  by João Guirunas  ║
+╚═══════════════════════════════════════════════════════════╝
+
+  CT (fonte): {N} agentes · {N} skills · {N} squads
+
+  Projetos irmãos:
+  ┌─────────────────┬──────────┬──────────┬──────────────┬────────────┐
+  │ Projeto         │ team-os  │ agentes  │ smart-memory │ drift      │
+  ├─────────────────┼──────────┼──────────┼──────────────┼────────────┤
+  │ {projeto-a}     │ ✓        │ 22       │ ✓            │ 3 desatual.│
+  │ {projeto-b}     │ ✗        │ 0        │ ✗            │ não instal.│
+  └─────────────────┴──────────┴──────────┴──────────────┴────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [1] Criar equipe       → novos agentes/squad (segue todo o processo: NTP + smart-memory + skills + modelo híbrido)
+  [2] Atualizar equipes  → propaga o drift detectado para os projetos (*propagate)
+  [3] Instalar equipe    → instala squad + skills + team-os num projeto (*install)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*install`). Toda criação/edição roda `*audit` ao final.
 
 ---
 
@@ -178,9 +205,10 @@ Mostrar painel com situação e ações sugeridas.
 1. Lista projetos via `scan-ct-projects.sh`
 2. Seleciona squads
 3. Preview da instalação
-4. Copia agents (exceto team-os-creator) + cria settings.json + bootstrap smart-memory
-5. **NÃO copia `team-os`** — skill exclusiva do CT, carregada pelo usuário via `claude agents`
-6. Relatório
+4. Copia agents das squads + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (+ hooks se `--include-hooks`)
+5. **NÃO copia `team-os-creator`** — única skill exclusiva do CT
+6. **Não** cria smart-memory aqui — o `/team-os` constrói no projeto na 1ª sessão (Discovery). Orienta o usuário a abrir `claude agents` e rodar `/team-os`.
+7. Relatório
 
 ---
 
@@ -231,4 +259,4 @@ Mostrar painel com situação e ações sugeridas.
 | Destino é o mesmo que a fonte (CT) | Bloquear com erro claro |
 | `scan-ct-projects.sh` acha só CT | Oferecer digitar caminho manual |
 | Agentes sem "Contrato com team-os" no `*migrate` | Pular silenciosamente (já migrados) |
-| Usuário pede para instalar `team-os` no destino | Recusar — explicar que é exclusiva do CT |
+| Usuário pede para instalar `team-os` no destino | Fazer — `team-os` é obrigatória nos projetos. Recusar APENAS `team-os-creator` (exclusiva do CT). |
