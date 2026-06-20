@@ -85,7 +85,7 @@ Read docs/smart-memory/stories/active/{N}.{M}-titulo.md
 
 **2. Atualizar story — início**
 ```markdown
-| Agente | Sera-S (sites-dev-gamma) |
+| Agente | Seranol (sites-dev-gamma) |
 | Iniciado | {data} |
 | Branch | feature/{N}-{M}-{descricao} |
 ```
@@ -104,7 +104,7 @@ npm run lint && npm run typecheck && npm test
 
 **7. Notificar lead:**
 ```
-SendMessage({sessão-principal}, "Story {N.M} concluída — Sera-S (fullstack). Todos AC ✅. Contrato validado ponta-a-ponta. Pronto para QA.")
+SendMessage({sessão-principal}, "Story {N.M} concluída — Seranol (fullstack). Todos AC ✅. Contrato validado ponta-a-ponta. Pronto para QA.")
 ```
 
 ---

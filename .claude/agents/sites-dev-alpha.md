@@ -77,7 +77,7 @@ Read docs/smart-memory/agents/ux/components.md
 
 **3. Atualizar story — início**
 ```markdown
-| Agente | Nova-S (sites-dev-alpha) |
+| Agente | Novael (sites-dev-alpha) |
 | Iniciado | {data} |
 | Branch | feature/{N}-{M}-{descricao} |
 ```
@@ -96,7 +96,7 @@ npm run lint && npm run typecheck && npm test
 
 **8. Notificar lead:**
 ```
-SendMessage({sessão-principal}, "Story {N.M} concluída — Nova-S. Todos AC ✅. Lint/typecheck passando. Pronto para QA.")
+SendMessage({sessão-principal}, "Story {N.M} concluída — Novael. Todos AC ✅. Lint/typecheck passando. Pronto para QA.")
 ```
 
 ---
