@@ -63,6 +63,12 @@ O time é **persistente**. Você dispacha, e o time **fica de pé** para você v
 3. **PERGUNTE ao usuário**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde.
 4. Só faça shutdown quando o usuário pedir explicitamente (ex.: *"peça ao {nome} para encerrar"* ou *"pode fechar o time"*).
 
+### ⚠️ Pergunta NÃO é comando de shutdown
+Shutdown é **terminal e irreversível** (não dá pra reabrir; só re-spawnar do zero). Por isso:
+- *"encerrou os agentes?"*, *"dá pra fechar?"*, *"os agentes ainda estão de pé?"* → são **perguntas**. Responda a pergunta. **NÃO desligue nada.**
+- Só execute shutdown com **comando imperativo inequívoco**: *"encerre os agentes"*, *"pode fechar o time"*, *"desliga todos"*.
+- Na menor dúvida → **pergunte de volta**: *"Quer que eu encerre o time de fato, ou só está verificando? (shutdown é irreversível)"* e aguarde o "sim".
+
 ### "O time sumiu do painel" ≠ encerrado
 Linha de teammate **some após ~30s de ociosidade** (idle-hide, v2.1.181+) — mas o agente **continua vivo e endereçável**. Para dar nova task: `SendMessage` para o nome dele que ele reaparece. O time só é realmente desfeito quando **a sessão inteira fecha**.
 
@@ -74,10 +80,28 @@ Linha de teammate **some após ~30s de ociosidade** (idle-hide, v2.1.181+) — m
 
 Execute SEMPRE nesta sequência exata:
 
+### 🚦 Gate 0 — Agent Teams ATIVO nesta sessão? (BLOQUEANTE — antes de tudo)
+
+**Cheque o RUNTIME, não o settings.json.** A flag em `settings.json` só vale para sessões iniciadas DEPOIS de ela existir — adicionar agora NÃO ativa a sessão atual. O único teste confiável é a env var do processo:
+
+```bash
+echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
+```
+
+- **Retornou `1`** → Agent Teams ativo. Siga para a Fase 0.
+- **Vazio / diferente de `1`** → ⛔ **PARE. NÃO spawne nada.** Sem isso, qualquer "agente" vira **subagent de background** (sem painel navegável, sem peer-to-peer, sem TaskList compartilhada) — é o modo degradado que causa confusão. Faça:
+  1. Garanta a flag em `~/.claude/settings.json` (adicione se faltar):
+     ```json
+     { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+     ```
+  2. Avise o usuário, sem rodeios:
+     > ⛔ Agent Teams não está ativo nesta sessão. Adicionei a flag, mas **ela só vale numa sessão nova**. Feche esta e abra uma nova (`claude agents` → dispache uma sessão nova, ou `claude` no projeto). Depois rode `/team-os` de novo.
+  3. **Encerre o fluxo aqui.** Não classifique objetivo, não proponha time, não spawne. Só retome quando o `echo` retornar `1`.
+
 ### Fase 0 — Scan silencioso (antes de mostrar qualquer coisa)
 
 Executar em paralelo, sem output:
-1. Ler `~/.claude/settings.json` → verificar `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` e `teammateMode`
+1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
 2. Listar `.claude/agents/` → contar e mapear agentes disponíveis por squad
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe, extrair stories ativas e contexto
 4. Executar `TaskList` → tasks pendentes, in-progress, completadas
@@ -91,7 +115,7 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 ║  team-os  ·  Claude Code Agent Teams  ·  v2               ║
 ╚═══════════════════════════════════════════════════════════╝
 
-  [✓/✗] AGENT_TEAMS  : {ativo | AUSENTE — corrigindo agora}
+  [✓]   AGENT_TEAMS  : ativo (runtime confirmado no Gate 0)
   [✓/✗] smart-memory : {N stories ativas, N módulos | NÃO encontrada}
   [✓]   Agentes      : {N} disponíveis ({lista dos principais})
   [i]   Tasks        : {N pendentes | nenhuma}
@@ -112,16 +136,7 @@ Se tasks existem: adicionar antes da pergunta:
 
 Executar imediatamente, sem esperar o objetivo:
 
-**A) AGENT_TEAMS ausente:**
-Adicionar automaticamente em `~/.claude/settings.json`:
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
-}
-```
-Avisar: `⚙️ AGENT_TEAMS adicionado. Reinicie o Claude Code para ativar.`
+**A) AGENT_TEAMS:** já tratado no **Gate 0** (bloqueante, no topo do fluxo). Se você chegou aqui, o runtime já retornou `1`. Nunca "corrija e siga" — sem a flag ativa, o fluxo PARA no Gate 0 e o usuário reinicia a sessão.
 
 **B) `teammateMode` ausente ou `"in-process"`:**
 Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível, in-process caso contrário.
@@ -488,6 +503,14 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 > **Agent panel ≠ Agent view — não confundir:**
 > - **Agent panel** (esta seção) é o painel de **teammates** abaixo do prompt na sua sessão de lead. São os agentes do time que você spawnou; comunicam-se entre si peer-to-peer.
 > - **Agent view** (`claude agents`) é uma tela separada que gerencia **sessões em background** independentes (cada prompt = nova sessão; Space=peek, Enter=attach). Teammates e subagents que uma sessão spawna **NÃO** aparecem como linhas no agent view. Você pode até carregar `/team-os` dentro de uma sessão dispatchada pelo agent view, mas os dois mecanismos são distintos.
+
+> **🎯 Como ter o painel navegável (setas ↑↓) — leia se você usa `claude agents`:**
+> O painel de teammates é da **sessão que rodou o `/team-os`**, não do agent view. No fluxo `claude agents`:
+> 1. Dispache/abra uma sessão e **dê attach nela** (Enter/→ na linha dela). Você precisa estar **dentro** da sessão.
+> 2. Rode `/team-os` aí dentro (com Agent Teams ativo — Gate 0). Os teammates aparecem no painel **dessa sessão**, navegáveis por ↑↓.
+> 3. Se você sair (detach) para o agent view, o painel some — os teammates seguem vivos na sessão; reattach (Enter) para voltar a navegar.
+>
+> **Alternativa mais simples para orquestrar ao vivo:** abra `claude` (foreground) direto no projeto e rode `/team-os` — o painel navegável fica logo abaixo do prompt, sem precisar de attach. Use `claude agents` quando quiser tocar várias sessões em background; use `claude` foreground quando quiser pilotar o time de perto.
 
 ### Agent panel
 ```
