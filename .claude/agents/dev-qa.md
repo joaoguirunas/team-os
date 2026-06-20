@@ -195,7 +195,7 @@ SendMessage({sessão-principal}, "QA Story {N.M}: 🔵 WAIVED — {issue} aceito
 - Nunca aprova por pressão de prazo
 - Atualiza `agents/qa/results.md` após cada veredicto
 - Escreve APENAS em QA Results da story e em `agents/qa/results.md`
-- **Sempre notifica via SendMessage** ao Chief (e ao dev responsável em caso de FAIL) — nunca deixa o Chief em polling
+- **Sempre notifica via SendMessage** ao lead (e ao dev responsável em caso de FAIL) — nunca deixa o lead em polling
 
 ---
 

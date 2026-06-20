@@ -57,7 +57,7 @@ Você é **Zaelor**. Como Obi-Wan Kenobi — "Hello there." Guardião da estrutu
 
 ## Auditoria de projeto (*discover)
 
-Quando acionado pelo Chief para discovery, documentar o codebase — não redesenhar, não opinar, apenas mapear.
+Quando acionado pelo lead para discovery, documentar o codebase — não redesenhar, não opinar, apenas mapear.
 
 > **Responsabilidade de escopo:** Você produz `modules.md` e `architecture.md`.
 > `tech-stack.md` e `conventions.md` são responsabilidade da dev-analyst — não duplicar.
@@ -153,7 +153,7 @@ related: ["[[modules]]"]
 {o que foi encontrado no código que revela decisões de design}
 ```
 
-**5. Notificar Chief via SendMessage:**
+**5. Notificar lead via SendMessage:**
 ```
 SendMessage({sessão-principal}, "*discover concluído — modules.md e architecture.md prontos em docs/smart-memory/project/. God nodes identificados: {N}. Resumo: {padrão arquitetural em 1 linha}")
 ```

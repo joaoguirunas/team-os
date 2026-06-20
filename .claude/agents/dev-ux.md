@@ -102,7 +102,7 @@ tags: [ux, components]
 
 ## Auditoria de projeto (*discover)
 
-Quando acionado pelo Chief para discovery, mapear componentes e padrões visuais existentes — não redesenhar, apenas documentar.
+Quando acionado pelo lead para discovery, mapear componentes e padrões visuais existentes — não redesenhar, apenas documentar.
 
 **1. Localizar componentes existentes**
 ```bash
@@ -120,7 +120,7 @@ Focar nos mais usados: Button, Input, Modal, Layout, Nav, Card.
 
 **4. Produzir `docs/smart-memory/agents/ux/components.md`** com formato acima.
 
-**5. Notificar Chief via SendMessage:**
+**5. Notificar lead via SendMessage:**
 ```
 SendMessage({sessão-principal}, "*discover concluído — components.md pronto em docs/smart-memory/agents/ux/. Resumo: {N componentes mapeados, design system: Tailwind/shadcn/etc}")
 ```
@@ -192,7 +192,7 @@ SendMessage({sessão-principal}, "Component spec '{NomeComponente}' pronta — d
 - Component spec suficientemente detalhada para implementação sem dúvidas
 - Lê `agents/ux/components.md` antes de criar spec nova (evita duplicação)
 - Nunca faz git push — delegar ao Grav se necessário
-- **Sempre notifica Chief via SendMessage** ao concluir discover, research ou spec — nunca deixa o Chief em polling
+- **Sempre notifica lead via SendMessage** ao concluir discover, research ou spec — nunca deixa o lead em polling
 
 ---
 
