@@ -216,10 +216,13 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ## Fluxo `*propagate`
 
 1. Scan de projetos
-2. Diff de agentes
-3. Confirmação com preview
-4. Cópia seletiva (só arquivos que já existem no destino)
-5. Relatório
+2. Diff de agentes **e skills** (por hash/conteúdo) vs CT
+3. Confirmação com preview (use `--dry-run` para inspecionar antes)
+4. Sincroniza para cada destino que já tem a squad:
+   - **Agentes**: atualiza os que diferem da fonte
+   - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada
+5. **Não commita nos destinos** — as mudanças ficam no working tree (commit por projeto é do usuário)
+6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, …)
 
 ---
 

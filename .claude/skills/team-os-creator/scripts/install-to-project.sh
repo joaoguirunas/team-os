@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
-# Skills são SEMPRE copiadas (incluindo team-os obrigatória). Sem opção "agentes apenas".
+# Skills são SEMPRE sincronizadas (incluindo team-os obrigatória): copiadas se ausentes,
+# ATUALIZADAS se o conteúdo difere da fonte. Skills extras no destino são preservadas.
+# team-os-creator nunca vai para o destino. Sem opção "agentes apenas".
 # Usage: install-to-project.sh --source <path> --target <path> [options]
 #
 # Options:
@@ -123,6 +125,7 @@ echo "AGENTS_LIST=${agents_list# }"
 do_mkdir "$TARGET/.claude/skills"
 
 skills_copied=0
+skills_updated=0
 skills_skipped=0
 skills_list=""
 
@@ -146,10 +149,21 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
   fi
 
-  # Pula se já existe no destino (não sobrescreve)
   target_skill="$TARGET/.claude/skills/$skill_name"
+
   if [ -d "$target_skill" ]; then
-    skills_skipped=$((skills_skipped + 1))
+    # Já existe: ATUALIZA se o conteúdo difere da fonte (CT é source of truth).
+    # Skills extras no destino (não presentes na fonte) são preservadas — não apagamos.
+    if diff -rq "$skill_path" "$target_skill" >/dev/null 2>&1; then
+      skills_skipped=$((skills_skipped + 1))   # idêntica — nada a fazer
+      continue
+    fi
+    if [ $DRY_RUN -eq 0 ]; then
+      rm -rf "$target_skill"
+      cp -R "$skill_path" "$target_skill"
+    fi
+    skills_updated=$((skills_updated + 1))
+    skills_list="$skills_list $skill_name"
     continue
   fi
 
@@ -169,6 +183,7 @@ elif [ ! -d "$TARGET/.claude/skills/team-os" ]; then
 fi
 
 echo "SKILLS_COPIED=$skills_copied"
+echo "SKILLS_UPDATED=$skills_updated"
 echo "SKILLS_SKIPPED=$skills_skipped"
 echo "SKILLS_LIST=${skills_list# }"
 
