@@ -373,14 +373,14 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 | **dev-architect** | `/dev-api-design`, `/dev-technical-writing` |
 | **dev-analyst / researcher** | `/deep-research`, `/data-analytics-engineering` |
 | **dev-dev-alpha** | `/dev-typescript-patterns`, `/dev-testing-strategy`, `/dev-error-handling` |
-| **dev-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/supabase`, `/dev-database-patterns` |
-| **dev-dev-gamma** | `/dev-typescript-patterns`, `/supabase`, `/dev-error-handling` |
+| **dev-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
+| **dev-dev-gamma** | `/dev-typescript-patterns`, `/dev-database-patterns`, `/dev-error-handling` |
 | **dev-dev-delta** | `/dev-security-patterns`, `/dev-testing-strategy`, `/dev-error-handling` |
 | **dev-qa** | `/dev-testing-strategy`, `/dev-security-patterns` |
 | **dev-devops** | `/dev-git-workflow` |
-| **dev-bi / data** | `/data-analytics-engineering`, `/data-sql-optimization`, `/supabase-postgres-best-practices` |
+| **dev-bi / data** | `/data-analytics-engineering`, `/data-sql-optimization`, `/data-lake-platform` |
 | **sites-dev-alpha** | `/sites-frontend-design`, `/sites-shadcn-ui`, `/sites-tailwind-design-system`, `/ui-ux-pro-max` |
-| **sites-dev-beta** | `/dev-api-design`, `/supabase`, `/dev-error-handling` |
+| **sites-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
 | **sites-qa** | `/dev-testing-strategy`, `/web-design-guidelines`, `/sites-seo-technical` |
 | **social-content** | `/social-copywriting`, `/social-editorial-validation`, `/social-format-specs` |
 | **social-design** | `/social-key-visual`, `/social-carousel-design` |
