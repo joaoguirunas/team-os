@@ -126,6 +126,8 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 > **Lead Discipline (regra dura):** com `/team-os` ativo, a sessão principal é **orquestrador puro** — nunca escreve código, pesquisa ou redige entregável sozinha. Para qualquer ação de trabalho ela **spawna um agente e fica livre** (monitorando, roteando, sintetizando). 1 tarefa = 1 agente, até as pequenas.
 
+> **Team Persistence (regra dura):** o lead **nunca encerra o time sozinho**. Terminou uma rodada? Sintetiza, mantém os teammates vivos e **pergunta se há mais tasks** — só encerra quando você pede. E lembre: linha some do painel após ~30s = idle (agente **vivo**, não encerrado); reative com `SendMessage` pelo nome.
+
 ### O que ela faz, em fases
 1. **Scan silencioso** — lê `settings.json` (env + teammateMode), mapeia `.claude/agents/`, lê `docs/smart-memory/INDEX.md` e roda `TaskList`.
 2. **Dashboard de abertura** — mostra status do ambiente e pergunta o **objetivo da sessão**.

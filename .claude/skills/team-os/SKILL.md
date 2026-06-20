@@ -48,6 +48,28 @@ Quando `/team-os` está ativo, esta sessão é **orquestrador puro**. Antes de q
 
 ---
 
+## ♻️ Team Persistence — NUNCA encerre o time sozinho (REGRA DURA)
+
+O time é **persistente**. Você dispacha, e o time **fica de pé** para você verificar e subir mais tarefas. Encerrar é decisão **exclusiva do usuário**.
+
+### Proibido (o lead nunca faz por conta própria):
+- Enviar shutdown request a teammates
+- Declarar a sessão/objetivo "concluído" e parar
+- Encerrar o time porque as tasks da rodada terminaram
+
+### Ao terminar uma rodada de tasks:
+1. **Sintetize** os resultados dos teammates (o que ficou pronto).
+2. **Mantenha os teammates vivos e ociosos** — disponíveis para a próxima task.
+3. **PERGUNTE ao usuário**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde.
+4. Só faça shutdown quando o usuário pedir explicitamente (ex.: *"peça ao {nome} para encerrar"* ou *"pode fechar o time"*).
+
+### "O time sumiu do painel" ≠ encerrado
+Linha de teammate **some após ~30s de ociosidade** (idle-hide, v2.1.181+) — mas o agente **continua vivo e endereçável**. Para dar nova task: `SendMessage` para o nome dele que ele reaparece. O time só é realmente desfeito quando **a sessão inteira fecha**.
+
+> Regra de ouro: dispachou ≠ acabou. O lead fica de plantão até o usuário dizer que pode encerrar.
+
+---
+
 ## Fluxo ao carregar (`/team-os`)
 
 Execute SEMPRE nesta sequência exata:
@@ -540,7 +562,11 @@ Não spawnar agentes para tasks sequenciais. Só paralelizar quando há independ
 
 Configure em `.claude/settings.json` do projeto para enforçar padrões automaticamente:
 
-### TeammateIdle — Evitar encerramento prematuro
+### TeammateIdle — opcional, e CUIDADO com loop
+
+> **Atenção:** ficar ocioso é o estado **desejado** (teammate vivo, esperando mais task). O que resolve o encerramento precoce é a **regra Team Persistence** (acima), não este hook. Use o hook só se quiser que teammates puxem tasks pendentes em vez de ociar — e **nunca** com `exit 2` incondicional (isso gera loop infinito: o teammate nunca consegue parar).
+
+Versão **segura** (só nudge informativo, `exit 0` — não bloqueia o idle):
 ```json
 {
   "hooks": {
@@ -548,13 +574,13 @@ Configure em `.claude/settings.json` do projeto para enforçar padrões automati
       "matcher": "",
       "hooks": [{
         "type": "command",
-        "command": "echo 'Agente indo para idle. Verifique se há tasks pendentes.'"
+        "command": "echo 'Teammate ocioso (vivo). Se há tasks pendentes na fila, faça self-claim.'; exit 0"
       }]
     }]
   }
 }
 ```
-Exit code 2 no comando → agente recebe feedback e continua trabalhando.
+Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task pendente compatível na fila** — caso contrário `exit 0`. Um `exit 2` fixo trava o teammate em loop. Não é auto-instalado nos projetos por padrão.
 
 ### TaskCompleted — Gate de qualidade
 ```json
