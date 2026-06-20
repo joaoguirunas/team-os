@@ -9,12 +9,10 @@ Repositório fonte do pack **team-os**: 49 agentes e 48 skills para Claude Code 
 O CT é a **fonte da verdade** — qualquer alteração em agentes ou skills é feita aqui e propagada para os projetos destino via `/team-os-creator *propagate`. Nunca editar agentes diretamente nos projetos destino.
 → Detalhes em [README.md §13 — Manutenção do CT](./README.md#13-manutenção-do-ct).
 
-## Skills exclusivas do CT
+## As duas skills principais
 
-Duas skills existem **somente aqui** e nunca são copiadas para projetos destino:
-
-- **`/team-os`** — Bootstrap e orquestração de sessões Agent Teams. → [README.md §3](./README.md#3-skill-principal-team-os)
-- **`/team-os-creator`** — Factory de agentes. → [README.md §4](./README.md#4-skill-principal-team-os-creator)
+- **`/team-os`** — Bootstrap e orquestração de sessões Agent Teams. **É distribuída para todos os projetos** (obrigatória — o usuário roda `/team-os` no início de cada sessão). → [README.md §3](./README.md#3-skill-principal-team-os)
+- **`/team-os-creator`** — Factory de agentes. **Única skill exclusiva do CT** — nunca copiada para projetos destino. → [README.md §4](./README.md#4-skill-principal-team-os-creator)
 
 ## Padrão de agentes
 

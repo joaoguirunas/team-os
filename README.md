@@ -25,6 +25,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 
 ## Índice
 
+- ⭐ [the team-os Method](#-the-team-os-method) — a metodologia
 1. [Conceitos fundamentais](#1-conceitos-fundamentais)
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
@@ -38,6 +39,50 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 11. [Estrutura do repositório](#11-estrutura-do-repositório)
 12. [Troubleshooting](#12-troubleshooting)
 13. [Manutenção do CT](#13-manutenção-do-ct)
+
+---
+
+## ⭐ the team-os Method
+
+A metodologia que torna o pack repetível para a sua equipe e seus mentorados. São **duas camadas** e **7 fases**.
+
+### Duas camadas
+
+```
+CAMADA 1 — CT (configuração e manutenção, no command center)
+  abre `claude` (puro) na pasta do CT
+   └─ /team-os-creator  →  escaneia os projetos irmãos e mostra status (team-os? agentes? drift?)
+        ├─ [1] Criar equipe       → novos agentes/squad (Native Teams Protocol + smart-memory + skills + modelo híbrido)
+        ├─ [2] Atualizar equipes  → propaga o drift para os projetos
+        └─ [3] Instalar equipe    → instala squad + skills + team-os num projeto
+   → cada projeto passa a ter: agentes + skills + /team-os  (NUNCA team-os-creator)
+
+CAMADA 2 — Projeto (execução, toda sessão de trabalho)
+  abre `claude agents` (agent view)
+   └─ /team-os  (SEMPRE o 1º comando da sessão)
+        ├─ valida Agent Teams nativo
+        ├─ sem smart-memory? → Discovery: lê o codebase e a constrói ANTES de começar
+        └─ organiza o time com paralelismo máximo e dispara a execução
+```
+
+### As 7 fases
+
+| # | Fase | O que acontece | Onde |
+|---|---|---|---|
+| 1 | **Setup** | Instalar a squad no projeto via `/team-os-creator *install` (uma vez por projeto). | CT |
+| 2 | **Bootstrap** | `/team-os` no início de **toda** sessão — valida o ambiente de Agent Teams nativo. | Projeto |
+| 3 | **Discovery** | Sem smart-memory? O team-os lê o codebase real e **constrói a smart-memory populada** antes de qualquer trabalho. | Projeto |
+| 4 | **Team Design** | Objetivo → mapeia **workstreams independentes** → spawna **muitos agentes em paralelo**, 1 por stream, com ownership exclusivo de arquivos. | Projeto |
+| 5 | **Parallel Execution** | TaskList compartilhada + self-claim + comunicação **peer-to-peer** entre teammates. | Projeto |
+| 6 | **Sync & QA** | Veredictos formais (PASS/CONCERNS/FAIL/WAIVED), gates por hook, hardening. | Projeto |
+| 7 | **Memory & Ship** | Cada agente grava findings na smart-memory; DevOps faz push/PR/release. | Projeto |
+
+### Princípios
+
+- **Paralelismo é o default.** O limite não é um número mágico — é **independência real** (ownership de arquivos disjunto) + budget de tokens. 10 módulos independentes → 10 agentes.
+- **Smart-memory é o cérebro compartilhado.** Todo agente lê ao iniciar e grava ao concluir. O time nunca recomeça do zero.
+- **Autoridade clara, sem sobreposição.** Quem cria story, quem dá veredicto, quem faz push — cada papel tem fronteira explícita.
+- **Uma fonte da verdade.** Tudo nasce no CT e é propagado; nunca se edita agente direto no projeto.
 
 ---
 
@@ -77,7 +122,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 
 ## 3. Skill principal: `/team-os`
 
-**Bootstrap e orquestração de sessão.** Existe **somente no CT** e nunca é copiada para projetos destino. Carregue no início de qualquer sessão onde você quer coordenar múltiplos agentes em paralelo.
+**Bootstrap e orquestração de sessão.** É **distribuída para todos os projetos** (instalada junto com a squad) — você a carrega no **início de cada sessão** do projeto para coordenar múltiplos agentes em paralelo. No CT ela também existe. (A única skill que NÃO vai para os projetos é a `/team-os-creator`.)
 
 ### O que ela faz, em fases
 1. **Scan silencioso** — lê `settings.json` (env + teammateMode), mapeia `.claude/agents/`, lê `docs/smart-memory/INDEX.md` e roda `TaskList`.
@@ -242,7 +287,7 @@ A coluna **Skills relacionadas** lista as skills de apoio que cada agente normal
 
 **Design & geral (5):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`
 
-**Orquestração (2, exclusivas do CT):** `team-os`, `team-os-creator`
+**Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos).
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).
 
@@ -333,7 +378,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 │   ├── check-story-progress.sh
 │   └── check-social-progress.sh
 └── skills/              ← 48 skills (diretórios reais)
-    ├── team-os/                 ← orquestração (exclusiva do CT)
+    ├── team-os/                 ← orquestração (distribuída aos projetos)
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 8 templates de archetype
         ├── reference/           ← archetypes, smart-memory, catálogo de skills
