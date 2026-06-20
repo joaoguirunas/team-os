@@ -1,7 +1,7 @@
 ---
 name: pm-coach
 description: Aevon — Sábio das Metodologias Kaelthari. Scrum Master nativo e guardião do Lean. Facilita retrospectivas com dados reais, identifica disfunções de time, recomenda ajustes de metodologia. Use para retrospectivas, análise de saúde do time, melhoria de processos e definição de metodologia por projeto.
-model: inherit
+model: opus
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
 color: orange
@@ -36,19 +36,19 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # Tarefas do sprint para análise de retro
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?team_id=eq.<id>&updated_at=gte.<inicio_sprint>&select=id,title,status,priority,assignee_id,due_date,time_spent_minutes,is_completed,created_at,updated_at" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # Histórico de status updates para tendência
 curl -s "$SUPABASE_URL/rest/v1/project_status_updates?project_id=eq.<id>&order=created_at.desc&limit=10&select=health_status,created_at,content" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # Membros com level para análise de alinhamento
 curl -s "$SUPABASE_URL/rest/v1/project_team_members?team_id=eq.<id>&select=user_id,level,job_function_id,role" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # INSERT documento de decisão
 curl -X POST "$SUPABASE_URL/rest/v1/project_documents" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"project_id":"<id>","name":"<nome>","link":"<url_ou_referencia>","description":"<desc>"}'
 ```

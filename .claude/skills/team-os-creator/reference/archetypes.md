@@ -8,14 +8,16 @@ Cada archetype mapeia pra um template em `templates/{archetype}.md` e define os 
 
 | Archetype | Model | memory | isolation | permissionMode | Tools base | Hook git push |
 |---|---|---|---|---|---|---|
-| `architect` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | — |
+| `architect` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
 | `implementer` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
 | `hardening` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
-| `reviewer` | opus | project | — | — | Read, Glob, Grep, Bash, SendMessage | — |
-| `researcher` | inherit | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | — |
-| `data` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
+| `reviewer` | opus | project | — | — | Read, Glob, Grep, Bash, SendMessage | ✅¹ |
+| `researcher` | inherit | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
+| `data` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅¹ |
 | `devops` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
-| `ux` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | — |
+| `ux` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | ✅¹ |
+
+> **¹ Hook git push (push exclusivo do devops):** em **squads de código** (`dev`/`sites`), **todo** agente não-`devops` que tem `Bash` carrega `block-git-push.sh` — não só os implementers. Isso transforma "push é só do devops" de convenção em **garantia dura** (defense-in-depth): qualquer agente com Bash poderia tecnicamente dar `git push`, então só o `devops` fica sem o hook. Em squads **não-código** (`social`/`traffic`/`pm`) não há devops nem fluxo de push de código — lá só o archetype `implementer` (ex.: `social-video`) leva o hook.
 
 > **Nota sobre `model` (Híbrido):** o campo `model` do arquivo do agente PREVALECE sobre o ajuste "Default teammate model" do `/config` quando o agente roda como teammate. Por isso `architect`/`reviewer` ficam fixos em `opus` (raciocínio crítico que não vale economizar) e os demais usam `inherit` — assim seguem o `/model` escolhido pelo lead, dando controle central de custo. **Não existe archetype `orchestrator`:** a main session do Claude Code já é o lead nativo (ver RULE #7 do SKILL.md).
 
@@ -34,8 +36,8 @@ Apenas esses dois **escrevem código que vai pro repositório**. Isolar em workt
 
 Reviewer é read-only (não escreve código), UX escreve specs (não código), architect escreve stories/ADRs (não código). Nenhum precisa de worktree.
 
-### Por que hook de git push só em implementer/hardening
-Mesmo argumento: são os que executam `git` commands. Outros archetypes não deveriam fazer commit/push — e se tentarem, o hook em 2 agentes já é suficiente pra bloquear (o código é chamado via path absoluto).
+### Por que hook de git push em todo agente não-devops das squads de código
+A autoridade de push é **exclusiva do `devops`**. Antes o hook ficava só nos implementers (assumindo que só eles rodam `git`), mas qualquer agente com `Bash` — architect, reviewer/QA, data, analyst, ux — *pode* tecnicamente dar `git push` e furar a exclusividade. Para fazer disso uma garantia dura (não convenção), nas squads `dev`/`sites` **todos** os não-`devops` com Bash carregam `block-git-push.sh`; só o `devops` fica livre. Nas squads não-código (`social`/`traffic`/`pm`) não há devops nem push de código, então só o `implementer` (ex.: `social-video`) leva o hook. O script é chamado via path absoluto (`$CLAUDE_PROJECT_DIR`).
 
 ### Por que `permissionMode: acceptEdits` só em implementer/hardening/devops
 Esses 3 fazem edições extensas e previsíveis (code, migrations, CI configs). `acceptEdits` reduz fricção de autorização repetitiva.

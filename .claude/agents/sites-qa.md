@@ -6,6 +6,12 @@ memory: project
 effort: high
 tools: Read, Glob, Grep, Bash, SendMessage
 color: red
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol

@@ -81,10 +81,15 @@ for dir in "$CT_ROOT"/*/; do
         drift_extra=$((drift_extra + 1))
       fi
     done
-    # Agentes do CT ausentes no projeto (informativo)
+    # Agentes do CT ausentes no projeto — só conta ausências DENTRO das squads já
+    # instaladas. Squad que o projeto não tem (poda intencional por categoria) NÃO é drift.
+    squads_csv=",${agent_squads},"
     for sf in "$SOURCE_AGENTS/"*.md; do
       [ -f "$sf" ] || continue
-      [ -f "$dir/.claude/agents/$(basename "$sf")" ] || drift_missing=$((drift_missing + 1))
+      bn=$(basename "$sf")
+      [ -f "$dir/.claude/agents/$bn" ] && continue
+      sprefix="${bn%%-*}"
+      case "$squads_csv" in *",$sprefix,"*) drift_missing=$((drift_missing + 1)) ;; esac
     done
   fi
 

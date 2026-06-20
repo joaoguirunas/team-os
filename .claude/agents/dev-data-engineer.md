@@ -1,11 +1,17 @@
 ---
 name: dev-data-engineer
-description: Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.
+description: "Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test."
 model: inherit
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: orange
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol

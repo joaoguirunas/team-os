@@ -40,15 +40,15 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # Buscar tarefas done para auditoria
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?status=eq.done&is_completed=eq.true&select=id,title,description,instruction_url,priority,due_date,updated_at,assignee_id,project_id&order=updated_at.desc&limit=50" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # Verificar subtasks de uma tarefa
 curl -s "$SUPABASE_URL/rest/v1/project_task_subtasks?task_id=eq.<id>&select=title,is_completed,time_spent_minutes" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # INSERT comentário de veredicto
 curl -X POST "$SUPABASE_URL/rest/v1/project_task_comments" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_id":"<id>","content":"<veredicto_formal>"}'
 ```

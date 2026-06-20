@@ -36,7 +36,7 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # INSERT tarefa nova
 curl -X POST "$SUPABASE_URL/rest/v1/project_tasks" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "<id>",
@@ -52,17 +52,17 @@ curl -X POST "$SUPABASE_URL/rest/v1/project_tasks" \
 
 # INSERT subtarefa
 curl -X POST "$SUPABASE_URL/rest/v1/project_task_subtasks" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_id":"<id>","title":"<subtarefa>","time_spent_minutes":<N>,"sort_order":<N>,"is_completed":false}'
 
 # Buscar tarefas similares (detectar duplicatas)
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?project_id=eq.<id>&status=neq.done&select=id,title,description" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # Verificar carga atual do assignee candidato
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?assignee_id=eq.<user_id>&status=in.(doing,sprint)&select=id,title,due_date" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 ```
 
 **Tabelas:**

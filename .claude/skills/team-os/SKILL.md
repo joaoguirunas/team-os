@@ -102,7 +102,7 @@ echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 
 Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
-2. Listar `.claude/agents/` → contar e mapear agentes disponíveis por squad
+2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria).
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe, extrair stories ativas e contexto
 4. Executar `TaskList` → tasks pendentes, in-progress, completadas
 
@@ -117,7 +117,7 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 
   [✓]   AGENT_TEAMS  : ativo (runtime confirmado no Gate 0)
   [✓/✗] smart-memory : {N stories ativas, N módulos | NÃO encontrada}
-  [✓]   Agentes      : {N} disponíveis ({lista dos principais})
+  [✓]   Agentes      : {N} instalados neste projeto · squad: {squad(s) detectada(s)}
   [i]   Tasks        : {N pendentes | nenhuma}
   [i]   teammateMode : {valor atual | sugerido: "auto"}
 
@@ -130,6 +130,13 @@ Se tasks existem: adicionar antes da pergunta:
 ```
   [!] Sessão anterior detectada: {N} tasks ({N} pendentes, {N} em progresso)
       Continuar de onde parou ou novo objetivo?
+```
+
+Se houver **mais de uma squad** instalada (prefixos distintos em `.claude/agents/`), adicionar:
+```
+  [⚠] Múltiplas squads instaladas ({lista}). Este projeto é de categoria {X} e
+      deveria ter só a squad correspondente. Rode `/team-os-creator` → Atualizar
+      para podar as squads sobrando.
 ```
 
 ### Fase 2 — Correções automáticas (em paralelo com a pergunta de objetivo)
@@ -261,7 +268,13 @@ Após confirmação do usuário:
 2. **Tasks**: criar no TaskList com dependências corretas antes de spawnar
 3. **Spawn imediato**: spawna TODOS os agentes do plano de uma vez (nomes curtos: `archi`, `alpha`, `beta`, `qa`, `ops`). Não execute nenhuma task você mesmo — cada uma é de um teammate.
 4. **Lead fica livre**: após spawnar, seu trabalho é **monitorar, rotear e sintetizar** — nunca pegar trabalho. Se há demanda nova no meio, spawna mais um agente (não faça você).
-5. **Orientar**: lembrar ao usuário os controles do agent panel
+5. **Nomear a sessão pela tarefa** (opcional, 1 tecla): o título da sessão já vem do projeto+branch (hook `SessionStart` — ver "Nomeação automática da sessão"). Para fixar TAMBÉM a tarefa atual no nome (útil ao retomar depois), imprima ao usuário um `/rename` pronto pra colar, com um slug curto do objetivo:
+   ```
+   💡 Para identificar esta sessão depois, fixe a tarefa no nome:
+      /rename {projeto}: {slug-curto-do-objetivo}
+   ```
+   (Slash command é input do usuário — a skill não consegue executar `/rename` sozinha; por isso entregamos a linha pronta.)
+6. **Orientar**: lembrar ao usuário os controles do agent panel
 
 ```
 Agent panel ativo ↓
@@ -332,6 +345,33 @@ Configuração completa recomendada para Agent Teams:
 > O default mudou para `"in-process"` na v2.1.179 — sessões atualizadas que antes abriam split panes agora ficam num terminal só, a menos que você defina `"auto"`/`"tmux"` explicitamente. Split-pane não funciona no terminal integrado do VS Code, Windows Terminal nem Ghostty.
 
 Flag por sessão: `claude --teammate-mode auto`
+
+---
+
+## Nomeação automática da sessão (SessionStart hook)
+
+**Problema que resolve:** sem isso, toda sessão `/team-os` fica com nome genérico ("team-os bootstrap gate", "team-os social media session"…) — no agent view e no `/resume` você não distingue qual projeto é nem o que estava fazendo.
+
+**Mecanismo (único robusto):** um hook `SessionStart` que emite `hookSpecificOutput.sessionTitle` — mesmo efeito do `/rename`, aplicado em `startup` e `resume`. É o **único** caminho com API oficial:
+- A skill **não** consegue digitar `/rename` em si mesma (slash command é input do usuário).
+- Escrever a entrada `agent-name` direto no `.jsonl` é frágil (o app regrava o nome em memória a cada turno).
+- `UserPromptSubmit` **não** suporta `sessionTitle` (só `SessionStart`) — por isso "atualizar na primeira tarefa" automático não tem API; usa-se o `/rename` pronto da Fase 6.
+
+**Convenção de nome:** `{nome-da-pasta-do-projeto} · {branch}` (a branch só aparece quando há git não-detached). Ex.: `projeto-a · main`. Preserva rename deliberado do usuário; migra títulos antigos `team-os …`.
+
+**Registro (global — `~/.claude/settings.json`):** vale para todos os projetos de uma vez.
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "hooks": [
+        { "type": "command", "command": "bash \"$HOME/.claude/hooks/team-os-session-title.sh\"" }
+      ] }
+    ]
+  }
+}
+```
+O script `team-os-session-title.sh` acompanha o pack (`.claude/hooks/`). O `*install` do `team-os-creator` instala o hook em `~/.claude/hooks/` e registra o `SessionStart` global automaticamente. **Vale só em sessões iniciadas DEPOIS do registro** (a sessão atual não é renomeada — igual à flag `AGENT_TEAMS`).
 
 ---
 

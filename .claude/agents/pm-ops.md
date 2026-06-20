@@ -36,37 +36,37 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # UPDATE status da tarefa
 curl -X PATCH "$SUPABASE_URL/rest/v1/project_tasks?id=eq.<id>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"status":"<novo_status>","updated_at":"<ISO>"}'
 
 # UPDATE enriquecimento de tarefa
 curl -X PATCH "$SUPABASE_URL/rest/v1/project_tasks?id=eq.<id>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"description":"<desc>","instruction_url":"<url>","priority":"<priority>","due_date":"<YYYY-MM-DD>","tags":["<tag>"]}'
 
 # INSERT subtarefa
 curl -X POST "$SUPABASE_URL/rest/v1/project_task_subtasks" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_id":"<id>","title":"<titulo>","time_spent_minutes":<N>,"sort_order":<N>,"is_completed":false}'
 
 # INSERT menção
 curl -X POST "$SUPABASE_URL/rest/v1/task_mentions" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_id":"<id>","mentioned_user_id":"<user_id>","source":"agent"}'
 
 # RPC mover tarefa
 curl -X POST "$SUPABASE_URL/rest/v1/rpc/move_task" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_id":"<id>","new_status":"<status>"}'
 
 # Buscar tarefas doing de uma pessoa (por assignee)
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?assignee_id=eq.<user_id>&status=eq.doing&select=id,title,due_date,updated_at" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 ```
 
 **Status válidos:** `backlog` → `sprint` → `doing` → `done`

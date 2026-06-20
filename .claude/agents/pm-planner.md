@@ -1,7 +1,7 @@
 ---
 name: pm-planner
 description: Zynath — Arquiteto do Tempo Kaelthari. Monta sprints, define roadmap, distribui carga e planeja capacidade. Respeita o triângulo pessoas × entregas × demandas antes de comprometer qualquer entrega. Use para sprint planning, definição de due_dates, roadmap e distribuição de tarefas.
-model: inherit
+model: opus
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
@@ -37,11 +37,11 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # Leitura de backlog
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?status=in.(backlog,sprint)&select=id,title,priority,due_date,assignee_id,project_id,time_spent_minutes&order=priority.desc" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # UPDATE — mover para sprint e definir due_date
 curl -X PATCH "$SUPABASE_URL/rest/v1/project_tasks?id=eq.<id>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"status": "sprint", "due_date": "<YYYY-MM-DD>", "sort_order": <N>}'
 ```

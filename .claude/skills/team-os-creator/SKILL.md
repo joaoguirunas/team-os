@@ -78,7 +78,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 - `disallowedTools`: bloquear ferramentas não usadas (ex: `Write, Edit` para revisores)
 - `maxTurns`: limitar turnos em agentes de escopo fechado
 - `background`: `true` para rodar sempre como background task
-- `hooks`: hooks inline no frontmatter (ex: `block-git-push.sh` para implementers)
+- `hooks`: hooks inline no frontmatter (ex: `block-git-push.sh` — em implementers E em todo agente não-devops com Bash nas squads de código dev/sites; ver `reference/archetypes.md`)
 
 > Nota: Os campos `skills:` e `mcpServers:` no frontmatter são **ignorados** quando o agente roda como teammate em Agent Teams — skills e MCP servers são carregados do projeto/usuário como em sessão normal. Não adicionar `skills:` ao frontmatter de agentes.
 >
@@ -204,12 +204,13 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ## Fluxo `*install`
 
 1. Lista projetos via `scan-ct-projects.sh`
-2. Seleciona squads
+2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script avisa com `SQUADS_WARNING`). Na dúvida, pergunte ao usuário.
 3. Preview da instalação
-4. Copia agents das squads + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (+ hooks se `--include-hooks`)
-5. **NÃO copia `team-os-creator`** — única skill exclusiva do CT
-6. **Não** cria smart-memory aqui — o `/team-os` constrói no projeto na 1ª sessão (Discovery). Orienta o usuário a abrir `claude agents` e rodar `/team-os`.
-7. Relatório
+4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (+ hooks se `--include-hooks`)
+5. **Instala o session-title hook (core UX):** copia `team-os-session-title.sh` para `~/.claude/hooks/` e garante o registro do `SessionStart` em `~/.claude/settings.json` (nomeia toda sessão por `projeto · branch`). O script reporta `SESSION_TITLE_REGISTER_TODO=1` se faltar o registro — nesse caso, edite o settings global com JSON válido. Ver "Nomeação automática da sessão" na skill `team-os`.
+6. **NÃO copia `team-os-creator`** — única skill exclusiva do CT
+7. **Não** cria smart-memory aqui — o `/team-os` constrói no projeto na 1ª sessão (Discovery). Orienta o usuário a abrir `claude agents` e rodar `/team-os`.
+8. Relatório
 
 ---
 
@@ -218,11 +219,13 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 1. Scan de projetos
 2. Diff de agentes **e skills** (por hash/conteúdo) vs CT
 3. Confirmação com preview (use `--dry-run` para inspecionar antes)
-4. Sincroniza para cada destino que já tem a squad:
-   - **Agentes**: atualiza os que diferem da fonte
+4. Sincroniza para cada destino, **sempre com `--match-target-squads`** (modo propagate):
+   - **Agentes**: atualiza só os das squads **já instaladas** no destino. **NUNCA re-adiciona squad podada** — squad ausente é poda intencional por categoria, não drift. (Internamente o script deriva as squads do que existe no destino; agente de squad ausente é pulado.)
    - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada
 5. **Não commita nos destinos** — as mudanças ficam no working tree (commit por projeto é do usuário)
 6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, …)
+
+> ⚠️ **Nunca** rode propagate/install sem escopo de squad num projeto já podado — isso re-instalaria as squads removidas. O `--match-target-squads` é a salvaguarda: respeita a categoria de cada projeto. Para um projeto novo, use `--squads <categoria>` explícito.
 
 ---
 

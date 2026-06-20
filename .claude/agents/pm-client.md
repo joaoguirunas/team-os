@@ -36,25 +36,25 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # UPDATE perfil de pessoa-cliente
 curl -X PATCH "$SUPABASE_URL/rest/v1/clients_people?id=eq.<id>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"service_status":"<active|at-risk|churned>","notes":"<nota>","score":<N>}'
 
 # UPDATE acesso de cliente a projeto
 curl -X PATCH "$SUPABASE_URL/rest/v1/client_user_projects?id=eq.<id>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"can_view":true,"can_edit_tasks":false,"can_create_tasks":false,"can_comment":true}'
 
 # INSERT novo acesso
 curl -X POST "$SUPABASE_URL/rest/v1/client_user_projects" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"user_id":"<user_id>","project_id":"<project_id>","can_view":true,"can_edit_tasks":false,"can_create_tasks":false,"can_comment":true}'
 
 # INSERT atualização de relacionamento
 curl -X POST "$SUPABASE_URL/rest/v1/clients_people_updates" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"people_id":"<id>","field_name":"<campo>","old_value":"<antes>","new_value":"<depois>"}'
 ```
