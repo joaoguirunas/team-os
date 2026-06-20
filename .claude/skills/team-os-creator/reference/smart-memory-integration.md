@@ -8,7 +8,6 @@ Todo agente gerado pela skill precisa saber **o que escreve em `docs/smart-memor
 
 | Archetype | Escreve em | Formato |
 |---|---|---|
-| `orchestrator` | `shared-context.md`, `ops/delegation-log.md`, `ops/teams-log.md` | Status board + logs cronológicos |
 | `architect` | `project/architecture.md`, `project/modules.md`, `decisions/ADR-*.md`, `stories/backlog/*.md`, `stories/BACKLOG.md` | Obsidian + Mermaid |
 | `implementer` | `stories/active/<N.M>-*.md` (só updates em Dev Agent Record / File List / AC) | Não cria arquivos, só atualiza |
 | `hardening` | `stories/active/<N.M>-*.md` (mesmas regras do implementer) | Updates on story |
@@ -144,7 +143,7 @@ tags: [ux, components]
 A skill team-os-creator não audita smart-memory — essa é responsabilidade de `/team-os *audit`. Mas o `validate-agent.sh` verifica que:
 
 1. O prompt menciona `docs/smart-memory/` em alguma parte do corpo
-2. O prompt menciona `SendMessage` (pra coordenação)
-3. O prompt menciona "Contrato com team-os"
+2. O prompt menciona `SendMessage` (pra coordenação peer-to-peer)
+3. O prompt menciona "Native Teams Protocol" (e NÃO contém o padrão antigo "Contrato com team-os")
 
 Se algum faltar, o validate falha e a skill tenta reinjetar o bloco faltante a partir dos templates.

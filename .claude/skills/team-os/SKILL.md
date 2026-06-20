@@ -222,9 +222,11 @@ Configuração completa recomendada para Agent Teams:
 **`teammateMode` — opções:**
 | Valor | Comportamento |
 |---|---|
-| `"auto"` | Split panes se tmux/iTerm2 disponível, in-process caso contrário (recomendado) |
-| `"in-process"` | Todos no terminal principal, agent panel ativo (padrão atual) |
-| `"tmux"` | Forçar split panes (requer tmux ou iTerm2 com it2 CLI) |
+| `"in-process"` | Todos no terminal principal, agent panel ativo. **Default desde v2.1.179** |
+| `"auto"` | Split panes se já estiver em sessão tmux ou terminal for iTerm2; in-process caso contrário (recomendado pela skill) |
+| `"tmux"` | Forçar split panes — auto-detecta tmux vs iTerm2 (requer tmux ou iTerm2 com it2 CLI) |
+
+> O default mudou para `"in-process"` na v2.1.179 — sessões atualizadas que antes abriam split panes agora ficam num terminal só, a menos que você defina `"auto"`/`"tmux"` explicitamente. Split-pane não funciona no terminal integrado do VS Code, Windows Terminal nem Ghostty.
 
 Flag por sessão: `claude --teammate-mode auto`
 
@@ -353,12 +355,12 @@ Obrigatório para trabalho de ALTO RISCO:
 
 | Tarefa | Modelo sugerido | Razão |
 |---|---|---|
-| Implementação complexa | Sonnet (padrão) | Melhor raciocínio |
-| Pesquisa / análise | Haiku | Mais barato, velocidade |
-| Arquitetura / ADRs | Opus | Máximo raciocínio |
-| Review de PR | Sonnet | Balanço custo/qualidade |
+| Arquitetura / ADRs (architect) | Opus (fixo no arquivo) | Máximo raciocínio — decisão errada custa caro |
+| Review / veredicto (reviewer/QA) | Opus (fixo no arquivo) | Veredictos precisam de rigor |
+| Implementação complexa | segue o lead (`inherit`) | Lead escolhe sonnet por padrão |
+| Pesquisa / análise | Haiku (via prompt) ou segue o lead | Mais barato, velocidade |
 
-Especificar no spawn: `"Spawn {nome} usando modelo haiku para pesquisar..."`
+**Importante — quem vence:** quando você spawna um teammate a partir de uma definição em `.claude/agents/`, o campo `model` do arquivo **prevalece** sobre o "Default teammate model" do `/config`. No padrão CT (Híbrido), `architect`/`reviewer` têm `model: opus` fixo e os demais usam `model: inherit` — só estes seguem o `/model` do lead. Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {nome} usando modelo haiku para pesquisar..."` (o parâmetro por invocação também vence o `inherit`).
 
 ---
 
@@ -387,6 +389,10 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 ---
 
 ## Controle do time durante a sessão
+
+> **Agent panel ≠ Agent view — não confundir:**
+> - **Agent panel** (esta seção) é o painel de **teammates** abaixo do prompt na sua sessão de lead. São os agentes do time que você spawnou; comunicam-se entre si peer-to-peer.
+> - **Agent view** (`claude agents`) é uma tela separada que gerencia **sessões em background** independentes (cada prompt = nova sessão; Space=peek, Enter=attach). Teammates e subagents que uma sessão spawna **NÃO** aparecem como linhas no agent view. Você pode até carregar `/team-os` dentro de uma sessão dispatchada pelo agent view, mas os dois mecanismos são distintos.
 
 ### Agent panel
 ```
@@ -450,7 +456,7 @@ Sem self-claim → o lead intervém em cada conclusão (lead tokens + agente tok
 Research tasks não precisam de Sonnet. Haiku é 5x mais barato e igualmente eficaz para busca e análise de texto.
 
 **6. Modelo "leader's model" para teammates**
-Configure `/config` → Default teammate model → "Default (leader's model)" para que teammates sigam o modelo escolhido pelo lead.
+Configure `/config` → Default teammate model → "Default (leader's model)" para que teammates sigam o modelo escolhido pelo lead. **Atenção:** isso só vale para agentes cujo arquivo NÃO fixa `model` — no padrão CT (Híbrido) são os que usam `model: inherit` (todos exceto architect/reviewer, que ficam em opus). O campo `model` do arquivo do agente sempre vence esse ajuste.
 
 **7. Paralelo inteligente**
 Não spawnar agentes para tasks sequenciais. Só paralelizar quando há independência real de arquivos/dados.
@@ -515,7 +521,7 @@ Exit code 2 no comando → agente recebe feedback e continua trabalhando.
 |---|---|---|
 | Resume não restaura teammates | Limitação: `/resume` não restaura in-process teammates | Re-spawnar com mesmo nome + contexto do smart-memory |
 | Task travada (done mas não marca) | Bug known: task status pode atrasar | Verificar se work está feito → atualizar manualmente ou pedir ao lead |
-| Agente sumiu do panel | Idle após 30s (hide automático) — NÃO parou | SendMessage por nome: `"Mensagem para {nome}: continue"` |
+| Agente sumiu do panel | Idle após 30s (hide automático, v2.1.181+) — NÃO parou, reaparece no próximo turno | SendMessage por nome: `"Mensagem para {nome}: continue"` |
 | Lead começa a implementar sozinho | Lead não delegou | `"Aguarde teammates completarem antes de prosseguir"` |
 | Muitos permission prompts | Teammates pedem aprovação para tudo | Pre-aprovar operações em settings ANTES de spawnar |
 | Tmux sessions órfãs | Session não encerrou limpo | `tmux ls` → `tmux kill-session -t {nome}` |

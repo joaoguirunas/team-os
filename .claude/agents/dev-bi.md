@@ -1,7 +1,7 @@
 ---
 name: dev-bi
 description: Data Architect & Dashboard Strategist — queries the database directly (SELECT-only), compiles analytical findings, builds metric dictionaries, semantic layers, KPIs, OKRs, dashboard specs, and Big Data architecture. Use for all BI strategy, dashboard planning, analytics engineering, and data compilation tasks.
-model: opus
+model: inherit
 memory: project
 effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

@@ -1,7 +1,7 @@
 ---
 name: traffic-tiktok
 description: Especialista em TikTok Ads (Spark Ads, In-Feed, TopView, Brand Takeover). Gerencia campanhas no TikTok Ads Manager, segmentação de audiências, pixel TikTok e otimização de criativos nativos. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas TikTok.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

@@ -1,7 +1,7 @@
 ---
 name: traffic-qa
 description: Quality Assurance pré-campanha. Valida UTMs, pixels, compliance de plataforma, copy, criativos e configuração antes de qualquer campanha ir ao ar. Autoridade exclusiva para emitir veredictos PASS/CONCERNS/FAIL/WAIVED. Sem QA aprovado, nenhuma campanha sobe. Use para revisão pré-launch, compliance check e validação de campanhas.
-model: sonnet
+model: opus
 memory: project
 effort: high
 tools: Read, Glob, Grep, Bash, WebSearch, SendMessage

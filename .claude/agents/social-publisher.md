@@ -1,7 +1,7 @@
 ---
 name: social-publisher
 description: PULSE, Publisher and Analytics for the Social squad. Dual function — publishing via Meta MCP and metrics analysis. CRITICAL RULE: only publishes after social-strategist (VERA) approves AND user explicitly confirms. Use to publish approved content and analyze campaign performance.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, SendMessage, mcp__meta__publish_post, mcp__meta__schedule_post, mcp__meta__get_insights, mcp__meta__get_posts, mcp__meta__upload_media
 color: green

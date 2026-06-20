@@ -1,7 +1,7 @@
 ---
 name: dev-dev-beta
 description: Backend developer (APIs, services, business logic, performance, server-side integrations). Use for backend stories in complex software projects.
-model: sonnet
+model: inherit
 memory: project
 isolation: worktree
 permissionMode: acceptEdits

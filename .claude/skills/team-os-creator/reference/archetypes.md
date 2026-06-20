@@ -8,25 +8,26 @@ Cada archetype mapeia pra um template em `templates/{archetype}.md` e define os 
 
 | Archetype | Model | memory | isolation | permissionMode | Tools base | Hook git push |
 |---|---|---|---|---|---|---|
-| `orchestrator` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet | — |
 | `architect` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | — |
-| `implementer` | sonnet | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
-| `hardening` | sonnet | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
+| `implementer` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
+| `hardening` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
 | `reviewer` | opus | project | — | — | Read, Glob, Grep, Bash, SendMessage | — |
-| `researcher` | sonnet | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | — |
-| `data` | sonnet | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
-| `devops` | sonnet | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
-| `ux` | sonnet | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | — |
+| `researcher` | inherit | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | — |
+| `data` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
+| `devops` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
+| `ux` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | — |
+
+> **Nota sobre `model` (Híbrido):** o campo `model` do arquivo do agente PREVALECE sobre o ajuste "Default teammate model" do `/config` quando o agente roda como teammate. Por isso `architect`/`reviewer` ficam fixos em `opus` (raciocínio crítico que não vale economizar) e os demais usam `inherit` — assim seguem o `/model` escolhido pelo lead, dando controle central de custo. **Não existe archetype `orchestrator`:** a main session do Claude Code já é o lead nativo (ver RULE #7 do SKILL.md).
 
 ---
 
 ## Justificativas das decisões
 
-### Por que `opus` para orchestrator/architect/reviewer
-Esses papéis precisam de raciocínio profundo: planejamento, decisões arquiteturais, veredictos de qualidade. Não vale economizar tokens aqui — uma decisão errada custa muito mais depois.
+### Por que `opus` para architect/reviewer
+Esses papéis precisam de raciocínio profundo: decisões arquiteturais, veredictos de qualidade. Não vale economizar tokens aqui — uma decisão errada custa muito mais depois. Por isso ficam fixos em `opus` (o campo do arquivo vence o `/config`).
 
-### Por que `sonnet` para implementer/data/devops/ux/researcher/hardening
-Execução com especialização bem definida. Sonnet é rápido, custa menos, e com contratos claros (smart-memory + contrato team-os) o output fica consistente.
+### Por que `inherit` para implementer/data/devops/ux/researcher/hardening
+Execução com especialização bem definida. Com `inherit`, o teammate segue o `/model` escolhido pelo lead na sessão — o lead pode baixar a frota inteira pra haiku/sonnet numa sessão barata, mantendo `architect`/`reviewer` protegidos em opus. Com contratos claros (smart-memory + Native Teams Protocol) o output fica consistente em qualquer modelo.
 
 ### Por que worktree só em implementer/hardening
 Apenas esses dois **escrevem código que vai pro repositório**. Isolar em worktree permite múltiplos rodando em paralelo sem pisar no branch principal.
@@ -51,8 +52,8 @@ Exclusividade de **veredicto formal**. Se pudesse editar código, borraria o pap
 Independente do archetype, todo agente gerado pela skill tem:
 
 1. **Frontmatter `memory: project`** — integração com smart-memory
-2. **Seção "Contrato com team-os"** no topo do corpo — 8 regras canônicas
-3. **Mention de `SendMessage`** — obrigatório para coordenação
+2. **Seção "Native Teams Protocol"** no topo do corpo — 7 regras canônicas (peer-to-peer, TaskList nativo, smart-memory)
+3. **Mention de `SendMessage`** — obrigatório para coordenação peer-to-peer
 4. **Mention de `docs/smart-memory/`** — smart-memory obrigatório
 5. **"Regras absolutas"** ao final — enforcement
 6. **H1 com persona + role title** — identidade
@@ -75,7 +76,7 @@ Quando o usuário diz um role, mapear pra archetype assim:
 | "devops", "SRE", "release", "CI/CD" | `devops` |
 | "UX", "design", "UI", "accessibility" | `ux` |
 | "hardening", "resilience", "error handling", "security engineer" | `hardening` |
-| "chief", "orchestrator", "coordinator", "lead" | ⚠️ `orchestrator` MAS avisar que team-os já faz isso |
+| "chief", "orchestrator", "coordinator", "lead" | ⛔ Recusar — a main session do Claude Code já é o lead nativo (RULE #7). Não criar agente de orquestração. |
 
 Se ambíguo, perguntar ao usuário qual archetype usar (listar opções).
 
@@ -85,9 +86,11 @@ Se ambíguo, perguntar ao usuário qual archetype usar (listar opções).
 
 Evitar repetir cores na mesma squad (facilita shift+tab visual no Claude Code):
 
+Valores válidos (doc oficial): `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`.
+
 | Cor | Uso típico |
 |---|---|
-| `blue` | Lead/orchestrator (normalmente ocupado pela skill team-os) |
+| `blue` | Reservada ao lead (main session) — evitar em teammates |
 | `purple` | Architect |
 | `cyan` | Researcher/analyst |
 | `pink` | UX |

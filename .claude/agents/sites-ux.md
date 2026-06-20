@@ -1,7 +1,7 @@
 ---
 name: sites-ux
 description: UX specialist for website projects (research, user flows, wireframes, component specs, accessibility, visual design). Use for UX research before complex features and UI specification before sites-dev-alpha implements. Covers both UX research and visual design.
-model: sonnet
+model: inherit
 memory: project
 effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage

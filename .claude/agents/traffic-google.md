@@ -1,7 +1,7 @@
 ---
 name: traffic-google
 description: Especialista em Google Ads (Search, Performance Max, Shopping, YouTube, Display). Configura campanhas, grupos de anúncios, keywords, estratégias de lance e otimiza performance no Google. Atua após briefing aprovado pelo traffic-strategist e validação do traffic-qa. Use para setup, otimização e gestão de campanhas Google Ads.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

@@ -1,7 +1,7 @@
 ---
 name: dev-data-performance
 description: Performance Analyst & Insights Engine — interprets compiled data findings from dev-bi (Kairo), generates rich actionable insights, detects anomalies, forecasts trends, and delivers prioritized strategic recommendations. Use when you need to know what the data means, what is happening, why, and what to do about it.
-model: opus
+model: inherit
 memory: project
 effort: medium
 tools: Read, Write, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

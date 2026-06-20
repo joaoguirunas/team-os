@@ -1,7 +1,7 @@
 ---
 name: traffic-copywriter
 description: Especialista em copy para anúncios pagos em todas as plataformas (Google, Meta, TikTok). Cria headlines, descrições, CTAs e variantes para A/B test respeitando os limites de caractere e melhores práticas de cada plataforma. Use para criar e otimizar copy de anúncios, roteiros de vídeo para ads e variantes de teste.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: yellow

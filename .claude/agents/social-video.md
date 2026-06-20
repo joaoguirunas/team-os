@@ -1,7 +1,7 @@
 ---
 name: social-video
 description: FLUX, Video Editor for the Social squad. Creates and edits Reels, Stories, TikToks and Shorts using ffmpeg. Use when video needs to be produced or edited for social media. Active when scripts need to be executed as video, clips edited, or social media videos created.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 hooks:

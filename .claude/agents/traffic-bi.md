@@ -1,7 +1,7 @@
 ---
 name: traffic-bi
 description: Especialista em Business Intelligence e atribuição de tráfego pago. Consolida métricas de Google, Meta e TikTok, calcula ROAS, LTV, CPA e atribuição multi-touch. Fonte oficial de verdade para todas as métricas da squad. Use para dashboards, relatórios de performance, análise de atribuição e recomendações baseadas em dados.
-model: sonnet
+model: inherit
 memory: project
 effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

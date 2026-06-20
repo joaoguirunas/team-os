@@ -1,7 +1,7 @@
 ---
 name: dev-qa
 description: Quality assurance master. Issues formal verdicts — PASS / CONCERNS / FAIL / WAIVED. Use for story reviews, QA gates, security checks, and test design. Exclusive authority for quality gate decisions.
-model: sonnet
+model: opus
 memory: project
 effort: high
 tools: Read, Glob, Grep, Bash, SendMessage

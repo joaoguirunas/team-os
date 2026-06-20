@@ -1,7 +1,7 @@
 ---
 name: sites-dev-alpha
 description: Frontend developer for website projects (React, Next.js, Tailwind, shadcn/ui, UI components, landing pages, client-side logic). Use for frontend stories and UI implementation in website projects.
-model: sonnet
+model: inherit
 memory: project
 isolation: worktree
 permissionMode: acceptEdits

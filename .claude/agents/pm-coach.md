@@ -1,7 +1,7 @@
 ---
 name: pm-coach
 description: Aevon — Sábio das Metodologias Kaelthari. Scrum Master nativo e guardião do Lean. Facilita retrospectivas com dados reais, identifica disfunções de time, recomenda ajustes de metodologia. Use para retrospectivas, análise de saúde do time, melhoria de processos e definição de metodologia por projeto.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
 color: orange

@@ -1,7 +1,7 @@
 ---
 name: traffic-analyst
 description: Analista de performance e inteligência de mercado para tráfego pago. Pesquisa audiências, concorrentes, tendências de plataforma, benchmarks de setor e oportunidades de otimização. Entrega evidências — outros decidem. Use para análise de concorrência, pesquisa de audiência, benchmarks, tendências de plataforma e diagnóstico de performance.
-model: sonnet
+model: inherit
 memory: project
 effort: medium
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

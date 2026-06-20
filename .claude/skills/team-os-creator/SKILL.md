@@ -61,16 +61,28 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 
 | Campo | architect | implementer | hardening | reviewer | researcher | data | devops | ux |
 |---|---|---|---|---|---|---|---|---|
+| `model` | `opus` | `inherit` | `inherit` | `opus` | `inherit` | `inherit` | `inherit` | `inherit` |
 | `memory` | `project` | `project` | `project` | `project` | `project` | `project` | `project` | `project` |
 | `effort` | `high` | omitir | `high` | `high` | `medium` | `high` | omitir | `medium` |
 | `isolation` | omitir | `worktree` | `worktree` | omitir | omitir | omitir | omitir | omitir |
 
+**Estratégia de modelo (Híbrido):** o campo `model` do arquivo do agente **PREVALECE** sobre o ajuste "Default teammate model" do `/config` quando o agente roda como teammate. Por isso `architect`/`reviewer` ficam fixos em `opus` (raciocínio crítico, veredictos) e os demais usam `inherit` — assim seguem o `/model` do lead, permitindo controle central de custo. **Nunca criar archetype `orchestrator`/lead** (RULE #7 — a main session já é o lead nativo).
+
+**Valores válidos dos campos (doc oficial):**
+- `model`: `sonnet`, `opus`, `haiku`, `fable`, full model ID (ex: `claude-opus-4-8`), ou `inherit` (default real: `inherit`)
+- `permissionMode`: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`
+- `effort`: `low`, `medium`, `high`, `xhigh`, `max` (níveis disponíveis dependem do modelo)
+- `color`: `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`
+
 **Campos opcionais:**
-- `disallowedTools`: bloquear ferramentas não usadas (ex: `[Write, Edit]` para revisores)
+- `disallowedTools`: bloquear ferramentas não usadas (ex: `Write, Edit` para revisores)
 - `maxTurns`: limitar turnos em agentes de escopo fechado
+- `background`: `true` para rodar sempre como background task
 - `hooks`: hooks inline no frontmatter (ex: `block-git-push.sh` para implementers)
 
-> Nota: O campo `skills:` no frontmatter é **ignorado** quando o agente roda como teammate em Agent Teams. Skills são carregadas do projeto/usuário como em sessão normal. Não adicionar `skills:` ao frontmatter de agentes.
+> Nota: Os campos `skills:` e `mcpServers:` no frontmatter são **ignorados** quando o agente roda como teammate em Agent Teams — skills e MCP servers são carregados do projeto/usuário como em sessão normal. Não adicionar `skills:` ao frontmatter de agentes.
+>
+> Nota: `SendMessage` e as ferramentas de TaskList (`TaskCreate`/`TaskUpdate`/`TaskList`/`TaskGet`) ficam **sempre disponíveis** ao teammate, mesmo que `tools` restrinja outras. Listá-las em `tools` é inofensivo mas não obrigatório.
 
 ---
 
@@ -93,7 +105,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 ---
 name: {nome}
 description: {descrição — quando spawnar este agente}
-model: sonnet
+model: {opus se architect/reviewer; senão inherit}
 memory: project
 {effort: high  ← se archetype exige}
 {isolation: worktree  ← se implementer}

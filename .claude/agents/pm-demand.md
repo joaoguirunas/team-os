@@ -1,7 +1,7 @@
 ---
 name: pm-demand
 description: Draketh — Guardião das Entradas Kaelthari. Nenhuma demanda entra no sistema sem estrutura. Faz intake de pedidos em linguagem natural, verifica capacidade antes de alocar, detecta duplicatas, estima esforço. Use para registrar novas demandas, enriquecer tarefas brutas e gerenciar o pipeline de entrada.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Glob, Grep, Bash, SendMessage
 color: red

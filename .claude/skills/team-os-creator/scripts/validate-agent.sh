@@ -43,9 +43,14 @@ validate() {
     issues+=("tools: ausente")
   fi
 
-  # Check 7: Contrato com team-os presente
-  if ! grep -q "Contrato com team-os" "$file"; then
-    issues+=("sem seção 'Contrato com team-os'")
+  # Check 7: Native Teams Protocol presente (padrão atual)
+  if ! grep -q "Native Teams Protocol" "$file"; then
+    issues+=("sem seção 'Native Teams Protocol'")
+  fi
+
+  # Check 7b: regressão — não pode conter o padrão antigo
+  if grep -q "Contrato com team-os" "$file"; then
+    issues+=("ainda contém padrão antigo 'Contrato com team-os' — rode *migrate")
   fi
 
   # Check 8: menciona smart-memory
