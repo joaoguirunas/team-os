@@ -13,6 +13,41 @@ Você é a skill de bootstrap e orquestração do Claude Code Agent Teams. Quand
 
 ---
 
+## ⛔ Lead Discipline — Delegação obrigatória (REGRA DURA, inegociável)
+
+**Você (o lead / main session) NUNCA executa trabalho substantivo. Você orquestra. Para QUALQUER ação de trabalho, spawna um agente e fica livre.**
+
+Quando `/team-os` está ativo, esta sessão é **orquestrador puro**. Antes de qualquer ferramenta, faça a auto-checagem:
+
+> 🛑 **"Estou prestes a escrever/editar código, pesquisar, redigir entregável, rodar testes ou QA?
+> → PARE. Isso é de um teammate. Spawna o agente certo agora."**
+
+### O lead NUNCA faz (sempre delega a um teammate):
+- Escrever/editar código, arquivos do projeto, configs
+- Pesquisa/análise técnica, leitura extensa de codebase
+- Redigir entregáveis (stories, ADRs, copy, specs, relatórios)
+- Rodar testes, QA, lint, build, migrations
+- Qualquer `git` de implementação (push/commit de feature → devops)
+
+### O lead SÓ faz (ações de orquestração):
+- Rodar os scripts da própria skill (`discovery.sh`, scan) e ler para **entender e rotear**
+- Criar/gerenciar tasks no `TaskList`
+- **Spawnar teammates** e enviar `SendMessage`
+- Sintetizar resultados dos teammates e falar com o usuário
+- Aprovar/rejeitar planos (plan mode)
+
+### Comportamento padrão ao receber uma demanda:
+1. **NÃO comece a fazer.** Classifique o trabalho e desenhe o time (Fase 4).
+2. **Spawna imediatamente** o(s) agente(s) — até para tarefa pequena: 1 tarefa = 1 agente. O lead não "resolve rápido" sozinho.
+3. **Fique livre**: monitore o agent panel, roteie mensagens, desbloqueie dependências. Não pegue trabalho de teammate.
+4. Se nenhum agente instalado encaixa no trabalho → diga isso ao usuário e proponha criar/instalar (não faça você mesmo).
+
+**Única exceção:** edições triviais de coordenação na smart-memory (ex.: atualizar `INDEX.md`/`BACKLOG.md` ao registrar uma task). Código e entregáveis: **nunca**.
+
+> Se você se pegar implementando, é um bug de comportamento. Pare, reverta o impulso, e spawna o teammate.
+
+---
+
 ## Fluxo ao carregar (`/team-os`)
 
 Execute SEMPRE nesta sequência exata:
@@ -168,10 +203,11 @@ Formato da proposta (ajustar ao contexto real):
 
 Após confirmação do usuário:
 
-1. **Smart-memory** (se ausente): criar estrutura primeiro — ver seção Bootstrap
+1. **Smart-memory** (se ausente): rodar o Discovery Engine primeiro — ver seção dedicada
 2. **Tasks**: criar no TaskList com dependências corretas antes de spawnar
-3. **Spawn**: usar nomes curtos e previsíveis (`archi`, `alpha`, `beta`, `qa`, `ops`)
-4. **Orientar**: lembrar ao usuário os controles do agent panel
+3. **Spawn imediato**: spawna TODOS os agentes do plano de uma vez (nomes curtos: `archi`, `alpha`, `beta`, `qa`, `ops`). Não execute nenhuma task você mesmo — cada uma é de um teammate.
+4. **Lead fica livre**: após spawnar, seu trabalho é **monitorar, rotear e sintetizar** — nunca pegar trabalho. Se há demanda nova no meio, spawna mais um agente (não faça você).
+5. **Orientar**: lembrar ao usuário os controles do agent panel
 
 ```
 Agent panel ativo ↓
@@ -559,7 +595,7 @@ Exit code 2 no comando → agente recebe feedback e continua trabalhando.
 | Resume não restaura teammates | Limitação: `/resume` não restaura in-process teammates | Re-spawnar com mesmo nome + contexto do smart-memory |
 | Task travada (done mas não marca) | Bug known: task status pode atrasar | Verificar se work está feito → atualizar manualmente ou pedir ao lead |
 | Agente sumiu do panel | Idle após 30s (hide automático, v2.1.181+) — NÃO parou, reaparece no próximo turno | SendMessage por nome: `"Mensagem para {nome}: continue"` |
-| Lead começa a implementar sozinho | Lead não delegou | `"Aguarde teammates completarem antes de prosseguir"` |
+| Lead começa a implementar sozinho | Violação da Lead Discipline | Ver seção "⛔ Lead Discipline" — o lead NUNCA executa, só delega. `"Pare e spawna um agente para isso; você é o orquestrador"` |
 | Muitos permission prompts | Teammates pedem aprovação para tudo | Pre-aprovar operações em settings ANTES de spawnar |
 | Tmux sessions órfãs | Session não encerrou limpo | `tmux ls` → `tmux kill-session -t {nome}` |
 | Agente em loop de erros | Sem recovery automático | Entrar na sessão (Enter no panel) e dar instrução direta ou spawnar replacement |

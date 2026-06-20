@@ -124,6 +124,8 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 **Bootstrap e orquestração de sessão.** É **distribuída para todos os projetos** (instalada junto com a squad) — você a carrega no **início de cada sessão** do projeto para coordenar múltiplos agentes em paralelo. No CT ela também existe. (A única skill que NÃO vai para os projetos é a `/team-os-creator`.)
 
+> **Lead Discipline (regra dura):** com `/team-os` ativo, a sessão principal é **orquestrador puro** — nunca escreve código, pesquisa ou redige entregável sozinha. Para qualquer ação de trabalho ela **spawna um agente e fica livre** (monitorando, roteando, sintetizando). 1 tarefa = 1 agente, até as pequenas.
+
 ### O que ela faz, em fases
 1. **Scan silencioso** — lê `settings.json` (env + teammateMode), mapeia `.claude/agents/`, lê `docs/smart-memory/INDEX.md` e roda `TaskList`.
 2. **Dashboard de abertura** — mostra status do ambiente e pergunta o **objetivo da sessão**.
