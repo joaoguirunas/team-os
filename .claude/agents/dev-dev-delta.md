@@ -1,7 +1,7 @@
 ---
 name: dev-dev-delta
 description: Hardening and resilience specialist. Use AFTER features are implemented to add error handling, retry logic, edge case coverage, and resilience patterns. Adversarial mindset — finds what breaks.
-model: sonnet
+model: inherit
 memory: project
 effort: high
 isolation: worktree

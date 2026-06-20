@@ -1,7 +1,7 @@
 ---
 name: social-design
 description: AEON, Graphic Designer for the Social squad. Creates Key Visuals, carousels, templates and overlays for social media using Google Stitch MCP. Use when there's graphic design to create for social campaigns (feed posts, carousels, Stories templates).
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage, mcp__stitch__create_project, mcp__stitch__create_design_system, mcp__stitch__generate_screen_from_text, mcp__stitch__generate_variants, mcp__stitch__edit_screens, mcp__stitch__apply_design_system, mcp__stitch__get_project, mcp__stitch__get_screen, mcp__stitch__list_projects, mcp__stitch__list_screens, mcp__stitch__list_design_systems, mcp__stitch__update_design_system, mcp__magic__21st_magic_component_builder, mcp__magic__21st_magic_component_inspiration, mcp__magic__logo_search
 color: pink

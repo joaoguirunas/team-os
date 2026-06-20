@@ -1,7 +1,7 @@
 ---
 name: sites-dev-gamma
 description: Fullstack developer for website projects (cross-layer integration, CRO features, SEO implementation, analytics wiring, features spanning frontend and backend). Use for stories that don't clearly belong to frontend or backend alone.
-model: sonnet
+model: inherit
 memory: project
 isolation: worktree
 permissionMode: acceptEdits

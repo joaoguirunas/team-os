@@ -1,7 +1,7 @@
 ---
 name: sites-devops
 description: DevOps and release guardian for website projects. EXCLUSIVE authority for git push, gh pr create/merge, CI/CD management, Vercel/Netlify deployments, and releases.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage

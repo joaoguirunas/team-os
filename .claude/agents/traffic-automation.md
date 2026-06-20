@@ -1,7 +1,7 @@
 ---
 name: traffic-automation
 description: Especialista em automação e integrações de API para tráfego pago. Scripts de bulk operations, Google Ads API, Meta Marketing API, TikTok Ads API, relatórios automatizados e integrações de dados. Use para automações, scripts de gestão em escala, integrações entre plataformas e pipelines de dados de campanha.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

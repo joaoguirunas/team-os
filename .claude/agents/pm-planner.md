@@ -1,7 +1,7 @@
 ---
 name: pm-planner
 description: Zynath — Arquiteto do Tempo Kaelthari. Monta sprints, define roadmap, distribui carga e planeja capacidade. Respeita o triângulo pessoas × entregas × demandas antes de comprometer qualquer entrega. Use para sprint planning, definição de due_dates, roadmap e distribuição de tarefas.
-model: opus
+model: inherit
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage

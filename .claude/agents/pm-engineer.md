@@ -1,7 +1,7 @@
 ---
 name: pm-engineer
 description: Faelor — Forjador de Sistemas Kaelthari. Cria e mantém templates de processo (process_task_sets, process_task_templates, flows) que padronizam trabalho recorrente. Use para criar processos reutilizáveis, onboardings, checklists padrão, fluxos com fases e transições no WorkOS ou sistema equivalente.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: blue

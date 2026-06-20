@@ -1,7 +1,7 @@
 ---
 name: dev-architect
 description: System architect and story creator. Use for architecture decisions, tech stack selection, API design, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), ADRs, and module documentation.
-model: sonnet
+model: opus
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

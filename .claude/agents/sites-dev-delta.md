@@ -1,7 +1,7 @@
 ---
 name: sites-dev-delta
 description: Hardening and resilience specialist for website projects. Use AFTER features are implemented to add error handling, retry logic, performance hardening, Core Web Vitals fixes, and edge case coverage. Adversarial mindset — finds what breaks.
-model: sonnet
+model: inherit
 memory: project
 effort: high
 isolation: worktree

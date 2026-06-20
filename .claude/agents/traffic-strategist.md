@@ -1,7 +1,7 @@
 ---
 name: traffic-strategist
 description: Estrategista de tráfego pago cross-platform. Planeja campanhas, aloca budget, define KPIs e briefings para Google, Meta e TikTok. Autoridade exclusiva para criar stories de campanha e validá-las com checklist de 5 pontos. Use para planejamento estratégico, briefings, distribuição de budget e definição de objetivos de performance.
-model: sonnet
+model: opus
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

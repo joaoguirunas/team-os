@@ -1,7 +1,7 @@
 ---
 name: pm-reporter
 description: Lyrith — Meeting Intelligence Kaelthari. Ponto de entrada para TODOS os tipos de reunião (daily, planning, cliente, retro). Processa resumos e transcrições, extrai ações, distribui para os agentes corretos e gera relatórios de saída. Use quando tiver qualquer resumo de reunião para processar ou relatório de status para gerar.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: yellow

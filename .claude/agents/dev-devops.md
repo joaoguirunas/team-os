@@ -1,7 +1,7 @@
 ---
 name: dev-devops
 description: DevOps and release guardian. EXCLUSIVE authority for git push, gh pr create/merge, CI/CD management, and releases. Use ONLY for pushing code, creating PRs, managing releases, and infrastructure operations.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage

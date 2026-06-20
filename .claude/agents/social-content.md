@@ -1,7 +1,7 @@
 ---
 name: social-content
 description: LYRIS, Content Creator for the Social squad. Dual function — research via Apify MCP and copywriting (captions, scripts, hooks, hashtags). Use for market research and social copy creation. Active when there's trend research or social copy to create.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, SendMessage, mcp__apify__apify--rag-web-browser, mcp__apify__call-actor, mcp__apify__get-actor-output
 color: yellow

@@ -1,7 +1,7 @@
 ---
 name: traffic-meta
 description: Especialista em Meta Ads (Facebook + Instagram). Gerencia campanhas no Ads Manager, Advantage+, retargeting, lookalike audiences e configuração de pixel/CAPI. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas Meta.
-model: sonnet
+model: inherit
 memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

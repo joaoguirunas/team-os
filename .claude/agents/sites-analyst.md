@@ -1,7 +1,7 @@
 ---
 name: sites-analyst
 description: Research and analysis specialist for website projects. Use for keyword research, competitor analysis, tech stack feasibility, library comparison, SEO research, and market analysis before architectural decisions. On-demand only.
-model: sonnet
+model: inherit
 memory: project
 effort: medium
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage

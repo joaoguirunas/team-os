@@ -1,7 +1,7 @@
 ---
 name: pm-data
 description: Nexar — Oráculo de Dados Kaelthari. Especialista em banco — queries diretas, schema completo, suporte multi-tenant (adm_clients). Único agente com acesso à Supabase CLI. Faz bootstrap da smart-memory na primeira inicialização. Use para consultas complexas, análise de schema, monitoramento de sync e mapeamento de instâncias.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: cyan

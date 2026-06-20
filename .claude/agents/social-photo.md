@@ -1,7 +1,7 @@
 ---
 name: social-photo
 description: IRIS, Photo Creator for the Social squad. Generates AI photos via Freepik MCP for covers, carousels, posts, hero images and cinematic backgrounds. Use when photographic images are needed for social campaigns (product, people, lifestyle or scenarios).
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, SendMessage, mcp__freepik__generate-image, mcp__freepik__upscale-image
 color: cyan

@@ -1,7 +1,7 @@
 ---
 name: pm-client
 description: Eshara — Tecelã de Alianças Kaelthari. Gerencia a camada de cliente — acesso a projetos, perfil de qualificação, status de relacionamento, risco de churn. Use para configurar permissões de cliente em projetos, analisar perfil de qualificação, detectar clientes em risco e gerenciar relacionamentos.
-model: sonnet
+model: inherit
 memory: project
 tools: Read, Write, Glob, Grep, Bash, SendMessage
 color: pink
