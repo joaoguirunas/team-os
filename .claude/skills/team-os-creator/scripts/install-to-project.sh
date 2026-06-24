@@ -15,12 +15,14 @@ TARGET=""
 SQUADS="all"
 INCLUDE_HOOKS=0
 DRY_RUN=0
+MATCH_TARGET=0   # --match-target-squads: deriva squads do que JÁ existe no destino (modo propagate)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --source)       SOURCE="$2";   shift 2 ;;
     --target)       TARGET="$2";   shift 2 ;;
     --squads)       SQUADS="$2";   shift 2 ;;
+    --match-target-squads) MATCH_TARGET=1; shift ;;
     --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
     --include-skills) shift ;;  # ignorado — skills são sempre incluídas
@@ -54,11 +56,25 @@ if [ ! -d "$SOURCE/.claude/agents" ]; then
   exit 1
 fi
 
+# Modo propagate: deriva as squads a sincronizar a partir do que JÁ existe no destino.
+# Garante que squads podadas (não instaladas) nunca sejam re-adicionadas.
+if [ $MATCH_TARGET -eq 1 ]; then
+  if [ -d "$TARGET/.claude/agents" ]; then
+    SQUADS=$(find "$TARGET/.claude/agents" -maxdepth 1 -name '*.md' -type f -exec basename {} .md \; 2>/dev/null \
+      | sed 's/-.*//' | sort -u | tr '\n' ',' | sed 's/,$//')
+  fi
+  [ -z "$SQUADS" ] && SQUADS="__none__"   # destino sem agentes → não sincroniza nenhum
+  echo "MATCH_TARGET_SQUADS=$SQUADS"
+fi
+
 echo "STATUS=starting"
 echo "SOURCE=$SOURCE_NAME"
 echo "TARGET=$TARGET_NAME"
 echo "SQUADS=$SQUADS"
 echo "DRY_RUN=$DRY_RUN"
+if [ "$SQUADS" = "all" ]; then
+  echo "SQUADS_WARNING=instalando TODAS as squads — cada projeto deve receber só a(s) squad(s) da sua categoria (ex: social, sites). Passe --squads <categoria>."
+fi
 echo "---"
 
 # Cria diretórios necessários no destino
@@ -136,14 +152,19 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
   # team-os-creator nunca é copiada para projetos destino
   [[ "$skill_name" == "team-os-creator" ]] && { skills_skipped=$((skills_skipped + 1)); continue; }
 
-  # Filtra por squad (skills core e sem prefixo de squad são sempre incluídas)
+  # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm}-*)
+  # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
+  # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
   if [ "$SQUADS" != "all" ]; then
-    match=0
-    for squad in $(echo "$SQUADS" | tr ',' ' '); do
-      [[ "$skill_name" == ${squad}-* ]] && { match=1; break; }
-    done
-    # Skills sem prefixo squad (ex: accessibility, deep-research) — sempre incluir
-    [[ "$skill_name" != *-* ]] && match=1
+    skill_prefix="${skill_name%%-*}"
+    case "$skill_prefix" in
+      dev|sites|social|traffic|pm)
+        match=0
+        for squad in $(echo "$SQUADS" | tr ',' ' '); do
+          [ "$skill_prefix" = "$squad" ] && { match=1; break; }
+        done ;;
+      *) match=1 ;;   # skill geral (não-squad) → sempre incluir
+    esac
     # team-os é sempre incluída; team-os-creator fica só no projeto de origem
     [[ "$skill_name" == "team-os" ]] && match=1
     [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
@@ -244,6 +265,27 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
   done
 
   echo "HOOKS_COPIED=$hooks_copied"
+fi
+
+# ── Session-title hook (global, core UX — sempre instalado) ──────────────────
+# Nomeia toda sessão pelo projeto+branch. Vale para todos os projetos de uma vez.
+GLOBAL_HOOK_SRC="$SOURCE/.claude/hooks/team-os-session-title.sh"
+GLOBAL_HOOK_DST="$HOME/.claude/hooks/team-os-session-title.sh"
+if [ -f "$GLOBAL_HOOK_SRC" ]; then
+  if [ $DRY_RUN -eq 0 ]; then
+    mkdir -p "$HOME/.claude/hooks"
+    cp "$GLOBAL_HOOK_SRC" "$GLOBAL_HOOK_DST"
+    chmod +x "$GLOBAL_HOOK_DST"
+  fi
+  echo "SESSION_TITLE_HOOK=installed"
+  # Registro do SessionStart no settings global é feito pela skill (edição segura de JSON).
+  if [ -f "$HOME/.claude/settings.json" ] && grep -q "team-os-session-title" "$HOME/.claude/settings.json" 2>/dev/null; then
+    echo "SESSION_TITLE_REGISTERED=1"
+  else
+    echo "SESSION_TITLE_REGISTER_TODO=1|adicione um hook SessionStart em ~/.claude/settings.json apontando para \$HOME/.claude/hooks/team-os-session-title.sh"
+  fi
+else
+  echo "SESSION_TITLE_HOOK_MISSING=team-os-session-title.sh não encontrado na fonte"
 fi
 
 echo "---"

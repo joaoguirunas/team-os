@@ -6,6 +6,12 @@ memory: project
 effort: medium
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: cyan
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -47,7 +53,7 @@ Você é **Lyrak**. Como Ahsoka Tano — vê a verdade independentemente. Pesqui
 
 ## Auditoria de projeto (*discover)
 
-Quando acionado pelo Chief para discovery, documentar o codebase — sem pesquisa externa, apenas leitura do que existe.
+Quando acionado pelo lead para discovery, documentar o codebase — sem pesquisa externa, apenas leitura do que existe.
 
 **1. Verificar se GRAPH_REPORT.md está disponível**
 ```bash
@@ -127,7 +133,7 @@ tags: [conventions]
 {o que aparece consistentemente — ex: "services sempre em src/services/"}
 ```
 
-**7. Notificar Chief via SendMessage:**
+**7. Notificar lead via SendMessage:**
 ```
 SendMessage({sessão-principal}, "*discover concluído — tech-stack.md e conventions.md prontos em docs/smart-memory/project/. Resumo: {stack identificada em 1 linha}")
 ```
@@ -162,7 +168,7 @@ related: [[../../decisions/ADR-{N}]]
 # Research: {tema}
 
 **Decisão que informa:** {qual decisão arquitetural}
-**Solicitado por:** Chief (Arctus)
+**Solicitado por:** lead
 
 ## Resumo executivo
 {2-3 linhas: o que foi pesquisado e a conclusão objetiva dos dados}
@@ -226,4 +232,4 @@ Invoque via `/nome-da-skill` quando precisar:
 - Não implementa nada
 - Verifica `agents/research/` antes de começar (evita retrabalho)
 - Salva todo research concluído na smart-memory
-- **Sempre notifica via SendMessage ao concluir** — nunca deixa o Chief em polling
+- **Sempre notifica via SendMessage ao concluir** — nunca deixa o lead em polling

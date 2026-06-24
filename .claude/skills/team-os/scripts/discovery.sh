@@ -155,9 +155,10 @@ MODULES_LINKS="$(printf "%b" "$MODULE_DIRS" | while IFS= read -r m; do
 done)"
 [ -z "$MODULES_LINKS" ] && MODULES_LINKS="<!-- nenhum módulo detectado automaticamente -->"
 
-mkdir -p "$SM"/project "$SM"/modules "$SM"/architecture "$SM"/decisions \
+mkdir -p "$SM"/project "$SM"/decisions \
          "$SM"/stories/backlog "$SM"/stories/active "$SM"/stories/in-review "$SM"/stories/done \
-         "$SM"/research "$SM"/qa
+         "$SM"/agents/research "$SM"/agents/qa "$SM"/agents/data-engineer \
+         "$SM"/agents/ux "$SM"/agents/bi "$SM"/agents/data-performance
 
 # INDEX.md (MOC raiz)
 cat > "$SM/INDEX.md" <<EOF
@@ -180,16 +181,16 @@ tags: [index, smart-memory]
 - [[project/conventions]] — Padrões de código
 
 ## Arquitetura
-- [[architecture/overview]] — Visão arquitetural
+- [[project/architecture]] — Visão arquitetural
 
 ## Módulos
-$MODULES_LINKS
+- [[project/modules]] — Mapa de módulos + God Nodes
 
 ## Stories
 - [[stories/BACKLOG]] — Backlog master
 
-## Research / QA
-- [[research/]] · [[qa/]]
+## Saídas por agente
+- [[agents/research/]] · [[agents/qa/]] · [[agents/data-engineer/]] · [[agents/ux/]] · [[agents/bi/]] · [[agents/data-performance/]]
 EOF
 
 # project/overview.md
@@ -264,8 +265,8 @@ tags: [project, conventions]
 <!-- TODO: naming, organização de pastas, padrões de import, etc. (enriquecer ao explorar) -->
 EOF
 
-# architecture/overview.md
-cat > "$SM/architecture/overview.md" <<EOF
+# project/architecture.md
+cat > "$SM/project/architecture.md" <<EOF
 ---
 title: "Arquitetura — $PROJECT_NAME"
 type: overview
@@ -286,29 +287,29 @@ $(printf "%b" "$MODULE_DIRS" | sed 's#.*/##' | awk 'NF{printf "  app --> m_%s[%s
 <!-- TODO: refinar o diagrama com as relações reais entre os módulos -->
 EOF
 
-# modules/*.md (um por módulo detectado)
-printf "%b" "$MODULE_DIRS" | while IFS= read -r mod; do
-  [ -n "$mod" ] || continue
-  safe="$(echo "$mod" | sed 's#/#-#g')"
-  files="$(find "$TARGET/$mod" -maxdepth 1 -mindepth 1 -not -name 'node_modules' -exec basename {} \; 2>/dev/null | sort | head -20)"
-  cat > "$SM/modules/$safe.md" <<EOF
+# project/modules.md (mapa de módulos + God Nodes — lido pelos implementers antes de codar)
+cat > "$SM/project/modules.md" <<EOF
 ---
-title: "Módulo: $mod"
+title: "Módulos — $PROJECT_NAME"
 type: overview
 agent: team-os (discovery)
 created: $DATE
 updated: $DATE
-tags: [module]
+tags: [modules]
 ---
 
-# Módulo: \`$mod\`
+# Mapa de Módulos — $PROJECT_NAME
 
-**Responsabilidade:** <!-- TODO: o que este módulo faz -->
+$(printf "%b" "$MODULE_DIRS" | while IFS= read -r mod; do
+  [ -n "$mod" ] || continue
+  files="$(find "$TARGET/$mod" -maxdepth 1 -mindepth 1 -not -name 'node_modules' -exec basename {} \; 2>/dev/null | sort | head -12 | paste -sd', ' -)"
+  printf '## \`%s\`\n**Responsabilidade:** <!-- TODO -->\n\n1º nível: %s\n\n' "$mod" "${files:-—}"
+done)
 
-## Itens (1º nível)
-$(printf "%s\n" "$files" | sed 's/^/- `/; s/$/`/')
+## God Nodes
+<!-- TODO: arquivos críticos / de alto acoplamento que exigem testes + QA formal ao serem tocados.
+     Liste paths \`src/...\` aqui (um por linha). Os implementers grep esta seção antes de implementar. -->
 EOF
-done
 
 # stories/BACKLOG.md
 cat > "$SM/stories/BACKLOG.md" <<EOF

@@ -47,13 +47,13 @@ Leia `docs/smart-memory/pm/context.md` para obter `SUPABASE_URL` e `SERVICE_ROLE
 ```bash
 # Padrão de leitura
 curl -s "$SUPABASE_URL/rest/v1/<tabela>?<filtros>&select=<colunas>" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
-  -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  -H "apikey: $SERVICE_ROLE_KEY"
 
 # RPC de analytics
 curl -s "$SUPABASE_URL/rest/v1/rpc/get_project_dashboard_stats" \
-  -X POST -H "Authorization: Bearer $SERVICE_KEY" \
-  -H "apikey: $SERVICE_KEY" -H "Content-Type: application/json" \
+  -X POST -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  -H "apikey: $SERVICE_ROLE_KEY" -H "Content-Type: application/json" \
   -d '{"p_project_id": "<id>"}'
 ```
 

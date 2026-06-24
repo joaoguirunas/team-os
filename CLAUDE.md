@@ -29,7 +29,7 @@ Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualm
 
 Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos agentes (ver [README.md §10](./README.md#10-hooks-de-qualidade)):
 
-- `block-git-push.sh` — PreToolUse nos agentes implementers (dev-dev-*, sites-dev-*, social-video)
+- `block-git-push.sh` — PreToolUse nos implementers (dev-dev-*, sites-dev-*, social-video) **e em todo agente não-devops com Bash nas squads de código** (dev-*/sites-* exceto devops): push é garantia dura, exclusiva do devops
 - `check-story-progress.sh` — validação de progresso de stories
 - `check-social-progress.sh` — validação de progresso de conteúdo social
 

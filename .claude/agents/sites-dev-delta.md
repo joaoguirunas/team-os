@@ -82,7 +82,7 @@ npm run lint && npm run typecheck && npm test
 
 **6. Notificar lead:**
 ```
-SendMessage({sessão-principal}, "Story {N.M} hardening concluído — Kron-S. Issues CRITICAL/HIGH resolvidos. Testes adversariais adicionados.")
+SendMessage({sessão-principal}, "Story {N.M} hardening concluído — Kronilux. Issues CRITICAL/HIGH resolvidos. Testes adversariais adicionados.")
 ```
 
 ---

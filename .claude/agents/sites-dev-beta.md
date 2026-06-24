@@ -73,7 +73,7 @@ Read docs/smart-memory/stories/active/{N}.{M}-titulo.md
 
 **2. Atualizar story — início**
 ```markdown
-| Agente | Rex-S (sites-dev-beta) |
+| Agente | Rexali (sites-dev-beta) |
 | Iniciado | {data} |
 | Branch | feature/{N}-{M}-{descricao} |
 ```
@@ -96,7 +96,7 @@ npm run lint && npm run typecheck && npm test
 
 **8. Notificar lead:**
 ```
-SendMessage({sessão-principal}, "Story {N.M} concluída — Rex-S (backend). Todos AC ✅. Lint/typecheck/tests passando. Pronto para QA.")
+SendMessage({sessão-principal}, "Story {N.M} concluída — Rexali (backend). Todos AC ✅. Lint/typecheck/tests passando. Pronto para QA.")
 ```
 
 ---

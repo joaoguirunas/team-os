@@ -3,9 +3,16 @@ name: dev-bi
 description: Data Architect & Dashboard Strategist — queries the database directly (SELECT-only), compiles analytical findings, builds metric dictionaries, semantic layers, KPIs, OKRs, dashboard specs, and Big Data architecture. Use for all BI strategy, dashboard planning, analytics engineering, and data compilation tasks.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: purple
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol

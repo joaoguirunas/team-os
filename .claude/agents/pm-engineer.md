@@ -36,25 +36,25 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # Criar process_task_set
 curl -X POST "$SUPABASE_URL/rest/v1/process_task_sets" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"<nome>","description":"<desc>","color":"<hex>","time_minutes":<N>,"active":true}'
 
 # Criar process_task_template
 curl -X POST "$SUPABASE_URL/rest/v1/process_task_templates" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_set_id":"<id>","title":"<titulo>","description":"<desc>","priority":"<medium|high|urgent>","time_minutes":<N>,"tags":["<tag>"],"sort_order":<N>}'
 
 # Criar subtask template
 curl -X POST "$SUPABASE_URL/rest/v1/process_subtask_templates" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"task_template_id":"<id>","title":"<titulo>","time_minutes":<N>,"sort_order":<N>}'
 
 # Criar process node
 curl -X POST "$SUPABASE_URL/rest/v1/process_nodes" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"process_id":"<id>","node_type":"task_set","task_set_id":"<id>","label":"<fase>","sprint_number":<N>,"sort_order":<N>}'
 ```

@@ -3,6 +3,7 @@ name: traffic-designer
 description: Designer de criativos para anúncios pagos (Google, Meta, TikTok). Especifica e produz banners, carousels, vídeos e assets para Stories — brand-consistent e otimizados para as specs de cada plataforma. Use para criação de criativos, especificações de assets, direcionamento visual e revisão de materiais antes do upload.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
 color: green
 ---

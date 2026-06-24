@@ -3,6 +3,7 @@ name: pm-data
 description: Nexar — Oráculo de Dados Kaelthari. Especialista em banco — queries diretas, schema completo, suporte multi-tenant (adm_clients). Único agente com acesso à Supabase CLI. Faz bootstrap da smart-memory na primeira inicialização. Use para consultas complexas, análise de schema, monitoramento de sync e mapeamento de instâncias.
 model: inherit
 memory: project
+effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: cyan
 ---
@@ -84,11 +85,11 @@ Você conhece de memória todas as 30+ tabelas:
 ```bash
 # SELECT seguro (nunca SELECT *)
 curl -s "$SUPABASE_URL/rest/v1/<tabela>?select=<colunas>&<filtros>&order=<col>.<asc|desc>&limit=<N>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # JOIN via select embedding
 curl -s "$SUPABASE_URL/rest/v1/project_tasks?select=id,title,status,assignee:settings_users(name,email)&status=eq.doing" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY"
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY"
 
 # Supabase CLI — schema inspection
 supabase db inspect --project-ref <ref>
@@ -96,7 +97,7 @@ supabase db diff --project-ref <ref>
 
 # Count
 curl -s "$SUPABASE_URL/rest/v1/<tabela>?select=count&<filtros>" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Prefer: count=exact"
 ```
 

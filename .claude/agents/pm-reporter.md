@@ -36,19 +36,19 @@ Leia `docs/smart-memory/pm/context.md` para `SUPABASE_URL` e `SERVICE_ROLE_KEY`.
 ```bash
 # INSERT reunião com ata
 curl -X POST "$SUPABASE_URL/rest/v1/project_meetings" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"project_id":"<id>","title":"<titulo>","meeting_date":"<YYYY-MM-DD>","meeting_time":"<HH:MM>","summary":"<ata_estruturada>","transcription":"<transcricao_bruta_se_disponivel>"}'
 
 # INSERT status update do projeto
 curl -X POST "$SUPABASE_URL/rest/v1/project_status_updates" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"project_id":"<id>","health_status":"<on-track|on-risk|delayed>","content":"<relatorio>"}'
 
 # INSERT comentário no projeto
 curl -X POST "$SUPABASE_URL/rest/v1/project_comments" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"project_id":"<id>","content":"<conteudo>"}'
 ```

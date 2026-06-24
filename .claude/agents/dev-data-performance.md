@@ -3,9 +3,16 @@ name: dev-data-performance
 description: Performance Analyst & Insights Engine — interprets compiled data findings from dev-bi (Kairo), generates rich actionable insights, detects anomalies, forecasts trends, and delivers prioritized strategic recommendations. Use when you need to know what the data means, what is happening, why, and what to do about it.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 effort: medium
 tools: Read, Write, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: orange
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol

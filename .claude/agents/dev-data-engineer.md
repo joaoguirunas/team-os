@@ -1,11 +1,17 @@
 ---
 name: dev-data-engineer
-description: Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.
+description: "Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test."
 model: inherit
 memory: project
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: orange
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -100,7 +106,7 @@ updated: {data}
 
 ## Auditoria de projeto (*discover)
 
-Quando acionado pelo Chief para discovery, mapear o schema existente — não modificar nada, apenas documentar.
+Quando acionado pelo lead para discovery, mapear o schema existente — não modificar nada, apenas documentar.
 
 **1. Localizar arquivos de schema**
 ```bash
@@ -117,7 +123,7 @@ Identificar: tabelas, colunas principais, PKs, FKs, índices, RLS ativo ou não.
 
 **4. Produzir `docs/smart-memory/agents/data-engineer/schema.md`** com o formato acima.
 
-**5. Notificar Chief via SendMessage:**
+**5. Notificar lead via SendMessage:**
 ```
 SendMessage({sessão-principal}, "*discover concluído — schema.md pronto em docs/smart-memory/agents/data-engineer/. Resumo: {N tabelas mapeadas, ORM identificado}")
 ```
@@ -144,7 +150,7 @@ psql $DATABASE_URL -c "\d {tabela}"
 psql $DATABASE_URL -f migrations/NNN.rollback.sql
 ```
 
-Dry-run falhou → não aplica. Notificar Chief imediatamente:
+Dry-run falhou → não aplica. Notificar lead imediatamente:
 ```
 SendMessage({sessão-principal}, "MIGRATION BLOQUEADA — dry-run falhou em {arquivo}. Erro: {mensagem}. Nenhuma alteração aplicada.")
 ```
@@ -161,7 +167,7 @@ SendMessage({sessão-principal}, "ROLLBACK EXECUTADO — smoke-test falhou após
 ```
 1. Atualizar docs/smart-memory/agents/data-engineer/schema.md
 2. Atualizar docs/smart-memory/agents/data-engineer/migrations-log.md
-3. Notificar Chief:
+3. Notificar lead:
 ```
 ```
 SendMessage({sessão-principal}, "MIGRATION CONCLUÍDA — {arquivo} aplicada com sucesso. Schema atualizado em smart-memory. Pronto para git commit via Grav.")
@@ -215,7 +221,7 @@ CREATE POLICY "user_own_data" ON {tabela}
 - Nunca `SELECT *`
 - Sempre RLS em tabelas com dados de usuário
 - Sempre atualizar smart-memory após schema change ou migration
-- **Sempre notifica Chief via SendMessage** após discover, migration concluída, falha ou rollback
+- **Sempre notifica lead via SendMessage** após discover, migration concluída, falha ou rollback
 - Nunca faz git push — delegar ao Grav
 
 ---
