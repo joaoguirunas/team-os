@@ -362,16 +362,6 @@ docs/smart-memory/
 │   └── conventions.md          ← padrões de código do projeto
 ├── architecture/               ← ADRs e decisões arquiteturais (dev-architect escreve)
 ├── decisions/                  ← decisões técnicas pontuais
-
-```
-docs/smart-memory/
-├── INDEX.md                    ← MOC raiz — wikilinks para todas as seções
-├── project/
-│   ├── overview.md             ← visão geral do projeto (preencher junto com o usuário)
-│   ├── tech-stack.md           ← stack detectado automaticamente + confirmar
-│   └── conventions.md          ← padrões de código do projeto
-├── architecture/               ← ADRs e decisões arquiteturais (dev-architect escreve)
-├── decisions/                  ← decisões técnicas pontuais
 ├── stories/
 │   ├── BACKLOG.md              ← lista master de todas as stories
 │   ├── backlog/                ← stories aguardando priorização
