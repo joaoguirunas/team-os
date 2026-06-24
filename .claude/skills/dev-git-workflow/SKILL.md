@@ -9,15 +9,17 @@ updated: "2026-04-21"
 
 ## Branch Strategy
 
+> ⚠️ **Regra dura — branch de publicação:** antes de qualquer `push`/`PR`/`merge`, **pergunte em qual branch publicar; a `main` é o padrão prioritário.** Nunca crie branch nova nem assuma a branch atual por conta própria. Só use `feature/*` (ou outra) quando o usuário pedir explicitamente — nesse caso vale a nomenclatura abaixo.
+
 ```
-main             → produção, protegida, sempre estável
-├── feature/     → novas features (ex: feature/42-user-auth)
-├── fix/         → bugfixes (ex: fix/login-null-pointer)
+main             → padrão de publicação, produção, sempre estável
+├── feature/     → novas features SÓ quando o usuário pedir (ex: feature/42-user-auth)
+├── fix/         → bugfixes sob demanda (ex: fix/login-null-pointer)
 ├── hotfix/      → urgente produção, parte de main
 └── chore/       → deps, config, infra
 ```
 
-**Nomenclatura:** `{type}/{issue-id}-{slug}` — ex: `feature/42-user-authentication`
+**Nomenclatura (quando branch for solicitada):** `{type}/{issue-id}-{slug}` — ex: `feature/42-user-authentication`
 
 ## Conventional Commits
 
