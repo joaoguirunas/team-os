@@ -1,6 +1,6 @@
 ---
 name: sites-page-cro
-description: Optimização de conversão para páginas web — estrutura, hierarquia, trust signals e redução de fricção. Injectado em VOX (sites-copy).
+description: Optimização de conversão para páginas web — estrutura, hierarquia, trust signals e redução de fricção.
 ---
 
 # Sites Page CRO — Conversion Rate Optimisation

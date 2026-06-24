@@ -1,6 +1,6 @@
 ---
 name: sites-ux-interaction
-description: Padrões de UX e interacção para websites — navegação, micro-interacções, animações e scroll behaviour. Injectado em LUMEN (sites-ux-beta).
+description: Padrões de UX e interacção para websites — navegação, micro-interacções, animações e scroll behaviour.
 ---
 
 # Sites UX Interaction — Padrões de Interacção

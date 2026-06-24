@@ -278,7 +278,6 @@ Antes de propor stack, responder:
 
 Invoque antes de trabalhar na área correspondente:
 
-- `/data-analytics-engineering` — dicionário de métricas, semantic layer, dbt/SQLMesh, data contracts, governança de métricas
-- `/data-analyst` — dashboards (Metabase/Looker/Superset/PowerBI), KPI/OKR standardization, SQL de análise, cohorts, funnels
+- `/data-analytics-engineering` — dicionário de métricas, semantic layer, dbt/SQLMesh, data contracts, governança de métricas, dashboards (Metabase/Looker/Superset/PowerBI), KPI/OKR standardization, SQL de análise, cohorts, funnels
 - `/data-sql-optimization` — query tuning, EXPLAIN/ANALYZE, indexing, anti-patterns, connection pooling
 - `/data-lake-platform` — big data: medallion, data mesh, Iceberg/Delta, ClickHouse, Kafka, Dagster, lineage

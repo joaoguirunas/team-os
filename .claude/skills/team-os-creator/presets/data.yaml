@@ -15,7 +15,7 @@ agents:
     role_title: Data Architect
     description: "Data pipeline architecture, ingestion strategy, ETL design, storage decisions. Autoridade exclusiva em stories e ADRs."
     color: purple
-    skills: [architecture-decision-records]
+    skills: [dev-technical-writing]
   - name: data-engineer
     archetype: data
     persona: ""

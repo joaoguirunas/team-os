@@ -1,6 +1,6 @@
 ---
 name: sites-shadcn-ui
-description: Padrões de uso de shadcn/ui — instalação, customização e composição de componentes. Injectado em EROS (sites-ux-alpha).
+description: Padrões de uso de shadcn/ui — instalação, customização e composição de componentes.
 ---
 
 # Sites shadcn/ui — Padrões de Uso

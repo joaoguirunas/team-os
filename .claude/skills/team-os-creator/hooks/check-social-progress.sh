@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ~/.claude/hooks/check-social-progress.sh
-# TeammateIdle hook — detecta agentes social-* parados sem notificar SIRIA
+# TeammateIdle hook — detecta agentes social-* parados sem notificar PULSE
 # Exit 0: ok, agente pode ficar idle
-# Exit 2: feedback ao Chief com situação
+# Exit 2: feedback ao lead com situação
 
 THRESHOLD_MINUTES=45
 NOW=$(date +%s)

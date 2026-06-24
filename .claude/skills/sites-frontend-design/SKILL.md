@@ -1,6 +1,6 @@
 ---
 name: sites-frontend-design
-description: Padrões de design e implementação frontend para websites — componentes React, Tailwind CSS, Next.js App Router. Injectado em EROS (sites-ux-alpha) e LUMEN (sites-ux-beta).
+description: Padrões de design e implementação frontend para websites — componentes React, Tailwind CSS, Next.js App Router.
 ---
 
 # Sites Frontend Design — Padrões e Componentes

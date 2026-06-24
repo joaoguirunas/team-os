@@ -121,4 +121,6 @@ SendMessage({sessão-principal}, "Story {N.M} concluída — Seranol (fullstack)
 - `/dev-api-design` — contratos de integração
 - `/sites-scroll-motion` — scroll cinematográfico, parallax, Three.js/WebGPU
 - `/sites-page-cro` — CRO structure e trust signals
+- `/sites-copywriting` — frameworks de copy (AIDA, PAS, BAB) para seções de conversão
+- `/sites-copy-editing` — revisão e edição de copy: clareza, consistência e tom
 - `/sites-seo-technical` — SEO técnico full-stack

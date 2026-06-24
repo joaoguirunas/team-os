@@ -25,6 +25,11 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 10. **`*migrate` converte agentes antigos** — remove "Contrato com team-os", injeta "Native Teams Protocol".
 11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
 
+> **Nota — dois mecanismos de memória (complementares):**
+> - `memory: project` (RULE #1) é um **campo real de subagent** que cria uma **memória persistente por-agente** em `.claude/agent-memory/<nome>/`, mantida pelo runtime.
+> - A **smart-memory compartilhada** do CT (`docs/smart-memory/`, formato Obsidian) é **distinta** — não é gerenciada pelo campo `memory`, mas por **convenção** (o body do agente lê/escreve nela via Native Teams Protocol, reforçado pelo `CLAUDE.md`).
+> Os dois coexistem: o campo `memory` dá persistência individual ao agente; a smart-memory dá o source of truth compartilhado da squad.
+
 ---
 
 ## Comandos
@@ -82,7 +87,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 
 > Nota: Os campos `skills:` e `mcpServers:` no frontmatter são **ignorados** quando o agente roda como teammate em Agent Teams — skills e MCP servers são carregados do projeto/usuário como em sessão normal. Não adicionar `skills:` ao frontmatter de agentes.
 >
-> Nota: `SendMessage` e as ferramentas de TaskList (`TaskCreate`/`TaskUpdate`/`TaskList`/`TaskGet`) ficam **sempre disponíveis** ao teammate, mesmo que `tools` restrinja outras. Listá-las em `tools` é inofensivo mas não obrigatório.
+> Nota: `SendMessage` e as ferramentas de gerenciamento de tasks (task management tools — ex.: `TaskCreate`/`TaskUpdate`/`TaskList`/`TaskGet`; os nomes exatos não são enumerados como contrato fixo na doc oficial) ficam **sempre disponíveis** ao teammate, mesmo que `tools` restrinja outras. Listá-las em `tools` é inofensivo mas não obrigatório.
 
 ---
 
@@ -96,6 +101,8 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | **traffic** | 10 (analyst, automation, bi, copywriter, designer, google, meta, qa, strategist, tiktok) | Tráfego pago |
 | **pm** | 10 (analyst, client, coach, data, demand, engineer, ops, planner, qa, reporter) | Gestão de projetos |
 | **custom** | 0 | Usuário monta do zero |
+
+> ⚠️ **Presets legados (não usar):** o diretório `presets/` ainda contém `content.yaml`, `marketing.yaml` e `data.yaml`, mas eles referenciam agentes que **não existem** no CT atual (ex.: `content-*`, `mkt-*`, `data-architect`, `ml-engineer`) — são remanescentes de um design antigo e `*squad content/marketing/data` falhariam. Não os use; pendente decisão de remover ou reconstruir.
 
 ---
 
@@ -125,7 +132,7 @@ color: {cor}
 Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
 1. **Smart-memory é source of truth.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + seções da sua especialidade. Ao concluir: escreva findings na sua área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
-2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
+2. **Tasks via TaskList nativo.** Use as ferramentas de gerenciamento de tasks (task management tools — ex.: `TaskList`) para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
 3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
 4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
 5. **Respeite autoridades exclusivas** (listadas neste arquivo).
@@ -195,7 +202,7 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ## Fluxo `*bootstrap`
 
 1. Verifica se `docs/smart-memory/` já existe — pergunta antes de sobrescrever
-2. Cria estrutura: INDEX.md, project/, architecture/, decisions/, stories/ (com backlog/active/in-review/done), research/, modules/, qa/
+2. Cria a estrutura de smart-memory **conforme `team-os/scripts/discovery.sh`** (estrutura canônica): `INDEX.md` + `project/` + `decisions/` + `stories/` (com `backlog/active/in-review/done`) + `agents/<área>/`. Não crava outras pastas top-level — `architecture` e `modules` vivem como arquivos dentro de `project/`, e `qa`/`research` ficam sob `agents/`. A referência canônica é sempre a estrutura gerada pelo `discovery.sh`.
 3. Injeta Smart-Memory Protocol no `CLAUDE.md` do projeto
 4. Relatório
 
@@ -241,7 +248,7 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ├── presets/
 ├── reference/
 │   ├── archetypes.md
-│   ├── smart-memory-schema.md
+│   ├── smart-memory-integration.md
 │   └── skills-catalog-quality.md
 ├── scripts/
 │   ├── preflight.sh

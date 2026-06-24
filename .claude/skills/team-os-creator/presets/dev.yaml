@@ -1,5 +1,5 @@
 name: dev
-description: Fullstack SaaS squad (10 agentes). Cobre análise, arquitetura, UX, 4 implementers (frontend, backend, fullstack, hardening), QA e DevOps.
+description: Fullstack SaaS squad (12 agentes). Cobre análise, arquitetura, BI/analytics, performance/insights, UX, 4 implementers (frontend, backend, fullstack, hardening), data engineering, QA e DevOps.
 project_archetypes: [fullstack-saas, api-service, frontend-app]
 agents:
   - name: dev-analyst
@@ -15,7 +15,7 @@ agents:
     role_title: Architect
     description: "System architect and story creator. Use for architecture decisions, tech stack selection, API design, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), ADRs, and module documentation."
     color: purple
-    skills: [dev-technical-writing, dev-api-design, architecture-decision-records]
+    skills: [dev-technical-writing, dev-api-design]
   - name: dev-ux
     archetype: ux
     persona: Vela+Astra
@@ -72,3 +72,17 @@ agents:
     description: "Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Always follows safety protocol: snapshot → dry-run → apply → smoke-test."
     color: orange
     skills: [dev-database-patterns, dev-security-patterns]
+  - name: dev-bi
+    archetype: data
+    persona: Kairo
+    role_title: Data Architect & Dashboard Strategist
+    description: "Data Architect & Dashboard Strategist — queries the database directly (SELECT-only), compiles analytical findings, builds metric dictionaries, semantic layers, KPIs, OKRs, dashboard specs, and Big Data architecture. Use for all BI strategy, dashboard planning, analytics engineering, and data compilation tasks."
+    color: purple
+    skills: [data-analytics-engineering, data-sql-optimization]
+  - name: dev-data-performance
+    archetype: researcher
+    persona: Sigma
+    role_title: Performance Analyst & Insights Engine
+    description: "Performance Analyst & Insights Engine — interprets compiled data findings from dev-bi (Kairo), generates rich actionable insights, detects anomalies, forecasts trends, and delivers prioritized strategic recommendations. Use when you need to know what the data means, what is happening, why, and what to do about it."
+    color: orange
+    skills: [ai-ml-data-science, data-analytics-engineering]

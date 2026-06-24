@@ -22,7 +22,7 @@ agents:
     role_title: UX Specialist
     description: "UX specialist for website projects (research, user flows, wireframes, component specs, accessibility, visual design). Use for UX research before complex features and UI specification before sites-dev-alpha implements."
     color: pink
-    skills: [ui-ux-pro-max, accessibility, web-design-guidelines, sites-frontend-design, sites-ux-interaction, sites-canvas-design, sites-web-accessibility, sites-tailwind-design-system]
+    skills: [ui-ux-pro-max, accessibility, web-design-guidelines, sites-frontend-design, sites-ux-interaction, sites-canvas-design, sites-web-accessibility, sites-tailwind-design-system, sites-scroll-motion]
   - name: sites-dev-alpha
     archetype: implementer
     persona: Nova-S
@@ -41,9 +41,9 @@ agents:
     archetype: implementer
     persona: Sera-S
     role_title: Fullstack/Integration Developer
-    description: "Fullstack developer for website projects (cross-layer integration, CRO features, SEO implementation, analytics wiring). Use for stories that don't clearly belong to frontend or backend alone."
+    description: "Fullstack developer for website projects (cross-layer integration, CRO features, SEO implementation, content/copy, analytics wiring). Use for stories that don't clearly belong to frontend or backend alone."
     color: green
-    skills: [dev-typescript-patterns, dev-api-design, sites-page-cro, sites-seo-technical]
+    skills: [dev-typescript-patterns, dev-api-design, sites-page-cro, sites-seo-technical, sites-seo-keywords, sites-copywriting, sites-content-strategy]
   - name: sites-dev-delta
     archetype: hardening
     persona: Kron-S

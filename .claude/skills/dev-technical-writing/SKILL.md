@@ -1,6 +1,6 @@
 ---
 name: dev-technical-writing
-description: Escrever documentação técnica de qualidade — ADRs, module specs, decision logs — em Markdown padrão com diagramas Mermaid. Para uso de Architect e Chief.
+description: Escrever documentação técnica de qualidade — ADRs, module specs, decision logs — em Markdown padrão com diagramas Mermaid. Para uso de Architect e lead.
 version: "1.1"
 updated: "2026-04-21"
 ---

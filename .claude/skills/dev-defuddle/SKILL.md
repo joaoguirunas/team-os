@@ -81,13 +81,13 @@ $EXTRACTOR https://engineering.blog.example.com/approach-to-auth > docs/research
 
 # 3. Se CLI falhar, usar WebFetch como fallback
 # 4. Revisar e sintetizar o conteúdo extraído
-# 5. Entregar relatório ao Chief/Architect baseado em evidências
+# 5. Entregar relatório ao lead/Architect baseado em evidências
 ```
 
 ## Boas práticas
 
 - Sempre citar fonte original no documento de research
 - Extrair apenas o necessário — não acumular conteúdo desnecessário
-- Conteúdo extraído é referência, não a decisão — Architect/Chief decidem
+- Conteúdo extraído é referência, não a decisão — Architect/lead decidem
 - Limpar arquivos de research após projeto concluído
 - Nunca extrair conteúdo de páginas que exijam login sem autorização explícita

@@ -50,7 +50,7 @@ Opção C — Guardar como rascunho
 1. Confirmar publicação bem-sucedida
 2. Verificar post no feed
 3. Registar em `social-media/campaigns/{id}/published/`
-4. Notificar SIRIA com URL do post
+4. Notificar PULSE com URL do post
 
 ## Horários óptimos por plataforma
 

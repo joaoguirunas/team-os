@@ -202,7 +202,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
 
-A coluna **Skills relacionadas** lista as skills de apoio que cada agente normalmente ativa via `/nome-skill` (o `/team-os` as inclui no spawn prompt).
+A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponíveis por papel** — as skills de apoio que fazem sentido para cada agente acionar via `/nome-skill` conforme a necessidade. Ela **não** reflete linha a linha o que o body de cada agente lista (vários agentes citam só um subconjunto, ou nenhuma, no próprio arquivo); serve como guia de qual skill ativar para qual tipo de trabalho. O `/team-os` pode incluí-las no spawn prompt.
 
 ### Dev — Fullstack SaaS (12)
 | Agente | Papel | Skills relacionadas |
@@ -295,6 +295,8 @@ A coluna **Skills relacionadas** lista as skills de apoio que cada agente normal
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).
 
+> As skills de conteúdo/copy do Sites — `/sites-content-strategy`, `/sites-copy-editing`, `/sites-copywriting` — são de **uso geral da squad Sites** (não estão fixadas a um único agente). Ficam disponíveis a `sites-ux`, `sites-dev-gamma` e `sites-architect` conforme a necessidade de cada story.
+
 ---
 
 ## 7. Tutorial passo a passo
@@ -364,7 +366,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
-- **`block-git-push.sh`** — `PreToolUse` nos implementers (dev-dev-*, sites-dev-*, social-video): bloqueia `git push` (delega ao DevOps).
+- **`block-git-push.sh`** — `PreToolUse` em ~21 agentes: **todos os agentes não-devops com Bash das squads de código** (`dev-*` e `sites-*` exceto devops) **e** `social-video`. Bloqueia `git push` — garantia dura, exclusiva do DevOps.
 - **`check-story-progress.sh`** — valida progresso de stories.
 - **`check-social-progress.sh`** — valida progresso de conteúdo social.
 
@@ -380,7 +382,8 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 ├── hooks/               ← hooks de qualidade
 │   ├── block-git-push.sh
 │   ├── check-story-progress.sh
-│   └── check-social-progress.sh
+│   ├── check-social-progress.sh
+│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
 └── skills/              ← 48 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story

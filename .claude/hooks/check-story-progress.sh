@@ -2,9 +2,9 @@
 # .claude/hooks/check-story-progress.sh
 # SubagentStop hook — varre stories ativas e alerta se algum agente dev-dev-*
 # iniciou story mas não registrou conclusão dentro do threshold.
-# Dispara toda vez que um subagente termina; o Chief recebe o alerta e intervém.
+# Dispara toda vez que um subagente termina; o lead recebe o alerta e intervém.
 # Exit 0: nenhuma story travada detectada
-# Exit 2: feedback ao Chief com lista de stories suspeitas
+# Exit 2: feedback ao lead com lista de stories suspeitas
 
 THRESHOLD_HOURS=2
 NOW=$(date +%s)

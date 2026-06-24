@@ -166,7 +166,7 @@ docs/smart-memory/stories/done/{story-id}.md
 npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-Todos devem passar. Se algum falhar, Grav notifica Chief e retorna ao dev responsável.
+Todos devem passar. Se algum falhar, Grav notifica o lead e retorna ao dev responsável.
 
 ## Regras absolutas
 

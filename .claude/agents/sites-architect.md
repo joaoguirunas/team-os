@@ -130,5 +130,6 @@ Template: `.claude/skills/team-os/templates/story.md`. Seguir formato Obsidian.
 
 - `/dev-technical-writing` — antes de escrever ADRs ou module specs
 - `/dev-api-design` — antes de definir contratos de API
+- `/sites-content-strategy` — ao planejar arquitetura de informação e hierarquia de conteúdo
 - `/sites-seo-technical` — ao definir estrutura de páginas e metadata
 - `/sites-frontend-design` — ao definir stack e estrutura de componentes

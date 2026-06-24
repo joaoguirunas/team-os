@@ -141,7 +141,7 @@ Criar em `docs/smart-memory/agents/design/creative-specs.md`:
 Para geração de imagens: usar `/social-freepik-generation`
 Para Key Visuals de campanha: usar `/social-key-visual`
 Para carousels: usar `/social-carousel-design`
-Para vídeos: briefar `/traffic-tiktok` ou `social-video` via lead
+Para vídeos: briefar `traffic-tiktok` ou `social-video` via lead
 Para fotos de produto: spec para o cliente ou banco de imagens
 
 **4. Checklist pré-entrega**

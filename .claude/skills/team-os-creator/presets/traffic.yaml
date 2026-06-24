@@ -1,0 +1,74 @@
+name: traffic
+description: Paid traffic squad (10 agentes). Cobre análise/inteligência de mercado, automação/integrações de API, BI/atribuição, copy de anúncios, criativos, especialistas de plataforma (Google, Meta, TikTok), QA pré-campanha e estratégia.
+project_archetypes: [paid-traffic, performance-marketing, ads-management]
+agents:
+  - name: traffic-strategist
+    archetype: architect
+    persona: Axar
+    role_title: Traffic Strategist
+    description: "Estrategista de tráfego pago cross-platform. Planeja campanhas, aloca budget, define KPIs e briefings para Google, Meta e TikTok. Autoridade exclusiva para criar stories de campanha e validá-las com checklist de 5 pontos. Use para planejamento estratégico, briefings, distribuição de budget e definição de objetivos de performance."
+    color: purple
+    skills: [deep-research]
+  - name: traffic-analyst
+    archetype: researcher
+    persona: Lyrath
+    role_title: Performance Analyst
+    description: "Analista de performance e inteligência de mercado para tráfego pago. Pesquisa audiências, concorrentes, tendências de plataforma, benchmarks de setor e oportunidades de otimização. Entrega evidências — outros decidem. Use para análise de concorrência, pesquisa de audiência, benchmarks, tendências de plataforma e diagnóstico de performance."
+    color: cyan
+    skills: [deep-research, dev-defuddle]
+  - name: traffic-bi
+    archetype: data
+    persona: Bytax
+    role_title: BI & Analytics Specialist
+    description: "Especialista em Business Intelligence e atribuição de tráfego pago. Consolida métricas de Google, Meta e TikTok, calcula ROAS, LTV, CPA e atribuição multi-touch. Fonte oficial de verdade para todas as métricas da squad. Use para dashboards, relatórios de performance, análise de atribuição e recomendações baseadas em dados."
+    color: orange
+    skills: [data-analytics-engineering, data-sql-optimization]
+  - name: traffic-automation
+    archetype: implementer
+    persona: Florix
+    role_title: Traffic Automation Specialist
+    description: "Especialista em automação e integrações de API para tráfego pago. Scripts de bulk operations, Google Ads API, Meta Marketing API, TikTok Ads API, relatórios automatizados e integrações de dados. Use para automações, scripts de gestão em escala, integrações entre plataformas e pipelines de dados de campanha."
+    color: purple
+    skills: [dev-typescript-patterns, dev-api-design]
+  - name: traffic-copywriter
+    archetype: implementer
+    persona: Koprath
+    role_title: Ad Copywriter
+    description: "Especialista em copy para anúncios pagos em todas as plataformas (Google, Meta, TikTok). Cria headlines, descrições, CTAs e variantes para A/B test respeitando os limites de caractere e melhores práticas de cada plataforma. Use para criar e otimizar copy de anúncios, roteiros de vídeo para ads e variantes de teste."
+    color: yellow
+    skills: [sites-copywriting]
+  - name: traffic-designer
+    archetype: ux
+    persona: Pixrek
+    role_title: Ad Creative Designer
+    description: "Designer de criativos para anúncios pagos (Google, Meta, TikTok). Especifica e produz banners, carousels, vídeos e assets para Stories — brand-consistent e otimizados para as specs de cada plataforma. Use para criação de criativos, especificações de assets, direcionamento visual e revisão de materiais antes do upload."
+    color: green
+    skills: [ui-ux-pro-max, web-design-guidelines]
+  - name: traffic-google
+    archetype: implementer
+    persona: Gorix
+    role_title: Google Ads Specialist
+    description: "Especialista em Google Ads (Search, Performance Max, Shopping, YouTube, Display). Configura campanhas, grupos de anúncios, keywords, estratégias de lance e otimiza performance no Google. Atua após briefing aprovado pelo traffic-strategist e validação do traffic-qa. Use para setup, otimização e gestão de campanhas Google Ads."
+    color: blue
+    skills: []
+  - name: traffic-meta
+    archetype: implementer
+    persona: Zukar
+    role_title: Meta Ads Specialist
+    description: "Especialista em Meta Ads (Facebook + Instagram). Gerencia campanhas no Ads Manager, Advantage+, retargeting, lookalike audiences e configuração de pixel/CAPI. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas Meta."
+    color: cyan
+    skills: []
+  - name: traffic-tiktok
+    archetype: implementer
+    persona: Tokris
+    role_title: TikTok Ads Specialist
+    description: "Especialista em TikTok Ads (Spark Ads, In-Feed, TopView, Brand Takeover). Gerencia campanhas no TikTok Ads Manager, segmentação de audiências, pixel TikTok e otimização de criativos nativos. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas TikTok."
+    color: pink
+    skills: [tiktok-marketing]
+  - name: traffic-qa
+    archetype: reviewer
+    persona: Gathar
+    role_title: Campaign QA Specialist
+    description: "Quality Assurance pré-campanha. Valida UTMs, pixels, compliance de plataforma, copy, criativos e configuração antes de qualquer campanha ir ao ar. Autoridade exclusiva para emitir veredictos PASS/CONCERNS/FAIL/WAIVED. Sem QA aprovado, nenhuma campanha sobe. Use para revisão pré-launch, compliance check e validação de campanhas."
+    color: red
+    skills: []

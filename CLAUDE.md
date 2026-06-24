@@ -20,7 +20,7 @@ Todo agente do CT segue o **Native Teams Protocol** (detalhado em [README.md §1
 - `memory: project` no frontmatter (obrigatório)
 - Bloco `## Native Teams Protocol` no body (comunicação peer-to-peer, TaskList nativo, smart-memory)
 - Sem campo `skills:` no frontmatter (ignorado em Agent Teams)
-- Implementers com `isolation: worktree` e hook `block-git-push.sh`
+- Implementers com `isolation: worktree` e hook `block-git-push.sh` — exceção: `social-video` é implementer que mantém o `block-git-push.sh` mas roda **sem** `isolation: worktree` (exceção intencional — produz assets de mídia via ffmpeg)
 - Política de modelos **Híbrida**: `opus` fixo em architects/reviewers(QA)/strategists; `inherit` nos demais → [README.md §9](./README.md#9-política-de-modelos-híbrido)
 
 Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualmente sem rodar `*audit` depois.
@@ -32,6 +32,7 @@ Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos a
 - `block-git-push.sh` — PreToolUse nos implementers (dev-dev-*, sites-dev-*, social-video) **e em todo agente não-devops com Bash nas squads de código** (dev-*/sites-* exceto devops): push é garantia dura, exclusiva do devops
 - `check-story-progress.sh` — validação de progresso de stories
 - `check-social-progress.sh` — validação de progresso de conteúdo social
+- `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
 
 ## Fluxo de trabalho
 

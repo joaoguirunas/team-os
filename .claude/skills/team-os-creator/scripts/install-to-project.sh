@@ -67,14 +67,18 @@ if [ $MATCH_TARGET -eq 1 ]; then
   echo "MATCH_TARGET_SQUADS=$SQUADS"
 fi
 
+# Guarda-dura: instalar TODAS as squads sem derivar do destino re-adiciona squads podadas.
+# Só permitido com --match-target-squads (deriva do destino) ou --squads <categoria> explícito.
+if [ "$SQUADS" = "all" ] && [ $MATCH_TARGET -eq 0 ]; then
+  echo "ERROR=squads_all_without_match_target|--squads default é 'all', o que re-instalaria TODAS as squads e desfaria podas por categoria. Passe --match-target-squads (deriva as squads do destino) ou --squads <categoria> explícito (ex: --squads social)." >&2
+  exit 1
+fi
+
 echo "STATUS=starting"
 echo "SOURCE=$SOURCE_NAME"
 echo "TARGET=$TARGET_NAME"
 echo "SQUADS=$SQUADS"
 echo "DRY_RUN=$DRY_RUN"
-if [ "$SQUADS" = "all" ]; then
-  echo "SQUADS_WARNING=instalando TODAS as squads — cada projeto deve receber só a(s) squad(s) da sua categoria (ex: social, sites). Passe --squads <categoria>."
-fi
 echo "---"
 
 # Cria diretórios necessários no destino
@@ -117,17 +121,22 @@ for agent_file in "$SOURCE/.claude/agents/"*.md; do
 
   target_file="$TARGET/.claude/agents/$agent_name.md"
 
-  if [ -f "$target_file" ] && [ "$agent_file" -ot "$target_file" ]; then
-    # Destino já tem versão mais nova — pula
-    agents_skipped=$((agents_skipped + 1))
+  if [ -f "$target_file" ]; then
+    # Destino já tem o agente: decide por CONTEÚDO (não por mtime).
+    # Conteúdo idêntico → skipped (alinha com o scan por hash). Difere → updated.
+    if cmp -s "$agent_file" "$target_file"; then
+      agents_skipped=$((agents_skipped + 1))
+      continue
+    fi
+    do_cp "$agent_file" "$target_file"
+    agents_updated=$((agents_updated + 1))
+    agents_list="$agents_list $agent_name"
     continue
   fi
 
-  action="copied"
-  [ -f "$target_file" ] && action="updated"
-
+  # Novo no destino → copiado
   do_cp "$agent_file" "$target_file"
-  [ "$action" = "updated" ] && agents_updated=$((agents_updated + 1)) || agents_copied=$((agents_copied + 1))
+  agents_copied=$((agents_copied + 1))
   agents_list="$agents_list $agent_name"
 done
 

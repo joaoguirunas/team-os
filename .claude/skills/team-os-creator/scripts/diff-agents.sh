@@ -51,7 +51,8 @@ for target in "$@"; do
     if ! echo "$TARGET_AGENTS" | grep -qx "$agent"; then
       missing=$((missing + 1))
       missing_list="$missing_list,$agent"
-    elif [ "$src_file" -nt "$tgt_file" ]; then
+    elif ! cmp -s "$src_file" "$tgt_file"; then
+      # Decide por CONTEÚDO (não por mtime) — alinha com scan-ct-projects.sh (hash).
       outdated=$((outdated + 1))
       outdated_list="$outdated_list,$agent"
     else

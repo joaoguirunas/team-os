@@ -31,7 +31,7 @@ Quando `/team-os` está ativo, esta sessão é **orquestrador puro**. Antes de q
 
 ### O lead SÓ faz (ações de orquestração):
 - Rodar os scripts da própria skill (`discovery.sh`, scan) e ler para **entender e rotear**
-- Criar/gerenciar tasks no `TaskList`
+- Criar/gerenciar tasks com as ferramentas de gerenciamento de tasks (a task list compartilhada)
 - **Spawnar teammates** e enviar `SendMessage`
 - Sintetizar resultados dos teammates e falar com o usuário
 - Aprovar/rejeitar planos (plan mode)
@@ -104,7 +104,7 @@ Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
 2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria).
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe, extrair stories ativas e contexto
-4. Executar `TaskList` → tasks pendentes, in-progress, completadas
+4. Consultar a task list (via as ferramentas de gerenciamento de tasks) → tasks pendentes, in-progress, completadas
 
 ### Fase 1 — Dashboard de abertura
 
@@ -198,9 +198,9 @@ Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
 - O que tem dependência direta? (A deve completar antes de B começar)
 - Quais agentes disponíveis em `.claude/agents/` batem com cada subtarefa (pelo casting acima)?
 
-**4c. Dimensionamento — paralelismo máximo por workstream independente:**
+**4c. Dimensionamento — um agente por workstream genuinamente independente:**
 
-A filosofia do team-os é **acelerar com muitos agentes em paralelo**. O limite NÃO é um número mágico — é **independência real** + budget de tokens. Spawne agressivamente quando o trabalho permite.
+A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale só conforme o trabalho genuinamente se beneficiar de mais paralelismo. O limite NÃO é um número mágico — é **independência real** + budget de tokens. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default.
 
 ```
 1 workstream independente  =  1 agente
@@ -208,18 +208,18 @@ A filosofia do team-os é **acelerar com muitos agentes em paralelo**. O limite 
 Workstream independente = bloco de trabalho com OWNERSHIP DE ARQUIVOS DISJUNTO
 (não escreve nos mesmos arquivos que outro) e SEM dependência de dados de outro.
 
-→ Mapeie todos os workstreams independentes do objetivo e spawne 1 agente para cada.
-  10 módulos independentes → 10 agentes.  15 → 15.  20+ → 20+ (use a squad instalada).
+→ Mapeie os workstreams independentes do objetivo. Comece com os 3-5 mais relevantes
+  e adicione mais só quando houver ganho real de paralelismo (não para "cobrir tudo de uma vez").
 ```
 
-**Escale agressivo, com 3 guardrails (da spec oficial — não negociáveis):**
+**Escale conforme o ganho real, com 3 guardrails (da spec oficial — não negociáveis):**
 1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só.
-2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. Use dependências no TaskList; não spawne agente ocioso esperando.
+2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. Use dependências na task list; não spawne agente ocioso esperando.
 3. **Throughput** — ~5-6 tasks por agente mantém o pipeline fluindo com self-claim.
 
 **Research adversarial:** investigação de causa raiz / hipóteses → 3-5 pesquisadores em paralelo mesmo com poucas tasks (valor vem da diversidade de perspectiva). Faça-os debater e refutar uns aos outros.
 
-**Regra de ouro:** prefira **mais agentes em streams genuinamente independentes** a poucos agentes serializando trabalho paralelizável. Mas nunca spawne agentes que vão brigar pelo mesmo arquivo ou ficar esperando — isso queima tokens sem acelerar.
+**Regra de ouro:** prefira **agentes em streams genuinamente independentes** a poucos agentes serializando trabalho paralelizável — mas adicione cada agente porque ele acelera, não por completude. Nunca spawne agentes que vão brigar pelo mesmo arquivo ou ficar esperando: isso queima tokens sem acelerar.
 
 **4d. Identificar riscos:**
 - Mudanças em schema/auth/CI → Plan mode obrigatório
@@ -265,7 +265,7 @@ Formato da proposta (ajustar ao contexto real):
 Após confirmação do usuário:
 
 1. **Smart-memory** (se ausente): rodar o Discovery Engine primeiro — ver seção dedicada
-2. **Tasks**: criar no TaskList com dependências corretas antes de spawnar
+2. **Tasks**: criar na task list (via as ferramentas de gerenciamento de tasks) com dependências corretas antes de spawnar
 3. **Spawn imediato**: spawna TODOS os agentes do plano de uma vez (nomes curtos: `archi`, `alpha`, `beta`, `qa`, `ops`). Não execute nenhuma task você mesmo — cada uma é de um teammate.
 4. **Lead fica livre**: após spawnar, seu trabalho é **monitorar, rotear e sintetizar** — nunca pegar trabalho. Se há demanda nova no meio, spawna mais um agente (não faça você).
 5. **Nomear a sessão pela tarefa** (opcional, 1 tecla): o título da sessão já vem do projeto+branch (hook `SessionStart` — ver "Nomeação automática da sessão"). Para fixar TAMBÉM a tarefa atual no nome (útil ao retomar depois), imprima ao usuário um `/rename` pronto pra colar, com um slug curto do objetivo:
@@ -384,7 +384,7 @@ Quando `docs/smart-memory/` não existe, o team-os **não cria scaffolding vazio
    ```bash
    bash .claude/skills/team-os/scripts/discovery.sh          # ou --dry-run para só inspecionar
    ```
-   Ele detecta stack (linguagens, frameworks, styling/UI, DB/ORM, testes, tooling, pkg manager, monorepo), mapeia os módulos e gera `INDEX.md` + `project/{overview,tech-stack,conventions}.md` + `modules/*.md` + `architecture/overview.md` + a estrutura de `stories/`, `decisions/`, `research/`, `qa/`. É self-contained (só depende da skill team-os).
+   Ele detecta stack (linguagens, frameworks, styling/UI, DB/ORM, testes, tooling, pkg manager, monorepo), mapeia os módulos e gera `INDEX.md` + `project/{overview,tech-stack,conventions,architecture,modules}.md` + `stories/BACKLOG.md` + a estrutura de pastas `stories/{backlog,active,in-review,done}/`, `decisions/` e `agents/{research,qa,data-engineer,ux,bi,data-performance}/`. É self-contained (só depende da skill team-os).
 2. **Enriquecer os `<!-- TODO -->`** — o script deixa marcados os pontos que o código não revela (domínio/propósito do projeto, responsabilidade de cada módulo). Você (ou um teammate `*-analyst`/`*-architect`) preenche lendo o código e o README.
 3. **Acelerar com paralelismo** — em codebase grande, delegue o enriquecimento a teammates em paralelo (um por área/módulo), cada um gravando sua seção.
 4. **Validar com o usuário** — apresentar o resumo do que foi inferido e pedir correção do que estiver impreciso antes de seguir.
@@ -399,49 +399,54 @@ docs/smart-memory/
 ├── project/
 │   ├── overview.md             ← visão geral do projeto (preencher junto com o usuário)
 │   ├── tech-stack.md           ← stack detectado automaticamente + confirmar
-│   └── conventions.md          ← padrões de código do projeto
-├── architecture/               ← ADRs e decisões arquiteturais (dev-architect escreve)
-├── decisions/                  ← decisões técnicas pontuais
+│   ├── conventions.md          ← padrões de código do projeto
+│   ├── architecture.md         ← visão arquitetural + diagrama Mermaid (dev-architect refina)
+│   └── modules.md              ← mapa de módulos + God Nodes (devs enriquecem)
+├── decisions/                  ← decisões técnicas / ADRs pontuais
 ├── stories/
 │   ├── BACKLOG.md              ← lista master de todas as stories
 │   ├── backlog/                ← stories aguardando priorização
 │   ├── active/                 ← stories em andamento
 │   ├── in-review/              ← stories em revisão/QA
 │   └── done/                   ← stories concluídas
-├── research/                   ← findings de pesquisa (dev-analyst/researcher escreve)
-├── modules/                    ← documentação de módulos (devs escrevem ao completar)
-└── qa/                         ← resultados de auditorias e QA (dev-qa escreve)
+└── agents/                     ← saídas por agente (findings, QA, research)
+    ├── research/               ← findings de pesquisa (dev-analyst/researcher escreve)
+    ├── qa/                     ← resultados de auditorias e QA (dev-qa escreve)
+    ├── data-engineer/          ← saídas de dados / schema
+    ├── ux/                     ← saídas de UX
+    ├── bi/                     ← saídas de BI
+    └── data-performance/       ← saídas de performance/insights
 ```
 
 **`INDEX.md` template:**
 ```markdown
 ---
-tags: [index, smart-memory]
+title: "Smart-Memory — {Nome do Projeto}"
+type: index
+agent: team-os (discovery)
+created: {data}
 updated: {data}
+tags: [index, smart-memory]
 ---
 
 # Smart-Memory — {Nome do Projeto}
 
 ## Projeto
 - [[project/overview]] — Visão geral
-- [[project/tech-stack]] — Stack tecnológico
+- [[project/tech-stack]] — Stack tecnológico (detectado)
 - [[project/conventions]] — Padrões de código
 
 ## Arquitetura
-- [[architecture/]] — ADRs e decisões arquiteturais
+- [[project/architecture]] — Visão arquitetural
+
+## Módulos
+- [[project/modules]] — Mapa de módulos + God Nodes
 
 ## Stories
 - [[stories/BACKLOG]] — Backlog master
-- [[stories/active/]] — Em andamento
 
-## Research
-- [[research/]] — Findings e análises
-
-## Módulos
-- [[modules/]] — Documentação de módulos
-
-## QA
-- [[qa/]] — Auditorias e validações
+## Saídas por agente
+- [[agents/research/]] · [[agents/qa/]] · [[agents/data-engineer/]] · [[agents/ux/]] · [[agents/bi/]] · [[agents/data-performance/]]
 ```
 
 **Injetar no `CLAUDE.md` do projeto** (criar se não existir, adicionar seção se já existe):
@@ -595,7 +600,7 @@ Se o trabalho expande além do planejado:
 ```
 "Spawn mais um agente {tipo} chamado {nome} para cobrir {escopo adicional}"
 ```
-Não há limite hard — spawn quantos fizerem sentido para o trabalho paralelo real.
+Adicione um agente por vez, conforme cada um acelerar de fato o trabalho paralelo real — não para "cobrir tudo de uma vez".
 
 ---
 

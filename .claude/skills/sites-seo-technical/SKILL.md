@@ -1,6 +1,6 @@
 ---
 name: sites-seo-technical
-description: SEO técnico para websites Next.js — meta tags, schema.org, sitemap, robots.txt, Core Web Vitals. Injectado em NEXUS (sites-seo).
+description: SEO técnico para websites Next.js — meta tags, schema.org, sitemap, robots.txt, Core Web Vitals.
 ---
 
 # Sites SEO Técnico — Next.js

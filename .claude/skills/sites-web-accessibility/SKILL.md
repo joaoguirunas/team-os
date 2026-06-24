@@ -1,6 +1,6 @@
 ---
 name: sites-web-accessibility
-description: Padrões de acessibilidade web — WCAG 2.1 AA, ARIA, navegação por teclado e testes. Injectado em EROS (sites-ux-alpha) e LUMEN (sites-ux-beta).
+description: Padrões de acessibilidade web — WCAG 2.1 AA, ARIA, navegação por teclado e testes.
 ---
 
 # Sites Web Accessibility — WCAG 2.1 AA

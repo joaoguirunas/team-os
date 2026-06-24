@@ -58,7 +58,7 @@ for dir in "$CT_ROOT"/*/; do
   # Skills + team-os
   if [ -d "$dir/.claude/skills" ]; then
     has_skills=1
-    skill_count=$(find "$dir/.claude/skills" -maxdepth 1 -mindepth 1 2>/dev/null | wc -l | tr -d ' ')
+    skill_count=$(find "$dir/.claude/skills" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
   fi
   [ -d "$dir/.claude/skills/team-os" ] && has_team_os=1
 

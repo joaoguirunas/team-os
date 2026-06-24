@@ -1,6 +1,6 @@
 ---
 name: sites-seo-keywords
-description: Keyword research e estratégia de conteúdo SEO — intent, clustering, mapeamento por página. Injectado em NEXUS (sites-seo).
+description: Keyword research e estratégia de conteúdo SEO — intent, clustering, mapeamento por página.
 ---
 
 # Sites SEO Keywords — Research e Estratégia

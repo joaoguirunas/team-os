@@ -1,6 +1,6 @@
 ---
 name: sites-tailwind-design-system
-description: Design system com Tailwind CSS — tokens, escala tipográfica, paleta e spacing. Injectado em EROS (sites-ux-alpha).
+description: Design system com Tailwind CSS — tokens, escala tipográfica, paleta e spacing.
 ---
 
 # Sites Tailwind Design System
