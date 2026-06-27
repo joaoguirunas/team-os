@@ -24,6 +24,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 9. **`*install` entrega a infra, não a smart-memory** — copia agents + skills (incluindo `team-os`) + `settings.json` (+ hooks opcionais). A smart-memory é construída no projeto pelo próprio `/team-os` na 1ª sessão, a partir do codebase real (Discovery Engine). `*bootstrap` continua disponível para criação manual/no CT.
 10. **`*migrate` converte agentes antigos** — remove "Contrato com team-os", injeta "Native Teams Protocol".
 11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
+12. **DEFINITION OF DONE — toda alteração em agente/skill é entregue COMPLETA e REFINADA, sem ser lembrado.** Ao criar/atualizar qualquer agente ou skill, executar SEMPRE o ciclo inteiro de uma vez (ver "Definition of Done" abaixo): refinar tudo → sincronizar docs (contagens + catálogo no `README.md` e `CLAUDE.md`) → `*audit` → commit no CT com descrição → `*propagate --match-target-squads` → commit **seletivo** em cada projeto destino que seja repo git, com descrição. Nunca entregar pela metade nem deixar contagem/catálogo desatualizados. Push continua exigindo confirmação de branch (padrão `main`).
 
 > **Nota — dois mecanismos de memória (complementares):**
 > - `memory: project` (RULE #1) é um **campo real de subagent** que cria uma **memória persistente por-agente** em `.claude/agent-memory/<nome>/`, mantida pelo runtime.
@@ -229,10 +230,24 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 4. Sincroniza para cada destino, **sempre com `--match-target-squads`** (modo propagate):
    - **Agentes**: atualiza só os das squads **já instaladas** no destino. **NUNCA re-adiciona squad podada** — squad ausente é poda intencional por categoria, não drift. (Internamente o script deriva as squads do que existe no destino; agente de squad ausente é pulado.)
    - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada
-5. **Não commita nos destinos** — as mudanças ficam no working tree (commit por projeto é do usuário)
-6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, …)
+5. **Commita SELETIVAMENTE em cada destino que seja repo git** (RULE #12) — `git add` **apenas** dos arquivos efetivamente propagados (os listados em `AGENTS_LIST`/`SKILLS_LIST`), nunca `git add -A`: o working tree do destino costuma ter mudanças pré-existentes não relacionadas que NÃO devem ser varridas. Commit com descrição (`feat(<squad>): …` ou `chore(team): sync agents/skills do CT`). Se o destino **não** for repo git, só reportar (não há o que commitar). **Push NÃO** — exige confirmação de branch (padrão `main`).
+6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, projetos commitados, projetos sem git, …)
 
 > ⚠️ **Nunca** rode propagate/install sem escopo de squad num projeto já podado — isso re-instalaria as squads removidas. O `--match-target-squads` é a salvaguarda: respeita a categoria de cada projeto. Para um projeto novo, use `--squads <categoria>` explícito.
+
+---
+
+## Definition of Done (RULE #12) — ciclo obrigatório de toda alteração
+
+Qualquer criação/atualização de agente ou skill **só está pronta** quando TODO o ciclo abaixo foi executado, de uma vez, sem precisar ser lembrado:
+
+1. **Refinar** — entrega completa, não pela metade (frontmatter + body + hooks + skills relacionadas).
+2. **Sincronizar docs** — atualizar contagens e catálogos no `README.md` (linha de resumo, "Catálogo de skills", contagem por squad, árvore de diretórios) **e** `CLAUDE.md` (linha "N agentes e N skills"). Skill nova entra no catálogo da squad e na tabela do agente que a usa.
+3. **`*audit`** — `scripts/validate-agent.sh` deve passar 100%.
+4. **Commit no CT** — conventional commit com descrição clara do que mudou.
+5. **`*propagate --match-target-squads`** — para todos os projetos com a(s) squad(s) afetada(s). Varrer os projetos por agentes da squad (não confiar só no dashboard) para não esquecer nenhum.
+6. **Commit seletivo em cada destino git** — conforme passo 5 do fluxo `*propagate`.
+7. **Relatório final** — o que mudou, onde foi commitado, o que ficou pendente (ex.: destino sem git, push aguardando branch).
 
 ---
 
