@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**49 agentes e 48 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**49 agentes e 49 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -243,7 +243,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `social-photo` | IRIS | Fotos AI (Freepik) | `/social-freepik-generation`, `/social-cinematic-composition` |
 | `social-publisher` | PULSE | Publicação (Meta) + métricas | `/social-meta-publishing`, `/social-analytics` |
 | `social-strategist` | VERA | Estratégia + validação editorial (gate) | `/social-editorial-validation`, `/social-format-specs` |
-| `social-video` | FLUX | Reels/Stories/Shorts (ffmpeg) | `/social-video-editing`, `/social-scriptwriting`, `/social-cinematic-composition` |
+| `social-video` | FLUX | Reels/Stories/Shorts (ffmpeg) + vídeo com avatar AI (HeyGen) | `/social-video-editing`, `/social-heygen-avatar`, `/social-scriptwriting`, `/social-cinematic-composition` |
 
 > Regra do squad Social: `social-publisher` **só publica** após aprovação da `social-strategist` (VERA) **e** confirmação explícita do usuário.
 
@@ -279,7 +279,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo de skills de apoio
 
-48 skills, todas diretórios reais e versionados (repositório self-contained).
+49 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -287,7 +287,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 **Sites (14):** `sites-canvas-design`, `sites-content-strategy`, `sites-copy-editing`, `sites-copywriting`, `sites-deployment`, `sites-frontend-design`, `sites-page-cro`, `sites-scroll-motion`, `sites-seo-keywords`, `sites-seo-technical`, `sites-shadcn-ui`, `sites-tailwind-design-system`, `sites-ux-interaction`, `sites-web-accessibility`
 
-**Social (13):** `social-analytics`, `social-apify-research`, `social-carousel-design`, `social-cinematic-composition`, `social-copywriting`, `social-editorial-validation`, `social-format-specs`, `social-freepik-generation`, `social-key-visual`, `social-meta-publishing`, `social-scriptwriting`, `social-stitch-workflow`, `social-video-editing`
+**Social (14):** `social-analytics`, `social-apify-research`, `social-carousel-design`, `social-cinematic-composition`, `social-copywriting`, `social-editorial-validation`, `social-format-specs`, `social-freepik-generation`, `social-heygen-avatar`, `social-key-visual`, `social-meta-publishing`, `social-scriptwriting`, `social-stitch-workflow`, `social-video-editing`
 
 **Design & geral (5):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`
 
@@ -384,7 +384,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 48 skills (diretórios reais)
+└── skills/              ← 49 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md
