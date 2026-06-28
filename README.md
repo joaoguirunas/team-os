@@ -177,8 +177,8 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 | Archetype | Quando usar | Model | isolation |
 |---|---|---|---|
 | `architect` | Design arquitetural, ADRs, stories | `opus` | — |
-| `implementer` | Escreve código (front/back/fullstack) | `inherit` | `worktree` |
-| `hardening` | Resiliência, retry, edge cases (após features) | `inherit` | `worktree` |
+| `implementer` | Escreve código (front/back/fullstack) | `inherit` | — |
+| `hardening` | Resiliência, retry, edge cases (após features) | `inherit` | — |
 | `reviewer` | QA com veredicto formal, read-only | `opus` | — |
 | `researcher` | Pesquisa técnica, libs, CVEs | `inherit` | — |
 | `data` | Schema, migrations, queries, RLS | `inherit` | — |
