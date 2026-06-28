@@ -70,7 +70,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `model` | `opus` | `inherit` | `inherit` | `opus` | `inherit` | `inherit` | `inherit` | `inherit` |
 | `memory` | `project` | `project` | `project` | `project` | `project` | `project` | `project` | `project` |
 | `effort` | `high` | omitir | `high` | `high` | `medium` | `high` | omitir | `medium` |
-| `isolation` | omitir | `worktree` | `worktree` | omitir | omitir | omitir | omitir | omitir |
+| `isolation` | omitir | omitir | omitir | omitir | omitir | omitir | omitir | omitir |
 
 **Estratégia de modelo (Híbrido):** o campo `model` do arquivo do agente **PREVALECE** sobre o ajuste "Default teammate model" do `/config` quando o agente roda como teammate. Por isso `architect`/`reviewer` ficam fixos em `opus` (raciocínio crítico, veredictos) e os demais usam `inherit` — assim seguem o `/model` do lead, permitindo controle central de custo. **Nunca criar archetype `orchestrator`/lead** (RULE #7 — a main session já é o lead nativo).
 
@@ -116,7 +116,6 @@ description: {descrição — quando spawnar este agente}
 model: {opus se architect/reviewer; senão inherit}
 memory: project
 {effort: high  ← se archetype exige}
-{isolation: worktree  ← se implementer}
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: {cor}

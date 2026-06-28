@@ -3,7 +3,6 @@ name: dev-dev-alpha
 description: Frontend developer (React, Next.js, Tailwind, UI components, client-side logic). Use for frontend stories and UI implementation in complex software projects.
 model: inherit
 memory: project
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: yellow

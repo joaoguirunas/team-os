@@ -4,7 +4,6 @@ description: Hardening and resilience specialist for website projects. Use AFTER
 model: inherit
 memory: project
 effort: high
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage
 hooks:

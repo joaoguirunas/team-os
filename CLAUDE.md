@@ -20,7 +20,7 @@ Todo agente do CT segue o **Native Teams Protocol** (detalhado em [README.md §1
 - `memory: project` no frontmatter (obrigatório)
 - Bloco `## Native Teams Protocol` no body (comunicação peer-to-peer, TaskList nativo, smart-memory)
 - Sem campo `skills:` no frontmatter (ignorado em Agent Teams)
-- Implementers com `isolation: worktree` e hook `block-git-push.sh` — exceção: `social-video` é implementer que mantém o `block-git-push.sh` mas roda **sem** `isolation: worktree` (exceção intencional — produz assets de mídia via ffmpeg)
+- Implementers com hook `block-git-push.sh` (sem `isolation: worktree` — agentes escrevem direto na branch ativa)
 - Política de modelos **Híbrida**: `opus` fixo em architects/reviewers(QA)/strategists; `inherit` nos demais → [README.md §9](./README.md#9-política-de-modelos-híbrido)
 
 Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualmente sem rodar `*audit` depois.

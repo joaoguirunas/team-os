@@ -3,7 +3,6 @@ name: dev-dev-beta
 description: Backend developer (APIs, services, business logic, performance, server-side integrations). Use for backend stories in complex software projects.
 model: inherit
 memory: project
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: orange

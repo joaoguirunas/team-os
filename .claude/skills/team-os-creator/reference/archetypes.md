@@ -9,8 +9,8 @@ Cada archetype mapeia pra um template em `templates/{archetype}.md` e define os 
 | Archetype | Model | memory | isolation | permissionMode | Tools base | Hook git push |
 |---|---|---|---|---|---|---|
 | `architect` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
-| `implementer` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
-| `hardening` | inherit | project | worktree | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
+| `implementer` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
+| `hardening` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
 | `reviewer` | opus | project | — | — | Read, Glob, Grep, Bash, SendMessage | ✅¹ |
 | `researcher` | inherit | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
 | `data` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅¹ |
@@ -31,10 +31,8 @@ Esses papéis precisam de raciocínio profundo: decisões arquiteturais, veredic
 ### Por que `inherit` para implementer/data/devops/ux/researcher/hardening
 Execução com especialização bem definida. Com `inherit`, o teammate segue o `/model` escolhido pelo lead na sessão — o lead pode baixar a frota inteira pra haiku/sonnet numa sessão barata, mantendo `architect`/`reviewer` protegidos em opus. Com contratos claros (smart-memory + Native Teams Protocol) o output fica consistente em qualquer modelo.
 
-### Por que worktree só em implementer/hardening
-Apenas esses dois **escrevem código que vai pro repositório**. Isolar em worktree permite múltiplos rodando em paralelo sem pisar no branch principal.
-
-Reviewer é read-only (não escreve código), UX escreve specs (não código), architect escreve stories/ADRs (não código). Nenhum precisa de worktree.
+### Por que isolation: worktree foi removido de implementer/hardening
+Worktree cria branches isoladas automaticamente — útil em teoria para paralelismo, mas na prática impede que as mudanças apareçam no checkout principal (onde o servidor dev roda), gera branches zumbis no git e confunde o fluxo de trabalho local. Agentes implementers e hardening agora escrevem direto na branch ativa (main), tal como o desenvolvedor faria manualmente.
 
 ### Por que hook de git push em todo agente não-devops das squads de código
 A autoridade de push é **exclusiva do `devops`**. Antes o hook ficava só nos implementers (assumindo que só eles rodam `git`), mas qualquer agente com `Bash` — architect, reviewer/QA, data, analyst, ux — *pode* tecnicamente dar `git push` e furar a exclusividade. Para fazer disso uma garantia dura (não convenção), nas squads `dev`/`sites` **todos** os não-`devops` com Bash carregam `block-git-push.sh`; só o `devops` fica livre. Nas squads não-código (`social`/`traffic`/`pm`) não há devops nem push de código, então só o `implementer` (ex.: `social-video`) leva o hook. O script é chamado via path absoluto (`$CLAUDE_PROJECT_DIR`).

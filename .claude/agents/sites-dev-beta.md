@@ -3,7 +3,6 @@ name: sites-dev-beta
 description: Backend developer for website projects (APIs, CMS integrations, server-side logic, performance, third-party integrations). Use for backend stories in website projects.
 model: inherit
 memory: project
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 hooks:

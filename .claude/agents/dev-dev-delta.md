@@ -4,7 +4,6 @@ description: Hardening and resilience specialist. Use AFTER features are impleme
 model: inherit
 memory: project
 effort: high
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage
 color: red
