@@ -190,7 +190,7 @@ Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
 
 **Erros de casting que causam falha real:**
 - "analyst escreve o conteúdo" → analyst entrega pesquisa, não o entregável. Use um `dev-*`/writer.
-- "cada agente abre seu próprio PR" → push é gated: só `devops` empurra; implementers têm o hook que bloqueia. Padrão correto: escritores **commitam na worktree** → handoff (`SendMessage`) ao `devops` → ele abre os PRs.
+- "cada agente abre seu próprio PR" → push é gated: só `devops` empurra; implementers têm o hook que bloqueia. Padrão correto: escritores **commitam direto na branch ativa** → handoff (`SendMessage`) ao `devops` → ele faz push e abre os PRs.
 - Se a squad não tem o papel ideal (ex.: sites sem copywriter dedicado), use o implementer mais próximo (`dev-gamma`) e avise o usuário — não force um analyst.
 
 **4b.1 Mapear paralelismo real:**
@@ -468,6 +468,8 @@ Este projeto mantém base de conhecimento em `docs/smart-memory/` (formato Obsid
 
 ## Protocolos de spawn
 
+> ⛔ **PROIBIDO: `isolation: worktree`** — NUNCA spawnar agentes com `isolation: worktree`. Isso cria branches isoladas automáticas, impede que as mudanças apareçam no working directory principal (onde o servidor dev roda), gera branches zumbis no git e quebra o fluxo de trabalho local. Todo agente escreve **diretamente na branch ativa** (main). Se dois agentes podem conflitar no mesmo arquivo, resolva com **ownership disjunto** — não com isolation.
+
 ### Como escrever um spawn prompt excelente
 
 Um spawn prompt ruim desperdiça todo o context window do agente em exploração. Um bom prompt entrega contexto cirúrgico:
@@ -693,6 +695,7 @@ Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task
 
 | Problema | Causa | Solução |
 |---|---|---|
+| Agentes criando branches extras | Lead usou `isolation: worktree` ao spawnar — proibido | NUNCA usar isolation: worktree. Agentes escrevem direto na branch ativa. Resolve conflito de arquivo com ownership disjunto (paths exclusivos por agente). |
 | Resume não restaura teammates | Limitação: `/resume` não restaura in-process teammates | Re-spawnar com mesmo nome + contexto do smart-memory |
 | Task travada (done mas não marca) | Bug known: task status pode atrasar | Verificar se work está feito → atualizar manualmente ou pedir ao lead |
 | Agente sumiu do panel | Idle após 30s (hide automático, v2.1.181+) — NÃO parou, reaparece no próximo turno | SendMessage por nome: `"Mensagem para {nome}: continue"` |

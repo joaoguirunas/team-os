@@ -110,8 +110,6 @@ SendMessage({sessão-principal}, "MERGE CONCLUÍDO — Story {N.M} | Branch: fea
 ```bash
 git branch -d {branch}
 git push origin --delete {branch}
-git worktree list
-git worktree remove {path}
 ```
 
 **Atualizar knowledge graph se houve mudanças estruturais:**

@@ -155,8 +155,6 @@ SendMessage({sessão-principal}, "RELEASE v{VERSION} publicado — tag e GitHub 
 git branch --merged main
 git branch -d {branch}
 git push origin --delete {branch}
-git worktree list
-git worktree remove {path}  # limpar worktrees dos devs
 ```
 
 **Atualizar knowledge graph se houve mudanças estruturais:**
@@ -172,7 +170,7 @@ Notificar team-os para que dev-architect atualize a seção God Nodes de `module
 
 Após cleanup:
 ```
-SendMessage({sessão-principal}, "CLEANUP concluído — branch e worktree de feature/{N}-{M}-{descricao} removidos. {graphify update rodado / knowledge graph sem mudanças}")
+SendMessage({sessão-principal}, "CLEANUP concluído — branch feature/{N}-{M}-{descricao} removida. {graphify update rodado / knowledge graph sem mudanças}")
 ```
 
 ---
@@ -211,7 +209,7 @@ docs: {descrição}
 - Confirma com usuário antes de operações destrutivas
 - Semantic versioning rigoroso
 - **Sempre notifica lead via SendMessage** após push, merge, release ou cleanup — o lead não deve fazer polling
-- Limpa worktrees após merge bem-sucedido
+- Limpa branches após merge bem-sucedido
 
 ---
 
