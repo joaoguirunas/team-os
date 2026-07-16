@@ -74,6 +74,20 @@ if [ "$SQUADS" = "all" ] && [ $MATCH_TARGET -eq 0 ]; then
   exit 1
 fi
 
+# Poda POR AGENTE (`.claude/agents-ignore` no destino) — complementa a poda por squad.
+# --match-target-squads é granular por SQUAD: manter 1 agente `sites-*` faz derivar a
+# squad `sites` inteira e re-adicionar todos os outros. Quando o projeto usa só parte
+# de uma squad (ex: De Castro social usa sites-dev-alpha/beta para render HTML→PNG, e
+# mais nenhum sites-*), liste aqui os que NÃO devem voltar. Um nome por linha, sem .md;
+# `#` inicia comentário. Sem o arquivo, nada muda.
+AGENTS_IGNORE_FILE="$TARGET/.claude/agents-ignore"
+is_ignored() {
+  [ -f "$AGENTS_IGNORE_FILE" ] || return 1
+  grep -v '^[[:space:]]*#' "$AGENTS_IGNORE_FILE" 2>/dev/null \
+    | sed 's/[[:space:]]*$//' \
+    | grep -qxF "$1"
+}
+
 echo "STATUS=starting"
 echo "SOURCE=$SOURCE_NAME"
 echo "TARGET=$TARGET_NAME"
@@ -104,11 +118,20 @@ do_mkdir "$TARGET/.claude/agents"
 agents_copied=0
 agents_skipped=0
 agents_updated=0
+agents_ignored=0
 agents_list=""
+agents_ignored_list=""
 
 for agent_file in "$SOURCE/.claude/agents/"*.md; do
   [ -f "$agent_file" ] || continue
   agent_name=$(basename "$agent_file" .md)
+
+  # Poda explícita por agente (.claude/agents-ignore) — vence qualquer filtro de squad
+  if is_ignored "$agent_name"; then
+    agents_ignored=$((agents_ignored + 1))
+    agents_ignored_list="$agents_ignored_list $agent_name"
+    continue
+  fi
 
   # Filtra por squad
   if [ "$SQUADS" != "all" ]; then
@@ -144,6 +167,10 @@ echo "AGENTS_COPIED=$agents_copied"
 echo "AGENTS_UPDATED=$agents_updated"
 echo "AGENTS_SKIPPED=$agents_skipped"
 echo "AGENTS_LIST=${agents_list# }"
+if [ $agents_ignored -gt 0 ]; then
+  echo "AGENTS_IGNORED=$agents_ignored"
+  echo "AGENTS_IGNORED_LIST=${agents_ignored_list# }"
+fi
 
 # ── Skills — sempre copiadas (incluindo team-os obrigatória) ─────────────────
 

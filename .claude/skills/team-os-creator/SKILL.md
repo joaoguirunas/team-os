@@ -230,6 +230,9 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
    - **Agentes**: atualiza só os das squads **já instaladas** no destino. **NUNCA re-adiciona squad podada** — squad ausente é poda intencional por categoria, não drift. (Internamente o script deriva as squads do que existe no destino; agente de squad ausente é pulado.)
    - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada
    - **Hooks**: sempre sincronizados, filtrados pelas squads do destino. `block-git-push.sh` é universal; `check-social-progress.sh` só nas squads social; `team-os-session-title.sh` é global (`~/.claude/hooks/`) e nunca vai pro projeto. **Hook não é opcional** — os agentes o referenciam no frontmatter (`$CLAUDE_PROJECT_DIR/.claude/hooks/...`), então hook ausente no destino quebra a garantia em silêncio (ex.: qualquer agente passa a poder dar push).
+   - **Poda por agente** (`.claude/agents-ignore` no destino): agentes listados ali nunca são instalados. Reportado como `AGENTS_IGNORED`.
+
+> ⚠️ **Poda por squad ≠ poda por agente.** O `--match-target-squads` deriva a squad do **prefixo** dos agentes presentes: manter UM `sites-dev-alpha` faz derivar a squad `sites` inteira e re-instalar todos os outros `sites-*`. Quando o projeto usa só parte de uma squad, declare os excluídos em `.claude/agents-ignore` (um nome por linha, sem `.md`, `#` para comentário) — senão a poda é silenciosamente desfeita na propagação seguinte. Ex. real: De Castro social usa `sites-dev-alpha`/`sites-dev-beta` para o pipeline HTML→PNG e mais nenhum `sites-*`.
 5. **NÃO commita nos destinos** — as mudanças ficam no working tree de cada projeto (RULE #12). O commit é feito **dentro da sessão daquele projeto**, pelo usuário. Commit a partir do CT é **só no CT**.
 6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, HOOKS_COPIED/HOOKS_UPDATED, projetos com working tree atualizado, …)
 
