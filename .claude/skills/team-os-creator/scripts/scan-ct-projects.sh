@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
-# scan-ct-projects.sh — mapeia projetos no root do Centro de Treinamento
+# scan-ct-projects.sh — mapeia projetos destino do Centro de Treinamento
 # e reporta, por projeto: team-os instalada, contagem de agentes, smart-memory e DRIFT vs CT.
-# Usage: scan-ct-projects.sh [CT_ROOT]
-# Output: CT_ROOT, depois uma linha por projeto encontrado.
+# Usage: scan-ct-projects.sh [SEARCH_ROOT]
+# Output: SEARCH_ROOT, depois uma linha por projeto encontrado.
+#
+# Descoberta: RECURSIVA — acha qualquer diretório que contenha `.claude/agents`, em
+# qualquer profundidade até MAX_DEPTH. Um scan raso (só `ROOT/*/`) não enxerga projeto
+# aninhado (ex: `Site /cranium-site`) nem projeto cliente fora do root (ex:
+# `Desktop/Bonfim/Site`) — e o que o scan não vê, o *propagate nunca atualiza.
+# Por isso o root default sobe DOIS níveis a partir do CT, cobrindo os projetos irmãos.
 
-CT_ROOT="${1:-}"
+SEARCH_ROOT="${1:-}"
+MAX_DEPTH=6
 
 # Git root do projeto atual = fonte da verdade (CT)
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 SOURCE_AGENTS=""
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/agents" ] && SOURCE_AGENTS="$GIT_ROOT/.claude/agents"
 
-# Auto-detecta root: sobe um nível acima do git root do projeto atual
-if [ -z "$CT_ROOT" ]; then
-  if [ -n "$GIT_ROOT" ]; then
-    CT_ROOT=$(dirname "$GIT_ROOT")
-  else
-    CT_ROOT=$(dirname "$(pwd)")
-  fi
+# Auto-detecta root: sobe DOIS níveis acima do git root do CT.
+# (um nível = só os projetos irmãos do CT; dois = também os clientes fora de Projeto/)
+if [ -z "$SEARCH_ROOT" ]; then
+  BASE="${GIT_ROOT:-$(pwd)}"
+  SEARCH_ROOT=$(dirname "$(dirname "$BASE")")
 fi
 
-CT_ROOT=$(cd "$CT_ROOT" && pwd)
+SEARCH_ROOT=$(cd "$SEARCH_ROOT" && pwd)
+CT_ROOT="$SEARCH_ROOT"
 
 # Helper de hash (shasum no macOS, md5sum no Linux)
 hash_file() {
@@ -35,9 +41,23 @@ echo "CT_ROOT=$CT_ROOT"
 [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_AGENTS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')"
 echo "---"
 
-for dir in "$CT_ROOT"/*/; do
-  [ -d "$dir" ] || continue
-  name=$(basename "$dir")
+# Descoberta recursiva: todo dir com `.claude/agents` é um projeto destino.
+# Poda node_modules/.git/backups — caros de varrer e nunca são projeto real.
+discover_projects() {
+  find "$SEARCH_ROOT" -maxdepth "$MAX_DEPTH" \
+    \( -name node_modules -o -name .git -o -name 'agents.bak-*' -o -name .next -o -name dist \) -prune \
+    -o -type d -name agents -path '*/.claude/agents' -print 2>/dev/null \
+  | while IFS= read -r agents_dir; do
+      # .../<projeto>/.claude/agents → <projeto>
+      dirname "$(dirname "$agents_dir")"
+    done | sort -u
+}
+
+while IFS= read -r proj; do
+  [ -n "$proj" ] || continue
+  dir="$proj/"
+  # Nome = caminho relativo ao root (basename sozinho é ambíguo: "Site " vs "site")
+  name="${proj#$SEARCH_ROOT/}"
 
   has_agents=0; agent_count=0; agent_squads=""
   has_skills=0; skill_count=0; has_hooks=0; is_current=0
@@ -93,5 +113,14 @@ for dir in "$CT_ROOT"/*/; do
     done
   fi
 
-  echo "PROJECT=$name|PATH=$dir|IS_CURRENT=$is_current|HAS_AGENTS=$has_agents|AGENT_COUNT=$agent_count|AGENT_SQUADS=$agent_squads|HAS_SKILLS=$has_skills|SKILL_COUNT=$skill_count|HAS_HOOKS=$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)|HAS_TEAM_OS=$has_team_os|HAS_SMART_MEMORY=$has_smart_memory|DRIFT_OK=$drift_ok|DRIFT_OUTDATED=$drift_outdated|DRIFT_EXTRA=$drift_extra|DRIFT_MISSING=$drift_missing"
-done
+  # HOOKS_BROKEN: agente referencia um hook que não existe no destino. É falha silenciosa —
+  # o hook não roda e a garantia (ex: só devops dá push) deixa de valer sem ninguém notar.
+  hooks_broken=0
+  if [ "$has_agents" -eq 1 ]; then
+    for hf in $(grep -ho '\.claude/hooks/[a-z-]*\.sh' "$dir/.claude/agents/"*.md 2>/dev/null | sort -u); do
+      [ -f "$dir/$hf" ] || hooks_broken=$((hooks_broken + 1))
+    done
+  fi
+
+  echo "PROJECT=$name|PATH=$dir|IS_CURRENT=$is_current|HAS_AGENTS=$has_agents|AGENT_COUNT=$agent_count|AGENT_SQUADS=$agent_squads|HAS_SKILLS=$has_skills|SKILL_COUNT=$skill_count|HAS_HOOKS=$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)|HOOKS_BROKEN=$hooks_broken|HAS_TEAM_OS=$has_team_os|HAS_SMART_MEMORY=$has_smart_memory|DRIFT_OK=$drift_ok|DRIFT_OUTDATED=$drift_outdated|DRIFT_EXTRA=$drift_extra|DRIFT_MISSING=$drift_missing"
+done < <(discover_projects)

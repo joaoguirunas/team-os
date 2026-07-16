@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
+# install-to-project.sh — instala agentes, skills e hooks do projeto fonte em um projeto destino
 # Skills são SEMPRE sincronizadas (incluindo team-os obrigatória): copiadas se ausentes,
 # ATUALIZADAS se o conteúdo difere da fonte. Skills extras no destino são preservadas.
+# Hooks são SEMPRE sincronizados — os agentes os referenciam no frontmatter, então um hook
+# ausente no destino quebra a garantia (ex: block-git-push). Filtrados por squad instalada.
 # team-os-creator nunca vai para o destino. Sem opção "agentes apenas".
 # Usage: install-to-project.sh --source <path> --target <path> [options]
 #
 # Options:
 #   --squads dev,sites,social,traffic   squads a instalar (default: all)
-#   --include-hooks                     copia também os hooks
 #   --dry-run                           simula sem copiar nada
 
 SOURCE=""
 TARGET=""
 SQUADS="all"
-INCLUDE_HOOKS=0
 DRY_RUN=0
 MATCH_TARGET=0   # --match-target-squads: deriva squads do que JÁ existe no destino (modo propagate)
 
@@ -23,9 +23,9 @@ while [[ $# -gt 0 ]]; do
     --target)       TARGET="$2";   shift 2 ;;
     --squads)       SQUADS="$2";   shift 2 ;;
     --match-target-squads) MATCH_TARGET=1; shift ;;
-    --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
     --include-skills) shift ;;  # ignorado — skills são sempre incluídas
+    --include-hooks)  shift ;;  # ignorado — hooks são sempre incluídos
     *) shift ;;
   esac
 done
@@ -243,19 +243,43 @@ fi
 
 # ── Hooks ────────────────────────────────────────────────────────────────────
 
-if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
+if [ -d "$SOURCE/.claude/hooks" ]; then
   do_mkdir "$TARGET/.claude/hooks"
 
   hooks_copied=0
+  hooks_updated=0
+  hooks_skipped=0
+  hooks_list=""
+
+  sync_hook() {
+    local src="$1" name="$2" dst="$TARGET/.claude/hooks/$2"
+    if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+      hooks_skipped=$((hooks_skipped + 1))
+      return
+    fi
+    if [ -f "$dst" ]; then
+      hooks_updated=$((hooks_updated + 1))
+    else
+      hooks_copied=$((hooks_copied + 1))
+    fi
+    if [ $DRY_RUN -eq 0 ]; then
+      cp "$src" "$dst"
+      chmod +x "$dst"   # o hook é executado pelo Claude Code — sem +x ele falha silenciosamente
+    fi
+    hooks_list="$hooks_list $name"
+  }
+
   # Copiar apenas hooks relevantes para as squads instaladas (evitar hooks de outros squads)
   for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
     [ -f "$hook_file" ] || continue
     hook_name=$(basename "$hook_file")
 
+    # team-os-session-title.sh é global (~/.claude/hooks) — nunca vai pro projeto
+    [[ "$hook_name" == "team-os-session-title.sh" ]] && continue
+
     # block-git-push.sh é universal — sempre incluir
     if [[ "$hook_name" == "block-git-push.sh" ]]; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
+      sync_hook "$hook_file" "$hook_name"
       continue
     fi
 
@@ -265,15 +289,16 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
     [[ "$hook_name" == check-story-* ]] && hook_squad="any"  # relevante para qualquer squad
 
     if [ "$hook_squad" = "any" ] || [ "$SQUADS" = "all" ]; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
+      sync_hook "$hook_file" "$hook_name"
     elif [ -n "$hook_squad" ] && echo "$SQUADS" | grep -q "$hook_squad"; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
+      sync_hook "$hook_file" "$hook_name"
     fi
   done
 
   echo "HOOKS_COPIED=$hooks_copied"
+  echo "HOOKS_UPDATED=$hooks_updated"
+  echo "HOOKS_SKIPPED=$hooks_skipped"
+  echo "HOOKS_LIST=${hooks_list# }"
 fi
 
 # ── Session-title hook (global, core UX — sempre instalado) ──────────────────
