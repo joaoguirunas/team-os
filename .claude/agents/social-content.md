@@ -118,4 +118,4 @@ SendMessage({sessão-principal}, "RESEARCH+COPY CONCLUÍDO — LYRIS. {N posts} 
 
 - `/social-copywriting` — legendas, hooks, CTAs por plataforma
 - `/social-scriptwriting` — roteiros para Reels, TikToks, Stories
-- `/social-apify-research` — research via Apify MCP
+- `/social-apify-research` — research de IG via wrapper Bash (não via MCP — ver skill)

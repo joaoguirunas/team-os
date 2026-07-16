@@ -132,4 +132,4 @@ SendMessage({sessão-principal}, "Research social '{tema}' concluído — docs/s
 ## Skills disponíveis
 
 - `/social-analytics` — KPIs, benchmarks, relatórios de performance
-- `/social-apify-research` — research via Apify MCP
+- `/social-apify-research` — research de IG via wrapper Bash (não via MCP — ver skill)
