@@ -103,11 +103,18 @@ while IFS= read -r proj; do
     done
     # Agentes do CT ausentes no projeto — só conta ausências DENTRO das squads já
     # instaladas. Squad que o projeto não tem (poda intencional por categoria) NÃO é drift.
+    # Agente listado em .claude/agents-ignore (poda intencional por agente) também NÃO é drift.
+    ignore_csv=","
+    if [ -f "$dir/.claude/agents-ignore" ]; then
+      ignore_csv=",$(grep -v '^\s*#' "$dir/.claude/agents-ignore" 2>/dev/null | sed '/^\s*$/d' | tr -d ' ' | tr '\n' ',')"
+    fi
     squads_csv=",${agent_squads},"
     for sf in "$SOURCE_AGENTS/"*.md; do
       [ -f "$sf" ] || continue
       bn=$(basename "$sf")
       [ -f "$dir/.claude/agents/$bn" ] && continue
+      an="${bn%.md}"
+      case "$ignore_csv" in *",$an,"*) continue ;; esac
       sprefix="${bn%%-*}"
       case "$squads_csv" in *",$sprefix,"*) drift_missing=$((drift_missing + 1)) ;; esac
     done
