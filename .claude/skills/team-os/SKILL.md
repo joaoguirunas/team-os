@@ -104,7 +104,8 @@ Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
 2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria).
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe, extrair stories ativas e contexto
-4. Consultar a task list (via as ferramentas de gerenciamento de tasks) → tasks pendentes, in-progress, completadas
+4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash .claude/skills/team-os/scripts/weigh-memory.sh --quiet` e capturar o bloco `WEIGH_*`. A linha `WEIGH_DASHBOARD` vai direto para o painel (Fase 1); se `WEIGH_STATUS=HEAVY`, o painel sinaliza a compactação. Ver "Smart-Memory Compaction".
+5. Consultar a task list (via as ferramentas de gerenciamento de tasks) → tasks pendentes, in-progress, completadas
 
 ### Fase 1 — Dashboard de abertura
 
@@ -116,7 +117,7 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 ╚═══════════════════════════════════════════════════════════╝
 
   [✓]   AGENT_TEAMS  : ativo (runtime confirmado no Gate 0)
-  [✓/✗] smart-memory : {N stories ativas, N módulos | NÃO encontrada}
+  [✓/✗] smart-memory : {WEIGH_DASHBOARD — ex.: OK (N linhas · N arquivos) | ⚠ PESADA (…) → /team-os *compact | NÃO encontrada}
   [✓]   Agentes      : {N} instalados neste projeto · squad: {squad(s) detectada(s)}
   [i]   Tasks        : {N pendentes | nenhuma}
   [i]   teammateMode : {valor atual | sugerido: "auto"}
@@ -125,6 +126,8 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 🎯  Qual é o objetivo desta sessão?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+Se `WEIGH_STATUS=HEAVY`, use a linha `smart-memory` para sinalizar a compactação (o `WEIGH_DASHBOARD` já vem formatado). **Não compacte automaticamente** — apenas sinalize; a compactação só roda quando o usuário pedir `/team-os *compact` (ver "Smart-Memory Compaction").
 
 Se tasks existem: adicionar antes da pergunta:
 ```
@@ -391,6 +394,54 @@ Quando `docs/smart-memory/` não existe, o team-os **não cria scaffolding vazio
 
 Use `team-os/reference/obsidian-patterns.md` para o padrão de frontmatter/wikilinks/tags. Só depois da smart-memory populada → Fase 4 (Team Design).
 
+---
+
+## Smart-Memory Compaction
+
+A smart-memory é um **cache quente**, não um baú infinito. Com o tempo ela acumula conteúdo frio — stories concluídas, QA/planos antigos, logs append-only — que raramente é lido mas **infla o working set** e é varrido pelos reads/globs dos agentes (cada agente lê "INDEX + seções da sua especialidade" no Native Teams Protocol). Isso queima tokens a cada sessão e piora sozinho. A compactação separa o quente do frio.
+
+**Princípio:** conteúdo frio é **movido** (nunca deletado) para `docs/smart-memory/_archive/YYYY-QN/`, fora do caminho de leitura. Um LEDGER (tabela: id · título · data · localização) preserva a rastreabilidade sem carregar o texto. O `_archive/` **não é lido** no bootstrap nem pelos agentes — só quando alguém pede explicitamente um item do LEDGER.
+
+### Sinalização (automática, barata)
+
+O `weigh-memory.sh` roda na **Fase 0** de todo `/team-os` e classifica a smart-memory:
+
+| Limiar (env override) | Default | Dispara |
+|---|---|---|
+| `TOTAL_LINES_WARN` | 8.000 linhas | working set pesado |
+| `DONE_FILES_WARN` | 30 arquivos em `stories/done/` | stories frias acumuladas |
+| `FAT_FILE_LINES` | 1.500 linhas num único arquivo | arquivo gordo (candidato a esfriar) |
+
+Qualquer limiar cruzado → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. **A skill nunca compacta sozinha** — só avisa. A decisão é do usuário.
+
+### `*compact` — o comando (só quando o usuário pede)
+
+```
+/team-os *compact            → arquiva stories/done/ + monta o LEDGER (dry-run first)
+```
+
+Fluxo do lead ao receber `*compact`:
+
+1. **Preview obrigatório** — rode com `--dry-run` e mostre ao usuário quantos arquivos sairão do working set e para onde:
+   ```bash
+   bash .claude/skills/team-os/scripts/compact-memory.sh --dry-run
+   ```
+2. **Confirmar** — só aplique após o "sim". Compactar move arquivos (reversível, mas o usuário deve saber):
+   ```bash
+   bash .claude/skills/team-os/scripts/compact-memory.sh
+   ```
+   Isso move `stories/done/*` → `_archive/<Q>/stories-done/` e registra cada uma em `stories/done/LEDGER.md`.
+3. **Arquivos gordos** — para cada gordo sinalizado (`WEIGH_FAT_LIST`), decida com o usuário se é **quente** (append-only ainda em uso — deixe) ou **frio** (concluído — esfrie). Para esfriar um específico:
+   ```bash
+   bash .claude/skills/team-os/scripts/compact-memory.sh --archive-file agents/qa/results.md
+   ```
+   Registra em `_archive/LEDGER.md`. **Nunca** mova um gordo quente às cegas — a decisão quente/frio é semântica.
+4. **Re-pesar** — rode o `weigh-memory.sh` de novo e reporte o antes/depois (linhas no working set).
+
+**Segurança (regra dura):** `compact-memory.sh` **só faz `mv`, nunca `rm`**. Não toca em `stories/active`, `in-review`, `backlog`, `project/`, `decisions/` nem `INDEX.md`. Zero perda — o conteúdo integral vive em `_archive/`.
+
+**Lead Discipline:** mover done stories + montar LEDGER é coordenação mecânica de smart-memory (o script faz) — o lead pode disparar. Mas **resumo narrativo** dos frios (condensar um plano de 1.000 linhas num digest) é trabalho substantivo → **delegue a um teammate** (`analyst`), não faça você.
+
 ### Estrutura criada
 
 ```
@@ -409,14 +460,21 @@ docs/smart-memory/
 │   ├── active/                 ← stories em andamento
 │   ├── in-review/              ← stories em revisão/QA
 │   └── done/                   ← stories concluídas
-└── agents/                     ← saídas por agente (findings, QA, research)
-    ├── research/               ← findings de pesquisa (dev-analyst/researcher escreve)
-    ├── qa/                     ← resultados de auditorias e QA (dev-qa escreve)
-    ├── data-engineer/          ← saídas de dados / schema
-    ├── ux/                     ← saídas de UX
-    ├── bi/                     ← saídas de BI
-    └── data-performance/       ← saídas de performance/insights
+├── agents/                     ← saídas por agente (findings, QA, research)
+│   ├── research/               ← findings de pesquisa (dev-analyst/researcher escreve)
+│   ├── qa/                     ← resultados de auditorias e QA (dev-qa escreve)
+│   ├── data-engineer/          ← saídas de dados / schema
+│   ├── ux/                     ← saídas de UX
+│   ├── bi/                     ← saídas de BI
+│   └── data-performance/       ← saídas de performance/insights
+└── _archive/                   ← arquivo morto (conteúdo frio compactado). NÃO é lido no
+    │                              bootstrap nem pelos agentes — só sob pedido explícito.
+    ├── README.md               ← explica a convenção (criado pelo discovery)
+    ├── LEDGER.md               ← índice de arquivos gordos esfriados (criado pelo *compact)
+    └── YYYY-QN/                ← criado sob demanda pelo *compact (stories-done/, misc/)
 ```
+
+> `_archive/` fica fora do working set: o `weigh-memory.sh` o exclui da contagem de peso e os agentes não o leem (convenção reforçada no Smart-Memory Protocol). Ver "Smart-Memory Compaction".
 
 **`INDEX.md` template:**
 ```markdown
@@ -460,6 +518,7 @@ Este projeto mantém base de conhecimento em `docs/smart-memory/` (formato Obsid
 1. Ler `docs/smart-memory/INDEX.md` ao iniciar — contexto do projeto
 2. Escrever findings na área correspondente ao concluir tarefa
 3. Atualizar `INDEX.md` ao criar arquivos novos na smart-memory
+4. **Nunca ler `docs/smart-memory/_archive/`** — é conteúdo frio (compactado). Consulte-o só se um LEDGER apontar um item específico que você precisa.
 
 **Padrão:** YAML frontmatter + wikilinks `[[...]]` + tags canônicas.
 ```
@@ -633,6 +692,9 @@ Configure `/config` → Default teammate model → "Default (leader's model)" pa
 **7. Paralelo inteligente**
 Não spawnar agentes para tasks sequenciais. Só paralelizar quando há independência real de arquivos/dados.
 
+**8. Smart-memory enxuta (compactação periódica)**
+Cada agente lê "INDEX + seções da sua especialidade" a cada sessão. Uma smart-memory inflada de conteúdo frio (stories done, QA/planos antigos) faz *todo* agente pagar tokens por texto morto. O bootstrap pesa a base e sinaliza quando ela fica pesada; rode `/team-os *compact` para mover o frio ao `_archive/` (fora do caminho de leitura). Ver "Smart-Memory Compaction".
+
 ---
 
 ## Hooks de qualidade (opcionais por projeto)
@@ -713,6 +775,7 @@ Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task
 /team-os                → bootstrap completo desta sessão
 /team-os *env           → só verificar/corrigir settings.json
 /team-os *memory        → só status/bootstrap da smart-memory
+/team-os *compact       → pesa a smart-memory e arquiva o frio (done → _archive/ + LEDGER)
 /team-os *tasks         → só mostrar task list atual
 /team-os *spawn {desc}  → proposta de time para {desc} (pular scan)
 /team-os *status        → dashboard de status do time atual

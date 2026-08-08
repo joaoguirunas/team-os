@@ -158,7 +158,29 @@ done)"
 mkdir -p "$SM"/project "$SM"/decisions \
          "$SM"/stories/backlog "$SM"/stories/active "$SM"/stories/in-review "$SM"/stories/done \
          "$SM"/agents/research "$SM"/agents/qa "$SM"/agents/data-engineer \
-         "$SM"/agents/ux "$SM"/agents/bi "$SM"/agents/data-performance
+         "$SM"/agents/ux "$SM"/agents/bi "$SM"/agents/data-performance \
+         "$SM"/_archive
+
+# _archive/ — arquivo morto (fora do working set). Nunca lido no bootstrap nem pelos agentes.
+cat > "$SM/_archive/README.md" <<EOF
+---
+title: "Arquivo Morto (_archive)"
+type: readme
+agent: team-os (discovery)
+created: $DATE
+tags: [archive]
+---
+
+# _archive — conteúdo frio compactado
+
+Esta pasta guarda o que saiu do **working set** da smart-memory via \`/team-os *compact\`:
+stories concluídas, QA/planos antigos, logs append-only esfriados.
+
+- **Não é lido** no bootstrap do team-os nem pelos agentes (o \`weigh-memory.sh\` o exclui do peso).
+- Conteúdo **movido, nunca deletado** — nada se perde.
+- Os LEDGERs (\`stories/done/LEDGER.md\` e \`_archive/LEDGER.md\`) indexam o que foi arquivado.
+- Consulte um item aqui **só** quando um LEDGER apontar que você precisa dele.
+EOF
 
 # INDEX.md (MOC raiz)
 cat > "$SM/INDEX.md" <<EOF
