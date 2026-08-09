@@ -142,7 +142,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 /team-os                → bootstrap completo da sessão
 /team-os *env           → só verificar/corrigir settings.json
 /team-os *memory        → status/bootstrap da smart-memory
-/team-os *compact       → pesa a smart-memory e arquiva o frio (done → _archive/ + LEDGER)
+/team-os *compact       → compactação integral (mecânica + archivist), 1 confirmação; --auto sem confirmação
 /team-os *tasks         → mostrar a task list atual
 /team-os *spawn {desc}  → proposta de time para {desc} (pula o scan)
 /team-os *status        → dashboard do time atual
@@ -410,7 +410,10 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 └── _archive/   ← conteúdo frio compactado (fora do working set; não lido no bootstrap)
 ```
 
-> **Compactação da smart-memory.** A base é um *cache quente*: com o tempo acumula conteúdo frio (stories done, QA/planos antigos) que infla o working set e faz todo agente pagar tokens por texto morto. O bootstrap **pesa** a base (`weigh-memory.sh`) e sinaliza quando fica pesada; `/team-os *compact` **move** (nunca deleta) o frio para `docs/smart-memory/_archive/YYYY-QN/` e monta um LEDGER (índice). Limiares default: 8.000 linhas · 30 stories done · arquivo > 1.500 linhas.
+> **Smart-memory v2 — "estado, não histórico".** A base é um *cache quente*, não um baú: guarda estado atual e decisões, não narrativa. Três mecanismos mantêm-na enxuta:
+> 1. **Leitura em camadas** — cada agente lê INDEX + `DIGEST.md` da sua área (≤150 linhas) + stories ativas; nunca pastas inteiras. Notas profundas só via wikilink.
+> 2. **Escrita com ciclo de vida** — frontmatter `kind` (reference/episode/digest) + `status` (active/resolved/superseded) + `summary`; update-in-place, nunca `-v2`/`-r3`; teto ~300 linhas/episódio. Ver `team-os/reference/obsidian-patterns.md`.
+> 3. **Compactação** — o bootstrap **pesa** a base (`weigh-memory.sh`: linhas, done, gordos, resolved não-arquivados, top áreas) e sinaliza; `/team-os *compact` roda o ciclo integral (mecânico + archivist semântico) com **uma única confirmação** (`--auto` dispensa até ela) e **move** (nunca deleta) o frio para `_archive/YYYY-QN/` — o `summary` sobrevive no DIGEST, os LEDGERs indexam tudo.
 
 ---
 

@@ -161,6 +161,43 @@ mkdir -p "$SM"/project "$SM"/decisions \
          "$SM"/agents/ux "$SM"/agents/bi "$SM"/agents/data-performance \
          "$SM"/_archive
 
+# DIGEST.md stub por área de agente — porta de entrada da leitura em camadas.
+for area in research qa data-engineer ux bi data-performance; do
+  cat > "$SM/agents/$area/DIGEST.md" <<EOF
+---
+title: "DIGEST — $area"
+kind: digest
+type: overview
+status: active
+agent: team-os (discovery)
+created: $DATE
+updated: $DATE
+tags: [digest, $area]
+---
+
+# DIGEST — $area
+
+> Resumo vivo da área. **Única leitura obrigatória** para agentes desta especialidade
+> (além do INDEX e stories ativas). Teto: ~150 linhas. Notas profundas só via wikilink.
+
+## Estado atual
+
+<!-- 5-15 bullets: o que está vigente nesta área AGORA. Atualizar in-place. -->
+
+## Referências vivas (kind: reference)
+
+| Nota | O que é |
+|---|---|
+<!-- schema-maps, dicionários, specs vigentes -->
+
+## Episódios
+
+| Episódio | Status | Conclusão (summary) |
+|---|---|---|
+<!-- 1 linha por episódio (campo summary). A linha FICA mesmo após o corpo ir pro _archive/. -->
+EOF
+done
+
 # _archive/ — arquivo morto (fora do working set). Nunca lido no bootstrap nem pelos agentes.
 cat > "$SM/_archive/README.md" <<EOF
 ---
