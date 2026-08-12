@@ -19,3 +19,6 @@ docs/smart-memory/
 .env.*
 !.env.example
 
+
+# macOS Finder custom folder icons
+Icon?
