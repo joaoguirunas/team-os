@@ -18,7 +18,7 @@ hooks:
 
 Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
-1. **Smart-memory é source of truth.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + seções da sua especialidade. Ao concluir: escreva findings na sua área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
+1. **Smart-memory é source of truth — leitura em camadas.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + o `DIGEST.md` da sua área + stories ativas. NUNCA leia pastas inteiras nem `_archive/` — notas profundas só quando o DIGEST/wikilink apontar. Ao concluir: atualize a nota viva in-place (nunca criar `-v2`/`-r3`) ou crie episódio com frontmatter completo (`kind`, `status`, `summary`) e reflita a linha no `DIGEST.md` da área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
 2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
 3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
 4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.

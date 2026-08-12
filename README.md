@@ -129,7 +129,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 > **Team Persistence (regra dura):** o lead **nunca encerra o time sozinho**. Terminou uma rodada? Sintetiza, mantém os teammates vivos e **pergunta se há mais tasks** — só encerra quando você pede. E lembre: linha some do painel após ~30s = idle (agente **vivo**, não encerrado); reative com `SendMessage` pelo nome.
 
 ### O que ela faz, em fases
-1. **Scan silencioso** — lê `settings.json` (env + teammateMode), mapeia `.claude/agents/`, lê `docs/smart-memory/INDEX.md` e roda `TaskList`.
+1. **Scan silencioso** — lê `settings.json` (env + teammateMode), mapeia `.claude/agents/`, lê `docs/smart-memory/INDEX.md`, **pesa a smart-memory** (`weigh-memory.sh`) e roda `TaskList`.
 2. **Dashboard de abertura** — mostra status do ambiente e pergunta o **objetivo da sessão**.
 3. **Correções automáticas** — injeta `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` se faltar, sugere `teammateMode`, oferece bootstrap da smart-memory.
 4. **Análise do objetivo** — classifica o trabalho (research / implementação / review / mixed) e mapeia o paralelismo real.
@@ -142,6 +142,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 /team-os                → bootstrap completo da sessão
 /team-os *env           → só verificar/corrigir settings.json
 /team-os *memory        → status/bootstrap da smart-memory
+/team-os *compact       → compactação integral (mecânica + archivist), 1 confirmação; --auto sem confirmação
 /team-os *tasks         → mostrar a task list atual
 /team-os *spawn {desc}  → proposta de time para {desc} (pula o scan)
 /team-os *status        → dashboard do time atual
@@ -388,7 +389,10 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md
-    │   └── scripts/discovery.sh         ← Smart-Memory Discovery Engine (self-contained)
+    │   └── scripts/
+    │       ├── discovery.sh             ← Smart-Memory Discovery Engine (self-contained)
+    │       ├── weigh-memory.sh          ← pesa a smart-memory no bootstrap (sinaliza se pesada)
+    │       └── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 8 templates de archetype
         ├── reference/           ← archetypes, smart-memory, catálogo de skills
@@ -403,7 +407,13 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 ├── project/   architecture/   decisions/
 ├── stories/ (backlog/active/in-review/done)
 ├── research/   modules/   qa/
+└── _archive/   ← conteúdo frio compactado (fora do working set; não lido no bootstrap)
 ```
+
+> **Smart-memory v2 — "estado, não histórico".** A base é um *cache quente*, não um baú: guarda estado atual e decisões, não narrativa. Três mecanismos mantêm-na enxuta:
+> 1. **Leitura em camadas** — cada agente lê INDEX + `DIGEST.md` da sua área (≤150 linhas) + stories ativas; nunca pastas inteiras. Notas profundas só via wikilink.
+> 2. **Escrita com ciclo de vida** — frontmatter `kind` (reference/episode/digest) + `status` (active/resolved/superseded) + `summary`; update-in-place, nunca `-v2`/`-r3`; teto ~300 linhas/episódio. Ver `team-os/reference/obsidian-patterns.md`.
+> 3. **Compactação** — o bootstrap **pesa** a base (`weigh-memory.sh`: linhas, done, gordos, resolved não-arquivados, top áreas) e sinaliza; `/team-os *compact` roda o ciclo integral (mecânico + archivist semântico) com **uma única confirmação** (`--auto` dispensa até ela) e **move** (nunca deleta) o frio para `_archive/YYYY-QN/` — o `summary` sobrevive no DIGEST, os LEDGERs indexam tudo.
 
 ---
 
