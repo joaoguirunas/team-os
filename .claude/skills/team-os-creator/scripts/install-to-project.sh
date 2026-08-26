@@ -217,9 +217,22 @@ echo "SKILLS_UPDATED=$skills_updated"
 echo "SKILLS_SKIPPED=$skills_skipped"
 echo "SKILLS_LIST=${skills_list# }"
 
+# ── Anti-worktree hook (universal — sempre instalado) ───────────────────────
+# O settings.json referencia block-worktree.sh, então o hook é copiado sempre,
+# independente de --include-hooks.
+WORKTREE_HOOK_SRC="$SOURCE/.claude/hooks/block-worktree.sh"
+if [ -f "$WORKTREE_HOOK_SRC" ]; then
+  do_mkdir "$TARGET/.claude/hooks"
+  do_cp "$WORKTREE_HOOK_SRC" "$TARGET/.claude/hooks/block-worktree.sh"
+  [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/block-worktree.sh"
+  echo "WORKTREE_HOOK=installed"
+else
+  echo "WORKTREE_HOOK_MISSING=block-worktree.sh não encontrado na fonte"
+fi
+
 # ── Settings.json ────────────────────────────────────────────────────────────
 
-# Garantir que CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS está ativo no destino
+# Garantir CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + trava anti-worktree no destino
 TARGET_SETTINGS="$TARGET/.claude/settings.json"
 if [ ! -f "$TARGET_SETTINGS" ]; then
   if [ $DRY_RUN -eq 0 ]; then
@@ -227,17 +240,48 @@ if [ ! -f "$TARGET_SETTINGS" ]; then
 {
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "worktree": {
+    "bgIsolation": "none"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task|EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
+          }
+        ]
+      }
+    ]
   }
 }
 EOF
   fi
   echo "SETTINGS_CREATED=1"
 else
-  # Verificar se já tem a variável; se não, avisar (não sobrescreve settings existente)
+  # Verificar peças obrigatórias; avisar sem sobrescrever settings existente
   if ! grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "$TARGET_SETTINGS" 2>/dev/null; then
     echo "SETTINGS_WARNING=settings.json existe mas não tem CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS — adicione manualmente"
   else
     echo "SETTINGS_OK=1"
+  fi
+  if ! grep -q "bgIsolation" "$TARGET_SETTINGS" 2>/dev/null; then
+    echo "SETTINGS_WORKTREE_TODO=1|adicione \"worktree\": { \"bgIsolation\": \"none\" } ao settings.json do destino"
+  fi
+  if ! grep -q "block-worktree" "$TARGET_SETTINGS" 2>/dev/null; then
+    echo "SETTINGS_WORKTREE_HOOK_TODO=1|registre o hook block-worktree.sh em PreToolUse (matchers: Agent|Task|EnterWorktree e Bash) no settings.json do destino"
   fi
 fi
 
@@ -251,6 +295,11 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
   for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
     [ -f "$hook_file" ] || continue
     hook_name=$(basename "$hook_file")
+
+    # block-worktree.sh já foi instalado acima (universal, fora do --include-hooks)
+    if [[ "$hook_name" == "block-worktree.sh" ]]; then
+      continue
+    fi
 
     # block-git-push.sh é universal — sempre incluir
     if [[ "$hook_name" == "block-git-push.sh" ]]; then

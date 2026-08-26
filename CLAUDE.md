@@ -30,6 +30,7 @@ Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualm
 Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos agentes (ver [README.md §10](./README.md#10-hooks-de-qualidade)):
 
 - `block-git-push.sh` — PreToolUse nos implementers (dev-dev-*, sites-dev-*, social-video) **e em todo agente não-devops com Bash nas squads de código** (dev-*/sites-* exceto devops): push é garantia dura, exclusiva do devops
+- `block-worktree.sh` — PreToolUse registrado no `.claude/settings.json` de cada projeto (matchers `Agent|Task|EnterWorktree` e `Bash`): bloqueia `isolation: worktree`, EnterWorktree e `git worktree add` — todo trabalho acontece direto na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings
 - `check-story-progress.sh` — validação de progresso de stories
 - `check-social-progress.sh` — validação de progresso de conteúdo social
 - `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)

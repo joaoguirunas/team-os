@@ -213,7 +213,8 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 1. Lista projetos via `scan-ct-projects.sh`
 2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script avisa com `SQUADS_WARNING`). Na dúvida, pergunte ao usuário.
 3. Preview da instalação
-4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (+ hooks se `--include-hooks`)
+4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `"worktree": { "bgIsolation": "none" }` e o registro PreToolUse do `block-worktree.sh` (+ hooks se `--include-hooks`)
+4b. **Instala a trava anti-worktree (sempre, independente de `--include-hooks`):** copia `block-worktree.sh` para `.claude/hooks/` do destino. Se o `settings.json` do destino já existia, o script emite `SETTINGS_WORKTREE_TODO` / `SETTINGS_WORKTREE_HOOK_TODO` — nesse caso, edite o settings preservando o JSON existente. Worktrees são proibidos em todos os projetos: agentes trabalham direto na branch ativa (ownership disjunto resolve conflitos).
 5. **Instala o session-title hook (core UX):** copia `team-os-session-title.sh` para `~/.claude/hooks/` e garante o registro do `SessionStart` em `~/.claude/settings.json` (nomeia toda sessão por `projeto · branch`). O script reporta `SESSION_TITLE_REGISTER_TODO=1` se faltar o registro — nesse caso, edite o settings global com JSON válido. Ver "Nomeação automática da sessão" na skill `team-os`.
 6. **NÃO copia `team-os-creator`** — única skill exclusiva do CT
 7. **Não** cria smart-memory aqui — o `/team-os` constrói no projeto na 1ª sessão (Discovery). Orienta o usuário a abrir `claude agents` e rodar `/team-os`.
@@ -257,6 +258,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ├── SKILL.md
 ├── hooks/
 │   ├── block-git-push.sh
+│   ├── block-worktree.sh
 │   ├── check-social-progress.sh
 │   └── check-story-progress.sh
 ├── presets/

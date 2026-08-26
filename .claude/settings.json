@@ -8,5 +8,30 @@
       "Bash(supabase:*)",
       "Bash(npx supabase:*)"
     ]
+  },
+  "worktree": {
+    "bgIsolation": "none"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task|EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
+          }
+        ]
+      }
+    ]
   }
 }

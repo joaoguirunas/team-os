@@ -156,7 +156,22 @@ Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível,
 }
 ```
 
-**C) Smart-memory ausente → DISCOVERY obrigatória antes de spawnar:**
+**C) Anti-worktree (garantia dura) — verificar `.claude/settings.json` do projeto:**
+Deve conter `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks) **e** o registro PreToolUse do hook `block-worktree.sh` (bloqueia spawn com `isolation: worktree`, EnterWorktree e `git worktree add`). Se faltar, adicionar preservando o JSON existente:
+```json
+{
+  "worktree": { "bgIsolation": "none" },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Agent|Task|EnterWorktree", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] },
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] }
+    ]
+  }
+}
+```
+Se `.claude/hooks/block-worktree.sh` não existir no projeto, avisar o usuário para rodar `/team-os-creator *propagate` no CT (o hook é distribuído de lá).
+
+**D) Smart-memory ausente → DISCOVERY obrigatória antes de spawnar:**
 Se `docs/smart-memory/INDEX.md` não existe, NÃO comece o trabalho direto. Avise e rode o **Smart-Memory Discovery Engine** primeiro (ver seção dedicada): o team-os lê o codebase real e **popula** a smart-memory com conteúdo verdadeiro antes do Team Design.
 `"Smart-memory não encontrada. Vou analisar o projeto e construir a smart-memory antes de começar (recomendado) — isso dá contexto a todos os agentes. Pode ser?"`
 
@@ -541,6 +556,10 @@ Este projeto mantém base de conhecimento em `docs/smart-memory/` (formato Obsid
 5. A memória guarda **estado e decisões, não histórico narrativo** — evidência bruta (dumps, logs) não entra no working set.
 
 **Padrão:** YAML frontmatter + wikilinks `[[...]]` + tags canônicas.
+
+## Worktree Protocol
+
+⛔ **Worktrees são PROIBIDOS neste projeto.** Nunca spawnar agente/teammate com `isolation: worktree`, nunca usar a ferramenta EnterWorktree, nunca rodar `git worktree add`. Todo trabalho — do lead e de todo agente — acontece **diretamente na branch ativa do checkout principal**. Conflito potencial entre agentes se resolve com **ownership disjunto** (paths exclusivos por agente), nunca com isolamento. O hook `block-worktree.sh` bloqueia tentativas automaticamente.
 ```
 
 ---
@@ -548,6 +567,8 @@ Este projeto mantém base de conhecimento em `docs/smart-memory/` (formato Obsid
 ## Protocolos de spawn
 
 > ⛔ **PROIBIDO: `isolation: worktree`** — NUNCA spawnar agentes com `isolation: worktree`. Isso cria branches isoladas automáticas, impede que as mudanças apareçam no working directory principal (onde o servidor dev roda), gera branches zumbis no git e quebra o fluxo de trabalho local. Todo agente escreve **diretamente na branch ativa** (main). Se dois agentes podem conflitar no mesmo arquivo, resolva com **ownership disjunto** — não com isolation.
+>
+> **Garantia dura (além da regra):** o hook `block-worktree.sh` (registrado no `.claude/settings.json` do projeto) bloqueia automaticamente spawn com `isolation: worktree`, a ferramenta EnterWorktree e `git worktree add`; e `"worktree": { "bgIsolation": "none" }` desliga o worktree automático de background tasks. A Fase 2-C verifica os dois.
 
 ### Como escrever um spawn prompt excelente
 
@@ -778,6 +799,7 @@ Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task
 | Problema | Causa | Solução |
 |---|---|---|
 | Agentes criando branches extras | Lead usou `isolation: worktree` ao spawnar — proibido | NUNCA usar isolation: worktree. Agentes escrevem direto na branch ativa. Resolve conflito de arquivo com ownership disjunto (paths exclusivos por agente). |
+| Worktrees aparecendo mesmo sem spawn manual | Background tasks com isolamento automático, ou settings sem a trava | Garantir no `.claude/settings.json` do projeto: `"worktree": { "bgIsolation": "none" }` + hook `block-worktree.sh` registrado em PreToolUse (Fase 2-C). Limpar zumbis: `git worktree list` → `git worktree remove` + delete da branch (devops). |
 | Resume não restaura teammates | Limitação: `/resume` não restaura in-process teammates | Re-spawnar com mesmo nome + contexto do smart-memory |
 | Task travada (done mas não marca) | Bug known: task status pode atrasar | Verificar se work está feito → atualizar manualmente ou pedir ao lead |
 | Agente sumiu do panel | Idle após 30s (hide automático, v2.1.181+) — NÃO parou, reaparece no próximo turno | SendMessage por nome: `"Mensagem para {nome}: continue"` |

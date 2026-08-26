@@ -112,8 +112,6 @@ gh release create "v$VERSION" --title "v$VERSION" --notes "{changelog}"
 git branch --merged main
 git branch -d {branch}
 git push origin --delete {branch}
-git worktree list
-git worktree remove {path}  # limpar worktrees de implementers
 ```
 
 ## Confirmar antes de operações destrutivas
@@ -138,4 +136,4 @@ docs: {descrição}
 - Nunca push direto pra main sem PR
 - Confirma com usuário antes de destrutivas
 - **Sempre faz handoff via SendMessage ao teammate certo** após push, merge, release ou cleanup
-- Limpa worktrees após merge bem-sucedido
+- **Worktrees são proibidos no fluxo** — se encontrar worktree/branch zumbi de sessão antiga, remova (`git worktree remove` + delete da branch) e reporte ao lead

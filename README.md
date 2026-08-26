@@ -368,6 +368,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
 - **`block-git-push.sh`** — `PreToolUse` em ~21 agentes: **todos os agentes não-devops com Bash das squads de código** (`dev-*` e `sites-*` exceto devops) **e** `social-video`. Bloqueia `git push` — garantia dura, exclusiva do DevOps.
+- **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree e `git worktree add` — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
 - **`check-story-progress.sh`** — valida progresso de stories.
 - **`check-social-progress.sh`** — valida progresso de conteúdo social.
 
@@ -382,6 +383,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 ├── agents/              ← 49 definições de agentes (fonte da verdade)
 ├── hooks/               ← hooks de qualidade
 │   ├── block-git-push.sh
+│   ├── block-worktree.sh          ← anti-worktree: bloqueia isolation: worktree, EnterWorktree e git worktree add (registrado no settings.json de cada projeto)
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)

@@ -3,7 +3,6 @@ name: {NAME}
 description: {DESCRIPTION}
 model: inherit
 memory: project
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: {COLOR}
@@ -57,7 +56,7 @@ Read docs/smart-memory/stories/active/{N.M}-*.md
 ```markdown
 | Agente     | {PERSONA} ({NAME}) |
 | Iniciado   | {data ISO} |
-| Branch     | feature/{N}-{M}-{slug} |
+| Branch     | {branch ativa} |
 ```
 
 **3. Implementar AC por AC**
@@ -84,6 +83,7 @@ O lead é avisado automaticamente quando você fica idle; o SendMessage acima é
 ## Regras absolutas
 
 - `git push` → **BLOQUEADO pelo hook** — delega ao DevOps via lead
+- **Nunca criar `git worktree` nem branch nova** — todo trabalho acontece direto na branch ativa do checkout principal
 - `git add .` → nunca — sempre arquivos específicos
 - Lint + typecheck + tests devem passar antes de marcar concluído
 - **Sempre faz handoff via SendMessage ao teammate de QA** ao concluir

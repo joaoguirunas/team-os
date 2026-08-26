@@ -3,7 +3,6 @@ name: {NAME}
 description: {DESCRIPTION}
 model: inherit
 memory: project
-isolation: worktree
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage
 color: {COLOR}
@@ -91,6 +90,7 @@ O lead é avisado automaticamente quando você fica idle.
 ## Regras absolutas
 
 - `git push` → **BLOQUEADO pelo hook** — delega ao DevOps via lead
+- **Nunca criar `git worktree` nem branch nova** — todo trabalho acontece direto na branch ativa do checkout principal
 - Acionado APÓS features prontas — nunca para features novas
 - Não muda comportamento funcional — só adiciona resiliência
 - Hardening não pode quebrar testes existentes
