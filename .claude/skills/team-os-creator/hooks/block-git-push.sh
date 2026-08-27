@@ -30,11 +30,11 @@ if [ -z "$COMMAND" ]; then
     | sed -E 's/^"command"[[:space:]]*:[[:space:]]*"//; s/"$//')
 fi
 
-# Verificar se é um git push
-if echo "$COMMAND" | grep -qE 'git[[:space:]]+push'; then
-  echo "🚫 BLOQUEADO: git push não é permitido neste agente." >&2
+# Verificar git push (inclui `git -C <dir> push`) e PR create/merge — autoridade exclusiva do devops
+if echo "$COMMAND" | grep -qE 'git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?push|gh[[:space:]]+pr[[:space:]]+(create|merge)'; then
+  echo "🚫 BLOQUEADO: git push / gh pr não é permitido neste agente." >&2
   echo "" >&2
-  echo "Apenas o agente devops tem autoridade para fazer push." >&2
+  echo "Apenas o agente devops tem autoridade para push, criação e merge de PRs." >&2
   echo "Solicite ao lead que acione o agente devops para publicar esta branch." >&2
   echo "" >&2
   echo "Comando bloqueado: $COMMAND" >&2

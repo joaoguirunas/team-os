@@ -19,3 +19,7 @@ docs/smart-memory/
 .env.*
 !.env.example
 
+
+# macOS — ícones custom de pasta (Icon\r): nunca versionar
+Icon?
+**/Icon?

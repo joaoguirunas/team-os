@@ -17,7 +17,7 @@ HAS_CONTENT=0
 if [ -f "package.json" ]; then
   LANGUAGE="typescript"
   # Se só js, ainda marca typescript pra escolher templates certos
-  if find . -maxdepth 3 -name "*.ts" -o -name "*.tsx" -not -path "*/node_modules/*" 2>/dev/null | head -1 | grep -q .; then
+  if find . -maxdepth 3 \( -name "*.ts" -o -name "*.tsx" \) -not -path "*/node_modules/*" 2>/dev/null | head -1 | grep -q .; then
     LANGUAGE="typescript"
   fi
 elif [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
@@ -52,7 +52,7 @@ if find . -maxdepth 4 \( -path "*/api/*" -o -path "*/routes/*" -o -path "*/contr
   HAS_BACKEND=1
 fi
 # Python backend
-if find . -maxdepth 3 -name "manage.py" -o -name "main.py" -o -name "app.py" 2>/dev/null | head -1 | grep -q .; then
+if find . -maxdepth 3 \( -name "manage.py" -o -name "main.py" -o -name "app.py" \) -not -path "*/node_modules/*" 2>/dev/null | head -1 | grep -q .; then
   HAS_BACKEND=1
 fi
 

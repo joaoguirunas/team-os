@@ -7,7 +7,7 @@ SOURCE="${1:-}"
 if [ -z "$SOURCE" ]; then
   SOURCE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 fi
-shift
+[ $# -gt 0 ] && shift
 
 if [ ! -d "$SOURCE/.claude/agents" ]; then
   echo "ERROR=no_source_agents|SOURCE=$SOURCE"

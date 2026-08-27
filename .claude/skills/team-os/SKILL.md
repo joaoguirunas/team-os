@@ -218,7 +218,7 @@ Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
 
 **4c. Dimensionamento — um agente por workstream genuinamente independente:**
 
-A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale só conforme o trabalho genuinamente se beneficiar de mais paralelismo. O limite NÃO é um número mágico — é **independência real** + budget de tokens. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default.
+A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale só conforme o trabalho genuinamente se beneficiar de mais paralelismo — **nunca acima de 10 simultâneos** (teto duro do ecossistema). O limite abaixo do teto NÃO é um número mágico — é **independência real** + budget de tokens. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default.
 
 ```
 1 workstream independente  =  1 agente
@@ -309,87 +309,13 @@ Agente sumiu do panel? → idle após 30s (não parou) — envie mensagem por no
 
 ## Settings.json canônico
 
-Configuração completa recomendada para Agent Teams:
-
-**`~/.claude/settings.json`** (global — afeta todos os projetos):
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "teammateMode": "auto",
-  "model": "sonnet",
-  "skipDangerousModePermissionPrompt": true
-}
-```
-
-**`.claude/settings.json`** (por projeto — hooks de qualidade):
-```json
-{
-  "hooks": {
-    "TeammateIdle": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Verifique se há tasks pendentes antes de encerrar.'"
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Task marcada como concluída. Validar entregável antes de prosseguir.'"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**`teammateMode` — opções:**
-| Valor | Comportamento |
-|---|---|
-| `"in-process"` | Todos no terminal principal, agent panel ativo. **Default desde v2.1.179** |
-| `"auto"` | Split panes se já estiver em sessão tmux ou terminal for iTerm2; in-process caso contrário (recomendado pela skill) |
-| `"tmux"` | Forçar split panes — auto-detecta tmux vs iTerm2 (requer tmux ou iTerm2 com it2 CLI) |
-
-> O default mudou para `"in-process"` na v2.1.179 — sessões atualizadas que antes abriam split panes agora ficam num terminal só, a menos que você defina `"auto"`/`"tmux"` explicitamente. Split-pane não funciona no terminal integrado do VS Code, Windows Terminal nem Ghostty.
-
-Flag por sessão: `claude --teammate-mode auto`
+Configuração global + por projeto (flag AGENT_TEAMS, `teammateMode` e suas opções, mudança de default na v2.1.179, hooks TeammateIdle/TaskCompleted) → ver `reference/settings-canonico.md`.
 
 ---
 
 ## Nomeação automática da sessão (SessionStart hook)
 
-**Problema que resolve:** sem isso, toda sessão `/team-os` fica com nome genérico ("team-os bootstrap gate", "team-os social media session"…) — no agent view e no `/resume` você não distingue qual projeto é nem o que estava fazendo.
-
-**Mecanismo (único robusto):** um hook `SessionStart` que emite `hookSpecificOutput.sessionTitle` — mesmo efeito do `/rename`, aplicado em `startup` e `resume`. É o **único** caminho com API oficial:
-- A skill **não** consegue digitar `/rename` em si mesma (slash command é input do usuário).
-- Escrever a entrada `agent-name` direto no `.jsonl` é frágil (o app regrava o nome em memória a cada turno).
-- `UserPromptSubmit` **não** suporta `sessionTitle` (só `SessionStart`) — por isso "atualizar na primeira tarefa" automático não tem API; usa-se o `/rename` pronto da Fase 6.
-
-**Convenção de nome:** `{nome-da-pasta-do-projeto} · {branch}` (a branch só aparece quando há git não-detached). Ex.: `projeto-a · main`. Preserva rename deliberado do usuário; migra títulos antigos `team-os …`.
-
-**Registro (global — `~/.claude/settings.json`):** vale para todos os projetos de uma vez.
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      { "matcher": "", "hooks": [
-        { "type": "command", "command": "bash \"$HOME/.claude/hooks/team-os-session-title.sh\"" }
-      ] }
-    ]
-  }
-}
-```
-O script `team-os-session-title.sh` acompanha o pack (`.claude/hooks/`). O `*install` do `team-os-creator` instala o hook em `~/.claude/hooks/` e registra o `SessionStart` global automaticamente. **Vale só em sessões iniciadas DEPOIS do registro** (a sessão atual não é renomeada — igual à flag `AGENT_TEAMS`).
+O hook `SessionStart` global (`team-os-session-title.sh`, instalado pelo `*install`) nomeia toda sessão como `{projeto} · {branch}` — único mecanismo com API oficial (a skill não consegue digitar `/rename`; para fixar TAMBÉM a tarefa, use o `/rename` pronto da Fase 6). Mecanismo, convenção e registro → ver `reference/session-naming.md`.
 
 ---
 
@@ -430,50 +356,14 @@ O `weigh-memory.sh` roda na **Fase 0** de todo `/team-os` e classifica a smart-m
 
 Qualquer limiar cruzado → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. O bootstrap **só sinaliza**; a compactação roda no `*compact`.
 
-### `*compact` — fluxo (UMA confirmação, depois executa tudo)
+### `*compact` — resumo
 
 ```
 /team-os *compact          → plano completo + 1 confirmação + execução integral
 /team-os *compact --auto   → sem confirmação: aplica o plano inteiro direto
 ```
 
-O fluxo tem uma fase mecânica (script) e uma semântica (archivist). O lead monta **um único plano consolidado**, pede **uma única confirmação** (tabela: o que vira digest, o que vai pro archive, o que fica) e então executa tudo — **zero pergunta por arquivo**. Com `--auto`, nem a confirmação: mostra o plano e aplica.
-
-**Passo 1 — Mecânico (script, sempre primeiro):**
-```bash
-bash .claude/skills/team-os/scripts/compact-memory.sh --dry-run   # colhe o plano mecânico
-```
-O script arquiva: `stories/done/*` e **toda nota com `status: resolved` ou `superseded`** no frontmatter (`--archive-resolved`, incluído no default). Gordos de `WEIGH_FAT_LIST` entram no plano como candidatos.
-
-**Passo 2 — Semântico (archivist, quando o peso é largura):**
-Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de memória antiga, pré-v2), o mecânico não basta. Spawne **um teammate archivist** (archetype `analyst`/`researcher` da squad) com esta missão:
-
-```
-"Você é o archivist. Escopo EXCLUSIVO: docs/smart-memory/ (leitura) e
- docs/smart-memory/**/DIGEST.md + _archive/ (escrita).
- Missão em UMA passada:
- 1. Para cada área (agents/*, decisions/), cluster por tópico e detecte:
-    cadeias supersedidas (sufixos -r2/-r3/-v2, investigation-round*, audit→fix
-    já corrigido), investigações fechadas, planos executados.
- 2. Infira e grave o frontmatter v2 (kind/status/summary) nas notas que não têm.
- 3. Escreva/atualize o DIGEST.md de cada área (template team-os/templates/digest.md):
-    estado atual + tabela de episódios com summaries de 1-2 linhas.
- 4. Produza o PLANO DE COMPACTAÇÃO: tabela [arquivo | veredicto quente/frio | razão].
-    NÃO mova nada ainda. Reporte ao lead via SendMessage."
-```
-
-**Passo 3 — Confirmação única:** o lead consolida mecânico + semântico numa tabela só e apresenta: `N arquivos → _archive · M summaries → DIGESTs · K ficam quentes`. Usuário dá **um** "sim" (ou já rodou com `--auto`).
-
-**Passo 4 — Execução integral, sem mais perguntas:**
-```bash
-bash .claude/skills/team-os/scripts/compact-memory.sh                     # done + resolved/superseded
-bash .claude/skills/team-os/scripts/compact-memory.sh --archive-file <p>  # cada frio do plano semântico
-```
-Ao final: re-pesar (`weigh-memory.sh`) e reportar antes/depois em linhas.
-
-**Segurança (regra dura):** `compact-memory.sh` **só faz `mv`, nunca `rm`**. Não toca em `stories/active`, `in-review`, `backlog`, `project/`, `INDEX.md` nem em notas `kind: reference` ou `DIGEST.md`. Zero perda — o conteúdo integral vive em `_archive/`, o summary vive no DIGEST.
-
-**Lead Discipline:** disparar os scripts e consolidar o plano é coordenação — o lead faz. O julgamento semântico (quente/frio, summaries, DIGESTs) é trabalho substantivo — **é do archivist**, nunca do lead.
+`*compact` combina fase mecânica (`compact-memory.sh` arquiva `stories/done/*` e notas `resolved`/`superseded` — **só faz `mv`, nunca `rm`**, nunca toca em stories ativas, `project/`, INDEXes, DIGESTs, `kind: reference`) e fase semântica (teammate **archivist** infere frontmatter v2, escreve DIGESTs e propõe o plano quente/frio — julgamento semântico é do archivist, nunca do lead). O lead consolida tudo num plano único, pede **UMA confirmação** e executa integral, zero pergunta por arquivo. Passos internos, prompt do archivist e comandos → ver `reference/compact-flow.md`.
 
 ### Estrutura criada
 
@@ -592,10 +482,10 @@ Um spawn prompt ruim desperdiça todo o context window do agente em exploração
 **Exemplo excelente:**
 ```
 "Você é o dev-qa responsável por auditar o módulo de autenticação.
- Seu scope EXCLUSIVO: src/auth/, tests/auth/, docs/smart-memory/qa/
+ Seu scope EXCLUSIVO: src/auth/, tests/auth/, docs/smart-memory/agents/qa/
  Stack: Next.js 15, Supabase Auth, JWT em httpOnly cookies.
  Ative /dev-security-patterns e /dev-testing-strategy para referência.
- Entregável: relatório em docs/smart-memory/qa/auth-audit.md com findings,
+ Entregável: relatório em docs/smart-memory/agents/qa/auth-audit.md com findings,
  severity ratings (CRITICAL/HIGH/MEDIUM/LOW) e recomendações priorizadas.
  Ao concluir: SendMessage para 'archi' com o path do relatório."
 ```
@@ -740,74 +630,20 @@ Cada agente lê **INDEX + DIGEST da sua área + stories ativas** — nunca pasta
 
 ## Hooks de qualidade (opcionais por projeto)
 
-Configure em `.claude/settings.json` do projeto para enforçar padrões automaticamente:
-
-### TeammateIdle — opcional, e CUIDADO com loop
-
-> **Atenção:** ficar ocioso é o estado **desejado** (teammate vivo, esperando mais task). O que resolve o encerramento precoce é a **regra Team Persistence** (acima), não este hook. Use o hook só se quiser que teammates puxem tasks pendentes em vez de ociar — e **nunca** com `exit 2` incondicional (isso gera loop infinito: o teammate nunca consegue parar).
-
-Versão **segura** (só nudge informativo, `exit 0` — não bloqueia o idle):
-```json
-{
-  "hooks": {
-    "TeammateIdle": [{
-      "matcher": "",
-      "hooks": [{
-        "type": "command",
-        "command": "echo 'Teammate ocioso (vivo). Se há tasks pendentes na fila, faça self-claim.'; exit 0"
-      }]
-    }]
-  }
-}
-```
-Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task pendente compatível na fila** — caso contrário `exit 0`. Um `exit 2` fixo trava o teammate em loop. Não é auto-instalado nos projetos por padrão.
-
-### TaskCompleted — Gate de qualidade
-```json
-{
-  "hooks": {
-    "TaskCompleted": [{
-      "matcher": "",
-      "hooks": [{
-        "type": "command",
-        "command": "echo 'Task concluída. Valide o entregável antes de prosseguir.'"
-      }]
-    }]
-  }
-}
-```
-
-### TaskCreated — Validar estrutura
-```json
-{
-  "hooks": {
-    "TaskCreated": [{
-      "matcher": "",
-      "hooks": [{
-        "type": "command",
-        "command": "echo 'Nova task criada. Confirme que tem owner, escopo e entregável definidos.'"
-      }]
-    }]
-  }
-}
-```
+Hooks `TeammateIdle` (nudge de self-claim — CUIDADO: `exit 2` incondicional gera loop infinito; idle é o estado desejado) e `TaskCompleted` (gate de qualidade) — exemplos completos e avisos → ver `reference/hooks-de-time.md`.
 
 ---
 
 ## Troubleshooting — Limitações conhecidas
 
+**Garantia dura anti-worktree** (regra, sempre presente aqui):
+
 | Problema | Causa | Solução |
 |---|---|---|
 | Agentes criando branches extras | Lead usou `isolation: worktree` ao spawnar — proibido | NUNCA usar isolation: worktree. Agentes escrevem direto na branch ativa. Resolve conflito de arquivo com ownership disjunto (paths exclusivos por agente). |
 | Worktrees aparecendo mesmo sem spawn manual | Background tasks com isolamento automático, ou settings sem a trava | Garantir no `.claude/settings.json` do projeto: `"worktree": { "bgIsolation": "none" }` + hook `block-worktree.sh` registrado em PreToolUse (Fase 2-C). Limpar zumbis: `git worktree list` → `git worktree remove` + delete da branch (devops). |
-| Resume não restaura teammates | Limitação: `/resume` não restaura in-process teammates | Re-spawnar com mesmo nome + contexto do smart-memory |
-| Task travada (done mas não marca) | Bug known: task status pode atrasar | Verificar se work está feito → atualizar manualmente ou pedir ao lead |
-| Agente sumiu do panel | Idle após 30s (hide automático, v2.1.181+) — NÃO parou, reaparece no próximo turno | SendMessage por nome: `"Mensagem para {nome}: continue"` |
-| Lead começa a implementar sozinho | Violação da Lead Discipline | Ver seção "⛔ Lead Discipline" — o lead NUNCA executa, só delega. `"Pare e spawna um agente para isso; você é o orquestrador"` |
-| Muitos permission prompts | Teammates pedem aprovação para tudo | Pre-aprovar operações em settings ANTES de spawnar |
-| Tmux sessions órfãs | Session não encerrou limpo | `tmux ls` → `tmux kill-session -t {nome}` |
-| Agente em loop de erros | Sem recovery automático | Entrar na sessão (Enter no panel) e dar instrução direta ou spawnar replacement |
-| Lead promovido antes da hora | Lead declarou "concluído" cedo | `"Continue — há tasks incompletas"` |
+
+Demais problemas conhecidos (resume não restaura teammates, task travada, idle-hide do panel, lead implementando/encerrando cedo, permission prompts, tmux órfão, agente em loop) → ver `reference/troubleshooting.md`.
 
 ---
 
@@ -824,6 +660,8 @@ Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task
 /team-os *status        → dashboard de status do time atual
 ```
 
+> Os subcomandos são **atalhos**: executam apenas a fase correspondente do fluxo principal (*env = Gate 0 + Fase 2-A/B/C; *memory = Fase 2-D/Discovery; *tasks = item 5 do scan; *spawn = Fases 4-5 direto; *status = painel da Fase 1 + task list), sem repetir o bootstrap inteiro.
+
 **Settings.json mínimo:**
 ```json
 {
@@ -834,7 +672,7 @@ Para "manter trabalhando", o comando só deve sair com `exit 2` **se houver task
 
 **Fórmula de dimensionamento:**
 ```
-tasks independentes ÷ 5 = agentes  |  research adversarial = 3-5 sempre
+tasks independentes ÷ 5-6 = agentes (máx 10 por squad)  |  research adversarial = 3-5 sempre
 ```
 
 **Subagent definitions:** Use nomes dos agentes em `.claude/agents/` ao spawnar:
@@ -855,7 +693,7 @@ tasks independentes ÷ 5 = agentes  |  research adversarial = 3-5 sempre
 Você (team lead — sessão principal — esta skill roda aqui)
   │
   ├── Agent Panel (↑↓ para navegar, Enter para abrir)
-  │     ├── archi     [working]  → src/auth/, docs/smart-memory/architecture/
+  │     ├── archi     [working]  → src/auth/, docs/smart-memory/project/
   │     ├── alpha     [pending]  → src/frontend/ (aguarda archi)
   │     ├── qa        [working]  → review paralelo do módulo pago
   │     └── ops       [idle]     → aguarda todos para deploy

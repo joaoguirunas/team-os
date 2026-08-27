@@ -6,16 +6,18 @@ Cada archetype mapeia pra um template em `templates/{archetype}.md` e define os 
 
 ## Tabela de defaults
 
-| Archetype | Model | memory | isolation | permissionMode | Tools base | Hook git push |
-|---|---|---|---|---|---|---|
-| `architect` | opus | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
-| `implementer` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
-| `hardening` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
-| `reviewer` | opus | project | — | — | Read, Glob, Grep, Bash, SendMessage | ✅¹ |
-| `researcher` | inherit | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
-| `data` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅¹ |
-| `devops` | inherit | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
-| `ux` | inherit | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | ✅¹ |
+| Archetype | Model | Effort | memory | isolation | permissionMode | Tools base | Hook git push |
+|---|---|---|---|---|---|---|---|
+| `architect` | opus | high | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
+| `implementer` | inherit | — | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅ |
+| `hardening` | inherit | high | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage | ✅ |
+| `reviewer` | opus | high | project | — | — | Read, Glob, Grep, Bash, SendMessage | ✅¹ |
+| `researcher` | inherit | medium | project | — | — | Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage | ✅¹ |
+| `data` | inherit | high | project | — | — | Read, Write, Edit, Glob, Grep, Bash, SendMessage | ✅¹ |
+| `devops` | inherit | — | project | — | acceptEdits | Read, Write, Edit, Glob, Grep, Bash, SendMessage | — |
+| `ux` | inherit | medium | project | — | — | Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage | ✅¹ |
+
+> **Effort por papel (política canônica, validada pelo `*audit`):** `high` em architect/reviewer(QA)/strategist/hardening/data (raciocínio crítico); `medium` em researcher/analyst/ux e nos papéis de **BI/insights** (`dev-bi`, `traffic-bi`, `dev-data-performance` — interpretam dados, não desenham schema); **omitido** em implementer/devops (seguem o default do modelo).
 
 > **¹ Hook git push (push exclusivo do devops):** em **squads de código** (`dev`/`sites`), **todo** agente não-`devops` que tem `Bash` carrega `block-git-push.sh` — não só os implementers. Isso transforma "push é só do devops" de convenção em **garantia dura** (defense-in-depth): qualquer agente com Bash poderia tecnicamente dar `git push`, então só o `devops` fica sem o hook. Em squads **não-código** (`social`/`traffic`/`pm`) não há devops nem fluxo de push de código — lá só o archetype `implementer` (ex.: `social-video`) leva o hook.
 

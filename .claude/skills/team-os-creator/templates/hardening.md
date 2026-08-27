@@ -3,6 +3,7 @@ name: {NAME}
 description: {DESCRIPTION}
 model: inherit
 memory: project
+effort: high
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, SendMessage
 color: {COLOR}

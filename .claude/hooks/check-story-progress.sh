@@ -29,8 +29,11 @@ for story_file in "$ACTIVE_DIR"/*.md; do
   if [ -n "$INICIADO" ] && [ "$INICIADO" != "—" ] && { [ -z "$CONCLUIDO" ] || [ "$CONCLUIDO" = "—" ]; }; then
 
     # Tentar parsear data do Iniciado (formato: YYYY-MM-DD)
+    # Sem hora registrada, o dia de hoje nunca conta como travado — o timestamp
+    # da data pura é meia-noite e inflaria as horas decorridas.
     START_DATE=$(echo "$INICIADO" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-    if [ -n "$START_DATE" ]; then
+    TODAY=$(date +%F)
+    if [ -n "$START_DATE" ] && [ "$START_DATE" != "$TODAY" ]; then
       START_TS=$(date -d "$START_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$START_DATE" +%s 2>/dev/null)
       if [ -n "$START_TS" ]; then
         HOURS_ELAPSED=$(( (NOW - START_TS) / 3600 ))

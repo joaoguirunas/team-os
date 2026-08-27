@@ -8,8 +8,9 @@
 #   --force         sobrescreve docs/smart-memory/ existente
 #   --dry-run       mostra o que faria, sem escrever
 #
-# Saída: cria docs/smart-memory/{INDEX.md, project/, modules/, architecture/, decisions/,
-#        stories/{backlog,active,in-review,done}, research/, qa/} com conteúdo detectado.
+# Saída: cria docs/smart-memory/{INDEX.md, project/, decisions/,
+#        stories/{backlog,active,in-review,done}, agents/<área>/, _archive/} com conteúdo
+#        detectado (architecture e modules vivem como arquivos dentro de project/).
 # Pontos narrativos (domínio/propósito) ficam marcados com <!-- TODO --> para o agente enriquecer.
 
 # NB: sem `set -e` — o script usa muitos `teste && add ...` cujo lado esquerdo
@@ -146,14 +147,6 @@ if [ "$DRY" -eq 1 ]; then
 fi
 
 # ── Geração ──────────────────────────────────────────────────────────────────
-
-# Links de módulos para o INDEX (limpos)
-MODULES_LINKS="$(printf "%b" "$MODULE_DIRS" | while IFS= read -r m; do
-  [ -n "$m" ] || continue
-  safe="$(echo "$m" | sed 's#/#-#g')"
-  echo "- [[modules/$safe]] — \`$m\`"
-done)"
-[ -z "$MODULES_LINKS" ] && MODULES_LINKS="<!-- nenhum módulo detectado automaticamente -->"
 
 mkdir -p "$SM"/project "$SM"/decisions \
          "$SM"/stories/backlog "$SM"/stories/active "$SM"/stories/in-review "$SM"/stories/done \
@@ -317,7 +310,7 @@ tags: [project, conventions]
 
 - **Gerenciador de pacotes:** ${PKG_MGR:-—}
 - **TypeScript:** $(hasf tsconfig.json && echo "sim (tsconfig.json presente)" || echo "—")
-- **Lint/format:** $(echo "$TOOLING" | grep -o 'ESLint\|Prettier' | paste -sd' · ' - 2>/dev/null || echo "—")
+- **Lint/format:** $(lf="$(echo "$TOOLING" | grep -o 'ESLint\|Prettier' | paste -sd' · ' - 2>/dev/null)"; echo "${lf:-—}")
 - **Estrutura:** $([ "$MONOREPO" = "sim" ] && echo "monorepo (workspaces)" || echo "app único")
 
 ## Padrões observados

@@ -9,7 +9,17 @@ CT_ROOT="${1:-}"
 # Git root do projeto atual = fonte da verdade (CT)
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 SOURCE_AGENTS=""
+SOURCE_SKILLS=""
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/agents" ] && SOURCE_AGENTS="$GIT_ROOT/.claude/agents"
+[ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/skills" ] && SOURCE_SKILLS="$GIT_ROOT/.claude/skills"
+
+# Hash de diretório de skill (conteúdo agregado, ignora artefatos Icon\r do macOS)
+hash_dir() {
+  find "$1" -type f ! -name "Icon"$'\r' -print0 2>/dev/null | sort -z \
+    | xargs -0 cat 2>/dev/null \
+    | { command -v shasum >/dev/null 2>&1 && shasum -a 256 || md5sum; } \
+    | awk '{print $1}'
+}
 
 # Auto-detecta root: sobe um nível acima do git root do projeto atual
 if [ -z "$CT_ROOT" ]; then
@@ -93,5 +103,19 @@ for dir in "$CT_ROOT"/*/; do
     done
   fi
 
-  echo "PROJECT=$name|PATH=$dir|IS_CURRENT=$is_current|HAS_AGENTS=$has_agents|AGENT_COUNT=$agent_count|AGENT_SQUADS=$agent_squads|HAS_SKILLS=$has_skills|SKILL_COUNT=$skill_count|HAS_HOOKS=$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)|HAS_TEAM_OS=$has_team_os|HAS_SMART_MEMORY=$has_smart_memory|DRIFT_OK=$drift_ok|DRIFT_OUTDATED=$drift_outdated|DRIFT_EXTRA=$drift_extra|DRIFT_MISSING=$drift_missing"
+  # Drift de SKILLS vs CT (mesma lógica: só compara skills que o destino já tem;
+  # team-os-creator nunca conta — é exclusiva do CT)
+  skills_outdated=0
+  if [ "$is_current" -eq 0 ] && [ "$has_skills" -eq 1 ] && [ -n "$SOURCE_SKILLS" ]; then
+    for sp in "$dir/.claude/skills/"*/; do
+      [ -d "$sp" ] || continue
+      sn=$(basename "$sp")
+      [ "$sn" = "team-os-creator" ] && continue
+      src="$SOURCE_SKILLS/$sn"
+      [ -d "$src" ] || continue   # skill extra do destino — preservada, não é drift
+      [ "$(hash_dir "$sp")" = "$(hash_dir "$src")" ] || skills_outdated=$((skills_outdated + 1))
+    done
+  fi
+
+  echo "PROJECT=$name|PATH=$dir|IS_CURRENT=$is_current|HAS_AGENTS=$has_agents|AGENT_COUNT=$agent_count|AGENT_SQUADS=$agent_squads|HAS_SKILLS=$has_skills|SKILL_COUNT=$skill_count|HAS_HOOKS=$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)|HAS_TEAM_OS=$has_team_os|HAS_SMART_MEMORY=$has_smart_memory|DRIFT_OK=$drift_ok|DRIFT_OUTDATED=$drift_outdated|DRIFT_EXTRA=$drift_extra|DRIFT_MISSING=$drift_missing|SKILLS_OUTDATED=$skills_outdated"
 done

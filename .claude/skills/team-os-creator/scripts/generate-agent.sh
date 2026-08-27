@@ -22,12 +22,13 @@ TEMPLATE="$SKILL_DIR/templates/${ARCHETYPE}.md"
 
 if [ ! -f "$TEMPLATE" ]; then
   echo "❌ Template não encontrado: $TEMPLATE" >&2
-  echo "   Archetypes válidos: $(ls $SKILL_DIR/templates/ | sed 's/\.md//' | tr '\n' ' ')" >&2
+  echo "   Archetypes válidos: $(ls "$SKILL_DIR/templates/" | sed 's/\.md//' | tr '\n' ' ')" >&2
   exit 1
 fi
 
 # Proteger contra sobrescrita silenciosa
-OUTPUT=".claude/agents/${NAME}.md"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+OUTPUT="$ROOT/.claude/agents/${NAME}.md"
 if [ -f "$OUTPUT" ]; then
   echo "⚠️  $OUTPUT já existe. Não sobrescrito." >&2
   echo "   Remova manualmente ou renomeie se quiser regenerar." >&2

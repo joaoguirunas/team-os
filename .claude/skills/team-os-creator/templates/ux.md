@@ -3,8 +3,15 @@ name: {NAME}
 description: {DESCRIPTION}
 model: inherit
 memory: project
+effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, SendMessage
 color: {COLOR}
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol

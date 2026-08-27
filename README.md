@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**49 agentes e 49 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**49 agentes e 55 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -205,7 +205,11 @@ Spawne pelo nome do arquivo, ex.:
 
 A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponíveis por papel** — as skills de apoio que fazem sentido para cada agente acionar via `/nome-skill` conforme a necessidade. Ela **não** reflete linha a linha o que o body de cada agente lista (vários agentes citam só um subconjunto, ou nenhuma, no próprio arquivo); serve como guia de qual skill ativar para qual tipo de trabalho. O `/team-os` pode incluí-las no spawn prompt.
 
+> **Nota sobre veredictos QA:** as squads de código (`dev`/`sites`/`traffic`) usam PASS/CONCERNS/FAIL/WAIVED; as squads em contexto PT-BR usam taxonomia própria deliberada — `pm-qa`: APROVADO/PENDÊNCIAS/REPROVADO; `social-strategist`: APROVADO/COM RESSALVAS/REJEITADO (a squad social não tem QA dedicado — a VERA acumula validação editorial + veredicto, exceção deliberada da squad de 7).
+
 ### Dev — Fullstack SaaS (12)
+
+> Exceção documentada ao teto de 10 por squad: a dev inclui a camada completa de dados/BI (`dev-bi`, `dev-data-engineer`, `dev-data-performance`), chegando a 12.
 | Agente | Papel | Skills relacionadas |
 |---|---|---|
 | `dev-analyst` | Pesquisa técnica, libs, CVEs, feasibility | `/deep-research`, `/data-analytics-engineering` |
@@ -280,17 +284,21 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo de skills de apoio
 
-49 skills, todas diretórios reais e versionados (repositório self-contained).
+55 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
-**Data & ML (5):** `ai-ml-data-science`, `ai-ml-timeseries`, `data-analytics-engineering`, `data-lake-platform`, `data-sql-optimization`
+**Data & ML (6):** `ai-ml-data-science`, `ai-ml-timeseries`, `data-analytics-engineering`, `data-lake-platform`, `data-sql-optimization`, `data-supabase-patterns`
 
 **Sites (14):** `sites-canvas-design`, `sites-content-strategy`, `sites-copy-editing`, `sites-copywriting`, `sites-deployment`, `sites-frontend-design`, `sites-page-cro`, `sites-scroll-motion`, `sites-seo-keywords`, `sites-seo-technical`, `sites-shadcn-ui`, `sites-tailwind-design-system`, `sites-ux-interaction`, `sites-web-accessibility`
 
 **Social (14):** `social-analytics`, `social-apify-research`, `social-carousel-design`, `social-cinematic-composition`, `social-copywriting`, `social-editorial-validation`, `social-format-specs`, `social-freepik-generation`, `social-heygen-avatar`, `social-key-visual`, `social-meta-publishing`, `social-scriptwriting`, `social-stitch-workflow`, `social-video-editing`
 
-**Design & geral (5):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`
+**Traffic (2):** `traffic-paid-ads-optimization`, `traffic-analytics-tracking`
+
+**Design & geral (8):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`
+
+> **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
 
 **Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos).
 
@@ -356,10 +364,18 @@ O campo `model` do arquivo do agente **prevalece** sobre o "Default teammate mod
 
 | Modelo | Agentes | Por quê |
 |---|---|---|
-| `opus` (fixo) | architects, todos os `*-qa`/reviewers, strategists (8 agentes) | Raciocínio crítico e veredictos — não vale economizar |
-| `inherit` | os 41 demais | Seguem o `/model` do lead → controle central de custo |
+| `opus` (fixo) | os 8 canônicos: `dev-architect`, `sites-architect`, `dev-qa`, `sites-qa`, `pm-qa`, `traffic-qa`, `traffic-strategist`, `social-strategist` | Raciocínio crítico e veredictos — não vale economizar |
+| `inherit` | os 41 demais (incluindo `pm-planner` e `pm-coach`) | Seguem o `/model` do lead → controle central de custo |
 
 Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {nome} usando modelo haiku para…"`.
+
+**Política de `effort` (validada pelo `*audit`):**
+
+| Effort | Papéis |
+|---|---|
+| `high` | architects, QAs, strategists, hardening (`*-dev-delta`), data engineers (`dev-data-engineer`, `sites-data`, `pm-data`), `pm-planner`, `pm-coach` |
+| `medium` | analysts, UX, BI/insights (`dev-bi`, `traffic-bi`, `dev-data-performance`) |
+| omitido | implementers (`*-dev-alpha/beta/gamma`) e devops — seguem o default do modelo |
 
 ---
 
@@ -367,7 +383,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
-- **`block-git-push.sh`** — `PreToolUse` em ~21 agentes: **todos os agentes não-devops com Bash das squads de código** (`dev-*` e `sites-*` exceto devops) **e** `social-video`. Bloqueia `git push` — garantia dura, exclusiva do DevOps.
+- **`block-git-push.sh`** — `PreToolUse` em ~21 agentes: **todos os agentes não-devops com Bash das squads de código** (`dev-*` e `sites-*` exceto devops) **e** `social-video`. Bloqueia `git push` (inclusive `git -C <dir> push`) **e** `gh pr create/merge` — garantia dura, exclusiva do DevOps.
 - **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree e `git worktree add` — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
 - **`check-story-progress.sh`** — valida progresso de stories.
 - **`check-social-progress.sh`** — valida progresso de conteúdo social.
@@ -387,7 +403,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 49 skills (diretórios reais)
+└── skills/              ← 55 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md

@@ -65,6 +65,12 @@ if [ $MATCH_TARGET -eq 1 ]; then
   fi
   [ -z "$SQUADS" ] && SQUADS="__none__"   # destino sem agentes → não sincroniza nenhum
   echo "MATCH_TARGET_SQUADS=$SQUADS"
+  # Destino sem nenhum agente = team-os não instalado → propagate não tem o que
+  # sincronizar (nem skills). Instalação inicial exige --squads <categoria> explícito.
+  if [ "$SQUADS" = "__none__" ]; then
+    echo "SKIP=target_sem_squad|propagate não instala nada num projeto sem agentes; use --squads <categoria> para instalar."
+    exit 0
+  fi
 fi
 
 # Guarda-dura: instalar TODAS as squads sem derivar do destino re-adiciona squads podadas.
@@ -216,6 +222,15 @@ echo "SKILLS_COPIED=$skills_copied"
 echo "SKILLS_UPDATED=$skills_updated"
 echo "SKILLS_SKIPPED=$skills_skipped"
 echo "SKILLS_LIST=${skills_list# }"
+
+# ── Higiene: remover artefatos Icon\r do macOS copiados junto ────────────────
+# cp -R traz os ícones custom de pasta (Icon\r) da fonte; eles poluem o git
+# dos destinos. Remove do que acabou de ser instalado (agents/skills/hooks).
+if [ $DRY_RUN -eq 0 ]; then
+  icon_cleaned=$(find "$TARGET/.claude/agents" "$TARGET/.claude/skills" "$TARGET/.claude/hooks" \
+    -name "Icon"$'\r' -type f -print -delete 2>/dev/null | wc -l | tr -d ' ')
+  echo "ICON_CLEANED=$icon_cleaned"
+fi
 
 # ── Anti-worktree hook (universal — sempre instalado) ───────────────────────
 # O settings.json referencia block-worktree.sh, então o hook é copiado sempre,

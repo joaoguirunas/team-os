@@ -28,9 +28,9 @@ validate() {
     issues+=("description: vazia ou ausente")
   fi
 
-  # Check 4: memory: project/user/local
-  if ! awk '/^---$/{c++; if(c==2)exit} c==1' "$file" | grep -qE '^memory:[[:space:]]*(project|user|local)'; then
-    issues+=("memory: ausente ou inválido (use project/user/local)")
+  # Check 4: memory: project (RULE #1 — estrito)
+  if ! awk '/^---$/{c++; if(c==2)exit} c==1' "$file" | grep -qE '^memory:[[:space:]]*project[[:space:]]*$'; then
+    issues+=("memory: deve ser exatamente 'project' (RULE #1)")
   fi
 
   # Check 5: model: definido
@@ -68,6 +68,56 @@ validate() {
     issues+=("sem heading H1")
   fi
 
+  # ── Checks 11-15: regras do ecossistema (garantias duras) ──
+  local FM
+  FM=$(awk '/^---$/{c++; if(c==2)exit} c==1' "$file")
+
+  # Check 11: campo skills: proibido no frontmatter (ignorado em Agent Teams)
+  if printf '%s\n' "$FM" | grep -qE '^skills:'; then
+    issues+=("campo skills: no frontmatter é proibido (ignorado em Agent Teams — remova)")
+  fi
+
+  # Check 12: campo isolation: proibido (worktrees banidos — branch ativa sempre)
+  if printf '%s\n' "$FM" | grep -qE '^isolation:'; then
+    issues+=("campo isolation: proibido — agentes trabalham direto na branch ativa")
+  fi
+
+  # Check 13: hook block-git-push.sh — obrigatório em dev-*/sites-* não-devops e social-video;
+  # proibido no frontmatter dos devops (push é autoridade exclusiva deles)
+  local has_hook=0
+  printf '%s\n' "$FM" | grep -q 'block-git-push.sh' && has_hook=1
+  case "$name" in
+    dev-devops|sites-devops)
+      [ "$has_hook" -eq 1 ] && issues+=("devops não pode ter block-git-push.sh no frontmatter (push é a autoridade dele)") ;;
+    dev-*|sites-*|social-video)
+      [ "$has_hook" -eq 0 ] && issues+=("falta hook block-git-push.sh no frontmatter (obrigatório em não-devops com Bash das squads de código)") ;;
+  esac
+
+  # Check 14: política de modelos (Híbrido) — opus fixo nos 8 canônicos, inherit nos demais
+  local MODEL
+  MODEL=$(printf '%s\n' "$FM" | grep -m1 -E '^model:' | sed -E 's/^model:[[:space:]]*//; s/[[:space:]]*$//')
+  case "$name" in
+    dev-architect|sites-architect|dev-qa|sites-qa|pm-qa|traffic-qa|traffic-strategist|social-strategist)
+      [ "$MODEL" != "opus" ] && issues+=("model: deve ser 'opus' (architect/QA/strategist — política Híbrido)") ;;
+    *)
+      [ "$MODEL" != "inherit" ] && issues+=("model: deve ser 'inherit' (só architects/QAs/strategists usam opus fixo)") ;;
+  esac
+
+  # Check 15: política de effort por papel
+  local EFFORT
+  EFFORT=$(printf '%s\n' "$FM" | grep -m1 -E '^effort:' | sed -E 's/^effort:[[:space:]]*//; s/[[:space:]]*$//')
+  if [ -n "$EFFORT" ] && ! printf '%s' "$EFFORT" | grep -qE '^(low|medium|high|xhigh|max)$'; then
+    issues+=("effort: '$EFFORT' inválido (low/medium/high/xhigh/max)")
+  fi
+  case "$name" in
+    dev-architect|sites-architect|dev-qa|sites-qa|pm-qa|traffic-qa|traffic-strategist|social-strategist|dev-dev-delta|sites-dev-delta|dev-data-engineer|sites-data|pm-data|pm-planner|pm-coach)
+      [ "$EFFORT" != "high" ] && issues+=("effort: deve ser 'high' (architect/QA/strategist/hardening/data)") ;;
+    dev-analyst|sites-analyst|social-analyst|traffic-analyst|pm-analyst|dev-ux|sites-ux|dev-bi|traffic-bi|dev-data-performance)
+      [ "$EFFORT" != "medium" ] && issues+=("effort: deve ser 'medium' (researcher/ux/BI)") ;;
+    dev-dev-alpha|dev-dev-beta|dev-dev-gamma|sites-dev-alpha|sites-dev-beta|sites-dev-gamma|dev-devops|sites-devops)
+      [ -n "$EFFORT" ] && issues+=("effort: deve ser omitido (implementer/devops seguem o default)") ;;
+  esac
+
   if [ ${#issues[@]} -eq 0 ]; then
     echo "✅ $name"
     return 0
@@ -80,6 +130,10 @@ validate() {
   PROBLEMS=$((PROBLEMS + 1))
   return 1
 }
+
+# Resolver a raiz do repo — funciona de qualquer cwd
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$ROOT" || exit 1
 
 if [ -n "$1" ]; then
   # Validar um específico

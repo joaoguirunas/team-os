@@ -48,6 +48,7 @@ while IFS= read -r line; do
   d_out="$(field "$line" DRIFT_OUTDATED)"
   d_extra="$(field "$line" DRIFT_EXTRA)"
   d_miss="$(field "$line" DRIFT_MISSING)"
+  s_out="$(field "$line" SKILLS_OUTDATED)"
 
   tos=$([ "$has_team_os" = "1" ] && echo "sim" || echo "--")
   sm=$([ "$has_sm" = "1" ] && echo "sim" || echo "--")
@@ -55,8 +56,8 @@ while IFS= read -r line; do
   if [ "$has_agents" != "1" ] || [ "${acount:-0}" -eq 0 ]; then
     drift="nao instalado"
     not_installed=$((not_installed + 1))
-  elif [ "${d_out:-0}" -gt 0 ] || [ "${d_miss:-0}" -gt 0 ]; then
-    drift="! ${d_out:-0} desatual. / ${d_miss:-0} ausentes"
+  elif [ "${d_out:-0}" -gt 0 ] || [ "${d_miss:-0}" -gt 0 ] || [ "${s_out:-0}" -gt 0 ]; then
+    drift="! ag:${d_out:-0} desatual./${d_miss:-0} aus. · skills:${s_out:-0} desatual."
     need_update=$((need_update + 1))
   else
     drift="em dia"

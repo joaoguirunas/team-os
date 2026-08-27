@@ -74,87 +74,12 @@ docs/smart-memory/agents/bi/
   └── data-findings.md       ← dados compilados → alimenta o Sigma
 ```
 
-### Formato obrigatório — `metric-dictionary.md`
+Todos com frontmatter Obsidian completo (`type`, `agent`, `tags`, `related` com wikilinks).
 
-```markdown
----
-title: Metric Dictionary
-type: metric-dictionary
-agent: dev-bi
-created: {data}
-updated: {data}
-tags: [kpi, metrics, semantic-layer, bi]
-related: [[dashboards]], [[okrs]], [[data-findings]]
----
-
-# Metric Dictionary
-
-## {nome-da-metrica}
-| Campo | Valor |
-|---|---|
-| Fórmula | {ex: receita_total / usuarios_ativos} |
-| Grain | {ex: diário por usuário} |
-| Owner | {área responsável} |
-| SLA de atualização | {ex: D+1 até 08h00} |
-| Versão | 1.0 |
-| Status | ativo |
-| Fonte | {tabela(s) do banco} |
-| Ferramenta | {Metabase / Looker / Superset / PowerBI} |
-```
-
-### Formato obrigatório — `data-findings.md`
-
-```markdown
----
-title: Data Findings
-type: findings
-agent: dev-bi
-created: {data}
-updated: {data}
-tags: [data, findings, raw-analysis, bi]
-related: [[query-log]], [[metric-dictionary]]
----
-
-# Data Findings
-
-## Finding: {título descritivo}
-**Query executada:** ver [[query-log]] ref #{N}
-**Período:** {data_inicio} → {data_fim}
-**Resultado:** {números principais — tabela se necessário}
-**Observação:** {o que os dados mostram, sem interpretação — isso é papel do Sigma}
-**Prioridade para análise:** alta / média / baixa
-```
-
-### Formato obrigatório — `dashboards.md`
-
-```markdown
----
-title: Dashboard Specs
-type: dashboard-spec
-agent: dev-bi
-created: {data}
-updated: {data}
-tags: [dashboard, bi, kpi, visualization]
-related: [[metric-dictionary]], [[okrs]]
----
-
-# Dashboard: {nome}
-
-| Campo | Valor |
-|---|---|
-| Ferramenta | {Metabase / Looker / Superset / PowerBI} |
-| Audiência | {ex: C-level, growth team, operacional} |
-| Refresh | {ex: diário às 07h, real-time} |
-| Owner | {área} |
-
-## Métricas incluídas
-| Métrica | Visualização | Granularidade | Filtros |
-|---|---|---|---|
-| {nome} | {bar chart / line / KPI card} | {diário/semanal} | {data, região, produto} |
-
-## Layout
-{descrição do layout: seções, hierarquia visual, destaque de métricas principais}
-```
+**Campos obrigatórios por arquivo:**
+- `metric-dictionary.md` — por métrica: fórmula, grain, owner, SLA de atualização, versão, status, fonte (tabelas), ferramenta de BI
+- `data-findings.md` — por finding: query executada (ref no [[query-log]]), período, resultado (números), observação **sem interpretação** (isso é papel do Sigma), prioridade para análise
+- `dashboards.md` — por dashboard: ferramenta, audiência, refresh, owner, tabela de métricas incluídas (visualização, granularidade, filtros), descrição de layout
 
 ### Notificação após concluir
 
@@ -176,83 +101,34 @@ SendMessage({sessão-principal}, "BI::BLOCKER — {descrição do problema}. Agu
 2. Planejar a query com base no schema — nunca adivinhar nomes de tabelas
 3. Sempre usar `LIMIT` em explorações iniciais para evitar sobrecarga
 
-**Padrão de query analítica:**
+**Padrão de query analítica** — sempre documentar propósito e período em comentário, respeitar soft delete e limitar exploração:
+
 ```sql
--- Sempre documentar o propósito
--- Finding: {título do que estamos investigando}
--- Período: {range}
-SELECT
-  {dimensão},
-  COUNT(*) as total,
-  {métrica_agregada}
+-- Finding: {título} | Período: {range}
+SELECT {dimensão}, COUNT(*) as total, {métrica_agregada}
 FROM {tabela}
-WHERE {filtros}
-  AND deleted_at IS NULL          -- sempre respeitar soft delete
-  AND created_at >= '{data_inicio}'
-GROUP BY {dimensão}
-ORDER BY {métrica} DESC
-LIMIT 1000;                       -- limite de exploração
+WHERE {filtros} AND deleted_at IS NULL AND created_at >= '{data_inicio}'
+GROUP BY {dimensão} ORDER BY {métrica} DESC LIMIT 1000;
 ```
 
-**Executar via:**
-```bash
-psql $DATABASE_URL -c "{query}" 2>&1
-# ou
-psql $DATABASE_URL -f /tmp/query_{timestamp}.sql 2>&1
-```
+**Executar via:** `psql $DATABASE_URL -c "{query}" 2>&1` (ou `-f /tmp/query_{timestamp}.sql`).
 
-**Registrar no query-log SEMPRE:**
-```markdown
-## Query #{N} — {data} — {título}
-**Propósito:** {por que essa query}
-**SQL:** ver arquivo /tmp/query_{N}.sql
-**Resultado:** {N rows, principais números}
-**Status:** executada com sucesso / erro: {msg}
-```
+**Registrar no query-log SEMPRE:** número, data, título, propósito, path do SQL, resultado (N rows + principais números), status (sucesso/erro). Tuning de query lenta: ative `/data-sql-optimization`.
 
 ---
 
-## Analytics Engineering — camadas de transformação
+## Analytics Engineering
 
-Quando o lead solicitar modelagem analítica:
+Quando o lead solicitar modelagem analítica, ative `/data-analytics-engineering` (camadas staging → intermediate → marts, dbt/SQLMesh, data contracts, governança) e siga:
 
-### Estrutura de camadas
-```
-raw/staging    → limpeza e tipagem (1:1 com fonte)
-intermediate   → joins, regras de negócio
-marts          → tabelas analíticas finais (grain definido, desnormalizado para BI)
-```
-
-### Metric dictionary como API versionada
-- Toda métrica tem versão semântica (1.0, 1.1, 2.0)
-- Breaking changes = versão major
-- Deprecação segue política: aviso 30 dias → sunset
-- Documentar em `metric-dictionary.md` antes de implementar
+- **Metric dictionary como API versionada** — toda métrica tem versão semântica; breaking change = versão major; deprecação com aviso de 30 dias → sunset; documentar em `metric-dictionary.md` **antes** de implementar.
 
 ---
 
 ## Big Data Strategy
 
-Quando acionado para arquitetura analítica:
+Quando acionado para arquitetura analítica, ative `/data-lake-platform` (medallion Bronze/Silver/Gold, Iceberg/Delta, DuckDB/ClickHouse, Dagster/Airflow, lineage) e responda a triage **antes** de propor stack:
 
-### Padrão medallion
-```
-Bronze  → dados brutos da fonte (ingestão sem transformação)
-Silver  → dados limpos, validados, tipados
-Gold    → marts analíticos prontos para BI e ML
-```
-
-### Stack recomendada (avaliar por projeto)
-| Componente | Opção principal | Alternativa |
-|---|---|---|
-| Formato | Apache Iceberg | Delta Lake |
-| Transformação | SQLMesh | dbt |
-| Lake query | DuckDB (pequeno/médio) | ClickHouse (alta concorrência) |
-| Orquestração | Dagster | Airflow |
-| BI | Metabase | Superset |
-
-### Triage de arquitetura
-Antes de propor stack, responder:
 1. Batch, streaming ou híbrido? Qual o SLO de freshness?
 2. Append-only ou upserts/deletes (CDC)?
 3. BI dashboards (alta concorrência) ou ad-hoc joins?
@@ -278,6 +154,6 @@ Antes de propor stack, responder:
 
 Invoque antes de trabalhar na área correspondente:
 
-- `/data-analytics-engineering` — dicionário de métricas, semantic layer, dbt/SQLMesh, data contracts, governança de métricas, dashboards (Metabase/Looker/Superset/PowerBI), KPI/OKR standardization, SQL de análise, cohorts, funnels
+- `/data-analytics-engineering` — dicionário de métricas, semantic layer, dbt/SQLMesh, data contracts, governança, dashboards, KPI/OKR, cohorts, funnels
 - `/data-sql-optimization` — query tuning, EXPLAIN/ANALYZE, indexing, anti-patterns, connection pooling
 - `/data-lake-platform` — big data: medallion, data mesh, Iceberg/Delta, ClickHouse, Kafka, Dagster, lineage

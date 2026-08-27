@@ -18,7 +18,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 3. **SEMPRE validar compliance** após criar (`scripts/validate-agent.sh`).
 4. **SEMPRE propor skills** relevantes ao role do agente.
 5. **Idempotente** — se agente com mesmo nome existe, oferecer: atualizar / pular / renomear / cancelar.
-6. **Squad focada** — máx 10 agentes por squad. "Essencial" = 5, "completa" = preset.
+6. **Squad focada** — máx 10 agentes por squad (exceção documentada: preset `dev` tem 12, por incluir a camada de dados/BI completa). "Essencial" = 5, "completa" = preset.
 7. **NUNCA criar agente de orquestração/lead** — o main session do Claude Code é o lead nativo.
 8. **`team-os-creator` nunca é copiado para projetos destino** — existe SÓ no CT. É a única skill exclusiva do CT.
 9. **`*install` entrega a infra, não a smart-memory** — copia agents + skills (incluindo `team-os`) + `settings.json` (+ hooks opcionais). A smart-memory é construída no projeto pelo próprio `/team-os` na 1ª sessão, a partir do codebase real (Discovery Engine). `*bootstrap` continua disponível para criação manual/no CT.
@@ -103,7 +103,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | **pm** | 10 (analyst, client, coach, data, demand, engineer, ops, planner, qa, reporter) | Gestão de projetos |
 | **custom** | 0 | Usuário monta do zero |
 
-> ⚠️ **Presets legados (não usar):** o diretório `presets/` ainda contém `content.yaml`, `marketing.yaml` e `data.yaml`, mas eles referenciam agentes que **não existem** no CT atual (ex.: `content-*`, `mkt-*`, `data-architect`, `ml-engineer`) — são remanescentes de um design antigo e `*squad content/marketing/data` falhariam. Não os use; pendente decisão de remover ou reconstruir.
+> Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites` (ou `social` se for workspace de conteúdo); `data-pipeline` → `dev`.
 
 ---
 
@@ -160,7 +160,7 @@ Ele chama o `scan-ct-projects.sh` (que reporta, por projeto: `team-os` instalada
 
 ### Passo 1 — Layout do painel (referência)
 
-O `dashboard.sh` produz exatamente este formato:
+O `dashboard.sh` produz um painel neste espírito (o formato exato é o que o script imprimir — não reformate):
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
@@ -211,7 +211,7 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ## Fluxo `*install`
 
 1. Lista projetos via `scan-ct-projects.sh`
-2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script avisa com `SQUADS_WARNING`). Na dúvida, pergunte ao usuário.
+2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script **aborta** com `ERROR=squads_all_without_match_target`). Na dúvida, pergunte ao usuário.
 3. Preview da instalação
 4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `"worktree": { "bgIsolation": "none" }` e o registro PreToolUse do `block-worktree.sh` (+ hooks se `--include-hooks`)
 4b. **Instala a trava anti-worktree (sempre, independente de `--include-hooks`):** copia `block-worktree.sh` para `.claude/hooks/` do destino. Se o `settings.json` do destino já existia, o script emite `SETTINGS_WORKTREE_TODO` / `SETTINGS_WORKTREE_HOOK_TODO` — nesse caso, edite o settings preservando o JSON existente. Worktrees são proibidos em todos os projetos: agentes trabalham direto na branch ativa (ownership disjunto resolve conflitos).
@@ -269,10 +269,12 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ├── scripts/
 │   ├── preflight.sh
 │   ├── detect-project-signals.sh
-│   ├── validate-agent.sh           ← *audit
-│   ├── scan-ct-projects.sh         ← status + drift por hash
+│   ├── validate-agent.sh           ← *audit (forma + regras: memory/skills/isolation/hooks/model/effort)
+│   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills)
 │   ├── dashboard.sh                ← Command Center (render do painel)
 │   ├── diff-agents.sh
+│   ├── generate-agent.sh           ← materializa template de archetype
+│   ├── search-skills.sh · install-suggested-skills.sh
 │   └── install-to-project.sh
 └── templates/
 ```

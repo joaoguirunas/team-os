@@ -44,8 +44,8 @@ else
   done
 fi
 
-# Sempre limpar .agents/ extra (o CLI cria pra outros runtimes; não usamos)
-if [ -d ".agents" ]; then
+# Limpar .agents/ extra criado pelo CLI (só se não existia antes da execução)
+if [ -d ".agents" ] && [ "${AGENTS_DIR_PREEXISTED:-0}" -eq 0 ]; then
   rm -rf .agents
 fi
 

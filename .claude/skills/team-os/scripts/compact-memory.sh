@@ -37,7 +37,7 @@ TARGET="$(cd "$TARGET" 2>/dev/null && pwd)"
 SM="$TARGET/docs/smart-memory"
 DATE="$(date +%F)"
 # Quarter atual: YYYY-QN
-Y="$(date +%Y)"; M="$(date +%-m 2>/dev/null || date +%m | sed 's/^0//')"
+Y="$(date +%Y)"; M="$(date +%m | sed 's/^0//')"
 Q=$(( (M - 1) / 3 + 1 ))
 QDIR="$Y-Q$Q"
 
@@ -83,6 +83,17 @@ if [ -n "$ARCHIVE_FILE" ]; then
   exit 0
 fi
 
+# ── Helper: destino sem sobrescrever (anti-colisão) ───────────────────────────
+# Se o destino já existe, acrescenta sufixo -2, -3, … — garantia de zero perda.
+safe_dest() { # $1=dest_dir $2=basename → imprime path livre
+  local dir="$1" base="$2" stem ext n=2 cand
+  cand="$dir/$base"
+  if [ ! -e "$cand" ]; then echo "$cand"; return; fi
+  stem="${base%.md}"; ext=".md"
+  while [ -e "$dir/$stem-$n$ext" ]; do n=$((n + 1)); done
+  echo "$dir/$stem-$n$ext"
+}
+
 # ── Helpers de frontmatter (para o modo resolved) ─────────────────────────────
 # Lê um campo do frontmatter YAML (primeiro bloco --- ... ---)
 fm_field() { # $1=file $2=field
@@ -103,7 +114,8 @@ archive_resolved() {
     case "$k" in reference|digest) continue ;; esac
     rel="${f#$SM/}"
     # nunca tocar stories/ fora de done (active/in-review/backlog são do fluxo de stories)
-    case "$rel" in stories/*) continue ;; esac
+    # nem project/ e decisions/ (contrato do header: estado permanente, nunca arquivado)
+    case "$rel" in stories/*|project/*|decisions/*) continue ;; esac
     lines="$(wc -l < "$f" | tr -d ' ')"
     title="$(md_title "$f")"
     if [ "$DRY" -eq 1 ]; then
@@ -115,9 +127,13 @@ archive_resolved() {
     if [ ! -f "$ledger" ]; then
       printf '# Arquivo — LEDGER geral\n\n| Data | Origem | Título | Linhas | Arquivo |\n|---|---|---|---|---|\n' > "$ledger"
     fi
-    mv "$f" "$dest_dir/$base"
+    # nome achatado do path relativo (agents/qa/audit.md → agents-qa-audit.md)
+    # evita colisão entre áreas; safe_dest cobre colisão residual no mesmo quarter
+    flat="$(echo "$rel" | tr '/' '-')"
+    dest="$(safe_dest "$dest_dir" "$flat")"
+    mv "$f" "$dest"
     printf '| %s | `%s` | %s | %s | `_archive/%s/resolved/%s` |\n' \
-      "$DATE" "$rel" "$title" "$lines" "$QDIR" "$base" >> "$ledger"
+      "$DATE" "$rel" "$title" "$lines" "$QDIR" "$(basename "$dest")" >> "$ledger"
     moved=$((moved + 1))
   done <<EOF
 $(find "$SM" -type d -name '_archive' -prune -o -type f -name '*.md' -print 2>/dev/null)
@@ -192,9 +208,10 @@ while IFS= read -r f; do
   base="$(basename "$f")"
   title="$(md_title "$f")"
   story="$(echo "$base" | sed 's/\.md$//')"
-  mv "$f" "$DEST_DIR/$base"
+  dest="$(safe_dest "$DEST_DIR" "$base")"
+  mv "$f" "$dest"
   printf '| `%s` | %s | %s | `_archive/%s/stories-done/%s` |\n' \
-    "$story" "$title" "$DATE" "$QDIR" "$base" >> "$LEDGER"
+    "$story" "$title" "$DATE" "$QDIR" "$(basename "$dest")" >> "$LEDGER"
   MOVED=$((MOVED + 1))
 done <<EOF
 $(find "$DONE_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'LEDGER.md' 2>/dev/null)
