@@ -414,7 +414,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 8 templates de archetype
         ├── reference/           ← archetypes, smart-memory, catálogo de skills
-        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install
+        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install · generate-agents-page.py
         ├── presets/             ← presets de squad
         └── hooks/
 
@@ -459,6 +459,8 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 ```
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
+
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 49 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 
