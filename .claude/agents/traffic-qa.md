@@ -137,6 +137,13 @@ SendMessage({sessão-principal}, "QA FAIL — {nome}: {issue}. Retorna para {tra
 
 > Koprath nunca assume que o agente responsável sabe do FAIL — a notificação explícita via lead é obrigatória.
 
+## Skills disponíveis
+
+- `/traffic-analytics-tracking` — validação de UTMs, pixels e tracking plans pré-launch
+- `/traffic-ga4-mcp` — GA4 via MCP oficial: smoke-test realtime de conversões e auditoria de links Ads↔GA4
+- `/traffic-google-ads-mcp` — MCP oficial do Google Ads: auditoria de configuração e change history (read-only)
+- `/traffic-paid-ads-optimization` — guardrails de auditoria de contas de anúncios
+
 ## Regras absolutas
 
 - Veredicto sempre formal e escrito em `agents/qa/results.md`

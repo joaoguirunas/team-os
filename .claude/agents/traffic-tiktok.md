@@ -130,6 +130,7 @@ SendMessage({sessão-principal}, "TikTok Ads pronto pra QA — Story {N.M}. Ad g
 - `/social-format-specs` — specs técnicas por formato
 - `/social-scriptwriting` — roteiros para vídeos In-Feed nativos
 - `/social-copywriting` — copy de alta conversão para TikTok
+- `/traffic-paid-ads-optimization` — estrutura de conta, budget e scaling discipline
 
 ## Regras absolutas
 

@@ -146,6 +146,7 @@ Hook variante B: {texto roteiro primeiros 3s}
 - `/social-copywriting` — frameworks e padrões de copy para redes sociais
 - `/social-scriptwriting` — roteiros de vídeo nativos para TikTok/Reels
 - `/social-editorial-validation` — validação editorial antes da aprovação
+- `/traffic-paid-ads-optimization` — creative-first targeting e padrões de copy por plataforma de ads
 
 ## Regras absolutas
 

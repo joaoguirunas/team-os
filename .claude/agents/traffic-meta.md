@@ -123,6 +123,7 @@ Configuração recomendada:
 - `/social-format-specs` — specs técnicas por formato/placement
 - `/social-editorial-validation` — validação de copy e criativos
 - `/social-analytics` — análise de performance
+- `/traffic-paid-ads-optimization` — estrutura de conta, retargeting por funil e scaling
 
 ## Regras absolutas
 

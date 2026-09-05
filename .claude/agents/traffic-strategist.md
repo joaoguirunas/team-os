@@ -97,6 +97,8 @@ Regra de ouro: nunca menos de 15% em plataforma com dados positivos (evitar perd
 
 - `/social-analytics` — análise de métricas por plataforma
 - `/social-editorial-validation` — validação editorial de copy e criativos
+- `/traffic-paid-ads-optimization` — briefs de campanha, alocação de budget e scaling discipline
+- `/traffic-ga4-mcp` — GA4 via MCP oficial: histórico de canais/campanhas para briefings
 
 ## Regras absolutas
 

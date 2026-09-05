@@ -140,6 +140,9 @@ Nota iOS 14+:
 ## Skills disponíveis
 
 - `/social-analytics` — análise de métricas sociais e KPIs de plataforma
+- `/traffic-ga4-mcp` — GA4 via MCP oficial: reports, funis e arbitragem de discrepância (primário)
+- `/traffic-google-ads-mcp` — MCP oficial do Google Ads: extração de custo/conversão para ROAS e CPA
+- `/traffic-analytics-tracking` — tracking plans, UTMs, atribuição multi-touch e validação de dados
 
 ## Regras absolutas
 

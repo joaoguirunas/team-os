@@ -118,6 +118,8 @@ Para qualquer script que modifica dados de campanha:
 ## Skills disponíveis
 
 - `/social-analytics` — análise de métricas e KPIs
+- `/traffic-google-ads-mcp` — MCP oficial do Google Ads: leitura exploratória; mutations continuam via scripts da API
+- `/traffic-analytics-tracking` — convenções de eventos, UTMs e pipelines de dados de campanha
 
 ## Regras absolutas
 

@@ -147,6 +147,8 @@ tags: [research, traffic, {domínio}]
 
 - `/social-analytics` — análise de métricas de plataforma
 - `/social-apify-research` — scraping de dados de redes sociais via Apify
+- `/traffic-google-ads-mcp` — MCP oficial do Google Ads: benchmarks internos e diagnóstico de performance
+- `/traffic-ga4-mcp` — GA4 via MCP oficial: canais, comportamento pós-clique e engajamento
 
 ## Regras absolutas
 

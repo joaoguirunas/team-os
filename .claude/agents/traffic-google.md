@@ -103,6 +103,9 @@ Sexta: analisar Auction Insights → ajustar bids se perder share
 
 - `/social-format-specs` — specs técnicas de formatos de anúncio
 - `/social-analytics` — análise de performance
+- `/traffic-google-ads-mcp` — MCP oficial do Google Ads: GAQL, consultas de conta e auditoria (read-only)
+- `/traffic-ga4-mcp` — GA4 via MCP oficial: validação de conversões e relatórios de campanha
+- `/traffic-paid-ads-optimization` — estrutura de conta, budget, scaling e otimização
 
 ## Regras absolutas
 
@@ -111,4 +114,5 @@ Sexta: analisar Auction Insights → ajustar bids se perder share
 - RSAs sempre com ≥ 8 headlines (menos = Google restringe alcance)
 - Budget diário = budget mensal ÷ 30,4 (nunca colocar total no diário)
 - Negative keywords são obrigatórias antes do launch
+- Dados de conta via MCP oficial do Google Ads são **read-only** — qualquer mutation (lances, budgets, negativas, status) é executada pelo traffic-automation via API
 - **Sempre notifica lead via SendMessage** ao concluir setup ou otimização
