@@ -13,11 +13,15 @@ SOURCE_SKILLS=""
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/agents" ] && SOURCE_AGENTS="$GIT_ROOT/.claude/agents"
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/skills" ] && SOURCE_SKILLS="$GIT_ROOT/.claude/skills"
 
-# Hash de diretório de skill (conteúdo agregado, ignora artefatos Icon\r do macOS)
+# Hash de diretório de skill (nomes relativos + conteúdo agregado; ignora
+# artefatos macOS Icon\r e .DS_Store). Incluir os NOMES no hash garante que
+# renomear/mover um arquivo também gera drift — não só mudar conteúdo.
 hash_dir() {
-  find "$1" -type f ! -name "Icon"$'\r' -print0 2>/dev/null | sort -z \
-    | xargs -0 cat 2>/dev/null \
-    | { command -v shasum >/dev/null 2>&1 && shasum -a 256 || md5sum; } \
+  {
+    (cd "$1" 2>/dev/null && find . -type f ! -name "Icon"$'\r' ! -name '.DS_Store' 2>/dev/null | sort)
+    (cd "$1" 2>/dev/null && find . -type f ! -name "Icon"$'\r' ! -name '.DS_Store' -print0 2>/dev/null \
+       | sort -z | xargs -0 cat 2>/dev/null)
+  } | { command -v shasum >/dev/null 2>&1 && shasum -a 256 || md5sum; } \
     | awk '{print $1}'
 }
 
@@ -43,6 +47,10 @@ hash_file() {
 
 echo "CT_ROOT=$CT_ROOT"
 [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_AGENTS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')"
+# nº de skills e squads do CT (o dashboard imprime "N agentes · N skills · N squads")
+[ -n "$SOURCE_SKILLS" ] && echo "SOURCE_SKILLS_COUNT=$(find "$SOURCE_SKILLS" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')"
+[ -n "$SOURCE_AGENTS" ] && echo "SOURCE_SQUADS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f -exec basename {} .md \; 2>/dev/null \
+  | sed 's/-.*//' | sort -u | wc -l | tr -d ' ')"
 echo "---"
 
 for dir in "$CT_ROOT"/*/; do
@@ -117,5 +125,11 @@ for dir in "$CT_ROOT"/*/; do
     done
   fi
 
-  echo "PROJECT=$name|PATH=$dir|IS_CURRENT=$is_current|HAS_AGENTS=$has_agents|AGENT_COUNT=$agent_count|AGENT_SQUADS=$agent_squads|HAS_SKILLS=$has_skills|SKILL_COUNT=$skill_count|HAS_HOOKS=$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)|HAS_TEAM_OS=$has_team_os|HAS_SMART_MEMORY=$has_smart_memory|DRIFT_OK=$drift_ok|DRIFT_OUTDATED=$drift_outdated|DRIFT_EXTRA=$drift_extra|DRIFT_MISSING=$drift_missing|SKILLS_OUTDATED=$skills_outdated"
+  # Formato TSV (TAB-delimitado): nomes reais de pasta contêm "|" (ex.: "João | Externo"),
+  # então pipe como delimitador quebrava o parse do dashboard.
+  printf 'PROJECT=%s\tPATH=%s\tIS_CURRENT=%s\tHAS_AGENTS=%s\tAGENT_COUNT=%s\tAGENT_SQUADS=%s\tHAS_SKILLS=%s\tSKILL_COUNT=%s\tHAS_HOOKS=%s\tHAS_TEAM_OS=%s\tHAS_SMART_MEMORY=%s\tDRIFT_OK=%s\tDRIFT_OUTDATED=%s\tDRIFT_EXTRA=%s\tDRIFT_MISSING=%s\tSKILLS_OUTDATED=%s\n' \
+    "$name" "$dir" "$is_current" "$has_agents" "$agent_count" "$agent_squads" \
+    "$has_skills" "$skill_count" "$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)" \
+    "$has_team_os" "$has_smart_memory" "$drift_ok" "$drift_outdated" "$drift_extra" \
+    "$drift_missing" "$skills_outdated"
 done

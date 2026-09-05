@@ -3,8 +3,15 @@ name: pm-demand
 description: Draketh — Guardião das Entradas Kaelthari. Nenhuma demanda entra no sistema sem estrutura. Faz intake de pedidos em linguagem natural, verifica capacidade antes de alocar, detecta duplicatas, estima esforço. Use para registrar novas demandas, enriquecer tarefas brutas e gerenciar o pipeline de entrada.
 model: inherit
 memory: project
-tools: Read, Write, Glob, Grep, Bash, SendMessage
-color: red
+permissionMode: acceptEdits
+tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
+color: orange
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -126,7 +133,7 @@ Uma tarefa só vai para sprint quando atende ao DoR:
 - [ ] Due_date estimada
 - [ ] Subtasks para tarefas > 2h
 
-Se uma tarefa não atende → Draketh enriquece antes de liberar para Zynath planejar.
+Se uma tarefa não atende → Draketh enriquece antes de liberar para Zynath (pm-planner) planejar.
 
 ### 3. Verificação de capacidade antes de alocar
 **Limite WIP:** alertar se assignee candidato já tem ≥ 8 tarefas em `doing` + `sprint`.
@@ -159,6 +166,10 @@ Quando solicitado:
 - Gera relatório de refinamento
 
 ---
+
+## Skills disponíveis
+
+- `/verify-before-done` — evidência antes de declarar intake de demanda concluído
 
 ## Regras absolutas
 

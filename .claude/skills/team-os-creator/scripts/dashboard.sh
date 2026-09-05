@@ -14,16 +14,19 @@ fi
 
 RAW="$(bash "$SCAN" "$@")"
 
-field() { printf '%s' "$1" | tr '|' '\n' | grep "^$2=" | cut -d= -f2-; }
+# Campos vêm em TSV do scan (TAB-delimitado — nomes de pasta podem conter "|")
+field() { printf '%s' "$1" | tr '\t' '\n' | grep "^$2=" | cut -d= -f2-; }
 
 ct_root="$(printf '%s\n' "$RAW" | grep '^CT_ROOT=' | cut -d= -f2-)"
 src_agents="$(printf '%s\n' "$RAW" | grep '^SOURCE_AGENTS=' | cut -d= -f2-)"
+src_skills="$(printf '%s\n' "$RAW" | grep '^SOURCE_SKILLS_COUNT=' | cut -d= -f2-)"
+src_squads="$(printf '%s\n' "$RAW" | grep '^SOURCE_SQUADS=' | cut -d= -f2-)"
 
 echo "╔════════════════════════════════════════════════════════════════════╗"
 echo "║  team-os-creator  ·  Command Center  ·  by João Guirunas            ║"
 echo "╚════════════════════════════════════════════════════════════════════╝"
 echo
-echo "  CT (fonte): ${src_agents:-?} agentes  ·  root: $ct_root"
+echo "  CT (fonte): ${src_agents:-?} agentes · ${src_skills:-?} skills · ${src_squads:-?} squads  ·  root: $ct_root"
 echo
 printf "  %-24s %-8s %-8s %-13s %s\n" "PROJETO" "team-os" "agentes" "smart-mem" "DRIFT vs CT"
 printf "  %-24s %-8s %-8s %-13s %s\n" "------------------------" "-------" "-------" "-------------" "-----------"

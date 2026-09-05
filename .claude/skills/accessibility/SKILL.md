@@ -1,10 +1,9 @@
 ---
 name: accessibility
-description: Audit and improve web accessibility following WCAG 2.2 guidelines. Use when asked to "improve accessibility", "a11y audit", "WCAG compliance", "screen reader support", "keyboard navigation", or "make accessible".
+description: Auditar e melhorar acessibilidade web seguindo WCAG 2.2 — inclui padrões específicos para Next.js/Tailwind. Use ao "melhorar acessibilidade", fazer "a11y audit", garantir "WCAG compliance", suporte a screen reader, navegação por teclado ou "tornar acessível".
+version: "1.2"
+updated: "2026-09-04"
 license: MIT
-metadata:
-  author: web-quality-skills
-  version: "1.1"
 ---
 
 # Accessibility (a11y)
@@ -381,6 +380,70 @@ Use `aria-live` regions to announce dynamic content changes without moving focus
 
 ---
 
+## Next.js/Tailwind — padrões específicos
+
+Padrões prontos para a stack de sites do CT (Next.js App Router + Tailwind + shadcn/ui), alinhados à WCAG 2.2.
+
+### Padrões ARIA essenciais (JSX)
+
+```tsx
+// Botão que abre modal
+<button aria-haspopup="dialog" aria-expanded={isOpen}>Menu</button>
+
+// Modal
+<div role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <h2 id="modal-title">Título</h2>
+</div>
+
+// Nav com landmark nomeada
+<nav aria-label="Principal">...</nav>
+
+// Imagem decorativa
+<img src="..." alt="" aria-hidden="true" />
+
+// Loading state anunciado sem roubar foco (4.1.3)
+<div aria-live="polite" aria-busy={isLoading}>...</div>
+```
+
+### Skip link com Tailwind (2.4.1)
+
+```tsx
+<a
+  href="#main-content"
+  className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground"
+>
+  Pular para o conteúdo
+</a>
+```
+
+`sr-only` do Tailwind substitui a classe `.visually-hidden` manual; `focus:not-sr-only` torna o link visível ao receber foco.
+
+### Focus visible com Tailwind (2.4.7)
+
+```css
+/* Substituir o outline padrão mantendo :focus-visible */
+@layer base {
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+```
+
+### Checklist rápido para páginas Next.js
+
+- [ ] `lang` definido no `<html>` do root `layout.tsx`
+- [ ] Todos os elementos interativos acessíveis por teclado (componentes shadcn/Radix já cobrem isso — não quebrar com wrappers)
+- [ ] Focus trap apenas em modais (Radix `Dialog` gerencia automaticamente)
+- [ ] HTML semântico correto; ARIA apenas quando o HTML nativo não basta
+- [ ] Alvos de toque ≥ 24×24px (2.5.8) — botões de ícone com `size="icon"` já cumprem
+
+### Teste rápido
+1. Navegar a página inteira só com Tab/Enter/Escape
+2. Ler com VoiceOver (Mac) ou NVDA (Windows)
+3. Desativar CSS e verificar a estrutura semântica
+
+---
+
 ## Testing checklist
 
 ### Automated testing
@@ -435,6 +498,5 @@ See the [screen reader commands reference](references/A11Y-PATTERNS.md#screen-re
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/)
 - [Deque axe Rules](https://dequeuniversity.com/rules/axe/)
-- [Web Quality Audit](../web-quality-audit/SKILL.md)
 - [WCAG criteria reference](references/WCAG.md)
 - [Accessibility code patterns](references/A11Y-PATTERNS.md)

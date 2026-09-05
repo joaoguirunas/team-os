@@ -1,6 +1,8 @@
 ---
 name: data-sql-optimization
 description: "SQL optimization for OLTP systems: EXPLAIN analysis, indexing, schema design, migrations, HA, and security across major SQL platforms."
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # SQL Optimization — Comprehensive Reference
@@ -159,25 +161,21 @@ Templates are organized by database technology for precision and clarity:
 
 ## Related Skills
 
-**Infrastructure & Operations:**
-- [../ops-devops-platform/SKILL.md](../ops-devops-platform/SKILL.md) — Infrastructure, backups, monitoring, and incident response
-- [../qa-observability/SKILL.md](../qa-observability/SKILL.md) — Performance monitoring, profiling, and metrics
-- [../qa-debugging/SKILL.md](../qa-debugging/SKILL.md) — Production debugging patterns
-
 **Application Integration:**
-- [../software-backend/SKILL.md](../software-backend/SKILL.md) — API/database integration and application patterns
-- [../software-architecture-design/SKILL.md](../software-architecture-design/SKILL.md) — System design and data architecture
 - [../dev-api-design/SKILL.md](../dev-api-design/SKILL.md) — REST API and database interaction patterns
+- [../dev-database-patterns/SKILL.md](../dev-database-patterns/SKILL.md) — Application-side database patterns (migrations, N+1, pooling)
+- [../data-supabase-patterns/SKILL.md](../data-supabase-patterns/SKILL.md) — Postgres/Supabase specifics (RLS, EXPLAIN diagnostics)
 
 **Quality & Security:**
-- [../qa-resilience/SKILL.md](../qa-resilience/SKILL.md) — Resilience, circuit breakers, and failure handling
-- [../software-security-appsec/SKILL.md](../software-security-appsec/SKILL.md) — Database security, auth, SQL injection prevention
-- [../qa-testing-strategy/SKILL.md](../qa-testing-strategy/SKILL.md) — Database testing strategies
+- [../dev-error-handling/SKILL.md](../dev-error-handling/SKILL.md) — Resilience, retry, circuit breakers
+- [../dev-security-patterns/SKILL.md](../dev-security-patterns/SKILL.md) — Database security, auth, SQL injection prevention
+- [../dev-testing-strategy/SKILL.md](../dev-testing-strategy/SKILL.md) — Testing strategies
 
 **Data Engineering:**
 - [../ai-ml-data-science/SKILL.md](../ai-ml-data-science/SKILL.md) — SQLMesh, dbt, data transformations
-- [../ai-mlops/SKILL.md](../ai-mlops/SKILL.md) — Data pipelines, ETL, and warehouse loading (dlt)
 - [../ai-ml-timeseries/SKILL.md](../ai-ml-timeseries/SKILL.md) — Time-series databases and forecasting
+
+For infrastructure operations, monitoring, and incident response, use the operational references in this skill: [references/operational-patterns.md](references/operational-patterns.md) and [references/monitoring-alerting-patterns.md](references/monitoring-alerting-patterns.md).
 
 ---
 
@@ -346,11 +344,7 @@ This skill focuses on **query optimization** within a single database. For relat
 - Unit tests and audits for SQL transformations
 
 **Data Ingestion (Loading into Warehouses):**
--> **[ai-mlops](../ai-mlops/SKILL.md)** skill
-- dlt templates for extracting from REST APIs, databases
-- Loading to Snowflake, BigQuery, Redshift, Postgres, DuckDB
-- Incremental loading patterns (timestamp, ID-based, merge/upsert)
-- Database replication (Postgres, MySQL, MongoDB -> warehouse)
+Use dlt (data load tool) to extract from REST APIs and databases and load into Snowflake, BigQuery, Redshift, Postgres, or DuckDB, with incremental loading (timestamp, ID-based, merge/upsert); ingestion patterns are covered in **[data-lake-platform](../data-lake-platform/SKILL.md)**.
 
 **Data Lake Infrastructure:**
 -> **[data-lake-platform](../data-lake-platform/SKILL.md)** skill

@@ -19,7 +19,12 @@
 TARGET=""; FORCE=0; DRY=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --target) TARGET="$2"; shift 2 ;;
+    --target)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then
+        echo "ERRO: --target requer um valor (diretório do projeto)" >&2
+        exit 2
+      fi
+      TARGET="$2"; shift 2 ;;
     --force)  FORCE=1; shift ;;
     --dry-run) DRY=1; shift ;;
     *) shift ;;
@@ -29,7 +34,14 @@ done
 if [ -z "$TARGET" ]; then
   TARGET="$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
-TARGET="$(cd "$TARGET" && pwd)"
+# Guarda: se o cd falhar (typo no path), TARGET viraria vazio e o script
+# tentaria criar /docs/smart-memory na raiz do filesystem. Abortar limpo.
+TARGET_RESOLVED="$(cd "$TARGET" 2>/dev/null && pwd)"
+if [ -z "$TARGET_RESOLVED" ] || [ ! -d "$TARGET_RESOLVED" ]; then
+  echo "ERRO: target não existe ou não é acessível: $TARGET" >&2
+  exit 2
+fi
+TARGET="$TARGET_RESOLVED"
 SM="$TARGET/docs/smart-memory"
 DATE="$(date +%F)"
 PROJECT_NAME="$(basename "$TARGET")"
@@ -310,7 +322,7 @@ tags: [project, conventions]
 
 - **Gerenciador de pacotes:** ${PKG_MGR:-—}
 - **TypeScript:** $(hasf tsconfig.json && echo "sim (tsconfig.json presente)" || echo "—")
-- **Lint/format:** $(lf="$(echo "$TOOLING" | grep -o 'ESLint\|Prettier' | paste -sd' · ' - 2>/dev/null)"; echo "${lf:-—}")
+- **Lint/format:** $(lf="$(echo "$TOOLING" | grep -o 'ESLint\|Prettier' | awk '{ if (NR > 1) printf(" · "); printf("%s", $0) } END { print "" }')"; echo "${lf:-—}")
 - **Estrutura:** $([ "$MONOREPO" = "sim" ] && echo "monorepo (workspaces)" || echo "app único")
 
 ## Padrões observados
@@ -354,8 +366,8 @@ tags: [modules]
 
 $(printf "%b" "$MODULE_DIRS" | while IFS= read -r mod; do
   [ -n "$mod" ] || continue
-  files="$(find "$TARGET/$mod" -maxdepth 1 -mindepth 1 -not -name 'node_modules' -exec basename {} \; 2>/dev/null | sort | head -12 | paste -sd', ' -)"
-  printf '## \`%s\`\n**Responsabilidade:** <!-- TODO -->\n\n1º nível: %s\n\n' "$mod" "${files:-—}"
+  files="$(find "$TARGET/$mod" -maxdepth 1 -mindepth 1 -not -name 'node_modules' -not -name '.DS_Store' -not -name "Icon"$'\r' -exec basename {} \; 2>/dev/null | sort | head -12 | awk '{ if (NR > 1) printf(", "); printf("%s", $0) } END { print "" }')"
+  printf '## \140%s\140\n**Responsabilidade:** <!-- TODO -->\n\n1º nível: %s\n\n' "$mod" "${files:-—}"
 done)
 
 ## God Nodes

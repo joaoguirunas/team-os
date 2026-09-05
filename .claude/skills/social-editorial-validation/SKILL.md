@@ -1,9 +1,13 @@
 ---
 name: social-editorial-validation
-description: Validação editorial de conteúdo social — checklist de qualidade, alinhamento estratégico e compliance. Injectado em VERA (social-strategist).
+description: Validação editorial de conteúdo social — checklist de qualidade, alinhamento estratégico e compliance. Use ao revisar conteúdo antes de publicar, validar alinhamento com a estratégia da marca, checar compliance ou emitir aprovação editorial de posts e campanhas.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Editorial Validation — Checklist VERA
+
+> Skill injetada no agente VERA (social-strategist).
 
 ## Checklist completo de validação
 
@@ -23,7 +27,7 @@ description: Validação editorial de conteúdo social — checklist de qualidad
 
 ### 3. Qualidade visual
 - [ ] Resolução adequada para a plataforma
-- [ ] Identidade de marca presente e correcta
+- [ ] Identidade de marca presente e correta
 - [ ] Contraste de texto legível (WCAG AA mínimo)
 - [ ] Zona segura respeitada (elementos importantes fora das bordas)
 - [ ] Consistência com KV da campanha
@@ -45,7 +49,7 @@ description: Validação editorial de conteúdo social — checklist de qualidad
 
 | Veredicto | Critério | Próximo passo |
 |---|---|---|
-| **APROVADO** | Todos os itens ok | → PULSE pode publicar (após confirmação utilizador) |
+| **APROVADO** | Todos os itens ok | → PULSE pode publicar (após confirmação usuário) |
 | **APROVADO COM RESSALVAS** | Pequenos ajustes necessários | Ajustar e publicar sem nova validação |
 | **REJEITADO** | Falhas críticas | Devolver ao agente responsável com feedback específico |
 
@@ -61,7 +65,7 @@ description: Validação editorial de conteúdo social — checklist de qualidad
 **Estratégia:** [ok | problema: ...]
 **Compliance:** [ok | problema: ...]
 
-**Acções requeridas antes de publicar:**
+**Ações requeridas antes de publicar:**
 1. [se houver]
 
 **Aprovado por:** VERA — [timestamp]

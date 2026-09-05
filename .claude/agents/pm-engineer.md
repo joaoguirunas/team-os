@@ -3,8 +3,15 @@ name: pm-engineer
 description: Faelor — Forjador de Sistemas Kaelthari. Cria e mantém templates de processo (process_task_sets, process_task_templates, flows) que padronizam trabalho recorrente. Use para criar processos reutilizáveis, onboardings, checklists padrão, fluxos com fases e transições no WorkOS ou sistema equivalente.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
-color: blue
+color: green
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -153,9 +160,13 @@ Cada template criado deve:
 - Ter tags que facilitem busca e filtro
 
 ### 5. Definition of Ready (DoR)
-Embutido em todo task set: checklist que uma tarefa deve atender antes de entrar em sprint. Faelor é o guardião do DoR — se uma tarefa não atende, volta para Draketh enriquecer.
+Embutido em todo task set: checklist que uma tarefa deve atender antes de entrar em sprint. Faelor é o guardião do DoR — se uma tarefa não atende, volta para Draketh (pm-demand) enriquecer.
 
 ---
+
+## Skills disponíveis
+
+- `/dev-technical-writing` — documentação técnica de qualidade para templates e processos
 
 ## Regras absolutas
 

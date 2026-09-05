@@ -35,6 +35,7 @@ fi
 # Detectar framework (TypeScript/JS)
 if [ -f "package.json" ]; then
   if grep -q '"next"' package.json 2>/dev/null; then FRAMEWORK="next"
+  elif grep -q '"astro"' package.json 2>/dev/null; then FRAMEWORK="astro"
   elif grep -q '"react"' package.json 2>/dev/null; then FRAMEWORK="react"
   elif grep -q '"vue"' package.json 2>/dev/null; then FRAMEWORK="vue"
   elif grep -q '"svelte"' package.json 2>/dev/null; then FRAMEWORK="svelte"
@@ -86,10 +87,17 @@ if find . -maxdepth 3 \( -path "*/content/*" -o -path "*/posts/*" -o -name "*.md
 fi
 
 # Classificar archetype
-if [ $HAS_ML -eq 1 ]; then
-  ARCHETYPE="data-pipeline"
-elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
+# Ordem importa: fullstack primeiro (um SaaS com pandas no requirements não é
+# data-pipeline — o teste HAS_ML vem DEPOIS da classificação fullstack).
+# "website" = Next/Astro/landing sem backend pesado (backend + database juntos)
+# — sem ele o preset `sites` era inalcançável.
+if [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
   ARCHETYPE="fullstack-saas"
+elif [ $HAS_ML -eq 1 ]; then
+  ARCHETYPE="data-pipeline"
+elif [ $HAS_FRONTEND -eq 1 ] && { [ "$FRAMEWORK" = "next" ] || [ "$FRAMEWORK" = "astro" ]; }; then
+  # Next/Astro sem backend pesado (o caso backend+database já saiu como fullstack)
+  ARCHETYPE="website"
 elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_CONTENT -eq 1 ]; then
   ARCHETYPE="content-site"
 elif [ $HAS_MOBILE -eq 1 ]; then
@@ -100,7 +108,25 @@ elif [ $HAS_FRONTEND -eq 1 ]; then
   ARCHETYPE="frontend-app"
 fi
 
+# Mapear archetype → preset do team-os-creator
+SUGGESTED_PRESET="custom"
+WARNING=""
+case "$ARCHETYPE" in
+  fullstack-saas|data-pipeline|api-service|frontend-app)
+    SUGGESTED_PRESET="dev" ;;
+  website|content-site)
+    SUGGESTED_PRESET="sites" ;;
+  mobile-app)
+    # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
+    SUGGESTED_PRESET="dev"
+    WARNING="mobile-app detectado: não há preset mobile — usando preset dev (revise a squad manualmente)"
+    ;;
+esac
+[ -n "$WARNING" ] && echo "⚠️  $WARNING" >&2
+
 echo "PROJECT_ARCHETYPE=$ARCHETYPE"
+echo "SUGGESTED_PRESET=$SUGGESTED_PRESET"
+[ -n "$WARNING" ] && echo "WARNING=$WARNING"
 echo "LANGUAGE=$LANGUAGE"
 echo "FRAMEWORK=$FRAMEWORK"
 echo "HAS_FRONTEND=$HAS_FRONTEND"

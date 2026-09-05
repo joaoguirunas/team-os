@@ -2,7 +2,7 @@
 name: dev-testing-strategy
 description: Estratégia de testes para software complexo — pirâmide de testes, cobertura mínima, unit vs integration vs E2E, mocking strategy.
 version: "1.1"
-updated: "2026-04-21"
+updated: "2026-09-04"
 ---
 
 # Testing Strategy — Software Complexo
@@ -87,6 +87,8 @@ test('user completes onboarding', async ({ page }) => {
   await expect(page).toHaveURL('/dashboard')
 })
 ```
+
+Para implementação Playwright (locators, fixtures, anti-flakiness, CI), carregue a skill `/testing-playwright-e2e`.
 
 ## Mocking Strategy
 

@@ -1,6 +1,8 @@
 ---
 name: sites-seo-keywords
-description: Keyword research e estratégia de conteúdo SEO — intent, clustering, mapeamento por página.
+description: Keyword research e estratégia de conteúdo SEO — intenção de busca, clustering e mapeamento de keywords por página. Use ao pesquisar palavras-chave, definir estratégia de conteúdo orgânico, agrupar keywords por intenção ou mapear termos para as páginas do site.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Sites SEO Keywords — Research e Estratégia

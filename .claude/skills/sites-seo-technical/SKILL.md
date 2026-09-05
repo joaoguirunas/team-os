@@ -1,6 +1,8 @@
 ---
 name: sites-seo-technical
-description: SEO técnico para websites Next.js — meta tags, schema.org, sitemap, robots.txt, Core Web Vitals.
+description: SEO técnico para websites Next.js — meta tags, schema.org, sitemap, robots.txt e Core Web Vitals. Use ao implementar ou auditar SEO on-page, configurar metadata e dados estruturados, gerar sitemap e robots ou otimizar Core Web Vitals para ranking.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Sites SEO Técnico — Next.js

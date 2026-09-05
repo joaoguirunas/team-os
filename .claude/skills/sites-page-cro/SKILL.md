@@ -1,6 +1,8 @@
 ---
 name: sites-page-cro
-description: Optimização de conversão para páginas web — estrutura, hierarquia, trust signals e redução de fricção.
+description: Otimização de conversão para páginas web — estrutura de landing page, hierarquia, trust signals e redução de fricção. Use ao montar ou revisar landing pages, melhorar taxa de conversão, posicionar CTAs e provas sociais ou diagnosticar páginas que não convertem.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Sites Page CRO — Conversion Rate Optimisation
@@ -37,7 +39,7 @@ description: Optimização de conversão para páginas web — estrutura, hierar
 ```
 
 ## Trust signals essenciais
-- Número de clientes ou utilizadores
+- Número de clientes ou usuários
 - Anos de experiência
 - Certificações relevantes
 - Press mentions

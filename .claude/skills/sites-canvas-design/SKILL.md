@@ -1,6 +1,8 @@
 ---
 name: sites-canvas-design
-description: Design de componentes visuais complexos com Canvas HTML5 e SVG — gráficos, ilustrações e elementos custom.
+description: Design de componentes visuais complexos com Canvas HTML5 e SVG — gráficos, partículas, ilustrações e backgrounds custom. Use ao criar visual que CSS não resolve — animação de partículas, gráficos dinâmicos, ícones SVG otimizados ou backgrounds avançados (grid, mesh, noise).
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Sites Canvas Design — HTML5 Canvas e SVG
@@ -14,7 +16,7 @@ description: Design de componentes visuais complexos com Canvas HTML5 e SVG — 
 | Jogos e simulações | Logos e elementos de marca |
 | Processamento de imagem | Diagramas e infográficos |
 
-## SVG optimizado para web
+## SVG otimizado para web
 
 ```tsx
 export function Icon({ className }: { className?: string }) {
@@ -66,12 +68,20 @@ export function Icon({ className }: { className?: string }) {
 ```tsx
 useEffect(() => {
   const canvas = canvasRef.current
+  if (!canvas) return
   const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  let rafId: number
   const animate = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     particles.forEach(p => { p.update(); p.draw(ctx) })
-    requestAnimationFrame(animate)
+    rafId = requestAnimationFrame(animate)
   }
-  animate()
+  rafId = requestAnimationFrame(animate)
+
+  return () => cancelAnimationFrame(rafId)
 }, [])
 ```
+
+Regras: sempre null-check de `canvasRef.current` e `getContext`, guardar o id do `requestAnimationFrame` e cancelar no cleanup — sem isso o loop continua rodando após o unmount (memory leak e erro em strict mode).

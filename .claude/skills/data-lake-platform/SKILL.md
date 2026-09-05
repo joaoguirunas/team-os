@@ -1,6 +1,8 @@
 ---
 name: data-lake-platform
 description: "Data lake and lakehouse patterns: ingestion, CDC, Iceberg/Delta/Hudi, Trino/DuckDB, orchestration, and governance. Self-hosted and cloud."
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Data Lake Platform
@@ -121,7 +123,6 @@ sqlmesh plan && sqlmesh run
 
 | Skill | Purpose |
 |-------|---------|
-| [ai-mlops](../ai-mlops/SKILL.md) | ML deployment |
 | [ai-ml-data-science](../ai-ml-data-science/SKILL.md) | Feature engineering |
 | [data-sql-optimization](../data-sql-optimization/SKILL.md) | OLTP optimization |
 

@@ -2,7 +2,15 @@
 # install-suggested-skills.sh — instala 1 ou N skills via skills.sh CLI
 # Usage: ./install-suggested-skills.sh <owner/repo> <skill-slug>
 #   OR bulk: passa pela stdin, uma por linha: owner/repo@slug
-# Sempre limpa .agents/ extra criada pelo CLI
+# Limpa .agents/ extra criada pelo CLI — SÓ se ela não existia antes da execução
+
+# Registrar ANTES de instalar se .agents/ já existia (senão o rm -rf do final
+# apagaria um diretório legítimo do projeto)
+if [ -d ".agents" ]; then
+  AGENTS_DIR_PREEXISTED=1
+else
+  AGENTS_DIR_PREEXISTED=0
+fi
 
 install_one() {
   local repo="$1"

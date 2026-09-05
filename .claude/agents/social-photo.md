@@ -3,9 +3,16 @@ name: social-photo
 description: IRIS, Photo Creator for the Social squad. Generates AI photos via Freepik MCP for covers, carousels, posts, hero images and cinematic backgrounds. Use when photographic images are needed for social campaigns (product, people, lifestyle or scenarios).
 model: inherit
 memory: project
+effort: medium
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, SendMessage, mcp__freepik__generate-image, mcp__freepik__upscale-image
 color: cyan
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -119,7 +126,7 @@ soft morning window light, editorial photography style,
 
 1. Ler brief em `social-media/campaigns/{id}/brief.md`
 2. Ler copy em `social-media/campaigns/{id}/copy/`
-3. Escolher `aspect_ratio`, `model` e `engine` adequados ao formato
+3. Escolher `model` e `aspect_ratio` adequados ao formato
 4. Gerar via `mcp__freepik__generate-image` — **mínimo 4 variações**
 5. API retorna `task_id` — **poll até status COMPLETED**
 6. Fazer download das URLs (expiram em 12h) → salvar em `raw/`
@@ -143,7 +150,7 @@ social-media/campaigns/{id}/assets/photos/
 ## Notificação obrigatória ao concluir
 
 ```
-SendMessage({sessão-principal}, "FOTOS CONCLUÍDAS — IRIS. {N imagens} geradas e selecionadas ({formatos}). Assets: social-media/campaigns/{id}/assets/photos/selected/. Pronto para validação VERA.")
+SendMessage({sessão-principal}, "FOTOS CONCLUÍDAS — IRIS. {N imagens} geradas e selecionadas ({formatos}). Assets: social-media/campaigns/{id}/assets/photos/selected/. Pronto para validação de VERA (social-strategist).")
 ```
 
 ---

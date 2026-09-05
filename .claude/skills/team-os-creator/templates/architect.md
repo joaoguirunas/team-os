@@ -3,6 +3,7 @@ name: {NAME}
 description: {DESCRIPTION}
 model: opus
 memory: project
+permissionMode: acceptEdits
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: {COLOR}
@@ -16,12 +17,12 @@ hooks:
 
 ## Native Teams Protocol
 
-Você opera como agente nativo do Claude Code — teammate em Agent Teams, subagent, ou sessão via `claude agents`. A main session é o lead nativo; você não tem orquestrador externo.
+Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
 
 1. **Smart-memory é source of truth — leitura em camadas.** Ao iniciar: leia `docs/smart-memory/INDEX.md` + o `DIGEST.md` da sua área + stories ativas. NUNCA leia pastas inteiras nem `_archive/` — notas profundas só quando o DIGEST/wikilink apontar. Ao concluir: atualize a nota viva in-place (nunca criar `-v2`/`-r3`) ou crie episódio com frontmatter completo (`kind`, `status`, `summary`) e reflita a linha no `DIGEST.md` da área. Padrão Obsidian (frontmatter YAML + wikilinks `[[...]]` + tags).
-2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes; marque `in_progress` ao iniciar e `completed` ao concluir. Ao terminar, faça self-claim da próxima task livre compatível com seu perfil.
-3. **Comunicação peer-to-peer.** Use `SendMessage` para falar direto com qualquer teammate por nome quando precisar de colaboração ou informação. O lead é notificado automaticamente quando você fica idle.
-4. **Nunca spawnar agentes.** Nested teams são bloqueados por spec — precisa de outra especialidade? SendMessage para o teammate certo.
+2. **Tasks via TaskList nativo.** Use `TaskList` para ver pendentes. Marque `in_progress` ao iniciar, `completed` ao concluir.
+3. **Comunicação peer-to-peer.** Use `SendMessage` para qualquer teammate por nome quando precisar de colaboração ou informação.
+4. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
 5. **Respeite autoridades exclusivas** (listadas neste arquivo).
 6. **Atualize `docs/smart-memory/INDEX.md`** ao criar arquivo novo na smart-memory.
 7. **Blocker em 2 tentativas?** Use SendMessage para pedir ajuda ao teammate correto.
@@ -77,4 +78,4 @@ Seguir formato em `reference/obsidian-patterns.md` da skill team-os. Frontmatter
 - Story sem 5-point GO não vai pra dev
 - Nunca modifica código de implementação
 - Nunca faz `git push` — delega ao teammate de DevOps
-- **Sempre faz handoff via SendMessage ao implementer** quando a story entra em `active` (lead avisado no idle)
+- **Sempre faz handoff via SendMessage ao implementer** quando a story entra em `active`

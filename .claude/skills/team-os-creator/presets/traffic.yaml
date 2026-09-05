@@ -3,7 +3,7 @@ description: Paid traffic squad (10 agentes). Cobre análise/inteligência de me
 project_archetypes: [paid-traffic, performance-marketing, ads-management]
 agents:
   - name: traffic-strategist
-    archetype: architect
+    archetype: strategist
     persona: Axar
     role_title: Traffic Strategist
     description: "Estrategista de tráfego pago cross-platform. Planeja campanhas, aloca budget, define KPIs e briefings para Google, Meta e TikTok. Autoridade exclusiva para criar stories de campanha e validá-las com checklist de 5 pontos. Use para planejamento estratégico, briefings, distribuição de budget e definição de objetivos de performance."
@@ -49,7 +49,7 @@ agents:
     persona: Gorix
     role_title: Google Ads Specialist
     description: "Especialista em Google Ads (Search, Performance Max, Shopping, YouTube, Display). Configura campanhas, grupos de anúncios, keywords, estratégias de lance e otimiza performance no Google. Atua após briefing aprovado pelo traffic-strategist e validação do traffic-qa. Use para setup, otimização e gestão de campanhas Google Ads."
-    color: blue
+    color: green
     skills: []
   - name: traffic-meta
     archetype: implementer

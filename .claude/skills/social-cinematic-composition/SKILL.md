@@ -1,22 +1,26 @@
 ---
 name: social-cinematic-composition
-description: Composição cinematográfica para fotos e vídeos sociais — regras de composição, cor grading e linguagem visual. Injectado em IRIS (social-photo).
+description: Composição cinematográfica para fotos e vídeos sociais — regras de enquadramento, color grading e linguagem visual. Use ao dirigir ou avaliar imagens e vídeos, definir enquadramentos e composição, aplicar color grading ou elevar a qualidade estética de conteúdo visual.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Cinematic Composition — Linguagem Visual
+
+> Skill injetada no agente IRIS (social-photo).
 
 ## Regras de composição fundamentais
 
 ### Regra dos terços
 ```
 Dividir o frame em 9 partes iguais (3x3).
-Sujeito principal nos pontos de intersecção.
+Sujeito principal nos pontos de interseção.
 Horizonte numa das linhas horizontais.
 ```
 
 ### Linhas guia (Leading lines)
 - Estradas, corredores, rios → guiam o olhar para o sujeito
-- Usar para criar profundidade e direcção visual
+- Usar para criar profundidade e direção visual
 
 ### Enquadramento natural (Natural framing)
 - Arcos, janelas, vegetação → enquadram o sujeito naturalmente

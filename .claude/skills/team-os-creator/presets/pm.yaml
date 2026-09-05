@@ -42,7 +42,7 @@ agents:
     persona: Faelor
     role_title: Forjador de Sistemas
     description: "Faelor — Forjador de Sistemas Kaelthari. Cria e mantém templates de processo (process_task_sets, process_task_templates, flows) que padronizam trabalho recorrente. Use para criar processos reutilizáveis, onboardings, checklists padrão, fluxos com fases e transições no WorkOS ou sistema equivalente."
-    color: blue
+    color: cyan
     skills: [dev-technical-writing]
   - name: pm-coach
     archetype: ux
@@ -70,5 +70,5 @@ agents:
     persona: Thyron
     role_title: Juiz das Obras
     description: "Thyron — Juiz das Obras Kaelthari. Auditor formal de qualidade de entregas e processos. Emite veredictos APROVADO/PENDÊNCIAS/REPROVADO. READ-only no código — escreve apenas comentários formais. Use para auditar tarefas concluídas, validar templates de processo e revisar status updates de projeto."
-    color: green
+    color: red
     skills: []

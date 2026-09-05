@@ -7,7 +7,8 @@
 #
 # Options:
 #   --squads dev,sites,social,traffic   squads a instalar (default: all)
-#   --include-hooks                     copia também os hooks
+#   --include-hooks                     copia também os hooks de progresso (check-*.sh)
+#                                       (block-worktree.sh e block-git-push.sh são SEMPRE instalados)
 #   --dry-run                           simula sem copiar nada
 
 SOURCE=""
@@ -17,16 +18,26 @@ INCLUDE_HOOKS=0
 DRY_RUN=0
 MATCH_TARGET=0   # --match-target-squads: deriva squads do que JÁ existe no destino (modo propagate)
 
+need_value() { # $1=flag — aborta se a flag veio sem valor (evita loop infinito do shift 2)
+  if [ $# -lt 2 ] || [ -z "$2" ]; then
+    echo "ERROR=missing_value|FLAG=$1 exige um valor" >&2
+    exit 2
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --source)       SOURCE="$2";   shift 2 ;;
-    --target)       TARGET="$2";   shift 2 ;;
-    --squads)       SQUADS="$2";   shift 2 ;;
+    --source)       need_value "$1" "${2:-}"; SOURCE="$2";   shift 2 ;;
+    --target)       need_value "$1" "${2:-}"; TARGET="$2";   shift 2 ;;
+    --squads)       need_value "$1" "${2:-}"; SQUADS="$2";   shift 2 ;;
     --match-target-squads) MATCH_TARGET=1; shift ;;
     --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
     --include-skills) shift ;;  # ignorado — skills são sempre incluídas
-    *) shift ;;
+    *)
+      echo "ERROR=unknown_flag|FLAG=$1" >&2
+      echo "Usage: install-to-project.sh --source <path> --target <path> [--squads <lista> | --match-target-squads] [--include-hooks] [--dry-run]" >&2
+      exit 2 ;;
   esac
 done
 
@@ -59,6 +70,9 @@ fi
 # Modo propagate: deriva as squads a sincronizar a partir do que JÁ existe no destino.
 # Garante que squads podadas (não instaladas) nunca sejam re-adicionadas.
 if [ $MATCH_TARGET -eq 1 ]; then
+  # Zera o default "all" ANTES de derivar: destino sem .claude/agents/ (ou derivação
+  # vazia) tem que virar __none__ — nunca cair no "all" e instalar tudo.
+  SQUADS=""
   if [ -d "$TARGET/.claude/agents" ]; then
     SQUADS=$(find "$TARGET/.claude/agents" -maxdepth 1 -name '*.md' -type f -exec basename {} .md \; 2>/dev/null \
       | sed 's/-.*//' | sort -u | tr '\n' ',' | sed 's/,$//')
@@ -101,6 +115,20 @@ do_cp() {
 do_cp_r() {
   [ $DRY_RUN -eq 1 ] && return
   cp -r "$1" "$2"
+}
+
+# Sync de diretório de skill: rsync com --delete e exclusão de lixo macOS
+# (.DS_Store, Icon\r). Elimina lixo propagado e drift falso — o hash do scan
+# ignora esses arquivos, então cp -R os copiando gerava divergência eterna.
+do_sync_dir() { # $1=src (SEM barra final exigida) $2=dst
+  [ $DRY_RUN -eq 1 ] && return
+  mkdir -p "$2"
+  rsync -a --delete --exclude '.DS_Store' --exclude 'Icon?' "${1%/}/" "$2/"
+}
+
+# Diferença de conteúdo ignorando lixo macOS (mesmo critério do sync)
+dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
+  ! diff -rq -x '.DS_Store' -x 'Icon?' "${1%/}" "${2%/}" >/dev/null 2>&1
 }
 
 # ── Agentes ──────────────────────────────────────────────────────────────────
@@ -159,6 +187,7 @@ skills_copied=0
 skills_updated=0
 skills_skipped=0
 skills_list=""
+team_os_handled=0   # evita dupla contagem de team-os no bloco "forçado" (bug do dry-run)
 
 for skill_path in "$SOURCE/.claude/skills"/*/; do
   [ -d "$skill_path" ] || continue
@@ -186,35 +215,35 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
   fi
 
   target_skill="$TARGET/.claude/skills/$skill_name"
+  [ "$skill_name" = "team-os" ] && team_os_handled=1
 
   if [ -d "$target_skill" ]; then
     # Já existe: ATUALIZA se o conteúdo difere da fonte (CT é source of truth).
     # Skills extras no destino (não presentes na fonte) são preservadas — não apagamos.
-    if diff -rq "$skill_path" "$target_skill" >/dev/null 2>&1; then
+    if ! dir_differs "$skill_path" "$target_skill"; then
       skills_skipped=$((skills_skipped + 1))   # idêntica — nada a fazer
       continue
     fi
-    if [ $DRY_RUN -eq 0 ]; then
-      rm -rf "$target_skill"
-      cp -R "$skill_path" "$target_skill"
-    fi
+    do_sync_dir "$skill_path" "$target_skill"
     skills_updated=$((skills_updated + 1))
     skills_list="$skills_list $skill_name"
     continue
   fi
 
-  do_cp_r "$skill_path" "$target_skill"
+  do_sync_dir "$skill_path" "$target_skill"
   skills_copied=$((skills_copied + 1))
   skills_list="$skills_list $skill_name"
 done
 
-# Garante team-os no destino (obrigatória para /team-os funcionar)
-if [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
-  do_cp_r "$SOURCE/.claude/skills/team-os" "$TARGET/.claude/skills/team-os"
+# Garante team-os no destino (obrigatória para /team-os funcionar).
+# team_os_handled evita dupla contagem quando o loop já processou team-os
+# (no --dry-run nada é copiado de fato, então o teste de diretório enganava).
+if [ $team_os_handled -eq 0 ] && [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
+  do_sync_dir "$SOURCE/.claude/skills/team-os" "$TARGET/.claude/skills/team-os"
   skills_copied=$((skills_copied + 1))
   skills_list="$skills_list team-os"
   echo "TEAM_OS_FORCED=1"
-elif [ ! -d "$TARGET/.claude/skills/team-os" ]; then
+elif [ $team_os_handled -eq 0 ] && [ ! -d "$SOURCE/.claude/skills/team-os" ]; then
   echo "TEAM_OS_WARNING=skill team-os não encontrada na fonte — instale manualmente"
 fi
 
@@ -232,9 +261,10 @@ if [ $DRY_RUN -eq 0 ]; then
   echo "ICON_CLEANED=$icon_cleaned"
 fi
 
-# ── Anti-worktree hook (universal — sempre instalado) ───────────────────────
-# O settings.json referencia block-worktree.sh, então o hook é copiado sempre,
-# independente de --include-hooks.
+# ── Hooks universais (sempre instalados, independente de --include-hooks) ────
+# block-worktree.sh é referenciado pelo settings.json; block-git-push.sh é
+# referenciado no frontmatter dos implementers/agentes com Bash das squads de
+# código — sem ele no destino, a garantia dura de push não existe.
 WORKTREE_HOOK_SRC="$SOURCE/.claude/hooks/block-worktree.sh"
 if [ -f "$WORKTREE_HOOK_SRC" ]; then
   do_mkdir "$TARGET/.claude/hooks"
@@ -243,6 +273,32 @@ if [ -f "$WORKTREE_HOOK_SRC" ]; then
   echo "WORKTREE_HOOK=installed"
 else
   echo "WORKTREE_HOOK_MISSING=block-worktree.sh não encontrado na fonte"
+fi
+
+GIT_PUSH_HOOK_SRC="$SOURCE/.claude/hooks/block-git-push.sh"
+if [ -f "$GIT_PUSH_HOOK_SRC" ]; then
+  do_mkdir "$TARGET/.claude/hooks"
+  do_cp "$GIT_PUSH_HOOK_SRC" "$TARGET/.claude/hooks/block-git-push.sh"
+  [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/block-git-push.sh"
+  echo "GIT_PUSH_HOOK=installed"
+else
+  echo "GIT_PUSH_HOOK_MISSING=block-git-push.sh não encontrado na fonte"
+fi
+
+# ── .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?) ──────────────
+if [ $DRY_RUN -eq 0 ]; then
+  TARGET_GITIGNORE="$TARGET/.gitignore"
+  gitignore_added=""
+  [ -f "$TARGET_GITIGNORE" ] || : > "$TARGET_GITIGNORE"
+  if ! grep -q '^\.DS_Store$\|^\*\*/\.DS_Store$\|^\.DS_Store\b' "$TARGET_GITIGNORE" 2>/dev/null; then
+    printf '.DS_Store\n' >> "$TARGET_GITIGNORE"
+    gitignore_added="$gitignore_added .DS_Store"
+  fi
+  if ! grep -q '^Icon?$\|^Icon\\r$\|^Icon\?' "$TARGET_GITIGNORE" 2>/dev/null; then
+    printf 'Icon?\n' >> "$TARGET_GITIGNORE"
+    gitignore_added="$gitignore_added Icon?"
+  fi
+  [ -n "$gitignore_added" ] && echo "GITIGNORE_ADDED=${gitignore_added# }"
 fi
 
 # ── Settings.json ────────────────────────────────────────────────────────────
@@ -311,15 +367,9 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
     [ -f "$hook_file" ] || continue
     hook_name=$(basename "$hook_file")
 
-    # block-worktree.sh já foi instalado acima (universal, fora do --include-hooks)
-    if [[ "$hook_name" == "block-worktree.sh" ]]; then
-      continue
-    fi
-
-    # block-git-push.sh é universal — sempre incluir
-    if [[ "$hook_name" == "block-git-push.sh" ]]; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
+    # block-worktree.sh e block-git-push.sh já foram instalados acima
+    # (universais, fora do --include-hooks) — aqui ficam só os hooks de progresso
+    if [[ "$hook_name" == "block-worktree.sh" || "$hook_name" == "block-git-push.sh" ]]; then
       continue
     fi
 

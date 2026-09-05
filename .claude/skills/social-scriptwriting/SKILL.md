@@ -1,9 +1,13 @@
 ---
 name: social-scriptwriting
-description: Roteiros para vídeos sociais — Reels, TikToks, Stories, Shorts. Estrutura narrativa, timing e texto em ecrã. Injectado em LYRIS (social-content).
+description: Roteiros para vídeos sociais — Reels, TikToks, Stories e Shorts com estrutura narrativa, timing e texto em tela. Use ao roteirizar vídeo curto, estruturar hook, desenvolvimento e CTA, definir timing de cenas ou escrever texto em tela e narração.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Scriptwriting — Roteiros para Vídeo
+
+> Skill injetada no agente LYRIS (social-content).
 
 ## Estrutura de roteiro (formato padrão)
 
@@ -18,12 +22,12 @@ description: Roteiros para vídeos sociais — Reels, TikToks, Stories, Shorts. 
 ---
 
 [00:00-00:03] HOOK VISUAL
-Acção/imagem: ...
+Ação/imagem: ...
 Fala: "..."
-Texto ecrã: "..."
+Texto tela: "..."
 
 [00:03-00:10] CONTEXTO/PROBLEMA
-Acção/imagem: ...
+Ação/imagem: ...
 Fala: "..."
 
 [00:10-00:25] DESENVOLVIMENTO
@@ -33,13 +37,13 @@ Ponto 3: ...
 
 [00:25-00:28] CTA
 Fala: "..."
-Texto ecrã: "..."
+Texto tela: "..."
 
 [00:28-00:30] OUTRO/BRANDING
 Logo + tagline
 
 ---
-**Texto em ecrã total:** ...
+**Texto em tela total:** ...
 **Som sugerido:** [trending sound] ou [música própria]
 **Hashtags:** ...
 ```
@@ -47,7 +51,7 @@ Logo + tagline
 ## Regras de roteiro
 
 ### Hook (primeiros 3 segundos)
-- Acção imediata — não há tempo para intro
+- Ação imediata — não há tempo para intro
 - Sem "Olá, sou X e hoje vou..."
 - Começar com o mais interessante/surpreendente
 
@@ -56,7 +60,7 @@ Logo + tagline
 - Reels: corte a cada 2-3 segundos
 - Stories: 15s por slide, transições suaves
 
-### Texto em ecrã
+### Texto em tela
 - Reforçar (não repetir) o que é dito
 - Fonte legível em mobile (mínimo 24px equivalente)
 - Zona central — evitar bordas (cortadas em diferentes dispositivos)
@@ -68,5 +72,5 @@ Logo + tagline
 | Tutorial | Problema → Steps numerados → Resultado |
 | Storytelling | Situação → Conflito → Resolução → Lição |
 | Lista | Hook numérico → Items → Bónus final |
-| Reacção | Setup → Reacção → Opinião → CTA |
+| Reação | Setup → Reação → Opinião → CTA |
 | POV | Cena imersiva → Twist → Identificação |

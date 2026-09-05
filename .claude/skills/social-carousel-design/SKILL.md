@@ -1,9 +1,13 @@
 ---
 name: social-carousel-design
-description: Design de carousels para redes sociais — estrutura narrativa de slides, consistência visual e especificações técnicas. Injectado em AEON (social-design).
+description: Design de carousels para redes sociais — estrutura narrativa slide a slide, consistência visual e especificações técnicas. Use ao criar carousel para Instagram ou LinkedIn, estruturar a sequência de slides, definir capa e CTA final ou validar specs antes da produção.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Carousel Design — Estrutura e Padrões
+
+> Skill injetada no agente AEON (social-design).
 
 ## Anatomia de um carousel eficaz
 
@@ -18,7 +22,7 @@ Slides 2-N — CONTEÚDO
   Visual consistente com slide 1
 
 Slide final — CTA
-  Acção clara
+  Ação clara
   Identidade de marca forte
   QR code ou "link na bio" se relevante
 ```

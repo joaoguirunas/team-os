@@ -98,7 +98,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 |---|---|---|
 | **dev** | 12 (analyst, architect, bi, data-engineer, data-performance, ux, dev-alpha, dev-beta, dev-delta, dev-gamma, qa, devops) | Fullstack SaaS |
 | **sites** | 10 (analyst, architect, data, ux, dev-alpha, dev-beta, dev-delta, dev-gamma, qa, devops) | Sites e landing pages |
-| **social** | 7 (analyst, content, design, photo, publisher, strategist, video) | Social media |
+| **social** | 6 (content, design, photo, publisher, strategist, video) | Social media |
 | **traffic** | 10 (analyst, automation, bi, copywriter, designer, google, meta, qa, strategist, tiktok) | Tráfego pago |
 | **pm** | 10 (analyst, client, coach, data, demand, engineer, ops, planner, qa, reporter) | Gestão de projetos |
 | **custom** | 0 | Usuário monta do zero |
@@ -242,7 +242,7 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 Qualquer criação/atualização de agente ou skill **só está pronta** quando TODO o ciclo abaixo foi executado, de uma vez, sem precisar ser lembrado:
 
 1. **Refinar** — entrega completa, não pela metade (frontmatter + body + hooks + skills relacionadas).
-2. **Sincronizar docs** — atualizar contagens e catálogos no `README.md` (linha de resumo, "Catálogo de skills", contagem por squad, árvore de diretórios) **e** `CLAUDE.md` (linha "N agentes e N skills"). Skill nova entra no catálogo da squad e na tabela do agente que a usa.
+2. **Sincronizar docs** — atualizar contagens e catálogos no `README.md` (linha de resumo, "Catálogo de skills", contagem por squad, árvore de diretórios) **e** `CLAUDE.md` (linha "N agentes e N skills"). Skill nova entra no catálogo da squad e na tabela do agente que a usa. **Regenerar `docs/agentes.html`** (`python3 scripts/generate-agents-page.py`).
 3. **`*audit`** — `scripts/validate-agent.sh` deve passar 100%.
 4. **Commit no CT** — conventional commit com descrição clara do que mudou. **O commit é SÓ no CT.**
 5. **`*propagate --match-target-squads`** — para todos os projetos com a(s) squad(s) afetada(s). Varrer os projetos por agentes da squad (não confiar só no dashboard) para não esquecer nenhum.
@@ -256,27 +256,26 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ```
 .claude/skills/team-os-creator/
 ├── SKILL.md
-├── hooks/
-│   ├── block-git-push.sh
-│   ├── block-worktree.sh
-│   ├── check-social-progress.sh
-│   └── check-story-progress.sh
-├── presets/
+├── presets/                        ← 5 squads, cada agente com `archetype:` (fonte do *audit)
 ├── reference/
-│   ├── archetypes.md
+│   ├── archetypes.md               ← defaults por archetype + exceções canônicas
+│   ├── native-teams-protocol.md    ← FONTE CANÔNICA do bloco NTP (hash validado no *audit)
 │   ├── smart-memory-integration.md
 │   └── skills-catalog-quality.md
 ├── scripts/
 │   ├── preflight.sh
 │   ├── detect-project-signals.sh
-│   ├── validate-agent.sh           ← *audit (forma + regras: memory/skills/isolation/hooks/model/effort)
-│   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills)
+│   ├── validate-agent.sh           ← *audit v2 (archetype-driven: model/effort/permissionMode/color/hooks/tools/NTP-hash/skills citadas/contagens)
+│   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills; TSV)
 │   ├── dashboard.sh                ← Command Center (render do painel)
-│   ├── diff-agents.sh
-│   ├── generate-agent.sh           ← materializa template de archetype
+│   ├── diff-agents.sh              ← respeita poda por squad (TSV)
+│   ├── generate-agent.sh           ← materializa template + valida com *audit ao final
 │   ├── search-skills.sh · install-suggested-skills.sh
-│   └── install-to-project.sh
-└── templates/
+│   ├── install-to-project.sh
+│   └── generate-agents-page.py     ← gera docs/agentes.html
+└── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
+
+> Os hooks canônicos vivem em `.claude/hooks/` (block-git-push, block-worktree, check-*-progress, session-title). A antiga cópia `team-os-creator/hooks/` foi removida — fonte única.
 ```
 
 ---

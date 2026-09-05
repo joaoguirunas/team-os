@@ -1,9 +1,15 @@
 ---
 name: social-stitch-workflow
-description: Workflow de design com Google Stitch MCP — geração de assets, iteração e exportação para redes sociais. Injectado em AEON (social-design).
+description: Workflow de design com Google Stitch MCP — setup de projeto, design system, geração de screens e variantes, exportação para redes sociais. Use ao criar Key Visuals, templates de posts ou variações de design via Stitch.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Stitch Workflow — Google Stitch MCP
+
+Usada por AEON (social-design).
+
+> **Requer o MCP Stitch conectado; sem ele, entregue especificação de design como artefato.**
 
 ## Quando usar Stitch
 
@@ -14,7 +20,7 @@ description: Workflow de design com Google Stitch MCP — geração de assets, i
 
 ## Workflow padrão com Stitch (tool calls reais)
 
-### Fase 1: Setup do projecto
+### Fase 1: Setup do projeto
 ```
 # 1. Listar projetos existentes
 mcp__stitch__list_projects()

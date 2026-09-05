@@ -6,6 +6,12 @@ memory: project
 effort: medium
 tools: Read, Glob, Grep, Bash, SendMessage
 color: purple
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -165,6 +171,10 @@ Quando `pm/portfolio.md` está vazio ou ausente:
 4. Popular `pm/portfolio.md`, `pm/teams.md`, `pm/health-history.md`
 
 ---
+
+## Skills disponíveis
+
+- `/data-analytics-engineering` — métricas confiáveis e camadas de analytics para diagnósticos de portfólio
 
 ## Regras absolutas
 

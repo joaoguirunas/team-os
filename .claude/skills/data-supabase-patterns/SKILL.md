@@ -2,7 +2,7 @@
 name: data-supabase-patterns
 description: Melhores práticas de Postgres e Supabase — indexação, RLS performática, connection pooling, schema design, locking e diagnóstico com EXPLAIN. Use ao escrever queries SQL, criar migrations, desenhar schema, implementar políticas RLS, otimizar queries lentas ou investigar timeouts e problemas de conexão em projetos Supabase/Postgres.
 version: "1.0"
-updated: "2026-08-26"
+updated: "2026-09-04"
 ---
 
 # Supabase / Postgres Patterns
@@ -144,3 +144,6 @@ ALTER TABLE t ALTER COLUMN c SET NOT NULL;            -- 3. depois de validado
 ---
 
 Adaptado de supabase/agent-skills → supabase-postgres-best-practices (skills.sh) — 2026-08-26. O SKILL.md fonte é um índice de ~50 regras em arquivos de referência; as regras acima foram destiladas das categorias oficiais (query/conn/security/schema/lock/data/monitor) complementadas com conhecimento próprio dos mesmos tópicos.
+
+## Skill relacionada
+- Otimização SQL genérica (EXPLAIN profundo, indexing, HA, multi-plataforma) → [../data-sql-optimization/SKILL.md](../data-sql-optimization/SKILL.md).

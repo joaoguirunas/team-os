@@ -46,7 +46,7 @@ Você cobre **3 frentes simultâneas**:
 
 | Frente | O que faz |
 |---|---|
-| **Seleção & Compilação** | Queries SQL analíticas diretas no banco (SELECT-only), agrega e estrutura findings para o Sigma |
+| **Seleção & Compilação** | Queries SQL analíticas diretas no banco (SELECT-only), agrega e estrutura findings para o Sigma (dev-data-performance) |
 | **Analytics Engineering** | Dicionário de métricas, semantic layer, camadas dbt/SQLMesh (staging → intermediate → marts) |
 | **Dashboard Strategy** | KPIs, OKRs, specs completas de dashboard, Big Data architecture |
 
@@ -57,7 +57,7 @@ Você cobre **3 frentes simultâneas**:
 ### ANTES de qualquer trabalho — leia sempre:
 
 ```
-docs/smart-memory/agents/data-engineer/schema.md          ← schema atual do Bythak
+docs/smart-memory/agents/data-engineer/schema.md          ← schema atual do Bythak (dev-data-engineer)
 docs/smart-memory/agents/data-engineer/migrations-log.md  ← histórico de migrations
 docs/smart-memory/agents/data-performance/recommendations.md  ← feedback do Sigma (se existir)
 docs/smart-memory/INDEX.md                                 ← índice geral

@@ -1,9 +1,13 @@
 ---
 name: social-copywriting
-description: Copywriting para redes sociais — legendas, hooks, CTAs e estrutura de copy por plataforma. Injectado em LYRIS (social-content).
+description: Copywriting para redes sociais — legendas, hooks, CTAs e estrutura de copy por plataforma. Use ao escrever legendas de posts, criar hooks de abertura, definir CTAs ou adaptar tom e formato da copy para Instagram, TikTok, LinkedIn e outras plataformas.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Copywriting — Legendas e Copy
+
+> Skill injetada no agente LYRIS (social-content).
 
 ## Estrutura de legenda (Instagram/Facebook)
 
@@ -14,7 +18,7 @@ description: Copywriting para redes sociais — legendas, hooks, CTAs e estrutur
 Explicar, educar, entreter ou inspirar.
 Uma ideia por linha para respiração visual.
 
-[CTA — acção específica]
+[CTA — ação específica]
 
 .
 .

@@ -1,6 +1,8 @@
 ---
 name: ai-ml-timeseries
 description: "Time series forecasting — LightGBM, Transformers, temporal validation, feature engineering, and production deployment. Use when building TS models."
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Time Series Forecasting — Modern Patterns & Production Best Practices
@@ -41,12 +43,9 @@ Claude should invoke this skill when the user asks for **hands-on time series fo
 If the user is asking about **general ML modelling, deployment, or infrastructure**, prefer:
 
 - [ai-ml-data-science](../ai-ml-data-science/SKILL.md) - General data science workflows, EDA, feature engineering, evaluation
-- [ai-mlops](../ai-mlops/SKILL.md) - Model deployment, monitoring, drift detection, retraining automation
+- For deployment, monitoring, drift detection, and retraining: [references/production-deployment-patterns.md](references/production-deployment-patterns.md) in this skill
 
-If the user is asking about **LLM/RAG/search**, prefer:
-
-- [ai-llm](../ai-llm/SKILL.md) - LLM fine-tuning, prompting, evaluation
-- [ai-rag](../ai-rag/SKILL.md) - RAG pipeline design and optimization
+LLM/RAG/search topics are out of scope here; for LLMs applied to time series (Chronos, TimesFM), see [references/ts-llm-patterns.md](references/ts-llm-patterns.md).
 
 ---
 
@@ -236,10 +235,9 @@ User needs time series forecasting for: [Data Type]
 For adjacent topics, reference these skills:
 
 - **[ai-ml-data-science](../ai-ml-data-science/SKILL.md)** - EDA workflows, feature engineering patterns, model evaluation, SQLMesh transformations
-- **[ai-mlops](../ai-mlops/SKILL.md)** - Production deployment, monitoring, retraining pipelines
-- **[ai-llm](../ai-llm/SKILL.md)** - Fine-tuning approaches applicable to time series LLMs (Chronos, TimesFM)
-- **[ai-prompt-engineering](../ai-prompt-engineering/SKILL.md)** - Prompt design patterns for time series LLMs
 - **[data-sql-optimization](../data-sql-optimization/SKILL.md)** - SQL optimization for time series data storage and retrieval
+
+Production deployment, monitoring, and retraining pipelines: [references/production-deployment-patterns.md](references/production-deployment-patterns.md). Time series LLMs (fine-tuning and prompting for Chronos/TimesFM): [references/ts-llm-patterns.md](references/ts-llm-patterns.md).
 
 ---
 

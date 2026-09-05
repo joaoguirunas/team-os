@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**49 agentes e 57 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**48 agentes e 52 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -30,7 +30,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 49 agentes e suas skills](#5-os-49-agentes-e-suas-skills)
+5. [Os 48 agentes e suas skills](#5-os-48-agentes-e-suas-skills)
 6. [Catálogo de skills de apoio](#6-catálogo-de-skills-de-apoio)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
@@ -198,14 +198,14 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ---
 
-## 5. Os 49 agentes e suas skills
+## 5. Os 48 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
 
 A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponíveis por papel** — as skills de apoio que fazem sentido para cada agente acionar via `/nome-skill` conforme a necessidade. Ela **não** reflete linha a linha o que o body de cada agente lista (vários agentes citam só um subconjunto, ou nenhuma, no próprio arquivo); serve como guia de qual skill ativar para qual tipo de trabalho. O `/team-os` pode incluí-las no spawn prompt.
 
-> **Nota sobre veredictos QA:** as squads de código (`dev`/`sites`/`traffic`) usam PASS/CONCERNS/FAIL/WAIVED; as squads em contexto PT-BR usam taxonomia própria deliberada — `pm-qa`: APROVADO/PENDÊNCIAS/REPROVADO; `social-strategist`: APROVADO/COM RESSALVAS/REJEITADO (a squad social não tem QA dedicado — a VERA acumula validação editorial + veredicto, exceção deliberada da squad de 7).
+> **Nota sobre veredictos QA:** as squads de código (`dev`/`sites`/`traffic`) usam PASS/CONCERNS/FAIL/WAIVED; as squads em contexto PT-BR usam taxonomia própria deliberada — `pm-qa`: APROVADO/PENDÊNCIAS/REPROVADO; `social-strategist`: APROVADO/COM RESSALVAS/REJEITADO (a squad social não tem QA dedicado — a VERA acumula validação editorial + veredicto, exceção deliberada da squad de 6).
 
 ### Dev — Fullstack SaaS (12)
 
@@ -231,18 +231,17 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `sites-analyst` | Keyword/competitor research, feasibility | `/deep-research`, `/sites-seo-keywords` |
 | `sites-architect` | Arquitetura de páginas, stories (exclusivo) | `/dev-api-design`, `/dev-technical-writing`, `/sites-seo-technical` |
 | `sites-data` | Schema, migrations, RLS (sites) | `/dev-database-patterns`, `/data-sql-optimization` |
-| `sites-ux` | UX research + design visual + a11y | `/sites-ux-interaction`, `/ui-ux-pro-max`, `/accessibility`, `/sites-web-accessibility` |
-| `sites-dev-alpha` | Frontend / landing pages (shadcn) | `/sites-frontend-design`, `/sites-shadcn-ui`, `/sites-tailwind-design-system`, `/sites-scroll-motion`, `/ui-ux-pro-max` |
+| `sites-ux` | UX research + design visual + a11y | `/sites-ux-interaction`, `/ui-ux-pro-max`, `/accessibility`, `/sites-frontend-stack` |
+| `sites-dev-alpha` | Frontend / landing pages (shadcn) | `/sites-frontend-stack`, `/sites-scroll-motion`, `/ui-ux-pro-max`, `/nextjs-react-best-practices`, `/verify-before-done` |
 | `sites-dev-beta` | Backend / CMS / integrações | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
 | `sites-dev-gamma` | CRO, SEO, analytics, fullstack | `/sites-page-cro`, `/sites-seo-technical`, `/dev-typescript-patterns` |
-| `sites-dev-delta` | Hardening, Core Web Vitals | `/dev-security-patterns`, `/dev-error-handling`, `/sites-web-accessibility` |
-| `sites-qa` | QA: a11y, SEO, copy, performance | `/dev-testing-strategy`, `/web-design-guidelines`, `/sites-seo-technical`, `/sites-web-accessibility` |
+| `sites-dev-delta` | Hardening, Core Web Vitals | `/dev-security-patterns`, `/dev-error-handling`, `/accessibility`, `/verify-before-done` |
+| `sites-qa` | QA: a11y, SEO, copy, performance | `/dev-testing-strategy`, `/testing-playwright-e2e`, `/web-design-guidelines`, `/sites-seo-technical`, `/accessibility`, `/sites-copy`, `/verify-before-done` |
 | `sites-devops` | Deploy Vercel/Netlify, CI/CD | `/dev-git-workflow`, `/sites-deployment` |
 
-### Social — Social media (7)
+### Social — Social media (6)
 | Agente | Persona | Papel | Skills relacionadas |
 |---|---|---|---|
-| `social-analyst` | — | Trends, concorrência, hashtags, analytics | `/social-analytics`, `/social-apify-research`, `/deep-research` |
 | `social-content` | LYRIS | Research (Apify) + copywriting | `/social-copywriting`, `/social-scriptwriting`, `/social-editorial-validation`, `/social-format-specs`, `/social-apify-research` |
 | `social-design` | AEON | Key visuals, carrosséis (Stitch) | `/social-key-visual`, `/social-carousel-design`, `/social-stitch-workflow` |
 | `social-photo` | IRIS | Fotos AI (Freepik) | `/social-freepik-generation`, `/social-cinematic-composition` |
@@ -284,13 +283,15 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo de skills de apoio
 
-57 skills, todas diretórios reais e versionados (repositório self-contained).
+52 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
 **Data & ML (6):** `ai-ml-data-science`, `ai-ml-timeseries`, `data-analytics-engineering`, `data-lake-platform`, `data-sql-optimization`, `data-supabase-patterns`
 
-**Sites (14):** `sites-canvas-design`, `sites-content-strategy`, `sites-copy-editing`, `sites-copywriting`, `sites-deployment`, `sites-frontend-design`, `sites-page-cro`, `sites-scroll-motion`, `sites-seo-keywords`, `sites-seo-technical`, `sites-shadcn-ui`, `sites-tailwind-design-system`, `sites-ux-interaction`, `sites-web-accessibility`
+**Sites (9):** `sites-canvas-design`, `sites-copy`, `sites-deployment`, `sites-frontend-stack`, `sites-page-cro`, `sites-scroll-motion`, `sites-seo-keywords`, `sites-seo-technical`, `sites-ux-interaction`
+
+> Fusões 2026-09: `sites-copy` absorve content-strategy + copywriting + copy-editing; `sites-frontend-stack` absorve frontend-design + tailwind-design-system + shadcn-ui; `sites-web-accessibility` foi absorvida por `accessibility` (WCAG 2.2).
 
 **Social (14):** `social-analytics`, `social-apify-research`, `social-carousel-design`, `social-cinematic-composition`, `social-copywriting`, `social-editorial-validation`, `social-format-specs`, `social-freepik-generation`, `social-heygen-avatar`, `social-key-visual`, `social-meta-publishing`, `social-scriptwriting`, `social-stitch-workflow`, `social-video-editing`
 
@@ -304,7 +305,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).
 
-> As skills de conteúdo/copy do Sites — `/sites-content-strategy`, `/sites-copy-editing`, `/sites-copywriting` — são de **uso geral da squad Sites** (não estão fixadas a um único agente). Ficam disponíveis a `sites-ux`, `sites-dev-gamma` e `sites-architect` conforme a necessidade de cada story.
+> A skill `/sites-copy` é de **uso geral da squad Sites** — disponível a `sites-ux`, `sites-dev-gamma`, `sites-qa` e `sites-architect` conforme a story.
 
 ---
 
@@ -403,7 +404,7 @@ Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCrea
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 57 skills (diretórios reais)
+└── skills/              ← 52 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md
@@ -460,7 +461,7 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 49 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 48 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

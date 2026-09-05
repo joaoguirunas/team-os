@@ -1,9 +1,13 @@
 ---
 name: social-meta-publishing
-description: Publicação via Meta MCP — Instagram e Facebook. Workflow de upload, agendamento e verificação. Injectado em PULSE (social-publisher).
+description: Publicação via Meta MCP — Instagram e Facebook. Workflow de upload, agendamento, verificação e registro com dupla confirmação obrigatória. Use ao publicar ou agendar conteúdo aprovado em Instagram/Facebook e ao registrar publicações de campanha.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Meta Publishing — Workflow de Publicação
+
+Usada por PULSE (social-publisher).
 
 ## Regra de dupla confirmação (CRÍTICO)
 
@@ -11,7 +15,7 @@ description: Publicação via Meta MCP — Instagram e Facebook. Workflow de upl
 PULSE NUNCA publica sem:
   1. Aprovação formal de VERA (com timestamp)
   AND
-  2. Confirmação explícita do utilizador nesta sessão
+  2. Confirmação explícita do usuário nesta sessão
 ```
 
 **Script de confirmação obrigatório:**
@@ -22,15 +26,15 @@ Confirmações:
 ✅ VERA aprovou em [data/hora]
 ✅ Assets validados e dentro dos specs
 
-Confirmas a publicação? (sim / não / agendar para [data])"
+Confirma a publicação? (sim / não / agendar para [data])"
 ```
 
 ## Workflow de publicação via Meta MCP
 
 ### Fase 1: Preparação
-1. Verificar aprovação VERA no ficheiro de validação
-2. Solicitar confirmação do utilizador
-3. Verificar ficheiros de assets em `social-media/campaigns/{id}/assets/`
+1. Verificar aprovação VERA no arquivo de validação
+2. Solicitar confirmação do usuário
+3. Verificar arquivos de assets em `social-media/campaigns/{id}/assets/`
 4. Confirmar specs técnicas (tamanho, formato, duração)
 
 ### Fase 2: Upload
@@ -43,27 +47,27 @@ Confirmas a publicação? (sim / não / agendar para [data])"
 ```
 Opção A — Publicar imediatamente
 Opção B — Agendar para data/hora específica
-Opção C — Guardar como rascunho
+Opção C — Salvar como rascunho
 ```
 
 ### Fase 4: Verificação
 1. Confirmar publicação bem-sucedida
 2. Verificar post no feed
-3. Registar em `social-media/campaigns/{id}/published/`
-4. Notificar PULSE com URL do post
+3. Registrar em `social-media/campaigns/{id}/published/`
+4. Notificar o lead e VERA (social-strategist) com URL do post
 
-## Horários óptimos por plataforma
+## Horários ótimos por plataforma
 
 | Plataforma | Melhores dias | Melhores horas |
 |---|---|---|
 | Instagram | Ter, Qua, Sex | 9h-11h ou 19h-21h |
-| Facebook | Qui, Sex, Sab | 13h-16h |
+| Facebook | Qui, Sex, Sáb | 13h-16h |
 | TikTok | Seg-Sex | 7h-9h ou 19h-23h |
 | LinkedIn | Ter, Qua, Qui | 8h-10h ou 12h |
 
 *Ajustar com base em analytics históricos da conta específica*
 
-## Registo de publicações
+## Registro de publicações
 
 ```markdown
 ## Publicação — [Campaign ID]
@@ -73,6 +77,6 @@ Opção C — Guardar como rascunho
 **Formato:** ...
 **URL do post:** ...
 **Aprovação VERA:** [timestamp]
-**Confirmação utilizador:** [timestamp]
+**Confirmação usuário:** [timestamp]
 **Assets publicados:** ...
 ```

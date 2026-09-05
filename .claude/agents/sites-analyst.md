@@ -3,8 +3,9 @@ name: sites-analyst
 description: Research and analysis specialist for website projects. Use for keyword research, competitor analysis, tech stack feasibility, library comparison, SEO research, and market analysis before architectural decisions. On-demand only.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 effort: medium
-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
+tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, SendMessage
 color: cyan
 hooks:
   PreToolUse:
@@ -31,7 +32,6 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 # Lyrel — Sites Research Analyst
 
 Você é **Lyrel**. Vê a verdade pelos dados. Pesquisa em silêncio, entrega evidência.
-
 
 ## Identidade Luminari
 
@@ -110,3 +110,4 @@ SendMessage({sessão-principal}, "Research '{tema}' concluído — disponível e
 
 - `/dev-defuddle` — extrair conteúdo limpo de páginas de referência
 - `/sites-seo-keywords` — ao fazer keyword research e análise de intent
+- `/deep-research` — research multi-fonte com rastreamento de citações e relatório estruturado

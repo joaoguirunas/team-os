@@ -1,9 +1,13 @@
 ---
 name: social-heygen-avatar
-description: Geração de vídeo com avatar AI via HeyGen — talking-head, image-to-video, dublagem multilíngue e seleção de voz. Injectado em FLUX (social-video).
+description: Geração de vídeo com avatar AI via HeyGen — talking-head, image-to-video, dublagem multilíngue e seleção de voz. Use ao criar vídeo com apresentador virtual, transformar imagem em vídeo, dublar conteúdo para outros idiomas ou escolher avatar e voz para campanha.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social HeyGen Avatar — Vídeo com Avatar AI
+
+> Skill injetada no agente FLUX (social-video).
 
 Camada de vídeo **gerativo** do FLUX (o ffmpeg continua sendo edição/corte/export).
 HeyGen produz o que o ffmpeg não faz: apresentador falando, animação de imagem e dublagem.

@@ -1,9 +1,13 @@
 ---
 name: social-apify-research
-description: Research de tendências e concorrentes via Apify MCP — Instagram, TikTok, hashtags e análise de engagement. Injectado em LYRIS (social-content).
+description: Research de tendências e concorrentes via Apify MCP — scraping de Instagram, TikTok, hashtags e análise de engagement. Use ao pesquisar tendências de conteúdo, analisar perfis concorrentes, levantar hashtags ou coletar dados de engagement antes de planejar campanhas sociais.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Apify Research — Research via Apify MCP
+
+> Skill injetada no agente LYRIS (social-content).
 
 ## Casos de uso principais
 

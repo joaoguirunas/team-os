@@ -1,9 +1,13 @@
 ---
 name: social-key-visual
-description: Criação de Key Visuals para campanhas sociais — identidade visual, paleta, tipografia e elemento principal de campanha. Injectado em AEON (social-design).
+description: Criação de Key Visuals para campanhas sociais — identidade visual, paleta, tipografia e elemento central de campanha. Use ao criar o visual principal de uma campanha, definir paleta e tipografia, ou garantir consistência visual entre todas as peças derivadas.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Key Visual — Identidade Visual de Campanha
+
+> Skill injetada no agente AEON (social-design).
 
 ## O que é um Key Visual
 

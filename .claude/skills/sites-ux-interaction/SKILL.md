@@ -1,9 +1,11 @@
 ---
 name: sites-ux-interaction
-description: Padrões de UX e interacção para websites — navegação, micro-interacções, animações e scroll behaviour.
+description: Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em páginas Next.js.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
-# Sites UX Interaction — Padrões de Interacção
+# Sites UX Interaction — Padrões de Interação
 
 ## Navegação
 
@@ -34,7 +36,7 @@ useEffect(() => {
 </Sheet>
 ```
 
-## Animações com Framer Motion
+## Animações com Motion (`motion/react`, ex-Framer Motion)
 
 ### Enter animations
 ```tsx
@@ -53,7 +55,7 @@ const { ref, inView } = useInView({ threshold: 0.1, triggerOnce: true })
 <motion.div ref={ref} initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} />
 ```
 
-## Micro-interacções
+## Micro-interações
 
 ```css
 /* Hover em card */
@@ -67,7 +69,18 @@ const { ref, inView } = useInView({ threshold: 0.1, triggerOnce: true })
 ```
 
 ## Reduced motion
+
+Em App Router/SSR, `window` não existe no servidor — nunca chamar `matchMedia` no corpo do componente. Ler dentro de `useEffect` (ou usar o hook `useReducedMotion` do `motion/react`):
+
 ```tsx
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+useEffect(() => {
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+  setPrefersReducedMotion(mq.matches)
+  const onChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches)
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}, [])
+
 const transition = prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }
 ```

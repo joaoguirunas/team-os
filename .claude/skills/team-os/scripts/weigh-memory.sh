@@ -25,7 +25,12 @@ FAT_FILE_LINES="${FAT_FILE_LINES:-1500}"
 TARGET=""; QUIET=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --target) TARGET="$2"; shift 2 ;;
+    --target)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then
+        echo "ERRO: --target requer um valor (diretório do projeto)" >&2
+        exit 2
+      fi
+      TARGET="$2"; shift 2 ;;
     --quiet)  QUIET=1; shift ;;
     *) shift ;;
   esac
@@ -34,7 +39,13 @@ done
 if [ -z "$TARGET" ]; then
   TARGET="$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
-TARGET="$(cd "$TARGET" 2>/dev/null && pwd)"
+# Guarda: cd falho deixaria TARGET vazio → SM viraria /docs/smart-memory
+TARGET_RESOLVED="$(cd "$TARGET" 2>/dev/null && pwd)"
+if [ -z "$TARGET_RESOLVED" ] || [ ! -d "$TARGET_RESOLVED" ]; then
+  echo "ERRO: target não existe ou não é acessível: $TARGET" >&2
+  exit 2
+fi
+TARGET="$TARGET_RESOLVED"
 SM="$TARGET/docs/smart-memory"
 
 # ── Smart-memory ausente ──────────────────────────────────────────────────────
@@ -115,7 +126,10 @@ REASONS=""
 if [ "$STATUS" = "HEAVY" ]; then
   DASH="smart-memory : ⚠ PESADA (${REASONS}) → /team-os *compact"
 else
-  DASH="smart-memory : OK (${LINES} linhas · ${FILES} arquivos${ARCHIVE_LINES:+ · ${ARCHIVE_LINES} arquivadas})"
+  # (${VAR:+...} não serve aqui: "0" é não-vazio e imprimia "0 arquivadas")
+  ARCH_SUFFIX=""
+  [ "${ARCHIVE_LINES:-0}" -gt 0 ] && ARCH_SUFFIX=" · ${ARCHIVE_LINES} arquivadas"
+  DASH="smart-memory : OK (${LINES} linhas · ${FILES} arquivos${ARCH_SUFFIX})"
 fi
 
 # ── Bloco machine-readable ────────────────────────────────────────────────────

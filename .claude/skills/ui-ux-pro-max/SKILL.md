@@ -1,6 +1,8 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence for web and mobile. Includes 50+ styles, 161 color palettes, 57 font pairings, 161 product types, 99 UX guidelines, and 25 chart types across 10 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui, and HTML/CSS). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, and check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, and mobile app. Elements: button, modal, navbar, sidebar, card, table, form, and chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, and flat design. Topics: color systems, accessibility, animation, layout, typography, font pairing, spacing, interaction states, shadow, and gradient. Integrations: shadcn/ui MCP for component search and examples."
+description: "UI/UX design intelligence for web and mobile — searchable database of styles, palettes, font pairings, product types and UX guidelines. Use when designing, building, reviewing or fixing UI/UX (landing page, dashboard, SaaS, mobile app) or choosing style, color and typography."
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # UI/UX Pro Max - Design Intelligence
@@ -299,12 +301,6 @@ This Skill is not needed in the following situations:
 - `drill-down-consistency` - Drill-down interactions must maintain a clear back-path and hierarchy breadcrumb
 - `time-scale-clarity` - Time series charts must clearly label time granularity (day/week/month) and allow switching
 
-## How to Use
-
-Search specific domains using the CLI tool below.
-
----
-
 ## Prerequisites
 
 Check if Python is installed:
@@ -332,9 +328,9 @@ winget install Python.Python.3.12
 
 ---
 
-## How to Use This Skill
+## How to Use
 
-Use this skill when the user requests any of the following:
+Search specific domains using the CLI tool below. Use this skill when the user requests any of the following:
 
 | Scenario | Trigger Examples | Start From |
 |----------|-----------------|------------|
@@ -346,7 +342,7 @@ Use this skill when the user requests any of the following:
 | **Improve / optimize** | "Make this faster", "Improve mobile experience" | Step 3 (domain search: ux, react) |
 | **Implement dark mode** | "Add dark mode support" | Step 3 (domain: style "dark mode") |
 | **Add charts / data viz** | "Add an analytics dashboard chart" | Step 3 (domain: chart) |
-| **Stack best practices** | "React performance tips"、"SwiftUI navigation" | Step 4 (stack search) |
+| **Stack best practices** | "React performance tips", "SwiftUI navigation" | Step 4 (stack search) |
 
 Follow this workflow:
 
@@ -356,7 +352,7 @@ Extract key information from user request:
 - **Product type**: Entertainment (social, video, music, gaming), Tool (scanner, editor, converter), Productivity (task manager, notes, calendar), or hybrid
 - **Target audience**: C-end consumer users; consider age group, usage context (commute, leisure, work)
 - **Style keywords**: playful, vibrant, minimal, dark mode, content-first, immersive, etc.
-- **Stack**: React Native (this project's only tech stack)
+- **Stack**: identify the project's actual stack (React, Next.js, React Native, etc.) and use it in Step 4
 
 ### Step 2: Generate Design System (REQUIRED)
 
@@ -474,35 +470,19 @@ python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack react-native
 
 ## Example Workflow
 
-**User request:** "Make an AI search homepage."
-
-### Step 1: Analyze Requirements
-- Product type: Tool (AI search engine)
-- Target audience: C-end users looking for fast, intelligent search
-- Style keywords: modern, minimal, content-first, dark mode
-- Stack: React Native
-
-### Step 2: Generate Design System (REQUIRED)
+**User request:** "Make an AI search homepage." Applying Steps 1→4:
 
 ```bash
+# Step 1 (analysis): Tool product, C-end users, modern/minimal/dark-mode keywords
+
+# Step 2: generate the design system
 python3 skills/ui-ux-pro-max/scripts/search.py "AI search tool modern minimal" --design-system -p "AI Search"
-```
 
-**Output:** Complete design system with pattern, style, colors, typography, effects, and anti-patterns.
-
-### Step 3: Supplement with Detailed Searches (as needed)
-
-```bash
-# Get style options for a modern tool product
+# Step 3: supplement with detailed searches as needed
 python3 skills/ui-ux-pro-max/scripts/search.py "minimalism dark mode" --domain style
-
-# Get UX best practices for search interaction and loading
 python3 skills/ui-ux-pro-max/scripts/search.py "search loading animation" --domain ux
-```
 
-### Step 4: Stack Guidelines
-
-```bash
+# Step 4: stack-specific guidance
 python3 skills/ui-ux-pro-max/scripts/search.py "list performance navigation" --stack react-native
 ```
 

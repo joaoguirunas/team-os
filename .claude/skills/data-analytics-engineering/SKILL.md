@@ -1,6 +1,8 @@
 ---
 name: data-analytics-engineering
 description: Analytics engineering for reliable metrics and BI readiness. Use when building dbt models, defining metrics, or designing analytics layers.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Data Analytics Engineering

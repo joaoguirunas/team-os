@@ -1,9 +1,13 @@
 ---
 name: social-analytics
-description: Análise de métricas de redes sociais — KPIs, benchmarks, relatórios e optimização baseada em dados. Injectado em PULSE (social-publisher).
+description: Análise de métricas de redes sociais — KPIs por objetivo, benchmarks por plataforma, templates de relatório e otimização baseada em dados. Use ao analisar performance de campanhas sociais, montar relatório de métricas, comparar resultados com benchmarks ou decidir ajustes de conteúdo com base em dados.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Analytics — Métricas e Relatórios
+
+> Skill injetada no agente PULSE (social-publisher).
 
 ## KPIs por objectivo de campanha
 
@@ -73,3 +77,6 @@ description: Análise de métricas de redes sociais — KPIs, benchmarks, relat�
 - **Semanal:** Quick check de métricas principais
 - **Mensal:** Relatório completo com tendências
 - **Por campanha:** Relatório fechado após fim da campanha
+
+## Skills relacionadas
+- UTMs, atribuição e GA4 → carregue a skill `/traffic-analytics-tracking`.

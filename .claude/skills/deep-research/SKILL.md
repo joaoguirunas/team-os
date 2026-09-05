@@ -1,6 +1,8 @@
 ---
 name: deep-research
 description: Use when the user needs multi-source research with citation tracking, evidence persistence, and structured report generation. Triggers on "deep research", "comprehensive analysis", "research report", "compare X vs Y", "analyze trends", or "state of the art". Not for simple lookups, debugging, or questions answerable with 1-2 searches.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Deep Research
@@ -83,6 +85,7 @@ Mode Selection
 - HTML styling: [mckinsey_report_template.html](./templates/mckinsey_report_template.html)
 
 **Scripts:**
+- Instalar dependências antes de rodar qualquer script: `pip install -r requirements.txt` (no diretório da skill)
 - `python scripts/validate_report.py --report [path]`
 - `python scripts/verify_citations.py --report [path]`
 - `python scripts/md_to_html.py [markdown_path]`
@@ -101,7 +104,7 @@ Mode Selection
 - Bibliography (COMPLETE - every citation, no placeholders)
 - Methodology Appendix
 
-**Output files (all to `~/Documents/[Topic]_Research_[YYYYMMDD]/`):**
+**Output files (all to `docs/research/[topic]_[YYYYMMDD]/` in the project):**
 - Markdown (primary source of truth)
 - `sources.jsonl` — stable source registry with canonical IDs
 - `evidence.jsonl` — append-only evidence store with quotes and locators

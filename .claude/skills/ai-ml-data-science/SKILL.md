@@ -1,6 +1,8 @@
 ---
 name: ai-ml-data-science
 description: "ML and data science workflows — EDA, feature engineering, modelling, evaluation, and production handoff. Use when exploring data or building models."
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Data Science Engineering Suite - Quick Reference
@@ -52,14 +54,12 @@ This skill focuses on **ML feature engineering and modeling**. Use data-lake-pla
 
 For adjacent topics, reference:
 
-- **[ai-mlops](../ai-mlops/SKILL.md)** - APIs, batch jobs, monitoring, drift, data ingestion (dlt)
-- **[ai-llm](../ai-llm/SKILL.md)** - LLM prompting, fine-tuning, evaluation
-- **[ai-rag](../ai-rag/SKILL.md)** - RAG pipelines, chunking, retrieval
-- **[ai-llm-inference](../ai-llm-inference/SKILL.md)** - LLM inference optimization, quantization
 - **[ai-ml-timeseries](../ai-ml-timeseries/SKILL.md)** - Time series forecasting, backtesting
-- **[qa-testing-strategy](../qa-testing-strategy/SKILL.md)** - Test-driven development, coverage
+- **[dev-testing-strategy](../dev-testing-strategy/SKILL.md)** - Test-driven development, coverage
 - **[data-sql-optimization](../data-sql-optimization/SKILL.md)** - SQL optimization, index patterns (complements SQLMesh)
 - **[data-lake-platform](../data-lake-platform/SKILL.md)** - Data lake/lakehouse infrastructure (ClickHouse, Iceberg, Kafka)
+
+For production deployment, monitoring, and drift detection, follow [references/production-feedback-loops.md](references/production-feedback-loops.md) in this skill. LLM/RAG topics are out of scope here.
 
 ---
 
@@ -293,11 +293,11 @@ Use these as copy-paste starting points:
 
 For SQL-based data transformation and feature engineering:
 
-- **SQLMesh project setup:** `../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-project.md`
-- **SQLMesh model types:** `../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-model.md` (FULL, INCREMENTAL, VIEW)
-- **Incremental models:** `../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-incremental.md`
-- **DAG and dependencies:** `../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-dag.md`
-- **Testing and data quality:** `../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-testing.md`
+- **SQLMesh project setup:** `assets/transformation/sqlmesh/template-sqlmesh-project.md`
+- **SQLMesh model types:** `assets/transformation/sqlmesh/template-sqlmesh-model.md` (FULL, INCREMENTAL, VIEW)
+- **Incremental models:** `assets/transformation/sqlmesh/template-sqlmesh-incremental.md`
+- **DAG and dependencies:** `assets/transformation/sqlmesh/template-sqlmesh-dag.md`
+- **Testing and data quality:** `assets/transformation/sqlmesh/template-sqlmesh-testing.md`
 
 **Use SQLMesh when:**
 - Building SQL-based feature pipelines
@@ -305,8 +305,7 @@ For SQL-based data transformation and feature engineering:
 - Creating staging/intermediate/marts layers
 - Testing SQL logic with unit tests and audits
 
-**For data ingestion (loading raw data), use:**
-- [ai-mlops](../ai-mlops/SKILL.md) skill (dlt templates for REST APIs, databases, warehouses)
+**For data ingestion (loading raw data):** use dlt (data load tool) to extract from REST APIs and databases into warehouses (Snowflake, BigQuery, Postgres, DuckDB), or see the ingestion patterns in [data-lake-platform](../data-lake-platform/SKILL.md).
 
 ## Navigation
 
@@ -331,11 +330,11 @@ For SQL-based data transformation and feature engineering:
 - [assets/evaluation/template-evaluation-report.md](assets/evaluation/template-evaluation-report.md)
 - [assets/evaluation/template-model-card.md](assets/evaluation/template-model-card.md)
 - [assets/review/experiment-review-template.md](assets/review/experiment-review-template.md)
-- [template-sqlmesh-project.md](../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-project.md)
-- [template-sqlmesh-model.md](../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-model.md)
-- [template-sqlmesh-incremental.md](../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-incremental.md)
-- [template-sqlmesh-dag.md](../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-dag.md)
-- [template-sqlmesh-testing.md](../data-lake-platform/assets/transformation/sqlmesh/template-sqlmesh-testing.md)
+- [template-sqlmesh-project.md](assets/transformation/sqlmesh/template-sqlmesh-project.md)
+- [template-sqlmesh-model.md](assets/transformation/sqlmesh/template-sqlmesh-model.md)
+- [template-sqlmesh-incremental.md](assets/transformation/sqlmesh/template-sqlmesh-incremental.md)
+- [template-sqlmesh-dag.md](assets/transformation/sqlmesh/template-sqlmesh-dag.md)
+- [template-sqlmesh-testing.md](assets/transformation/sqlmesh/template-sqlmesh-testing.md)
 
 **Data**
 - [data/sources.json](data/sources.json) - Curated external references

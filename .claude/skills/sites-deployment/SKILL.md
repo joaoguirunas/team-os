@@ -1,6 +1,8 @@
 ---
 name: sites-deployment
-description: Deploy de sites Next.js — Vercel, Netlify, Cloudflare Pages. CI/CD, variáveis de ambiente e processo de release.
+description: Deploy de sites Next.js — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release. Use ao publicar ou configurar deploy de um site, montar pipeline de CI/CD, gerenciar variáveis de ambiente ou preparar release para produção.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Sites Deployment — Plataformas e Processo

@@ -1,9 +1,13 @@
 ---
 name: social-video-editing
-description: Edição de vídeo para redes sociais com ffmpeg — cortes, legendas, música, transições e exportação. Injectado em FLUX (social-video).
+description: Edição de vídeo para redes sociais com ffmpeg — cortes, legendas, música, transições e exportação por plataforma. Use ao editar Reels, TikToks ou Shorts, cortar e montar clipes, adicionar legendas e trilha sonora, ou exportar vídeo nas specs corretas de cada rede.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Video Editing — ffmpeg Essencial
+
+> Skill injetada no agente FLUX (social-video).
 
 ## Comandos ffmpeg mais usados
 
@@ -31,7 +35,7 @@ ffmpeg -i input.mp4 -t 30 -c copy output_30s.mp4
 
 ### Adicionar legendas
 ```bash
-# Com ficheiro .srt
+# Com arquivo .srt
 ffmpeg -i input.mp4 \
   -vf "subtitles=legendas.srt:force_style='FontSize=28,FontName=Arial Bold,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,Alignment=2'" \
   output_com_legendas.mp4

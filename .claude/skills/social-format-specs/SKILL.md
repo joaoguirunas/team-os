@@ -1,36 +1,42 @@
 ---
 name: social-format-specs
-description: Especificações técnicas de formatos para todas as plataformas sociais — dimensões, duração, tamanho de ficheiro e requisitos. Injectado em FLUX (social-video).
+description: Especificações técnicas de formatos para todas as plataformas sociais — dimensões, duração, tamanho de arquivo, codecs e zonas seguras. Use ao exportar ou validar vídeo/foto para Instagram, TikTok, YouTube Shorts, Facebook ou LinkedIn antes de publicar.
+version: "1.0"
+updated: "2026-09-04"
 ---
 
 # Social Format Specs — Especificações por Plataforma
 
+Usada por FLUX (social-video).
+
+> **Specs verificadas em 2026-09; se `updated` > 6 meses, confirmar nas docs oficiais antes de bloquear entrega.**
+
 ## Instagram
 
 ### Feed (Foto/Vídeo)
-| Formato | Dimensões | Aspect Ratio | Máx ficheiro |
+| Formato | Dimensões | Aspect Ratio | Máx arquivo |
 |---|---|---|---|
-| Quadrado | 1080x1080 | 1:1 | 30MB (foto), 100MB (vídeo) |
-| Portrait | 1080x1350 | 4:5 | 30MB (foto), 100MB (vídeo) |
-| Landscape | 1080x566 | 1.91:1 | 30MB (foto), 100MB (vídeo) |
+| Quadrado | 1080x1080 | 1:1 | 30MB (foto) |
+| Portrait | 1080x1350 | 4:5 | 30MB (foto) |
+| Landscape | 1080x566 | 1.91:1 | 30MB (foto) |
 
-**Vídeo feed:** 60s máx, H.264, 30fps, 5.500kbps máx
+**Vídeo feed:** até 60 min (recomendado <90s para engajamento), H.264, 30fps, AAC
 
 ### Reels
-| Dimensões | Aspect Ratio | Duração | Máx ficheiro |
+| Dimensões | Aspect Ratio | Duração | Recomendado |
 |---|---|---|---|
-| 1080x1920 | 9:16 | 15s - 90s | 100MB |
+| 1080x1920 | 9:16 | até 3 min | 15-90s para alcance |
 
 **Codec:** H.264, 30fps, AAC 128kbps
 
 ### Stories
 - **Dimensões:** 1080x1920 (9:16)
-- **Duração:** 15s por clip (foto: 7s automático)
+- **Duração:** 60s por card (foto: 7s automático)
 - **Zona segura:** 250px top e bottom (UI da plataforma)
 
 ## TikTok
 
-| Dimensões | Aspect Ratio | Duração | Máx ficheiro |
+| Dimensões | Aspect Ratio | Duração | Máx arquivo |
 |---|---|---|---|
 | 1080x1920 | 9:16 | 15s - 10min | 287.6MB |
 | 1080x1080 | 1:1 | 15s - 10min | 287.6MB |
@@ -39,9 +45,9 @@ description: Especificações técnicas de formatos para todas as plataformas so
 
 ## YouTube Shorts
 
-| Dimensões | Aspect Ratio | Duração | Máx ficheiro |
-|---|---|---|---|
-| 1080x1920 | 9:16 | Até 60s | 256GB |
+| Dimensões | Aspect Ratio | Duração |
+|---|---|---|
+| 1080x1920 | 9:16 | até 3 min |
 
 **Codec:** H.264, 30-60fps, AAC 128kbps+
 
@@ -49,7 +55,7 @@ description: Especificações técnicas de formatos para todas as plataformas so
 
 ### Feed
 - **Foto:** 1200x630 (link) ou 1080x1080 (post)
-- **Vídeo:** 1280x720 mínimo, 30fps, max 240min, 4GB
+- **Vídeo:** 1280x720 mínimo, 30fps, máx 240min, 4GB
 
 ### Stories
 - **Dimensões:** 1080x1920 (9:16)
@@ -59,7 +65,7 @@ description: Especificações técnicas de formatos para todas as plataformas so
 
 ### Feed
 - **Foto:** 1200x627 (artigo) ou 1080x1080 (post)
-- **Vídeo:** 1920x1080 ou 1080x1080, max 10min, 5GB
+- **Vídeo:** 1920x1080 ou 1080x1080, máx 10min, 5GB
 
 ### Documento (Carousel)
 - **Formato:** PDF, até 300 slides
@@ -68,9 +74,9 @@ description: Especificações técnicas de formatos para todas as plataformas so
 ## Checklist de exportação
 
 ```
-[ ] Resolução correcta para plataforma
+[ ] Resolução correta para plataforma
 [ ] Aspect ratio verificado
-[ ] Ficheiro dentro do limite de tamanho
+[ ] Arquivo dentro do limite de tamanho
 [ ] Codec compatível (H.264 padrão)
 [ ] Frame rate adequado (30fps mínimo)
 [ ] Áudio: AAC, sem clipping

@@ -3,8 +3,15 @@ name: pm-client
 description: Eshara — Tecelã de Alianças Kaelthari. Gerencia a camada de cliente — acesso a projetos, perfil de qualificação, status de relacionamento, risco de churn. Use para configurar permissões de cliente em projetos, analisar perfil de qualificação, detectar clientes em risco e gerenciar relacionamentos.
 model: inherit
 memory: project
-tools: Read, Write, Glob, Grep, Bash, SendMessage
+permissionMode: acceptEdits
+tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: pink
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -148,6 +155,10 @@ Garante que o grafo cliente está correto:
 - `settings_users.id` → `client_user_projects.user_id`
 
 ---
+
+## Skills disponíveis
+
+- `/verify-before-done` — evidência antes de declarar configuração de acesso concluída
 
 ## Regras absolutas
 

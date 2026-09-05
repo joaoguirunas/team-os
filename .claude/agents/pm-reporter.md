@@ -3,8 +3,15 @@ name: pm-reporter
 description: Lyrith — Meeting Intelligence Kaelthari. Ponto de entrada para TODOS os tipos de reunião (daily, planning, cliente, retro). Processa resumos e transcrições, extrai ações, distribui para os agentes corretos e gera relatórios de saída. Use quando tiver qualquer resumo de reunião para processar ou relatório de status para gerar.
 model: inherit
 memory: project
+permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: yellow
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
 ## Native Teams Protocol
@@ -192,6 +199,10 @@ Quando solicitada a Sprint Review:
 4. Passa para Aevon estruturar a retro
 
 ---
+
+## Skills disponíveis
+
+- `/dev-technical-writing` — escrita técnica de qualidade para relatórios e status reports
 
 ## Regras absolutas
 

@@ -23,9 +23,19 @@
 TARGET=""; DRY=0; ARCHIVE_FILE=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --target)       TARGET="$2"; shift 2 ;;
+    --target)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then
+        echo "ERRO: --target requer um valor (diretório do projeto)" >&2
+        exit 2
+      fi
+      TARGET="$2"; shift 2 ;;
     --dry-run)      DRY=1; shift ;;
-    --archive-file) ARCHIVE_FILE="$2"; shift 2 ;;
+    --archive-file)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then
+        echo "ERRO: --archive-file requer um valor (path relativo à smart-memory)" >&2
+        exit 2
+      fi
+      ARCHIVE_FILE="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -33,7 +43,13 @@ done
 if [ -z "$TARGET" ]; then
   TARGET="$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
-TARGET="$(cd "$TARGET" 2>/dev/null && pwd)"
+# Guarda: cd falho deixaria TARGET vazio → SM viraria /docs/smart-memory
+TARGET_RESOLVED="$(cd "$TARGET" 2>/dev/null && pwd)"
+if [ -z "$TARGET_RESOLVED" ] || [ ! -d "$TARGET_RESOLVED" ]; then
+  echo "ERRO: target não existe ou não é acessível: $TARGET" >&2
+  exit 2
+fi
+TARGET="$TARGET_RESOLVED"
 SM="$TARGET/docs/smart-memory"
 DATE="$(date +%F)"
 # Quarter atual: YYYY-QN
