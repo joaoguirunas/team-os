@@ -9,7 +9,7 @@
 - Escrever a entrada `agent-name` direto no `.jsonl` é frágil (o app regrava o nome em memória a cada turno).
 - `UserPromptSubmit` **não** suporta `sessionTitle` (só `SessionStart`) — por isso "atualizar na primeira tarefa" automático não tem API; usa-se o `/rename` pronto da Fase 6 (ver SKILL.md).
 
-**Convenção de nome:** `{nome-da-pasta-do-projeto} · {branch}` (a branch só aparece quando há git não-detached). Ex.: `projeto-a · main`. Preserva rename deliberado do usuário; migra títulos antigos `team-os …`.
+**Convenção de nome:** `{nome-da-pasta-do-projeto} · {branch}` (a branch só aparece quando há git não-detached). Ex.: `meu-projeto · main`. Preserva rename deliberado do usuário; migra títulos antigos `team-os …`.
 
 **Registro (global — `~/.claude/settings.json`):** vale para todos os projetos de uma vez.
 ```json

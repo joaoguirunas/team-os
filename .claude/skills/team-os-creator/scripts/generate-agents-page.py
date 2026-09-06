@@ -6,7 +6,7 @@ Fontes de dados (tudo do repositório, nada manual na página):
   - README.md                    → coluna "Skills relacionadas" (última célula das tabelas §5)
   - .claude/skills/*/SKILL.md    → descrição de cada skill (para o modal)
   - RESUMOS_PT (dict abaixo)     → resumo em PT por agente (fallback: 1ª frase da description)
-  - fotos: projeto-a/public/agentes/<nome>.png → comprimidas e embutidas
+  - fotos (opcional): docs/fotos-agentes/<nome>.png no próprio CT, ou --photos <dir> → comprimidas e embutidas
     como data URI (agente sem foto fica com o monograma).
 
 Uso:  python3 generate-agents-page.py [--photos <dir>] [--out <path>]
@@ -16,7 +16,7 @@ import os, re, sys, json, base64, subprocess, tempfile, html
 
 ROOT = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
                       text=True, cwd=os.path.dirname(os.path.abspath(__file__))).stdout.strip()
-PHOTOS = "/Users/usuario/Desktop/Projetos/projeto-a/public/agentes"
+PHOTOS = os.path.join(ROOT, "docs", "fotos-agentes")  # dir local opcional; sem fotos a página sai só com iniciais
 OUT = os.path.join(ROOT, "docs", "agentes.html")
 args = sys.argv[1:]
 if "--photos" in args: PHOTOS = args[args.index("--photos") + 1]
