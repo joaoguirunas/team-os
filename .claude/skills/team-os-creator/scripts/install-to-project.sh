@@ -7,8 +7,10 @@
 #
 # Options:
 #   --squads dev,sites,social,traffic   squads a instalar (default: all)
-#   --include-hooks                     copia também os hooks de progresso (check-*.sh)
-#                                       (block-worktree.sh e block-git-push.sh são SEMPRE instalados)
+#   --include-hooks                     copia também hooks extras (fora do pacote padrão)
+#                                       (block-worktree.sh, block-git-push.sh, task-quality.sh,
+#                                       check-story-progress.sh, check-social-progress.sh e
+#                                       guard-push-branch.sh são SEMPRE instalados)
 #   --dry-run                           simula sem copiar nada
 
 SOURCE=""
@@ -285,6 +287,25 @@ else
   echo "GIT_PUSH_HOOK_MISSING=block-git-push.sh não encontrado na fonte"
 fi
 
+# ── Hooks de quality gate (pacote padrão — sempre instalados) ─────────────────
+# task-quality.sh (TaskCreated), check-story-progress.sh e check-social-progress.sh
+# (TaskCompleted) e guard-push-branch.sh (PreToolUse Bash do devops). Registrados
+# como quality gates no settings.json gerado — não são mais opcionais.
+quality_hooks_installed=""
+quality_hooks_missing=""
+for qh in task-quality.sh check-story-progress.sh check-social-progress.sh guard-push-branch.sh; do
+  if [ -f "$SOURCE/.claude/hooks/$qh" ]; then
+    do_mkdir "$TARGET/.claude/hooks"
+    do_cp "$SOURCE/.claude/hooks/$qh" "$TARGET/.claude/hooks/$qh"
+    [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/$qh"
+    quality_hooks_installed="$quality_hooks_installed $qh"
+  else
+    quality_hooks_missing="$quality_hooks_missing $qh"
+  fi
+done
+[ -n "$quality_hooks_installed" ] && echo "QUALITY_HOOKS=${quality_hooks_installed# }"
+[ -n "$quality_hooks_missing" ] && echo "QUALITY_HOOKS_MISSING=${quality_hooks_missing# }"
+
 # ── .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?) ──────────────
 if [ $DRY_RUN -eq 0 ]; then
   TARGET_GITIGNORE="$TARGET/.gitignore"
@@ -312,6 +333,7 @@ if [ ! -f "$TARGET_SETTINGS" ]; then
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "subagentPromptCacheTtl": "1h",
   "worktree": {
     "bgIsolation": "none"
   },
@@ -335,6 +357,32 @@ if [ ! -f "$TARGET_SETTINGS" ]; then
           }
         ]
       }
+    ],
+    "TaskCreated": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-quality.sh"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-social-progress.sh"
+          }
+        ]
+      }
     ]
   }
 }
@@ -354,6 +402,9 @@ else
   if ! grep -q "block-worktree" "$TARGET_SETTINGS" 2>/dev/null; then
     echo "SETTINGS_WORKTREE_HOOK_TODO=1|registre o hook block-worktree.sh em PreToolUse (matchers: Agent|Task|EnterWorktree e Bash) no settings.json do destino"
   fi
+  if ! grep -q "task-quality" "$TARGET_SETTINGS" 2>/dev/null || ! grep -q "subagentPromptCacheTtl" "$TARGET_SETTINGS" 2>/dev/null; then
+    echo "SETTINGS_TASKHOOKS_TODO=1|adicione \"subagentPromptCacheTtl\": \"1h\" e registre os hooks TaskCreated → task-quality.sh e TaskCompleted → check-story-progress.sh + check-social-progress.sh (matcher \"\") no settings.json do destino"
+  fi
 fi
 
 # ── Hooks ────────────────────────────────────────────────────────────────────
@@ -362,29 +413,21 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
   do_mkdir "$TARGET/.claude/hooks"
 
   hooks_copied=0
-  # Copiar apenas hooks relevantes para as squads instaladas (evitar hooks de outros squads)
+  # Copiar apenas hooks extras — o pacote padrão (block-worktree, block-git-push,
+  # task-quality, check-story-progress, check-social-progress, guard-push-branch)
+  # já foi instalado acima, incondicionalmente.
   for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
     [ -f "$hook_file" ] || continue
     hook_name=$(basename "$hook_file")
 
-    # block-worktree.sh e block-git-push.sh já foram instalados acima
-    # (universais, fora do --include-hooks) — aqui ficam só os hooks de progresso
-    if [[ "$hook_name" == "block-worktree.sh" || "$hook_name" == "block-git-push.sh" ]]; then
-      continue
-    fi
+    case "$hook_name" in
+      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|guard-push-branch.sh)
+        continue ;;
+    esac
 
-    # Hooks com prefixo de squad — só copiar se squad está sendo instalada
-    hook_squad=""
-    [[ "$hook_name" == check-social-* ]] && hook_squad="social"
-    [[ "$hook_name" == check-story-* ]] && hook_squad="any"  # relevante para qualquer squad
-
-    if [ "$hook_squad" = "any" ] || [ "$SQUADS" = "all" ]; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
-    elif [ -n "$hook_squad" ] && echo "$SQUADS" | grep -q "$hook_squad"; then
-      do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-      hooks_copied=$((hooks_copied + 1))
-    fi
+    do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
+    [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/$hook_name"
+    hooks_copied=$((hooks_copied + 1))
   done
 
   echo "HOOKS_COPIED=$hooks_copied"

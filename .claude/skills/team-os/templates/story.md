@@ -40,6 +40,16 @@ Critérios **testáveis e mensuráveis** (cada um vira teste):
 
 {Stack, constraints, padrões a seguir, arquivos/módulos prováveis. Links: [[../../project/tech-stack]], [[../../project/conventions]].}
 
+## Interfaces
+
+> Contrato público da story — é assim que teammates paralelos se encaixam sem ler a story um do outro.
+
+### Consome
+{Nomes/tipos/contratos que esta story USA de outras stories — assinaturas, rotas, schemas, exatamente como expostos na seção "Produz" delas.}
+
+### Produz
+{O que esta story EXPÕE para as outras — assinaturas de funções, rotas, schemas, nomes exatos de exports/tabelas/eventos.}
+
 ## Dependências
 
 - Depende de: {Story {N}.{M} | nenhuma}

@@ -1,60 +1,70 @@
 #!/usr/bin/env bash
-# ~/.claude/hooks/check-social-progress.sh
-# TeammateIdle hook — detecta agentes social-* parados sem notificar PULSE
-# Exit 0: ok, agente pode ficar idle
-# Exit 2: feedback ao lead com situação
+# .claude/hooks/check-social-progress.sh
+# TaskCompleted hook — quality gate de publicação de conteúdo social.
+# Exit 2 NEGA a conclusão (a task volta a in_progress e o teammate recebe o stderr).
+#
+# Se a task referencia conteúdo social (arquivos em
+# docs/smart-memory/agents/{content,design,photo,video,publisher}) E é uma task
+# de publicação ("publicar"/"publish"), a descrição da task precisa conter
+# evidência de aprovação editorial ("aprovado" pela VERA/strategist) antes de
+# fechar. Caso contrário → exit 0 (não bloqueia tasks genéricas).
+#
+# Defensivo: JSON malformado ou sem python3 → exit 0 (nunca quebra o fluxo).
 
-THRESHOLD_MINUTES=45
-NOW=$(date +%s)
-CAMPAIGNS_DIR="social-media/campaigns"
+INPUT=$(cat)
 
-if [ ! -d "$CAMPAIGNS_DIR" ]; then
-  exit 0
-fi
+command -v python3 >/dev/null 2>&1 || exit 0
 
-STUCK=""
+RESULT=$(printf '%s' "$INPUT" | python3 -c '
+import sys, json, re
 
-# Para cada campanha activa, verificar assets esperados
-for campaign_dir in "$CAMPAIGNS_DIR"/*/; do
-  [ -d "$campaign_dir" ] || continue
-  CAMPAIGN_ID=$(basename "$campaign_dir")
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("OK"); sys.exit(0)
 
-  # Verificar se brief existe (campanha activa)
-  [ -f "${campaign_dir}brief.md" ] || continue
+KEYS = {"title", "subject", "name", "description", "body", "content", "details", "prompt"}
 
-  # Verificar se validação já existe (campanha concluída)
-  if [ -f "${campaign_dir}validation.md" ]; then
-    grep -q "Aprovação: VERA" "${campaign_dir}validation.md" 2>/dev/null && continue
-  fi
+def collect(obj, acc):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, str) and k in KEYS:
+                acc.append(v)
+            elif isinstance(v, (dict, list)):
+                collect(v, acc)
+    elif isinstance(obj, list):
+        for v in obj:
+            collect(v, acc)
 
-  check_asset_phase() {
-    local asset_path="$1"
-    local phase_name="$2"
-    local agent_name="$3"
+texts = []
+collect(data, texts)
+blob = "\n".join(texts)
 
-    if [ ! -d "$asset_path" ] && [ ! -f "$asset_path" ]; then
-      return
-    fi
+# Referencia conteudo social?
+if not re.search(r"docs/smart-memory/agents/(content|design|photo|video|publisher)\b", blob):
+    print("OK"); sys.exit(0)
 
-    local mtime
-    mtime=$(stat -f %m "$asset_path" 2>/dev/null || stat -c %Y "$asset_path" 2>/dev/null)
-    [ -z "$mtime" ] && return
+# Task de publicacao?
+if not re.search(r"\bpublicar\b|\bpublish\b|\bpublica[cç][aã]o\b", blob, re.I):
+    print("OK"); sys.exit(0)
 
-    local minutes_elapsed=$(( (NOW - mtime) / 60 ))
-    if [ "$minutes_elapsed" -ge "$THRESHOLD_MINUTES" ]; then
-      STUCK="${STUCK}\n- Campanha: ${CAMPAIGN_ID} | Fase: ${phase_name} | Agente: ${agent_name} | Último update: ${minutes_elapsed}min atrás"
-    fi
-  }
+# Evidencia de aprovacao editorial (VERA/strategist)?
+if re.search(r"aprovad[oa]", blob, re.I):
+    print("OK"); sys.exit(0)
 
-  check_asset_phase "${campaign_dir}copy" "Copy/Research" "LYRIS"
-  check_asset_phase "${campaign_dir}assets/design" "Design" "AEON"
-  check_asset_phase "${campaign_dir}assets/photos/raw" "Fotos" "IRIS"
-  check_asset_phase "${campaign_dir}assets/videos/raw" "Vídeo" "FLUX"
-done
+print("BLOCK")
+' 2>/dev/null)
 
-if [ -n "$STUCK" ]; then
-  echo -e "⚠️  Fases possivelmente paradas (>${THRESHOLD_MINUTES}min sem update):${STUCK}\n\nVerificar via SendMessage direto a cada agente. Possíveis causas: bloqueado por falta de assets, erro no MCP, aguardando direcção."
-  exit 2
-fi
-
-exit 0
+case "$RESULT" in
+  BLOCK*)
+    {
+      echo "🚫 Task de publicação social só fecha com aprovação editorial registrada."
+      echo ""
+      echo "A task referencia conteúdo social e está marcada como publicação, mas a"
+      echo "descrição não contém evidência de aprovação da VERA/strategist."
+      echo "Adicione à descrição a evidência (ex.: \"Aprovado pela VERA em 2026-09-05\")"
+      echo "antes de concluir — sem aprovação editorial, nada é publicado."
+    } >&2
+    exit 2 ;;
+  *) exit 0 ;;
+esac

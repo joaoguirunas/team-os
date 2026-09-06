@@ -72,7 +72,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 | 1 | **Setup** | Instalar a squad no projeto via `/team-os-creator *install` (uma vez por projeto). | CT |
 | 2 | **Bootstrap** | `/team-os` no início de **toda** sessão — valida o ambiente de Agent Teams nativo. | Projeto |
 | 3 | **Discovery** | Sem smart-memory? O team-os lê o codebase real e **constrói a smart-memory populada** antes de qualquer trabalho. | Projeto |
-| 4 | **Team Design** | Objetivo → mapeia **workstreams independentes** → spawna **muitos agentes em paralelo**, 1 por stream, com ownership exclusivo de arquivos. | Projeto |
+| 4 | **Team Design** | Objetivo → mapeia **workstreams independentes** → spawna o time certo (**comece com 3-5**, 1 por workstream independente, máx 10), com ownership exclusivo de arquivos — onde o ownership não é disjunto, serializa com task dependencies. | Projeto |
 | 5 | **Parallel Execution** | TaskList compartilhada + self-claim + comunicação **peer-to-peer** entre teammates. | Projeto |
 | 6 | **Sync & QA** | Veredictos formais (PASS/CONCERNS/FAIL/WAIVED), gates por hook, hardening. | Projeto |
 | 7 | **Memory & Ship** | Cada agente grava findings na smart-memory; DevOps faz push/PR/release. | Projeto |
@@ -384,12 +384,14 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
-- **`block-git-push.sh`** — `PreToolUse` em ~21 agentes: **todos os agentes não-devops com Bash das squads de código** (`dev-*` e `sites-*` exceto devops) **e** `social-video`. Bloqueia `git push` (inclusive `git -C <dir> push`) **e** `gh pr create/merge` — garantia dura, exclusiva do DevOps.
-- **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree e `git worktree add` — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
-- **`check-story-progress.sh`** — valida progresso de stories.
-- **`check-social-progress.sh`** — valida progresso de conteúdo social.
+- **`block-git-push.sh`** — `PreToolUse` em **44 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
+- **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
+- **`guard-push-branch.sh`** — `PreToolUse` nos 2 devops: push permitido só na `main`/`master`; fora dela exige pedido explícito do usuário na sessão.
+- **`task-quality.sh`** — hook `TaskCreated` (registrado no settings pelo `ensure-settings.sh`/`*install`): rejeita task vaga — título curto/genérico ou sem descrição.
+- **`check-story-progress.sh`** — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story.
+- **`check-social-progress.sh`** — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist).
 
-Hooks de time (em `.claude/settings.json` do projeto): `TeammateIdle`, `TaskCreated`, `TaskCompleted` — exit code 2 envia feedback e mantém o agente trabalhando.
+`TeammateIdle` fica como receita opcional (ver `team-os/reference/hooks-de-time.md` — hook incondicional cria loop infinito). Settings padrão também garantem `subagentPromptCacheTtl: "1h"`.
 
 ---
 

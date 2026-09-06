@@ -1,53 +1,84 @@
 #!/usr/bin/env bash
 # .claude/hooks/check-story-progress.sh
-# SubagentStop hook — varre stories ativas e alerta se algum agente dev-dev-*
-# iniciou story mas não registrou conclusão dentro do threshold.
-# Dispara toda vez que um subagente termina; o lead recebe o alerta e intervém.
-# Exit 0: nenhuma story travada detectada
-# Exit 2: feedback ao lead com lista de stories suspeitas
+# TaskCompleted hook — quality gate de fechamento de tasks de story.
+# Exit 2 NEGA a conclusão (a task volta a in_progress e o teammate recebe o stderr).
+#
+# Se o título/descrição da task referencia um arquivo de story
+# (docs/smart-memory/stories/...), a task só fecha se a story tem evidência
+# de progresso:
+#   • seção "## QA Results", OU
+#   • frontmatter com status: done | in-review
+#
+# Sem referência a story → exit 0 (não bloqueia tasks genéricas).
+# Defensivo: JSON malformado ou sem python3 → exit 0 (nunca quebra o fluxo).
 
-THRESHOLD_HOURS=2
-NOW=$(date +%s)
-ACTIVE_DIR="docs/smart-memory/stories/active"
+INPUT=$(cat)
 
-if [ ! -d "$ACTIVE_DIR" ]; then
-  exit 0
-fi
+command -v python3 >/dev/null 2>&1 || exit 0
 
-STUCK_STORIES=""
+RESULT=$(printf '%s' "$INPUT" | python3 -c '
+import sys, json, os, re
 
-for story_file in "$ACTIVE_DIR"/*.md; do
-  [ -f "$story_file" ] || continue
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("OK"); sys.exit(0)
 
-  # Checar se tem Iniciado preenchido mas Concluído vazio
-  INICIADO=$(grep -m1 "| Iniciado" "$story_file" | grep -v "| — |" | awk -F'|' '{print $3}' | xargs)
-  CONCLUIDO=$(grep -m1 "| Concluído" "$story_file" | awk -F'|' '{print $3}' | xargs)
-  AGENTE=$(grep -m1 "| Agente" "$story_file" | grep -v "| — |" | awk -F'|' '{print $3}' | xargs)
-  STORY_NAME=$(basename "$story_file" .md)
+KEYS = {"title", "subject", "name", "description", "body", "content", "details", "prompt"}
 
-  # Se tem Iniciado preenchido e Concluído está vazio/traço
-  if [ -n "$INICIADO" ] && [ "$INICIADO" != "—" ] && { [ -z "$CONCLUIDO" ] || [ "$CONCLUIDO" = "—" ]; }; then
+def collect(obj, acc):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, str) and k in KEYS:
+                acc.append(v)
+            elif isinstance(v, (dict, list)):
+                collect(v, acc)
+    elif isinstance(obj, list):
+        for v in obj:
+            collect(v, acc)
 
-    # Tentar parsear data do Iniciado (formato: YYYY-MM-DD)
-    # Sem hora registrada, o dia de hoje nunca conta como travado — o timestamp
-    # da data pura é meia-noite e inflaria as horas decorridas.
-    START_DATE=$(echo "$INICIADO" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-    TODAY=$(date +%F)
-    if [ -n "$START_DATE" ] && [ "$START_DATE" != "$TODAY" ]; then
-      START_TS=$(date -d "$START_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$START_DATE" +%s 2>/dev/null)
-      if [ -n "$START_TS" ]; then
-        HOURS_ELAPSED=$(( (NOW - START_TS) / 3600 ))
-        if [ "$HOURS_ELAPSED" -ge "$THRESHOLD_HOURS" ]; then
-          STUCK_STORIES="${STUCK_STORIES}\n- Story ${STORY_NAME} | Agente: ${AGENTE} | Iniciada: ${INICIADO} (${HOURS_ELAPSED}h atrás)"
-        fi
-      fi
-    fi
-  fi
-done
+texts = []
+collect(data, texts)
+blob = "\n".join(texts)
 
-if [ -n "$STUCK_STORIES" ]; then
-  echo -e "⚠️  Agentes possivelmente travados detectados (>${THRESHOLD_HOURS}h sem conclusão registrada):${STUCK_STORIES}\n\nVerificar via SendMessage direto a cada agente. Possíveis causas: erro não reportado, aguardando dependência, esqueceu de atualizar story."
-  exit 2
-fi
+refs = re.findall(r"docs/smart-memory/stories/[^\s\"\x27`\)\]]+\.md", blob)
+if not refs:
+    print("OK"); sys.exit(0)
 
-exit 0
+cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else ""
+root = os.environ.get("CLAUDE_PROJECT_DIR") or cwd or os.getcwd()
+
+for ref in dict.fromkeys(refs):
+    path = ref if os.path.isabs(ref) else os.path.join(root, ref)
+    ok = False
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+        if re.search(r"^##\s*QA Results", text, re.M):
+            ok = True
+        else:
+            m = re.match(r"\A---\s*\n(.*?)\n---", text, re.S)
+            fm = m.group(1) if m else text[:800]
+            if re.search(r"^\s*status:\s*[\"\x27]?(done|in-review)\b", fm, re.M | re.I):
+                ok = True
+    except OSError:
+        ok = False  # story referenciada mas inexistente = sem evidencia
+    if not ok:
+        print("BLOCK:" + ref); sys.exit(0)
+
+print("OK")
+' 2>/dev/null)
+
+case "$RESULT" in
+  BLOCK:*)
+    STORY="${RESULT#BLOCK:}"
+    {
+      echo "🚫 Task de story só fecha com QA Results ou status atualizado na story."
+      echo ""
+      echo "Story referenciada: $STORY"
+      echo "Antes de concluir esta task, registre na story uma seção \"## QA Results\""
+      echo "ou atualize o frontmatter para status: done ou status: in-review."
+    } >&2
+    exit 2 ;;
+  *) exit 0 ;;
+esac

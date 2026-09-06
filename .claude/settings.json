@@ -9,6 +9,7 @@
       "Bash(npx supabase:*)"
     ]
   },
+  "subagentPromptCacheTtl": "1h",
   "worktree": {
     "bgIsolation": "none"
   },
@@ -29,6 +30,28 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-quality.sh"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh"
           }
         ]
       }

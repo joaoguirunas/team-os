@@ -29,10 +29,12 @@ Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualm
 
 Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos agentes (ver [README.md §10](./README.md#10-hooks-de-qualidade)):
 
-- `block-git-push.sh` — PreToolUse nos implementers (dev-dev-*, sites-dev-*, social-video) **e em todo agente não-devops com Bash nas squads de código** (dev-*/sites-* exceto devops): push é garantia dura, exclusiva do devops
-- `block-worktree.sh` — PreToolUse registrado no `.claude/settings.json` de cada projeto (matchers `Agent|Task|EnterWorktree` e `Bash`): bloqueia `isolation: worktree`, EnterWorktree e `git worktree add` — todo trabalho acontece direto na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings
-- `check-story-progress.sh` — validação de progresso de stories
-- `check-social-progress.sh` — validação de progresso de conteúdo social
+- `block-git-push.sh` — PreToolUse em **TODO agente com Bash exceto os devops** (todas as squads): push é garantia dura, exclusiva do devops. Cobre `git -C`/`--git-dir`/aliases/multilinha e `gh pr`/`gh api`
+- `block-worktree.sh` — PreToolUse registrado no `.claude/settings.json` de cada projeto (matchers `Agent|Task|EnterWorktree` e `Bash`): bloqueia `isolation: worktree`, EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`/`switch -c`/`git branch <nome>`) — todo trabalho acontece direto na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings
+- `guard-push-branch.sh` — PreToolUse nos devops: push permitido só na `main`/`master`; fora dela exige pedido explícito do usuário na sessão
+- `task-quality.sh` — hook `TaskCreated` (registrado no settings): rejeita task vaga (título curto/genérico ou sem descrição)
+- `check-story-progress.sh` — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story
+- `check-social-progress.sh` — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist)
 - `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
 
 ## Fluxo de trabalho

@@ -42,9 +42,50 @@ Quando `/team-os` está ativo, esta sessão é **orquestrador puro**. Antes de q
 3. **Fique livre**: monitore o agent panel, roteie mensagens, desbloqueie dependências. Não pegue trabalho de teammate.
 4. Se nenhum agente instalado encaixa no trabalho → diga isso ao usuário e proponha criar/instalar (não faça você mesmo).
 
-**Única exceção:** edições triviais de coordenação na smart-memory (ex.: atualizar `INDEX.md`/`BACKLOG.md` ao registrar uma task). Código e entregáveis: **nunca**.
+**Exceções legítimas (só estas duas):** (1) edições triviais de coordenação na smart-memory (ex.: atualizar `INDEX.md`/`BACKLOG.md` ao registrar uma task, manter o ledger da sessão); (2) rodar `scripts/ensure-settings.sh` da própria skill — garantir settings é bootstrap de orquestração, não implementação. Código e entregáveis: **nunca**.
 
 > Se você se pegar implementando, é um bug de comportamento. Pare, reverta o impulso, e spawna o teammate.
+
+---
+
+## 🧭 Lead OS — doutrina de decisão
+
+A Lead Discipline diz o que o lead **não faz**; esta seção diz **como ele conduz**: decide, registra, verifica.
+
+### Rulings, not stalls — decida e registre
+
+Ambiguidade ou conflito entre agentes **não para o trabalho**. O lead DECIDE sozinho e registra no ledger da sessão:
+
+```
+Ruling: <decisão> — <porquê> — <custo se errado>
+```
+
+No final da sessão, entregue ao usuário a **lista completa de rulings** — ele audita tudo de uma vez, em vez de ser interrompido a cada dúvida.
+
+Só **4 coisas** PARAM o trabalho para perguntar ao usuário:
+1. **Operação irreversível/destrutiva** (apagar dados, migration destrutiva, rewrite de histórico git)
+2. **Questão de segurança** (segredos, auth, permissões, dados sensíveis)
+3. **Efeito externo** — push/publicação/deploy (já exclusivos de devops/publisher)
+4. **Plano tão quebrado que todo caminho é chute** — nenhum ruling honesto é possível
+
+### Ledger da sessão — a memória que sobrevive ao compaction
+
+Arquivo `docs/smart-memory/_session/ledger-<data>.md`, mantido pelo lead ao longo da sessão (exceção legítima da Lead Discipline):
+- **Uma linha por task:** `Task N: status — commits/artefatos — review`
+- **Rulings e adjudicações** no formato acima, na ordem em que aconteceram
+
+**Regra anti-amnésia:** após compaction de contexto, confie no **ledger e no `git log`**, nunca na sua memória — a falha mais cara de um lead é **redespachar trabalho já concluído**. Antes de criar qualquer task pós-compaction, releia o ledger.
+
+### Controlador puro — o lead não corrige código
+
+O lead NÃO implementa nem corrige código — nem "só esse fix rápido". Correção feita pelo lead polui o contexto de orquestração **e pula o review**. O ciclo do lead é: **despachar → verificar → adjudicar**. Encontrou bug? Vira task para o implementer (ou finding para o QA), nunca edição sua. Exceção: edições triviais na smart-memory (regra já existente).
+
+### Não confie no relato — verifique o artefato
+
+"Agente disse que terminou" ≠ terminou. Antes de aceitar done:
+- **Código** → `git log`/`git diff` mostra os commits da task de fato
+- **Entregável** → o arquivo existe no path prometido e tem o conteúdo esperado
+Sem evidência verificável, a task **não fecha** — volta ao agente com o que falta.
 
 ---
 
@@ -87,6 +128,8 @@ Execute SEMPRE nesta sequência exata:
 ```bash
 echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 ```
+
+**Escape hatch:** se as ferramentas de teammate já estão disponíveis nesta sessão (você vê as tools nativas de spawn de teammate e task list compartilhada), o gate está satisfeito — prossiga sem depender do `echo`.
 
 - **Retornou `1`** → Agent Teams ativo. Siga para a Fase 0.
 - **Vazio / diferente de `1`** → ⛔ **PARE. NÃO spawne nada.** Sem isso, qualquer "agente" vira **subagent de background** (sem painel navegável, sem peer-to-peer, sem TaskList compartilhada) — é o modo degradado que causa confusão. Faça:
@@ -170,20 +213,12 @@ Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível,
 }
 ```
 
-**C) Anti-worktree (garantia dura) — verificar `.claude/settings.json` do projeto:**
-Deve conter `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks) **e** o registro PreToolUse do hook `block-worktree.sh` (bloqueia spawn com `isolation: worktree`, EnterWorktree e `git worktree add`). Se faltar, adicionar preservando o JSON existente:
-```json
-{
-  "worktree": { "bgIsolation": "none" },
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Agent|Task|EnterWorktree", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] },
-      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] }
-    ]
-  }
-}
+**C) Settings do projeto (garantia dura, idempotente) — rodar o script, NUNCA editar settings à mão:**
+```bash
+bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/ensure-settings.sh"          # --dry-run mostra o merge sem gravar
 ```
-Se `.claude/hooks/block-worktree.sh` não existir no projeto, avisar o usuário para rodar `/team-os-creator *propagate` no CT (o hook é distribuído de lá).
+O script garante no `.claude/settings.json` do projeto (criando o arquivo se não existir, preservando todo o resto): `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"`, `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks), `"subagentPromptCacheTtl": "1h"` e os hooks padrão — **PreToolUse** do `block-worktree.sh` (matchers `Agent|Task|EnterWorktree` e `Bash` — bloqueia `isolation: worktree`, EnterWorktree e `git worktree add`), **TaskCreated** (`task-quality.sh` — rejeita task vaga) e **TaskCompleted** (`check-story-progress.sh` — story só fecha com evidência). Só adiciona o que falta — nunca duplica nem remove chaves existentes, e valida o JSON final. Rodá-lo é exceção legítima da Lead Discipline (bootstrap de orquestração).
+Se o script avisar hook ausente em `.claude/hooks/`, rodar `/team-os-creator *propagate` no CT (os hooks são distribuídos de lá).
 
 **D) Smart-memory ausente ou incompleta → DISCOVERY/REPAIR obrigatório antes de spawnar:**
 - **Ausente** (`docs/smart-memory/INDEX.md` não existe): NÃO comece o trabalho direto. Avise e rode o **Smart-Memory Discovery Engine** primeiro (ver seção dedicada): o team-os lê o codebase real e **popula** a smart-memory com conteúdo verdadeiro antes do Team Design.
@@ -255,9 +290,11 @@ Workstream independente = bloco de trabalho com OWNERSHIP DE ARQUIVOS DISJUNTO
 ```
 
 **Escale conforme o ganho real, com 3 guardrails (da spec oficial — não negociáveis):**
-1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só.
-2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. Use dependências na task list; não spawne agente ocioso esperando.
-3. **Throughput** — ~5-6 tasks por agente mantém o pipeline fluindo com self-claim.
+1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só. **Onde o ownership de arquivo NÃO é disjunto, serialize (task dependencies) — nunca paralelize.**
+2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. **Tasks com dependência: use o campo de dependências do TaskCreate — B só destrava quando A completa.** Não spawne agente ocioso esperando.
+3. **Throughput** — ~5-6 tasks por agente mantém o pipeline fluindo com self-claim (throughput esperado, não regra de dimensionamento).
+
+> Esta Fase 4c é a **regra canônica de dimensionamento** — qualquer outro número citado na skill (ex.: "5-6 tasks por agente") é throughput, não dimensionamento.
 
 **Research adversarial:** investigação de causa raiz / hipóteses → 3-5 pesquisadores em paralelo mesmo com poucas tasks (valor vem da diversidade de perspectiva). Faça-os debater e refutar uns aos outros.
 
@@ -297,10 +334,17 @@ Formato da proposta (ajustar ao contexto real):
    depende de ① → [ ] {task 4}
 
 📊 Modelo sugerido: Sonnet (padrão) | Haiku para pesquisa pura (mais barato)
+🎚 Effort sugerido: architect/QA → high · implementers → médio (default) · pesquisa rápida → low
 ⚡ Paralelismo: {N} agentes simultâneos na fase inicial
 
 [s] Spawnar  [a] Ajustar composição  [+] Mais agentes  [p] Plan mode em todos  [n] Cancelar
 ```
+
+**Effort como alavanca (proposta sempre inclui, junto com o modelo):**
+- Sugira effort por papel: **architect/QA → `high`** (o erro custa caro); **implementers → médio (default)**; **pesquisas rápidas → `low`**.
+- Teammates **herdam o effort do lead no spawn** — ajuste o seu com `/effort` ANTES de spawnar quem precisa de mais/menos, e mencione ao usuário que `/effort` permite ajuste mid-session.
+- Nota de custo: `xhigh`/`max` consomem **3-5× tokens** — reserve para onde o erro custa caro (arquitetura, veredicto de QA), nunca para pesquisa descartável.
+- **Nunca despache com modelo implícito quando o papel pedir modelo diferente do lead** — declare explicitamente no spawn (ex.: `"usando modelo opus"` / `"usando modelo haiku"`).
 
 ### Fase 6 — Orquestração
 
@@ -636,6 +680,28 @@ Tasks com dependências ficam bloqueadas até que as dependências sejam complet
 ### Redirecionar um agente
 Entre na sessão (Enter no panel) e dê instrução direta. O agente processa como mensagem prioritária.
 
+### Fix loop com cap — QA ↔ implementer (máx 3 rodadas)
+
+O ciclo de correção QA → implementer → QA tem **cap de 3 rodadas pelo mesmo par**. Se a 4ª rodada for necessária, o par está em loop — o lead intervém com uma de duas saídas:
+1. **Escalar para agente fresco em modelo superior** — spawn novo implementer com model explícito acima do atual (ou ajuste via `/model` antes do spawn); o contexto do loop fica no ledger/story, não na cabeça do par viciado.
+2. **Adjudicar finding a finding** — o lead decide cada finding aberto (acata ou rejeita) com `Ruling:` registrado no ledger (ver Lead OS).
+
+Regras duras do ciclo:
+- **Descarte silencioso é proibido** — todo finding do QA termina corrigido OU adjudicado com ruling registrado. Nunca "some".
+- **Proibido ao lead instruir o QA a "não apontar X"** — isso é pré-julgamento que corrompe o veredicto. Se X não deve ser corrigido, o caminho é adjudicar o finding depois que ele existe, com ruling.
+
+### Mensagens enxutas (SendMessage)
+
+SendMessage é canal de **coordenação, não de conteúdo**: **≤15 linhas por mensagem**. Diff, relatório, log ou análise longa vão em **arquivo** (smart-memory ou story) — a mensagem leva só o path.
+
+Contrato de report do teammate ao concluir (exija no spawn prompt):
+```
+STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
+Commits: <hashes | "nenhum">
+Evidência: <1 linha — o que prova que está pronto>
+Detalhe: <path do relatório/artefato completo>
+```
+
 ### Encerrar graciosamente
 ```
 "Peça ao agente {nome} para encerrar"
@@ -683,9 +749,9 @@ Cada agente lê **L0** (INDEX + DIGEST da sua área + stories ativas), busca via
 
 ---
 
-## Hooks de qualidade (opcionais por projeto)
+## Hooks de time
 
-Hooks `TeammateIdle` (nudge de self-claim — CUIDADO: `exit 2` incondicional gera loop infinito; idle é o estado desejado) e `TaskCompleted` (gate de qualidade) — exemplos completos e avisos → ver `reference/hooks-de-time.md`.
+`TaskCreated` (`task-quality.sh` — rejeita task vaga) e `TaskCompleted` (`check-story-progress.sh` — story só fecha com evidência) fazem parte do **settings padrão** (garantidos pelo `ensure-settings.sh`/`*install`). `TeammateIdle` é receita **opcional** — CUIDADO: `exit 2` incondicional gera loop infinito (idle é o estado desejado). Detalhes e exemplos → ver `reference/hooks-de-time.md`.
 
 ---
 
@@ -711,11 +777,11 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 /team-os *compact       → compactação integral: mecânica + semântica (archivist), 1 confirmação
 /team-os *compact --auto → idem, sem confirmação (mostra o plano e aplica)
 /team-os *tasks         → só mostrar task list atual
-/team-os *spawn {desc}  → proposta de time para {desc} (pular scan)
+/team-os *spawn {desc}  → Gate 0 + proposta de time para {desc}
 /team-os *status        → dashboard de status do time atual
 ```
 
-> Os subcomandos são **atalhos**: executam apenas a fase correspondente do fluxo principal (*env = Gate 0 + Fase 2-A/B/C; *memory = Fase 2-D/E + Discovery/Repair; *tasks = item 5 do scan; *spawn = Fases 4-5 direto; *status = painel da Fase 1 + task list), sem repetir o bootstrap inteiro.
+> Os subcomandos são **atalhos**: executam apenas a fase correspondente do fluxo principal (*env = Gate 0 + Fase 2-A/B/C; *memory = Fase 2-D/E + Discovery/Repair; *tasks = item 5 do scan; *spawn = Gate 0 + Fases 4-5; *status = painel da Fase 1 + task list), sem repetir o bootstrap inteiro. **Nenhum subcomando que spawna pula o Gate 0** — sem runtime confirmado, nada é spawnado (lembrando o escape hatch: ferramentas de teammate já disponíveis na sessão = gate satisfeito, prossiga).
 
 **Settings.json mínimo:**
 ```json
@@ -725,10 +791,7 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 }
 ```
 
-**Fórmula de dimensionamento:**
-```
-tasks independentes ÷ 5-6 = agentes (máx 10 por squad)  |  research adversarial = 3-5 sempre
-```
+**Dimensionamento:** a regra canônica é a da **Fase 4c** — 1 workstream independente = 1 agente; comece com 3-5; máx 10 simultâneos; research adversarial = 3-5 pesquisadores. ("5-6 tasks por agente" é só o **throughput esperado** do self-claim, nunca regra de dimensionamento.)
 
 **Subagent definitions:** Use nomes dos agentes em `.claude/agents/` ao spawnar:
 ```
