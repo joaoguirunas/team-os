@@ -1,0 +1,552 @@
+<title>Agentes do Centro de Treinamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,ital,wght@9..144,0,300..700;9..144,1,300..700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--void:#050507;--ink2:#131318;--bone:#f1f1f3;--dim:#c5c5ca;--mute:#84848c;
+ --hl:rgba(255,255,255,.07);--hls:rgba(255,255,255,.16);--em:#ff3a0e;
+ --dsp:'Fraunces',Georgia,serif;--sans:'Inter Tight',system-ui,sans-serif;
+ --mn:'JetBrains Mono',ui-monospace,monospace}
+html{scroll-behavior:smooth}
+html,body{background:var(--void);color:var(--dim);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+ background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);
+ background-size:24px 24px;opacity:.4}
+main{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:72px 40px 120px;
+ font-size:15px;line-height:1.7;font-weight:300}
+.kicker{font-family:var(--mn);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--em);margin-bottom:20px}
+h1{font-family:var(--dsp);font-weight:300;font-size:56px;letter-spacing:-.035em;line-height:1.02;color:var(--bone);margin-bottom:22px;text-wrap:balance}
+.lede{max-width:62ch;font-size:16.5px;color:var(--dim)}
+.lede em{font-family:var(--dsp);font-style:italic;color:var(--em);font-weight:400}
+.lede code{font-family:var(--mn);font-size:13px;color:var(--em)}
+.stats{display:flex;flex-wrap:wrap;margin:44px 0 0;border-top:1px solid var(--hls);border-bottom:1px solid var(--hl)}
+.stat{padding:18px 36px 18px 0;margin-right:36px}
+.stat b{display:block;font-family:var(--dsp);font-weight:300;font-size:34px;color:var(--bone);font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.toolbar{position:sticky;top:0;z-index:10;background:linear-gradient(var(--void) 82%,transparent);
+ display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:20px 0 18px;margin-top:28px}
+.fbtn{font-family:var(--mn);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--mute);background:transparent;border:1px solid var(--hls);padding:8px 14px;cursor:pointer}
+.fbtn:hover{color:var(--dim)}
+.fbtn.active{color:var(--em);border-color:var(--em);background:rgba(255,58,14,.05)}
+.fbtn:focus-visible,#q:focus-visible,.skill:focus-visible{outline:1px solid var(--em);outline-offset:2px}
+#q{margin-left:auto;font-family:var(--mn);font-size:12px;color:var(--bone);background:var(--ink2);
+ border:1px solid var(--hls);padding:8px 12px;min-width:220px}
+#q::placeholder{color:var(--mute)}
+.squad{margin-top:56px}
+.squad[hidden]{display:none}
+h2{font-family:var(--dsp);font-weight:300;font-size:30px;letter-spacing:-.028em;color:var(--bone);
+ padding-top:24px;border-top:1px solid var(--hl);display:flex;align-items:baseline;gap:14px}
+.idx{font-family:var(--mn);font-size:12px;color:var(--em);letter-spacing:.1em}
+.count{margin-left:auto;font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.squad-sub{color:var(--mute);margin:8px 0 24px;font-size:14px}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.agent{background:var(--ink2);border:1px solid var(--hl);padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.agent[hidden]{display:none}
+.agent:hover{border-color:var(--hls)}
+.agent-top{display:flex;gap:14px;align-items:center}
+.face{width:56px;height:56px;object-fit:cover;flex:none;border:1px solid var(--hls);
+ filter:grayscale(.35) contrast(1.05);transition:filter .25s}
+.agent:hover .face{filter:grayscale(0)}
+.mono-face{display:flex;align-items:center;justify-content:center;font-family:var(--mn);
+ font-size:15px;color:var(--mute);background:var(--void)}
+.agent h3{font-family:var(--dsp);font-weight:400;font-size:21px;letter-spacing:-.01em;color:var(--bone);line-height:1.15}
+.role{font-family:var(--mn);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--em);margin:2px 0}
+.agent-top code{display:block;font-family:var(--mn);font-size:9.5px;letter-spacing:.06em;color:var(--mute)}
+.resumo{font-size:13.5px;line-height:1.65;color:var(--dim)}
+details{font-size:12.5px}
+details summary{font-family:var(--mn);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--mute);cursor:pointer;list-style:none}
+details summary::before{content:"+ ";color:var(--em)}
+details[open] summary::before{content:"− "}
+details p{color:var(--mute);margin-top:6px;line-height:1.6}
+.aut{font-size:12px;color:var(--dim);border-left:2px solid var(--em);padding:6px 0 6px 12px;background:rgba(255,58,14,.04)}
+.aut span{display:block;font-family:var(--mn);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--em);margin-bottom:2px}
+.skills{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.skills-l{font-family:var(--mn);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-right:3px}
+.skill{font-family:var(--mn);font-size:10px;color:var(--dim);background:var(--void);
+ border:1px solid var(--hl);padding:3px 8px;cursor:pointer;transition:border-color .15s,color .15s}
+.skill:hover{color:var(--em);border-color:rgba(255,58,14,.5)}
+.agent footer{display:flex;flex-wrap:wrap;gap:6px;padding-top:2px;margin-top:auto}
+.tag{font-family:var(--mn);font-size:9.5px;letter-spacing:.08em;color:var(--mute);border:1px solid var(--hl);padding:3px 8px}
+.tag.opus{color:var(--em);border-color:rgba(255,58,14,.4)}
+.empty{display:none;font-family:var(--mn);font-size:12px;color:var(--mute);padding:40px 0;text-align:center}
+.pagefoot{margin-top:80px;padding-top:20px;border-top:1px solid var(--hl);font-family:var(--mn);
+ font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);line-height:2}
+.pagefoot b{color:var(--em);font-weight:500}
+/* Modal de skill */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(5,5,7,.78);display:none;
+ align-items:flex-start;justify-content:center;padding:10vh 20px 20px;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:var(--ink2);border:1px solid var(--hls);max-width:640px;width:100%;
+ padding:32px 36px;position:relative;max-height:75vh;overflow-y:auto}
+.modal .mk{font-family:var(--mn);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--em);margin-bottom:10px}
+.modal h4{font-family:var(--dsp);font-weight:400;font-size:27px;letter-spacing:-.02em;color:var(--bone);margin-bottom:14px}
+.modal .sdesc{font-size:14px;line-height:1.7;color:var(--dim);margin-bottom:20px}
+.modal .uk{font-family:var(--mn);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
+.modal .users{display:flex;flex-wrap:wrap;gap:6px}
+.modal .users code{font-family:var(--mn);font-size:10px;color:var(--dim);border:1px solid var(--hl);padding:3px 8px}
+.modal .close{position:absolute;top:14px;right:16px;font-family:var(--mn);font-size:12px;
+ color:var(--mute);background:none;border:1px solid var(--hl);padding:4px 10px;cursor:pointer}
+.modal .close:hover{color:var(--em);border-color:var(--em)}
+@media (max-width:640px){main{padding:48px 20px 80px}h1{font-size:40px}#q{margin-left:0;width:100%}
+ .modal{padding:24px 20px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.face{transition:none}}
+</style>
+<main>
+  <div class="kicker">CT · Centro de Treinamento · team-os · by João Guirunas</div>
+  <h1>48 agentes que trabalham<br>como <em>uma equipe</em></h1>
+  <p class="lede">Agentes nativos do Claude Code Agent Teams, organizados em 5 squads. Cada um com persona própria, autoridades exclusivas, smart-memory compartilhada e o Native Teams Protocol. Clique numa skill para ver o que ela faz. Fonte da verdade: <code>.claude/agents/</code> deste repositório.</p>
+  <div class="stats">
+    <div class="stat"><b>48</b><span>agentes</span></div>
+    <div class="stat"><b>5</b><span>squads</span></div>
+    <div class="stat"><b>51</b><span>skills</span></div>
+    <div class="stat"><b>9</b><span>em opus fixo</span></div>
+    <div class="stat"><b>100%</b><span>audit conforme</span></div>
+  </div>
+  <div class="toolbar"><button class="fbtn active" data-f="all">Todos · 48</button><button class="fbtn" data-f="dev">Dev · 12</button><button class="fbtn" data-f="sites">Sites · 10</button><button class="fbtn" data-f="social">Social · 6</button><button class="fbtn" data-f="traffic">Traffic · 10</button><button class="fbtn" data-f="pm">PM · 10</button><input id="q" type="search" placeholder="buscar agente ou skill…" aria-label="Buscar agente ou skill"></div>
+  <section class="squad" data-squad="dev" id="dev">
+<h2><span class="idx">01</span> Dev <span class="count">12 agentes</span></h2>
+<p class="squad-sub">Fullstack SaaS — da arquitetura ao deploy</p>
+<div class="agents"><article class="agent" data-squad="dev" data-q="dev-analyst lyrak — research analyst research and analysis specialist. use for technical research, library comparison, cve investigation, market analysis, dependency research, or feasibility analysis before architectural decisions. on-demand only. pesquisa técnica sob demanda: comparação de libs, cves, viabilidade — entrega evidências antes das decisões de arquitetura. deep-research data-analytics-engineering">
+<div class="agent-top"><div class="face mono-face">LY</div><div><h3>Lyrak</h3><div class="role">Research Analyst</div><code>dev-analyst</code></div></div>
+<p class="resumo">Pesquisa técnica sob demanda: comparação de libs, CVEs, viabilidade — entrega evidências antes das decisões de arquitetura.</p>
+<details><summary>descrição completa</summary><p>Research and analysis specialist. Use for technical research, library comparison, CVE investigation, market analysis, dependency research, or feasibility analysis before architectural decisions. On-demand only.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="deep-research">/deep-research</button><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-architect zaelor — architect system architect and story creator. use for architecture decisions, tech stack selection, api design, creating stories (exclusive), validating stories with 5-point checklist (exclusive), adrs, and module documentation. arquiteto do sistema. autoridade exclusiva para criar e validar stories, adrs e decisões de stack. dev-api-design dev-technical-writing dev-database-patterns nextjs-react-best-practices">
+<div class="agent-top"><div class="face mono-face">ZA</div><div><h3>Zaelor</h3><div class="role">Architect</div><code>dev-architect</code></div></div>
+<p class="resumo">Arquiteto do sistema. Autoridade exclusiva para criar e validar stories, ADRs e decisões de stack.</p>
+<details><summary>descrição completa</summary><p>System architect and story creator. Use for architecture decisions, tech stack selection, API design, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), ADRs, and module documentation.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>- Criar stories (escrevem em docs/smart-memory/stories/)</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-api-design">/dev-api-design</button><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-bi kairo — data architect &amp; dashboard strategist data architect &amp; dashboard strategist — queries the database directly (select-only), compiles analytical findings, builds metric dictionaries, semantic layers, kpis, okrs, dashboard specs, and big data architecture. use for all bi strategy, dashboard planning, analytics engineering, and data compilation tasks. arquiteto de dados e dashboards. consulta o banco (só leitura), compila achados e mantém o dicionário de métricas. data-analytics-engineering data-sql-optimization data-lake-platform data-supabase-patterns">
+<div class="agent-top"><div class="face mono-face">KA</div><div><h3>Kairo</h3><div class="role">Data Architect &amp; Dashboard Strategist</div><code>dev-bi</code></div></div>
+<p class="resumo">Arquiteto de dados e dashboards. Consulta o banco (só leitura), compila achados e mantém o dicionário de métricas.</p>
+<details><summary>descrição completa</summary><p>Data Architect &amp; Dashboard Strategist — queries the database directly (SELECT-only), compiles analytical findings, builds metric dictionaries, semantic layers, KPIs, OKRs, dashboard specs, and Big Data architecture. Use for all BI strategy, dashboard planning, analytics engineering, and data compilation tasks.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button><button class="skill" data-skill="data-lake-platform">/data-lake-platform</button><button class="skill" data-skill="data-supabase-patterns">/data-supabase-patterns</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-data-engineer bythak — data engineer &quot;database architect and data specialist (schema design, migrations, rls policies, query optimization, indexing). use for all database work. always follows safety protocol: snapshot → dry-run → apply → smoke-test.&quot; dono do banco: schema, migrations, rls e otimização — sempre com snapshot → dry-run → apply → smoke-test. dev-database-patterns data-sql-optimization dev-security-patterns data-supabase-patterns">
+<div class="agent-top"><div class="face mono-face">BY</div><div><h3>Bythak</h3><div class="role">Data Engineer</div><code>dev-data-engineer</code></div></div>
+<p class="resumo">Dono do banco: schema, migrations, RLS e otimização — sempre com snapshot → dry-run → apply → smoke-test.</p>
+<details><summary>descrição completa</summary><p>&quot;Database architect and data specialist (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.&quot;</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button><button class="skill" data-skill="dev-security-patterns">/dev-security-patterns</button><button class="skill" data-skill="data-supabase-patterns">/data-supabase-patterns</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-data-performance sigma — performance analyst &amp; insights engine performance analyst &amp; insights engine — interprets compiled data findings from dev-bi (kairo), generates rich actionable insights, detects anomalies, forecasts trends, and delivers prioritized strategic recommendations. use when you need to know what the data means, what is happening, why, and what to do about it. interpreta os dados compilados pelo bi: insights acionáveis, anomalias, previsões e recomendações priorizadas. data-analytics-engineering ai-ml-data-science ai-ml-timeseries">
+<div class="agent-top"><div class="face mono-face">SI</div><div><h3>Sigma</h3><div class="role">Performance Analyst &amp; Insights Engine</div><code>dev-data-performance</code></div></div>
+<p class="resumo">Interpreta os dados compilados pelo BI: insights acionáveis, anomalias, previsões e recomendações priorizadas.</p>
+<details><summary>descrição completa</summary><p>Performance Analyst &amp; Insights Engine — interprets compiled data findings from dev-bi (Kairo), generates rich actionable insights, detects anomalies, forecasts trends, and delivers prioritized strategic recommendations. Use when you need to know what the data means, what is happening, why, and what to do about it.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button><button class="skill" data-skill="ai-ml-data-science">/ai-ml-data-science</button><button class="skill" data-skill="ai-ml-timeseries">/ai-ml-timeseries</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-dev-alpha nova — frontend developer frontend developer (react, next.js, tailwind, ui components, client-side logic). use for frontend stories and ui implementation in complex software projects. desenvolvedor frontend: react, next.js, tailwind, componentes de ui e lógica client-side. dev-typescript-patterns dev-testing-strategy dev-error-handling nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">NO</div><div><h3>Nova</h3><div class="role">Frontend Developer</div><code>dev-dev-alpha</code></div></div>
+<p class="resumo">Desenvolvedor frontend: React, Next.js, Tailwind, componentes de UI e lógica client-side.</p>
+<details><summary>descrição completa</summary><p>Frontend developer (React, Next.js, Tailwind, UI components, client-side logic). Use for frontend stories and UI implementation in complex software projects.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-typescript-patterns">/dev-typescript-patterns</button><button class="skill" data-skill="dev-testing-strategy">/dev-testing-strategy</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-dev-beta rex — backend developer backend developer (apis, services, business logic, performance, server-side integrations). use for backend stories in complex software projects. desenvolvedor backend: apis, serviços, regras de negócio, performance e integrações server-side. dev-api-design dev-error-handling dev-database-patterns nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">RE</div><div><h3>Rex</h3><div class="role">Backend Developer</div><code>dev-dev-beta</code></div></div>
+<p class="resumo">Desenvolvedor backend: APIs, serviços, regras de negócio, performance e integrações server-side.</p>
+<details><summary>descrição completa</summary><p>Backend developer (APIs, services, business logic, performance, server-side integrations). Use for backend stories in complex software projects.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-api-design">/dev-api-design</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-dev-delta kron — hardening &amp; resilience hardening and resilience specialist. use after features are implemented to add error handling, retry logic, edge case coverage, and resilience patterns. adversarial mindset — finds what breaks. especialista em resiliência — entra depois das features prontas para blindar: retry, timeouts, edge cases. dev-security-patterns dev-testing-strategy dev-error-handling nextjs-react-best-practices">
+<div class="agent-top"><div class="face mono-face">KR</div><div><h3>Kron</h3><div class="role">Hardening &amp; Resilience</div><code>dev-dev-delta</code></div></div>
+<p class="resumo">Especialista em resiliência — entra DEPOIS das features prontas para blindar: retry, timeouts, edge cases.</p>
+<details><summary>descrição completa</summary><p>Hardening and resilience specialist. Use AFTER features are implemented to add error handling, retry logic, edge case coverage, and resilience patterns. Adversarial mindset — finds what breaks.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-security-patterns">/dev-security-patterns</button><button class="skill" data-skill="dev-testing-strategy">/dev-testing-strategy</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-dev-gamma vex — fullstack/integration developer fullstack developer (cross-layer integration, glue code, utilities, features spanning frontend and backend). use for stories that don&#x27;t clearly belong to frontend or backend alone. desenvolvedor fullstack para o que cruza camadas: integrações, glue code e utilidades. dev-typescript-patterns dev-database-patterns dev-error-handling nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">VE</div><div><h3>Vex</h3><div class="role">Fullstack/Integration Developer</div><code>dev-dev-gamma</code></div></div>
+<p class="resumo">Desenvolvedor fullstack para o que cruza camadas: integrações, glue code e utilidades.</p>
+<details><summary>descrição completa</summary><p>Fullstack developer (cross-layer integration, glue code, utilities, features spanning frontend and backend). Use for stories that don&#x27;t clearly belong to frontend or backend alone.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-typescript-patterns">/dev-typescript-patterns</button><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-devops grav — devops guardian devops and release guardian. exclusive authority for git push, gh pr create/merge, ci/cd management, and releases. use only for pushing code, creating prs, managing releases, and infrastructure operations. guardião de release. autoridade exclusiva de git push, prs, ci/cd e releases. dev-git-workflow">
+<div class="agent-top"><div class="face mono-face">GR</div><div><h3>Grav</h3><div class="role">DevOps Guardian</div><code>dev-devops</code></div></div>
+<p class="resumo">Guardião de release. Autoridade exclusiva de git push, PRs, CI/CD e releases.</p>
+<details><summary>descrição completa</summary><p>DevOps and release guardian. EXCLUSIVE authority for git push, gh pr create/merge, CI/CD management, and releases. Use ONLY for pushing code, creating PRs, managing releases, and infrastructure operations.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>git push, gh pr create/merge, CI/CD, releases. Nenhum outro agente pode executar essas operações — hook .claude/hooks/block-git-push.sh bloqueia tentativas de outros automaticament</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-git-workflow">/dev-git-workflow</button></div>
+<footer><span class="tag ">inherit</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-qa axikar — qa master quality assurance master. issues formal verdicts — pass / concerns / fail / waived. use for story reviews, qa gates, security checks, and test design. exclusive authority for quality gate decisions. qa mestre. emite os veredictos formais pass / concerns / fail / waived — autoridade exclusiva do gate de qualidade. dev-testing-strategy dev-security-patterns testing-playwright-e2e verify-before-done">
+<div class="agent-top"><div class="face mono-face">AX</div><div><h3>Axikar</h3><div class="role">QA Master</div><code>dev-qa</code></div></div>
+<p class="resumo">QA mestre. Emite os veredictos formais PASS / CONCERNS / FAIL / WAIVED — autoridade exclusiva do gate de qualidade.</p>
+<details><summary>descrição completa</summary><p>Quality assurance master. Issues formal verdicts — PASS / CONCERNS / FAIL / WAIVED. Use for story reviews, QA gates, security checks, and test design. Exclusive authority for quality gate decisions.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>Único que emite veredictos formais de quality gate na squad dev — PASS, CONCERNS, FAIL, WAIVED. Nenhum outro agente pode emitir esses veredictos ou mover stories de active/ para do</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-testing-strategy">/dev-testing-strategy</button><button class="skill" data-skill="dev-security-patterns">/dev-security-patterns</button><button class="skill" data-skill="testing-playwright-e2e">/testing-playwright-e2e</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="dev" data-q="dev-ux velax — ux specialist ux specialist (research, user flows, wireframes, component specs, accessibility). use for ux research before complex features and ui specification before dev alpha implements. covers both ux research and visual design. ux e design: research, fluxos, wireframes, specs de componente e acessibilidade antes da implementação. ui-ux-pro-max accessibility web-design-guidelines">
+<div class="agent-top"><div class="face mono-face">VE</div><div><h3>Velax</h3><div class="role">UX Specialist</div><code>dev-ux</code></div></div>
+<p class="resumo">UX e design: research, fluxos, wireframes, specs de componente e acessibilidade antes da implementação.</p>
+<details><summary>descrição completa</summary><p>UX specialist (research, user flows, wireframes, component specs, accessibility). Use for UX research before complex features and UI specification before Dev Alpha implements. Covers both UX research and visual design.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="ui-ux-pro-max">/ui-ux-pro-max</button><button class="skill" data-skill="accessibility">/accessibility</button><button class="skill" data-skill="web-design-guidelines">/web-design-guidelines</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article></div>
+</section><section class="squad" data-squad="sites" id="sites">
+<h2><span class="idx">02</span> Sites <span class="count">10 agentes</span></h2>
+<p class="squad-sub">Websites e landing pages — SEO, CRO, performance</p>
+<div class="agents"><article class="agent" data-squad="sites" data-q="sites-analyst lyrel — sites research analyst research and analysis specialist for website projects. use for keyword research, competitor analysis, tech stack feasibility, library comparison, seo research, and market analysis before architectural decisions. on-demand only. research para sites: keywords, concorrência, viabilidade de stack e seo antes das decisões. deep-research sites-seo-keywords">
+<div class="agent-top"><div class="face mono-face">LY</div><div><h3>Lyrel</h3><div class="role">Sites Research Analyst</div><code>sites-analyst</code></div></div>
+<p class="resumo">Research para sites: keywords, concorrência, viabilidade de stack e SEO antes das decisões.</p>
+<details><summary>descrição completa</summary><p>Research and analysis specialist for website projects. Use for keyword research, competitor analysis, tech stack feasibility, library comparison, SEO research, and market analysis before architectural decisions. On-demand only.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="deep-research">/deep-research</button><button class="skill" data-skill="sites-seo-keywords">/sites-seo-keywords</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-architect zaelion — sites architect sites architect and story creator. use for architecture decisions, tech stack selection, page structure, creating stories (exclusive), validating stories with 5-point checklist (exclusive), and module documentation for website projects. arquiteto de sites. autoridade exclusiva para criar e validar stories; define estrutura de páginas e stack. dev-api-design dev-technical-writing sites-seo-technical nextjs-react-best-practices">
+<div class="agent-top"><div class="face mono-face">ZA</div><div><h3>Zaelion</h3><div class="role">Sites Architect</div><code>sites-architect</code></div></div>
+<p class="resumo">Arquiteto de sites. Autoridade exclusiva para criar e validar stories; define estrutura de páginas e stack.</p>
+<details><summary>descrição completa</summary><p>Sites architect and story creator. Use for architecture decisions, tech stack selection, page structure, creating stories (EXCLUSIVE), validating stories with 5-point checklist (EXCLUSIVE), and module documentation for website projects.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>- Criar stories em docs/smart-memory/stories/</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-api-design">/dev-api-design</button><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button><button class="skill" data-skill="sites-seo-technical">/sites-seo-technical</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-data bythelion — data engineer &quot;database architect and data specialist for website projects (schema design, migrations, rls policies, query optimization, indexing). use for all database work in website projects. always follows safety protocol: snapshot → dry-run → apply → smoke-test.&quot; banco de dados dos projetos de site: schema, migrations, rls — com o protocolo de segurança completo. dev-database-patterns data-sql-optimization data-supabase-patterns">
+<div class="agent-top"><div class="face mono-face">BY</div><div><h3>Bythelion</h3><div class="role">Data Engineer</div><code>sites-data</code></div></div>
+<p class="resumo">Banco de dados dos projetos de site: schema, migrations, RLS — com o protocolo de segurança completo.</p>
+<details><summary>descrição completa</summary><p>&quot;Database architect and data specialist for website projects (schema design, migrations, RLS policies, query optimization, indexing). Use for all database work in website projects. Always follows safety protocol: snapshot → dry-run → apply → smoke-test.&quot;</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button><button class="skill" data-skill="data-supabase-patterns">/data-supabase-patterns</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-dev-alpha novael — frontend developer frontend developer for website projects (react, next.js, tailwind, shadcn/ui, ui components, landing pages, client-side logic). use for frontend stories and ui implementation in website projects. frontend de sites: react, next.js, tailwind, shadcn/ui, landing pages e ui. sites-frontend-stack sites-scroll-motion ui-ux-pro-max nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">NO</div><div><h3>Novael</h3><div class="role">Frontend Developer</div><code>sites-dev-alpha</code></div></div>
+<p class="resumo">Frontend de sites: React, Next.js, Tailwind, shadcn/ui, landing pages e UI.</p>
+<details><summary>descrição completa</summary><p>Frontend developer for website projects (React, Next.js, Tailwind, shadcn/ui, UI components, landing pages, client-side logic). Use for frontend stories and UI implementation in website projects.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="sites-frontend-stack">/sites-frontend-stack</button><button class="skill" data-skill="sites-scroll-motion">/sites-scroll-motion</button><button class="skill" data-skill="ui-ux-pro-max">/ui-ux-pro-max</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-dev-beta rexali — backend developer backend developer for website projects (apis, cms integrations, server-side logic, performance, third-party integrations). use for backend stories in website projects. backend de sites: apis, integrações com cms, lógica server-side e performance. dev-api-design dev-error-handling dev-database-patterns nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">RE</div><div><h3>Rexali</h3><div class="role">Backend Developer</div><code>sites-dev-beta</code></div></div>
+<p class="resumo">Backend de sites: APIs, integrações com CMS, lógica server-side e performance.</p>
+<details><summary>descrição completa</summary><p>Backend developer for website projects (APIs, CMS integrations, server-side logic, performance, third-party integrations). Use for backend stories in website projects.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-api-design">/dev-api-design</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-dev-delta kronilux — hardening &amp; resilience hardening and resilience specialist for website projects. use after features are implemented to add error handling, retry logic, performance hardening, core web vitals fixes, and edge case coverage. adversarial mindset — finds what breaks. hardening de sites: error handling, core web vitals, edge cases — mentalidade adversarial. dev-security-patterns dev-error-handling accessibility verify-before-done nextjs-react-best-practices">
+<div class="agent-top"><div class="face mono-face">KR</div><div><h3>Kronilux</h3><div class="role">Hardening &amp; Resilience</div><code>sites-dev-delta</code></div></div>
+<p class="resumo">Hardening de sites: error handling, Core Web Vitals, edge cases — mentalidade adversarial.</p>
+<details><summary>descrição completa</summary><p>Hardening and resilience specialist for website projects. Use AFTER features are implemented to add error handling, retry logic, performance hardening, Core Web Vitals fixes, and edge case coverage. Adversarial mindset — finds what breaks.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-security-patterns">/dev-security-patterns</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="accessibility">/accessibility</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-dev-gamma seranol — fullstack/integration developer fullstack developer for website projects (cross-layer integration, cro features, seo implementation, analytics wiring, features spanning frontend and backend). use for stories that don&#x27;t clearly belong to frontend or backend alone. fullstack de sites: cro, seo técnico, wiring de analytics e features que cruzam camadas. sites-page-cro sites-seo-technical dev-typescript-patterns nextjs-react-best-practices verify-before-done">
+<div class="agent-top"><div class="face mono-face">SE</div><div><h3>Seranol</h3><div class="role">Fullstack/Integration Developer</div><code>sites-dev-gamma</code></div></div>
+<p class="resumo">Fullstack de sites: CRO, SEO técnico, wiring de analytics e features que cruzam camadas.</p>
+<details><summary>descrição completa</summary><p>Fullstack developer for website projects (cross-layer integration, CRO features, SEO implementation, analytics wiring, features spanning frontend and backend). Use for stories that don&#x27;t clearly belong to frontend or backend alone.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="sites-page-cro">/sites-page-cro</button><button class="skill" data-skill="sites-seo-technical">/sites-seo-technical</button><button class="skill" data-skill="dev-typescript-patterns">/dev-typescript-patterns</button><button class="skill" data-skill="nextjs-react-best-practices">/nextjs-react-best-practices</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-devops graveli — devops guardian devops and release guardian for website projects. exclusive authority for git push, gh pr create/merge, ci/cd management, vercel/netlify deployments, and releases. release de sites. autoridade exclusiva de push, prs e deploys vercel/netlify. dev-git-workflow sites-deployment">
+<div class="agent-top"><div class="face mono-face">GR</div><div><h3>Graveli</h3><div class="role">DevOps Guardian</div><code>sites-devops</code></div></div>
+<p class="resumo">Release de sites. Autoridade exclusiva de push, PRs e deploys Vercel/Netlify.</p>
+<details><summary>descrição completa</summary><p>DevOps and release guardian for website projects. EXCLUSIVE authority for git push, gh pr create/merge, CI/CD management, Vercel/Netlify deployments, and releases.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>git push, gh pr create/merge, CI/CD, deployments, releases.</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-git-workflow">/dev-git-workflow</button><button class="skill" data-skill="sites-deployment">/sites-deployment</button></div>
+<footer><span class="tag ">inherit</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-qa axilun — qa master quality assurance master for website projects. issues formal verdicts — pass / concerns / fail / waived. use for story reviews, qa gates, accessibility checks, copy quality, seo validation, and performance checks. exclusive authority for quality gate decisions. qa de sites: veredictos formais, acessibilidade, qualidade de copy, seo e performance. dev-testing-strategy testing-playwright-e2e web-design-guidelines sites-seo-technical accessibility sites-copy verify-before-done">
+<div class="agent-top"><div class="face mono-face">AX</div><div><h3>Axilun</h3><div class="role">QA Master</div><code>sites-qa</code></div></div>
+<p class="resumo">QA de sites: veredictos formais, acessibilidade, qualidade de copy, SEO e performance.</p>
+<details><summary>descrição completa</summary><p>Quality assurance master for website projects. Issues formal verdicts — PASS / CONCERNS / FAIL / WAIVED. Use for story reviews, QA gates, accessibility checks, copy quality, SEO validation, and performance checks. Exclusive authority for quality gate decisions.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>Único que emite veredictos formais de quality gate para o squad sites.</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-testing-strategy">/dev-testing-strategy</button><button class="skill" data-skill="testing-playwright-e2e">/testing-playwright-e2e</button><button class="skill" data-skill="web-design-guidelines">/web-design-guidelines</button><button class="skill" data-skill="sites-seo-technical">/sites-seo-technical</button><button class="skill" data-skill="accessibility">/accessibility</button><button class="skill" data-skill="sites-copy">/sites-copy</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="sites" data-q="sites-ux velani — ux specialist ux specialist for website projects (research, user flows, wireframes, component specs, accessibility, visual design). use for ux research before complex features and ui specification before sites-dev-alpha implements. covers both ux research and visual design. ux de sites: research, fluxos, wireframes, specs visuais e a11y antes do alpha implementar. sites-ux-interaction ui-ux-pro-max accessibility sites-frontend-stack">
+<div class="agent-top"><div class="face mono-face">VE</div><div><h3>Velani</h3><div class="role">UX Specialist</div><code>sites-ux</code></div></div>
+<p class="resumo">UX de sites: research, fluxos, wireframes, specs visuais e a11y antes do alpha implementar.</p>
+<details><summary>descrição completa</summary><p>UX specialist for website projects (research, user flows, wireframes, component specs, accessibility, visual design). Use for UX research before complex features and UI specification before sites-dev-alpha implements. Covers both UX research and visual design.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="sites-ux-interaction">/sites-ux-interaction</button><button class="skill" data-skill="ui-ux-pro-max">/ui-ux-pro-max</button><button class="skill" data-skill="accessibility">/accessibility</button><button class="skill" data-skill="sites-frontend-stack">/sites-frontend-stack</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article></div>
+</section><section class="squad" data-squad="social" id="social">
+<h2><span class="idx">03</span> Social <span class="count">6 agentes</span></h2>
+<p class="squad-sub">Social media — copy, design, foto, vídeo, publicação</p>
+<div class="agents"><article class="agent" data-squad="social" data-q="social-content lyris — content creator lyris, content creator for the social squad. dual function — research via apify mcp and copywriting (captions, scripts, hooks, hashtags). use for market research and social copy creation. active when there&#x27;s trend research or social copy to create. criador de conteúdo: research de mercado via apify + copy (legendas, roteiros, hooks, hashtags). social-copywriting social-scriptwriting social-editorial-validation social-format-specs social-apify-research">
+<div class="agent-top"><div class="face mono-face">LY</div><div><h3>LYRIS</h3><div class="role">Content Creator</div><code>social-content</code></div></div>
+<p class="resumo">Criador de conteúdo: research de mercado via Apify + copy (legendas, roteiros, hooks, hashtags).</p>
+<details><summary>descrição completa</summary><p>LYRIS, Content Creator for the Social squad. Dual function — research via Apify MCP and copywriting (captions, scripts, hooks, hashtags). Use for market research and social copy creation. Active when there&#x27;s trend research or social copy to create.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-copywriting">/social-copywriting</button><button class="skill" data-skill="social-scriptwriting">/social-scriptwriting</button><button class="skill" data-skill="social-editorial-validation">/social-editorial-validation</button><button class="skill" data-skill="social-format-specs">/social-format-specs</button><button class="skill" data-skill="social-apify-research">/social-apify-research</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">3 MCP</span></footer>
+</article>
+<article class="agent" data-squad="social" data-q="social-design aeon — graphic designer aeon, graphic designer for the social squad. creates key visuals, carousels, templates and overlays for social media using google stitch mcp. use when there&#x27;s graphic design to create for social campaigns (feed posts, carousels, stories templates). designer gráfico da squad: key visuals, carrosséis, templates e overlays via google stitch. social-key-visual social-carousel-design social-stitch-workflow">
+<div class="agent-top"><div class="face mono-face">AE</div><div><h3>AEON</h3><div class="role">Graphic Designer</div><code>social-design</code></div></div>
+<p class="resumo">Designer gráfico da squad: key visuals, carrosséis, templates e overlays via Google Stitch.</p>
+<details><summary>descrição completa</summary><p>AEON, Graphic Designer for the Social squad. Creates Key Visuals, carousels, templates and overlays for social media using Google Stitch MCP. Use when there&#x27;s graphic design to create for social campaigns (feed posts, carousels, Stories templates).</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-key-visual">/social-key-visual</button><button class="skill" data-skill="social-carousel-design">/social-carousel-design</button><button class="skill" data-skill="social-stitch-workflow">/social-stitch-workflow</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span><span class="tag">12 MCP</span></footer>
+</article>
+<article class="agent" data-squad="social" data-q="social-photo iris — photo creator iris, photo creator for the social squad. generates ai photos via freepik mcp for covers, carousels, posts, hero images and cinematic backgrounds. use when photographic images are needed for social campaigns (product, people, lifestyle or scenarios). fotos ai via freepik: capas, carrosséis, heroes e fundos cinematográficos. social-freepik-generation social-cinematic-composition">
+<div class="agent-top"><div class="face mono-face">IR</div><div><h3>IRIS</h3><div class="role">Photo Creator</div><code>social-photo</code></div></div>
+<p class="resumo">Fotos AI via Freepik: capas, carrosséis, heroes e fundos cinematográficos.</p>
+<details><summary>descrição completa</summary><p>IRIS, Photo Creator for the Social squad. Generates AI photos via Freepik MCP for covers, carousels, posts, hero images and cinematic backgrounds. Use when photographic images are needed for social campaigns (product, people, lifestyle or scenarios).</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-freepik-generation">/social-freepik-generation</button><button class="skill" data-skill="social-cinematic-composition">/social-cinematic-composition</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span><span class="tag">2 MCP</span></footer>
+</article>
+<article class="agent" data-squad="social" data-q="social-publisher pulse — publisher &amp; analytics &quot;pulse, publisher and analytics for the social squad. dual function — publishing via meta mcp and metrics analysis. critical rule: only publishes after social-strategist (vera) approves and user explicitly confirms. use to publish approved content and analyze campaign performance.&quot; publica (via meta) e analisa métricas — só depois da aprovação da vera e confirmação do usuário. social-meta-publishing social-analytics">
+<div class="agent-top"><div class="face mono-face">PU</div><div><h3>PULSE</h3><div class="role">Publisher &amp; Analytics</div><code>social-publisher</code></div></div>
+<p class="resumo">Publica (via Meta) e analisa métricas — só depois da aprovação da VERA E confirmação do usuário.</p>
+<details><summary>descrição completa</summary><p>&quot;PULSE, Publisher and Analytics for the Social squad. Dual function — publishing via Meta MCP and metrics analysis. CRITICAL RULE: only publishes after social-strategist (VERA) approves AND user explicitly confirms. Use to publish approved content and analyze campaign performance.&quot;</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-meta-publishing">/social-meta-publishing</button><button class="skill" data-skill="social-analytics">/social-analytics</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span><span class="tag">5 MCP</span></footer>
+</article>
+<article class="agent" data-squad="social" data-q="social-strategist vera — strategist &amp; validadora vera, strategist and editorial validator for the social squad. never creates content — validates and directs. approval is mandatory before social-publisher publishes any content. use when there&#x27;s content to validate, strategy to define or editorial direction to give. active always before publication. estrategista e validadora editorial. nunca cria — valida e direciona; aprovação obrigatória antes de publicar. social-editorial-validation social-format-specs">
+<div class="agent-top"><div class="face mono-face">VE</div><div><h3>VERA</h3><div class="role">Strategist &amp; Validadora</div><code>social-strategist</code></div></div>
+<p class="resumo">Estrategista e validadora editorial. Nunca cria — valida e direciona; aprovação obrigatória antes de publicar.</p>
+<details><summary>descrição completa</summary><p>VERA, Strategist and editorial validator for the Social squad. NEVER creates content — validates and directs. Approval is mandatory before social-publisher publishes any content. Use when there&#x27;s content to validate, strategy to define or editorial direction to give. Active always before publication.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-editorial-validation">/social-editorial-validation</button><button class="skill" data-skill="social-format-specs">/social-format-specs</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span></footer>
+</article>
+<article class="agent" data-squad="social" data-q="social-video flux — video editor flux, video editor for the social squad. edits reels, stories, tiktoks and shorts with ffmpeg and generates ai avatar/presenter video, image-to-video and multilingual dubbing via heygen. use when video needs to be produced, edited, or generated with an ai avatar for social media. active when scripts need to be executed as video, clips edited, avatar videos generated, or videos dubbed. editor de vídeo: reels, stories, tiktoks com ffmpeg + avatar ai e dublagem via heygen. social-video-editing social-heygen-avatar social-scriptwriting social-cinematic-composition">
+<div class="agent-top"><div class="face mono-face">FL</div><div><h3>FLUX</h3><div class="role">Video Editor</div><code>social-video</code></div></div>
+<p class="resumo">Editor de vídeo: Reels, Stories, TikToks com ffmpeg + avatar AI e dublagem via HeyGen.</p>
+<details><summary>descrição completa</summary><p>FLUX, Video Editor for the Social squad. Edits Reels, Stories, TikToks and Shorts with ffmpeg AND generates AI avatar/presenter video, image-to-video and multilingual dubbing via HeyGen. Use when video needs to be produced, edited, or generated with an AI avatar for social media. Active when scripts need to be executed as video, clips edited, avatar videos generated, or videos dubbed.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-video-editing">/social-video-editing</button><button class="skill" data-skill="social-heygen-avatar">/social-heygen-avatar</button><button class="skill" data-skill="social-scriptwriting">/social-scriptwriting</button><button class="skill" data-skill="social-cinematic-composition">/social-cinematic-composition</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span><span class="tag">10 MCP</span></footer>
+</article></div>
+</section><section class="squad" data-squad="traffic" id="traffic">
+<h2><span class="idx">04</span> Traffic <span class="count">10 agentes</span></h2>
+<p class="squad-sub">Tráfego pago — Google, Meta, TikTok, BI e atribuição</p>
+<div class="agents"><article class="agent" data-squad="traffic" data-q="traffic-analyst lyrath — performance analyst analista de performance e inteligência de mercado para tráfego pago. pesquisa audiências, concorrentes, tendências de plataforma, benchmarks de setor e oportunidades de otimização. entrega evidências — outros decidem. use para análise de concorrência, pesquisa de audiência, benchmarks, tendências de plataforma e diagnóstico de performance. analista de performance e inteligência de mercado para tráfego pago. deep-research social-analytics traffic-google-ads-mcp traffic-ga4-mcp traffic-analytics-tracking">
+<div class="agent-top"><div class="face mono-face">LY</div><div><h3>Lyrath</h3><div class="role">Performance Analyst</div><code>traffic-analyst</code></div></div>
+<p class="resumo">Analista de performance e inteligência de mercado para tráfego pago.</p>
+<details><summary>descrição completa</summary><p>Analista de performance e inteligência de mercado para tráfego pago. Pesquisa audiências, concorrentes, tendências de plataforma, benchmarks de setor e oportunidades de otimização. Entrega evidências — outros decidem. Use para análise de concorrência, pesquisa de audiência, benchmarks, tendências de plataforma e diagnóstico de performance.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="deep-research">/deep-research</button><button class="skill" data-skill="social-analytics">/social-analytics</button><button class="skill" data-skill="traffic-google-ads-mcp">/traffic-google-ads-mcp</button><button class="skill" data-skill="traffic-ga4-mcp">/traffic-ga4-mcp</button><button class="skill" data-skill="traffic-analytics-tracking">/traffic-analytics-tracking</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-automation florix — traffic automation specialist especialista em automação e integrações de api para tráfego pago. scripts de bulk operations, google ads api, meta marketing api, tiktok ads api, relatórios automatizados e integrações de dados. use para automações, scripts de gestão em escala, integrações entre plataformas e pipelines de dados de campanha. especialista em automação e integrações de api para tráfego pago. dev-api-design dev-error-handling traffic-google-ads-mcp traffic-analytics-tracking">
+<div class="agent-top"><div class="face mono-face">FL</div><div><h3>Florix</h3><div class="role">Traffic Automation Specialist</div><code>traffic-automation</code></div></div>
+<p class="resumo">Especialista em automação e integrações de API para tráfego pago.</p>
+<details><summary>descrição completa</summary><p>Especialista em automação e integrações de API para tráfego pago. Scripts de bulk operations, Google Ads API, Meta Marketing API, TikTok Ads API, relatórios automatizados e integrações de dados. Use para automações, scripts de gestão em escala, integrações entre plataformas e pipelines de dados de campanha.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-api-design">/dev-api-design</button><button class="skill" data-skill="dev-error-handling">/dev-error-handling</button><button class="skill" data-skill="traffic-google-ads-mcp">/traffic-google-ads-mcp</button><button class="skill" data-skill="traffic-analytics-tracking">/traffic-analytics-tracking</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-bi bytax — bi &amp; analytics specialist especialista em business intelligence e atribuição de tráfego pago. consolida métricas de google, meta e tiktok, calcula roas, ltv, cpa e atribuição multi-touch. fonte oficial de verdade para todas as métricas da squad. use para dashboards, relatórios de performance, análise de atribuição e recomendações baseadas em dados. especialista em business intelligence e atribuição de tráfego pago. data-analytics-engineering data-sql-optimization traffic-ga4-mcp traffic-google-ads-mcp traffic-analytics-tracking">
+<div class="agent-top"><div class="face mono-face">BY</div><div><h3>Bytax</h3><div class="role">BI &amp; Analytics Specialist</div><code>traffic-bi</code></div></div>
+<p class="resumo">Especialista em Business Intelligence e atribuição de tráfego pago.</p>
+<details><summary>descrição completa</summary><p>Especialista em Business Intelligence e atribuição de tráfego pago. Consolida métricas de Google, Meta e TikTok, calcula ROAS, LTV, CPA e atribuição multi-touch. Fonte oficial de verdade para todas as métricas da squad. Use para dashboards, relatórios de performance, análise de atribuição e recomendações baseadas em dados.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button><button class="skill" data-skill="traffic-ga4-mcp">/traffic-ga4-mcp</button><button class="skill" data-skill="traffic-google-ads-mcp">/traffic-google-ads-mcp</button><button class="skill" data-skill="traffic-analytics-tracking">/traffic-analytics-tracking</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-copywriter koprath — ad copywriter especialista em copy para anúncios pagos em todas as plataformas (google, meta, tiktok). cria headlines, descrições, ctas e variantes para a/b test respeitando os limites de caractere e melhores práticas de cada plataforma. use para criar e otimizar copy de anúncios, roteiros de vídeo para ads e variantes de teste. especialista em copy para anúncios pagos em todas as plataformas (google, meta, tiktok). social-copywriting tiktok-marketing traffic-paid-ads-optimization">
+<div class="agent-top"><div class="face mono-face">KO</div><div><h3>Koprath</h3><div class="role">Ad Copywriter</div><code>traffic-copywriter</code></div></div>
+<p class="resumo">Especialista em copy para anúncios pagos em todas as plataformas (Google, Meta, TikTok).</p>
+<details><summary>descrição completa</summary><p>Especialista em copy para anúncios pagos em todas as plataformas (Google, Meta, TikTok). Cria headlines, descrições, CTAs e variantes para A/B test respeitando os limites de caractere e melhores práticas de cada plataforma. Use para criar e otimizar copy de anúncios, roteiros de vídeo para ads e variantes de teste.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-copywriting">/social-copywriting</button><button class="skill" data-skill="tiktok-marketing">/tiktok-marketing</button><button class="skill" data-skill="traffic-paid-ads-optimization">/traffic-paid-ads-optimization</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-designer pixrek — ad creative designer designer de criativos para anúncios pagos (google, meta, tiktok). especifica e produz banners, carousels, vídeos e assets para stories — brand-consistent e otimizados para as specs de cada plataforma. use para criação de criativos, especificações de assets, direcionamento visual e revisão de materiais antes do upload. designer de criativos para anúncios pagos (google, meta, tiktok). social-key-visual social-carousel-design ui-ux-pro-max">
+<div class="agent-top"><div class="face mono-face">PI</div><div><h3>Pixrek</h3><div class="role">Ad Creative Designer</div><code>traffic-designer</code></div></div>
+<p class="resumo">Designer de criativos para anúncios pagos (Google, Meta, TikTok).</p>
+<details><summary>descrição completa</summary><p>Designer de criativos para anúncios pagos (Google, Meta, TikTok). Especifica e produz banners, carousels, vídeos e assets para Stories — brand-consistent e otimizados para as specs de cada plataforma. Use para criação de criativos, especificações de assets, direcionamento visual e revisão de materiais antes do upload.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-key-visual">/social-key-visual</button><button class="skill" data-skill="social-carousel-design">/social-carousel-design</button><button class="skill" data-skill="ui-ux-pro-max">/ui-ux-pro-max</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-google gorix — google ads specialist especialista em google ads (search, performance max, shopping, youtube, display). configura campanhas, grupos de anúncios, keywords, estratégias de lance e otimiza performance no google. atua após briefing aprovado pelo traffic-strategist e validação do traffic-qa. use para setup, otimização e gestão de campanhas google ads. especialista em google ads (search, performance max, shopping, youtube, display). social-analytics traffic-google-ads-mcp traffic-ga4-mcp traffic-paid-ads-optimization">
+<div class="agent-top"><div class="face mono-face">GO</div><div><h3>Gorix</h3><div class="role">Google Ads Specialist</div><code>traffic-google</code></div></div>
+<p class="resumo">Especialista em Google Ads (Search, Performance Max, Shopping, YouTube, Display).</p>
+<details><summary>descrição completa</summary><p>Especialista em Google Ads (Search, Performance Max, Shopping, YouTube, Display). Configura campanhas, grupos de anúncios, keywords, estratégias de lance e otimiza performance no Google. Atua após briefing aprovado pelo traffic-strategist e validação do traffic-qa. Use para setup, otimização e gestão de campanhas Google Ads.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-analytics">/social-analytics</button><button class="skill" data-skill="traffic-google-ads-mcp">/traffic-google-ads-mcp</button><button class="skill" data-skill="traffic-ga4-mcp">/traffic-ga4-mcp</button><button class="skill" data-skill="traffic-paid-ads-optimization">/traffic-paid-ads-optimization</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-meta zukar — meta ads specialist especialista em meta ads (facebook + instagram). gerencia campanhas no ads manager, advantage+, retargeting, lookalike audiences e configuração de pixel/capi. atua após briefing do traffic-strategist e aprovação do traffic-qa. use para setup, otimização e gestão de campanhas meta. especialista em meta ads (facebook + instagram). social-meta-publishing social-analytics traffic-paid-ads-optimization">
+<div class="agent-top"><div class="face mono-face">ZU</div><div><h3>Zukar</h3><div class="role">Meta Ads Specialist</div><code>traffic-meta</code></div></div>
+<p class="resumo">Especialista em Meta Ads (Facebook + Instagram).</p>
+<details><summary>descrição completa</summary><p>Especialista em Meta Ads (Facebook + Instagram). Gerencia campanhas no Ads Manager, Advantage+, retargeting, lookalike audiences e configuração de pixel/CAPI. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas Meta.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="social-meta-publishing">/social-meta-publishing</button><button class="skill" data-skill="social-analytics">/social-analytics</button><button class="skill" data-skill="traffic-paid-ads-optimization">/traffic-paid-ads-optimization</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-qa gathar — campaign qa specialist quality assurance pré-campanha. valida utms, pixels, compliance de plataforma, copy, criativos e configuração antes de qualquer campanha ir ao ar. autoridade exclusiva para emitir veredictos pass/concerns/fail/waived. sem qa aprovado, nenhuma campanha sobe. use para revisão pré-launch, compliance check e validação de campanhas. quality assurance pré-campanha. dev-testing-strategy traffic-analytics-tracking traffic-ga4-mcp traffic-google-ads-mcp verify-before-done">
+<div class="agent-top"><div class="face mono-face">GA</div><div><h3>Gathar</h3><div class="role">Campaign QA Specialist</div><code>traffic-qa</code></div></div>
+<p class="resumo">Quality Assurance pré-campanha.</p>
+<details><summary>descrição completa</summary><p>Quality Assurance pré-campanha. Valida UTMs, pixels, compliance de plataforma, copy, criativos e configuração antes de qualquer campanha ir ao ar. Autoridade exclusiva para emitir veredictos PASS/CONCERNS/FAIL/WAIVED. Sem QA aprovado, nenhuma campanha sobe. Use para revisão pré-launch, compliance check e validação de campanhas.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>Único que emite veredictos formais de aprovação pré-launch. Read-only em campanhas — você nunca configura, apenas valida e veredita.</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-testing-strategy">/dev-testing-strategy</button><button class="skill" data-skill="traffic-analytics-tracking">/traffic-analytics-tracking</button><button class="skill" data-skill="traffic-ga4-mcp">/traffic-ga4-mcp</button><button class="skill" data-skill="traffic-google-ads-mcp">/traffic-google-ads-mcp</button><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-strategist axar — traffic strategist estrategista de tráfego pago cross-platform. planeja campanhas, aloca budget, define kpis e briefings para google, meta e tiktok. autoridade exclusiva para criar stories de campanha e validá-las com checklist de 5 pontos. use para planejamento estratégico, briefings, distribuição de budget e definição de objetivos de performance. estrategista de tráfego pago cross-platform. deep-research tiktok-marketing traffic-paid-ads-optimization traffic-ga4-mcp">
+<div class="agent-top"><div class="face mono-face">AX</div><div><h3>Axar</h3><div class="role">Traffic Strategist</div><code>traffic-strategist</code></div></div>
+<p class="resumo">Estrategista de tráfego pago cross-platform.</p>
+<details><summary>descrição completa</summary><p>Estrategista de tráfego pago cross-platform. Planeja campanhas, aloca budget, define KPIs e briefings para Google, Meta e TikTok. Autoridade exclusiva para criar stories de campanha e validá-las com checklist de 5 pontos. Use para planejamento estratégico, briefings, distribuição de budget e definição de objetivos de performance.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>- Criar stories de campanha em docs/smart-memory/stories/</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="deep-research">/deep-research</button><button class="skill" data-skill="tiktok-marketing">/tiktok-marketing</button><button class="skill" data-skill="traffic-paid-ads-optimization">/traffic-paid-ads-optimization</button><button class="skill" data-skill="traffic-ga4-mcp">/traffic-ga4-mcp</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="traffic" data-q="traffic-tiktok tokris — tiktok ads specialist especialista em tiktok ads (spark ads, in-feed, topview, brand takeover). gerencia campanhas no tiktok ads manager, segmentação de audiências, pixel tiktok e otimização de criativos nativos. atua após briefing do traffic-strategist e aprovação do traffic-qa. use para setup, otimização e gestão de campanhas tiktok. especialista em tiktok ads (spark ads, in-feed, topview, brand takeover). tiktok-marketing social-format-specs traffic-paid-ads-optimization">
+<div class="agent-top"><div class="face mono-face">TO</div><div><h3>Tokris</h3><div class="role">TikTok Ads Specialist</div><code>traffic-tiktok</code></div></div>
+<p class="resumo">Especialista em TikTok Ads (Spark Ads, In-Feed, TopView, Brand Takeover).</p>
+<details><summary>descrição completa</summary><p>Especialista em TikTok Ads (Spark Ads, In-Feed, TopView, Brand Takeover). Gerencia campanhas no TikTok Ads Manager, segmentação de audiências, pixel TikTok e otimização de criativos nativos. Atua após briefing do traffic-strategist e aprovação do traffic-qa. Use para setup, otimização e gestão de campanhas TikTok.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="tiktok-marketing">/tiktok-marketing</button><button class="skill" data-skill="social-format-specs">/social-format-specs</button><button class="skill" data-skill="traffic-paid-ads-optimization">/traffic-paid-ads-optimization</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article></div>
+</section><section class="squad" data-squad="pm" id="pm">
+<h2><span class="idx">05</span> PM <span class="count">10 agentes</span></h2>
+<p class="squad-sub">Gestão de projetos — sprints, dailies, portfólio</p>
+<div class="agents"><article class="agent" data-squad="pm" data-q="pm-analyst serak — analista de portfólio pm serak — inteligência de portfólio kaelthari. analisa carga por pessoa, saúde de projetos, risco de atraso e equilíbrio estratégico do triângulo pessoas × entregas × demandas. read-only no banco. use para diagnósticos, relatórios de carga, detecção de risco e snapshots semanais de portfólio. serak — inteligência de portfólio kaelthari. data-analytics-engineering data-sql-optimization">
+<div class="agent-top"><div class="face mono-face">SE</div><div><h3>Serak</h3><div class="role">Analista de Portfólio PM</div><code>pm-analyst</code></div></div>
+<p class="resumo">Serak — Inteligência de portfólio Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Serak — Inteligência de portfólio Kaelthari. Analisa carga por pessoa, saúde de projetos, risco de atraso e equilíbrio estratégico do triângulo pessoas × entregas × demandas. READ-only no banco. Use para diagnósticos, relatórios de carga, detecção de risco e snapshots semanais de portfólio.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-client eshara — tecelã de alianças eshara — tecelã de alianças kaelthari. gerencia a camada de cliente — acesso a projetos, perfil de qualificação, status de relacionamento, risco de churn. use para configurar permissões de cliente em projetos, analisar perfil de qualificação, detectar clientes em risco e gerenciar relacionamentos. eshara — tecelã de alianças kaelthari. dev-technical-writing">
+<div class="agent-top"><div class="face mono-face">ES</div><div><h3>Eshara</h3><div class="role">Tecelã de Alianças</div><code>pm-client</code></div></div>
+<p class="resumo">Eshara — Tecelã de Alianças Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Eshara — Tecelã de Alianças Kaelthari. Gerencia a camada de cliente — acesso a projetos, perfil de qualificação, status de relacionamento, risco de churn. Use para configurar permissões de cliente em projetos, analisar perfil de qualificação, detectar clientes em risco e gerenciar relacionamentos.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-coach aevon — sábio das metodologias aevon — sábio das metodologias kaelthari. scrum master nativo e guardião do lean. facilita retrospectivas com dados reais, identifica disfunções de time, recomenda ajustes de metodologia. use para retrospectivas, análise de saúde do time, melhoria de processos e definição de metodologia por projeto. aevon — sábio das metodologias kaelthari. ">
+<div class="agent-top"><div class="face mono-face">AE</div><div><h3>Aevon</h3><div class="role">Sábio das Metodologias</div><code>pm-coach</code></div></div>
+<p class="resumo">Aevon — Sábio das Metodologias Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Aevon — Sábio das Metodologias Kaelthari. Scrum Master nativo e guardião do Lean. Facilita retrospectivas com dados reais, identifica disfunções de time, recomenda ajustes de metodologia. Use para retrospectivas, análise de saúde do time, melhoria de processos e definição de metodologia por projeto.</p></details>
+
+
+<footer><span class="tag ">inherit</span><span class="tag">effort medium</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-data nexar — oráculo de dados nexar — oráculo de dados kaelthari. especialista em banco — queries diretas, schema completo, suporte multi-tenant (adm_clients). único agente com acesso à supabase cli. faz bootstrap da smart-memory na primeira inicialização. use para consultas complexas, análise de schema, monitoramento de sync e mapeamento de instâncias. nexar — oráculo de dados kaelthari. dev-database-patterns data-sql-optimization data-supabase-patterns">
+<div class="agent-top"><div class="face mono-face">NE</div><div><h3>Nexar</h3><div class="role">Oráculo de Dados</div><code>pm-data</code></div></div>
+<p class="resumo">Nexar — Oráculo de Dados Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Nexar — Oráculo de Dados Kaelthari. Especialista em banco — queries diretas, schema completo, suporte multi-tenant (adm_clients). Único agente com acesso à Supabase CLI. Faz bootstrap da smart-memory na primeira inicialização. Use para consultas complexas, análise de schema, monitoramento de sync e mapeamento de instâncias.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-database-patterns">/dev-database-patterns</button><button class="skill" data-skill="data-sql-optimization">/data-sql-optimization</button><button class="skill" data-skill="data-supabase-patterns">/data-supabase-patterns</button></div>
+<footer><span class="tag ">inherit</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-demand draketh — guardião das entradas draketh — guardião das entradas kaelthari. nenhuma demanda entra no sistema sem estrutura. faz intake de pedidos em linguagem natural, verifica capacidade antes de alocar, detecta duplicatas, estima esforço. use para registrar novas demandas, enriquecer tarefas brutas e gerenciar o pipeline de entrada. draketh — guardião das entradas kaelthari. dev-technical-writing">
+<div class="agent-top"><div class="face mono-face">DR</div><div><h3>Draketh</h3><div class="role">Guardião das Entradas</div><code>pm-demand</code></div></div>
+<p class="resumo">Draketh — Guardião das Entradas Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Draketh — Guardião das Entradas Kaelthari. Nenhuma demanda entra no sistema sem estrutura. Faz intake de pedidos em linguagem natural, verifica capacidade antes de alocar, detecta duplicatas, estima esforço. Use para registrar novas demandas, enriquecer tarefas brutas e gerenciar o pipeline de entrada.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-engineer faelor — forjador de sistemas faelor — forjador de sistemas kaelthari. cria e mantém templates de processo (process_task_sets, process_task_templates, flows) que padronizam trabalho recorrente. use para criar processos reutilizáveis, onboardings, checklists padrão, fluxos com fases e transições no workos ou sistema equivalente. faelor — forjador de sistemas kaelthari. dev-technical-writing">
+<div class="agent-top"><div class="face mono-face">FA</div><div><h3>Faelor</h3><div class="role">Forjador de Sistemas</div><code>pm-engineer</code></div></div>
+<p class="resumo">Faelor — Forjador de Sistemas Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Faelor — Forjador de Sistemas Kaelthari. Cria e mantém templates de processo (process_task_sets, process_task_templates, flows) que padronizam trabalho recorrente. Use para criar processos reutilizáveis, onboardings, checklists padrão, fluxos com fases e transições no WorkOS ou sistema equivalente.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-ops varek — executor implacável varek — executor implacável kaelthari. operações diárias no nível de tarefa — atualiza status, enriquece descrições, cria subtasks, detecta bloqueios. ponto de execução após daily standups. use para processar resumos de daily, atualizar tarefas, mover status e registrar tempo. varek — executor implacável kaelthari. ">
+<div class="agent-top"><div class="face mono-face">VA</div><div><h3>Varek</h3><div class="role">Executor Implacável</div><code>pm-ops</code></div></div>
+<p class="resumo">Varek — Executor Implacável Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Varek — Executor Implacável Kaelthari. Operações diárias no nível de tarefa — atualiza status, enriquece descrições, cria subtasks, detecta bloqueios. Ponto de execução após daily standups. Use para processar resumos de daily, atualizar tarefas, mover status e registrar tempo.</p></details>
+
+
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-planner zynath — arquiteto do tempo zynath — arquiteto do tempo kaelthari. monta sprints, define roadmap, distribui carga e planeja capacidade. respeita o triângulo pessoas × entregas × demandas antes de comprometer qualquer entrega. use para sprint planning, definição de due_dates, roadmap e distribuição de tarefas. zynath — arquiteto do tempo kaelthari. data-analytics-engineering">
+<div class="agent-top"><div class="face mono-face">ZY</div><div><h3>Zynath</h3><div class="role">Arquiteto do Tempo</div><code>pm-planner</code></div></div>
+<p class="resumo">Zynath — Arquiteto do Tempo Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Zynath — Arquiteto do Tempo Kaelthari. Monta sprints, define roadmap, distribui carga e planeja capacidade. Respeita o triângulo pessoas × entregas × demandas antes de comprometer qualquer entrega. Use para sprint planning, definição de due_dates, roadmap e distribuição de tarefas.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="data-analytics-engineering">/data-analytics-engineering</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-qa thyron — juiz das obras thyron — juiz das obras kaelthari. auditor formal de qualidade de entregas e processos. emite veredictos aprovado/pendências/reprovado. read-only no código — escreve apenas comentários formais. use para auditar tarefas concluídas, validar templates de processo e revisar status updates de projeto. thyron — juiz das obras kaelthari. verify-before-done">
+<div class="agent-top"><div class="face mono-face">TH</div><div><h3>Thyron</h3><div class="role">Juiz das Obras</div><code>pm-qa</code></div></div>
+<p class="resumo">Thyron — Juiz das Obras Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Thyron — Juiz das Obras Kaelthari. Auditor formal de qualidade de entregas e processos. Emite veredictos APROVADO/PENDÊNCIAS/REPROVADO. READ-only no código — escreve apenas comentários formais. Use para auditar tarefas concluídas, validar templates de processo e revisar status updates de projeto.</p></details>
+<div class="aut"><span>autoridade exclusiva</span>Único que emite veredictos formais de qualidade na squad PM.</div>
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="verify-before-done">/verify-before-done</button></div>
+<footer><span class="tag opus">opus</span><span class="tag">effort high</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article>
+<article class="agent" data-squad="pm" data-q="pm-reporter lyrith — meeting intelligence lyrith — meeting intelligence kaelthari. ponto de entrada para todos os tipos de reunião (daily, planning, cliente, retro). processa resumos e transcrições, extrai ações, distribui para os agentes corretos e gera relatórios de saída. use quando tiver qualquer resumo de reunião para processar ou relatório de status para gerar. lyrith — meeting intelligence kaelthari. dev-technical-writing deep-research">
+<div class="agent-top"><div class="face mono-face">LY</div><div><h3>Lyrith</h3><div class="role">Meeting Intelligence</div><code>pm-reporter</code></div></div>
+<p class="resumo">Lyrith — Meeting Intelligence Kaelthari.</p>
+<details><summary>descrição completa</summary><p>Lyrith — Meeting Intelligence Kaelthari. Ponto de entrada para TODOS os tipos de reunião (daily, planning, cliente, retro). Processa resumos e transcrições, extrai ações, distribui para os agentes corretos e gera relatórios de saída. Use quando tiver qualquer resumo de reunião para processar ou relatório de status para gerar.</p></details>
+
+<div class="skills"><span class="skills-l">skills</span><button class="skill" data-skill="dev-technical-writing">/dev-technical-writing</button><button class="skill" data-skill="deep-research">/deep-research</button></div>
+<footer><span class="tag ">inherit</span><span class="tag" title="hook block-git-push — push só pelo devops">push ⊘</span></footer>
+</article></div>
+</section>
+  <div class="empty" id="empty">nenhum agente corresponde à busca</div>
+  <div class="pagefoot">
+    página oficial dos agentes · gerada por <b>generate-agents-page.py</b> a partir dos arquivos reais do CT<br>
+    push ⊘ = hook block-git-push (autoridade exclusiva do devops) · worktrees proibidos — trabalho direto na branch ativa
+  </div>
+</main>
+<div class="overlay" id="ov" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+  <div class="modal">
+    <button class="close" id="mclose" aria-label="Fechar">esc</button>
+    <div class="mk">skill</div>
+    <h4 id="mtitle"></h4>
+    <p class="sdesc" id="mdesc"></p>
+    <div class="uk" id="muk"></div>
+    <div class="users" id="musers"></div>
+  </div>
+</div>
+<script>
+const SKILLS = {"accessibility": {"desc": "Auditar e melhorar acessibilidade web seguindo WCAG 2.2 — inclui padrões específicos para Next.js/Tailwind. Use ao \"melhorar acessibilidade\", fazer \"a11y audit\", garantir \"WCAG compliance\", suporte a screen reader, navegação por teclado ou \"tornar acessível\".", "agents": ["dev-ux", "sites-dev-delta", "sites-qa", "sites-ux"]}, "ai-ml-data-science": {"desc": "\"ML and data science workflows — EDA, feature engineering, modelling, evaluation, and production handoff. Use when exploring data or building models.\"", "agents": ["dev-data-performance"]}, "ai-ml-timeseries": {"desc": "\"Time series forecasting — LightGBM, Transformers, temporal validation, feature engineering, and production deployment. Use when building TS models.\"", "agents": ["dev-data-performance"]}, "data-analytics-engineering": {"desc": "Analytics engineering for reliable metrics and BI readiness. Use when building dbt models, defining metrics, or designing analytics layers.", "agents": ["dev-analyst", "dev-bi", "dev-data-performance", "pm-analyst", "pm-planner", "traffic-bi"]}, "data-lake-platform": {"desc": "\"Data lake and lakehouse patterns: ingestion, CDC, Iceberg/Delta/Hudi, Trino/DuckDB, orchestration, and governance. Self-hosted and cloud.\"", "agents": ["dev-bi"]}, "data-sql-optimization": {"desc": "\"SQL optimization for OLTP systems: EXPLAIN analysis, indexing, schema design, migrations, HA, and security across major SQL platforms.\"", "agents": ["dev-bi", "dev-data-engineer", "pm-analyst", "pm-data", "sites-data", "traffic-bi"]}, "data-supabase-patterns": {"desc": "Melhores práticas de Postgres e Supabase — indexação, RLS performática, connection pooling, schema design, locking e diagnóstico com EXPLAIN. Use ao escrever queries SQL, criar migrations, desenhar schema, implementar políticas RLS, otimizar queries lentas ou investigar timeouts e problemas de conexão em projetos Supabase/Postgres.", "agents": ["dev-bi", "dev-data-engineer", "pm-data", "sites-data"]}, "deep-research": {"desc": "Use when the user needs multi-source research with citation tracking, evidence persistence, and structured report generation. Triggers on \"deep research\", \"comprehensive analysis\", \"research report\", \"compare X vs Y\", \"analyze trends\", or \"state of the art\". Not for simple lookups, debugging, or questions answerable with 1-2 searches.", "agents": ["dev-analyst", "pm-reporter", "sites-analyst", "traffic-analyst", "traffic-strategist"]}, "dev-api-design": {"desc": "Design de APIs para software complexo — REST, tRPC, contratos, versionamento e error responses padronizadas.", "agents": ["dev-architect", "dev-dev-beta", "sites-architect", "sites-dev-beta", "traffic-automation"]}, "dev-database-patterns": {"desc": "Padrões de banco de dados para software complexo — migrations seguras, indexing strategy, N+1 detection, soft deletes, connection pooling.", "agents": ["dev-architect", "dev-data-engineer", "dev-dev-beta", "dev-dev-gamma", "pm-data", "sites-data", "sites-dev-beta"]}, "dev-defuddle": {"desc": "Extrair markdown limpo de páginas web usando Defuddle CLI — remove ruído (nav, ads, sidebars) para obter conteúdo técnico puro. Para uso do Analyst e UX em research.", "agents": []}, "dev-error-handling": {"desc": "Padrões de resilência e error handling para software complexo — retry, circuit breaker, timeouts, error boundaries, logging estruturado.", "agents": ["dev-dev-alpha", "dev-dev-beta", "dev-dev-delta", "dev-dev-gamma", "sites-dev-beta", "sites-dev-delta", "traffic-automation"]}, "dev-git-workflow": {"desc": "Git workflow para projetos de software complexo — branch strategy, conventional commits, PR templates, merge flows e regras de autoridade.", "agents": ["dev-devops", "sites-devops"]}, "dev-security-patterns": {"desc": "Padrões de segurança para software complexo — autenticação, autorização, RLS, OWASP top 10, validação de input, secrets management.", "agents": ["dev-data-engineer", "dev-dev-delta", "dev-qa", "sites-dev-delta"]}, "dev-technical-writing": {"desc": "Escrever documentação técnica de qualidade — ADRs, module specs, decision logs — em Markdown padrão com diagramas Mermaid. Para uso de Architect e lead.", "agents": ["dev-architect", "pm-client", "pm-demand", "pm-engineer", "pm-reporter", "sites-architect"]}, "dev-testing-strategy": {"desc": "Estratégia de testes para software complexo — pirâmide de testes, cobertura mínima, unit vs integration vs E2E, mocking strategy.", "agents": ["dev-dev-alpha", "dev-dev-delta", "dev-qa", "sites-qa", "traffic-qa"]}, "dev-typescript-patterns": {"desc": "Padrões idiomáticos de TypeScript para software complexo — types vs interfaces, generics, discriminated unions, utility types, patterns de domínio.", "agents": ["dev-dev-alpha", "dev-dev-gamma", "sites-dev-gamma"]}, "nextjs-react-best-practices": {"desc": "Melhores práticas de performance para React e Next.js (App Router) — eliminar waterfalls, reduzir bundle, otimizar Server Components, data fetching, re-renders e Core Web Vitals. Use ao escrever ou revisar componentes React, páginas Next.js, data fetching (server ou client), ou ao investigar bundle size, hydration e lentidão de render.", "agents": ["dev-architect", "dev-dev-alpha", "dev-dev-beta", "dev-dev-delta", "dev-dev-gamma", "sites-architect", "sites-dev-alpha", "sites-dev-beta", "sites-dev-delta", "sites-dev-gamma"]}, "sites-canvas-design": {"desc": "Design de componentes visuais complexos com Canvas HTML5 e SVG — gráficos, partículas, ilustrações e backgrounds custom. Use ao criar visual que CSS não resolve — animação de partículas, gráficos dinâmicos, ícones SVG otimizados ou backgrounds avançados (grid, mesh, noise).", "agents": []}, "sites-copy": {"desc": "Copy completa para websites — estratégia de conteúdo, frameworks de copywriting (AIDA, PAS, BAB, 4Ps, StoryBrand) e revisão editorial. Use ao planejar mensagens de um site, escrever headlines/hero/CTAs, estruturar conteúdo de páginas ou revisar copy antes de entregar.", "agents": ["sites-qa"]}, "sites-deployment": {"desc": "Deploy de sites Next.js — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release. Use ao publicar ou configurar deploy de um site, montar pipeline de CI/CD, gerenciar variáveis de ambiente ou preparar release para produção.", "agents": ["sites-devops"]}, "sites-frontend-stack": {"desc": "Stack frontend padrão para websites — Next.js App Router, Tailwind v4 (@theme), shadcn/ui e Motion. Use ao iniciar projeto de site, criar componentes/seções, definir tokens de design, configurar tema shadcn ou implementar animações e layout responsivo.", "agents": ["sites-dev-alpha", "sites-ux"]}, "sites-page-cro": {"desc": "Otimização de conversão para páginas web — estrutura de landing page, hierarquia, trust signals e redução de fricção. Use ao montar ou revisar landing pages, melhorar taxa de conversão, posicionar CTAs e provas sociais ou diagnosticar páginas que não convertem.", "agents": ["sites-dev-gamma"]}, "sites-scroll-motion": {"desc": "Scroll cinematográfico, parallax, animações avançadas e cenas 3D para websites — do CSS puro ao Three.js WebGPU. Use ao implementar efeitos de scroll, parallax, animações scroll-triggered ou cenas 3D em sites Next.js que pedem experiência imersiva.", "agents": ["sites-dev-alpha"]}, "sites-seo-keywords": {"desc": "Keyword research e estratégia de conteúdo SEO — intenção de busca, clustering e mapeamento de keywords por página. Use ao pesquisar palavras-chave, definir estratégia de conteúdo orgânico, agrupar keywords por intenção ou mapear termos para as páginas do site.", "agents": ["sites-analyst"]}, "sites-seo-technical": {"desc": "SEO técnico para websites Next.js — meta tags, schema.org, sitemap, robots.txt e Core Web Vitals. Use ao implementar ou auditar SEO on-page, configurar metadata e dados estruturados, gerar sitemap e robots ou otimizar Core Web Vitals para ranking.", "agents": ["sites-architect", "sites-dev-gamma", "sites-qa"]}, "sites-ux-interaction": {"desc": "Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em páginas Next.js.", "agents": ["sites-ux"]}, "social-analytics": {"desc": "Análise de métricas de redes sociais — KPIs por objetivo, benchmarks por plataforma, templates de relatório e otimização baseada em dados. Use ao analisar performance de campanhas sociais, montar relatório de métricas, comparar resultados com benchmarks ou decidir ajustes de conteúdo com base em dados.", "agents": ["social-publisher", "traffic-analyst", "traffic-google", "traffic-meta"]}, "social-apify-research": {"desc": "Research de tendências e concorrentes via Apify MCP — scraping de Instagram, TikTok, hashtags e análise de engagement. Use ao pesquisar tendências de conteúdo, analisar perfis concorrentes, levantar hashtags ou coletar dados de engagement antes de planejar campanhas sociais.", "agents": ["social-content"]}, "social-carousel-design": {"desc": "Design de carousels para redes sociais — estrutura narrativa slide a slide, consistência visual e especificações técnicas. Use ao criar carousel para Instagram ou LinkedIn, estruturar a sequência de slides, definir capa e CTA final ou validar specs antes da produção.", "agents": ["social-design", "traffic-designer"]}, "social-cinematic-composition": {"desc": "Composição cinematográfica para fotos e vídeos sociais — regras de enquadramento, color grading e linguagem visual. Use ao dirigir ou avaliar imagens e vídeos, definir enquadramentos e composição, aplicar color grading ou elevar a qualidade estética de conteúdo visual.", "agents": ["social-photo", "social-video"]}, "social-copywriting": {"desc": "Copywriting para redes sociais — legendas, hooks, CTAs e estrutura de copy por plataforma. Use ao escrever legendas de posts, criar hooks de abertura, definir CTAs ou adaptar tom e formato da copy para Instagram, TikTok, LinkedIn e outras plataformas.", "agents": ["social-content", "traffic-copywriter"]}, "social-editorial-validation": {"desc": "Validação editorial de conteúdo social — checklist de qualidade, alinhamento estratégico e compliance. Use ao revisar conteúdo antes de publicar, validar alinhamento com a estratégia da marca, checar compliance ou emitir aprovação editorial de posts e campanhas.", "agents": ["social-content", "social-strategist"]}, "social-format-specs": {"desc": "Especificações técnicas de formatos para todas as plataformas sociais — dimensões, duração, tamanho de arquivo, codecs e zonas seguras. Use ao exportar ou validar vídeo/foto para Instagram, TikTok, YouTube Shorts, Facebook ou LinkedIn antes de publicar.", "agents": ["social-content", "social-strategist", "traffic-tiktok"]}, "social-freepik-generation": {"desc": "Geração de imagens AI via Freepik para conteúdo social — prompts eficazes, estilos fotográficos e especificações por formato. Use ao gerar fotos e imagens AI para posts, capas ou campanhas, escrever prompts de imagem ou escolher estilo fotográfico por formato de peça.", "agents": ["social-photo"]}, "social-heygen-avatar": {"desc": "Geração de vídeo com avatar AI via HeyGen — talking-head, image-to-video, dublagem multilíngue e seleção de voz. Use ao criar vídeo com apresentador virtual, transformar imagem em vídeo, dublar conteúdo para outros idiomas ou escolher avatar e voz para campanha.", "agents": ["social-video"]}, "social-key-visual": {"desc": "Criação de Key Visuals para campanhas sociais — identidade visual, paleta, tipografia e elemento central de campanha. Use ao criar o visual principal de uma campanha, definir paleta e tipografia, ou garantir consistência visual entre todas as peças derivadas.", "agents": ["social-design", "traffic-designer"]}, "social-meta-publishing": {"desc": "Publicação via Meta MCP — Instagram e Facebook. Workflow de upload, agendamento, verificação e registro com dupla confirmação obrigatória. Use ao publicar ou agendar conteúdo aprovado em Instagram/Facebook e ao registrar publicações de campanha.", "agents": ["social-publisher", "traffic-meta"]}, "social-scriptwriting": {"desc": "Roteiros para vídeos sociais — Reels, TikToks, Stories e Shorts com estrutura narrativa, timing e texto em tela. Use ao roteirizar vídeo curto, estruturar hook, desenvolvimento e CTA, definir timing de cenas ou escrever texto em tela e narração.", "agents": ["social-content", "social-video"]}, "social-stitch-workflow": {"desc": "Workflow de design com Google Stitch MCP — setup de projeto, design system, geração de screens e variantes, exportação para redes sociais. Use ao criar Key Visuals, templates de posts ou variações de design via Stitch.", "agents": ["social-design"]}, "social-video-editing": {"desc": "Edição de vídeo para redes sociais com ffmpeg — cortes, legendas, música, transições e exportação por plataforma. Use ao editar Reels, TikToks ou Shorts, cortar e montar clipes, adicionar legendas e trilha sonora, ou exportar vídeo nas specs corretas de cada rede.", "agents": ["social-video"]}, "team-os": {"desc": "Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os", "agents": []}, "team-os-creator": {"desc": "Skill criadora de agentes nativos do Claude Code para Agent Teams. Use quando o usuário pedir para criar agentes novos, montar uma squad do zero, bootstrap de team, gerar times customizados, criar agente especializado, adicionar agentes a um projeto, atualizar agentes em projetos do Centro de Treinamento, instalar squads em outro projeto, ou qualquer variação de \"preciso de agentes para X\". Propõe squad baseada no stack do projeto, gera arquivos `.claude/agents/*.md` completos com Native Teams Protocol + smart-memory integrada.", "agents": []}, "testing-playwright-e2e": {"desc": "Melhores práticas de testes E2E com Playwright — locators resilientes, auto-waiting, isolamento de testes, fixtures, autenticação, mocking de rede, prevenção de flakiness e CI. Use ao escrever, revisar ou debugar testes Playwright, ao investigar testes flaky, ao configurar playwright.config, ou ao montar suíte E2E para webapps.", "agents": ["dev-qa", "sites-qa"]}, "tiktok-marketing": {"desc": "Estratégia de marketing no TikTok — orgânico e ads. Pilares de conteúdo, hooks nos 3 primeiros segundos, trending sounds, hashtags, cadência, specs de Spark Ads/In-Feed e métricas de watch time. Use ao planejar conteúdo TikTok, criar campanhas TikTok Ads ou otimizar performance orgânica.", "agents": ["traffic-copywriter", "traffic-strategist", "traffic-tiktok"]}, "traffic-analytics-tracking": {"desc": "Implementação e auditoria de analytics — GA4, Google Tag Manager, tracking plans, convenções de eventos, UTMs, atribuição multi-touch e validação de dados. Use ao configurar ou auditar GA4/GTM, definir plano de eventos, padronizar UTMs, medir campanhas, investigar discrepância de atribuição ou validar conversion tracking antes de campanha subir.", "agents": ["traffic-analyst", "traffic-automation", "traffic-bi", "traffic-qa"]}, "traffic-ga4-mcp": {"desc": "Uso do MCP oficial do Google Analytics (googleanalytics/google-analytics-mcp) — tools de report GA4, validação realtime de tracking pré-launch, funis, links com Google Ads e dicionário de dimensões/métricas para tráfego pago. Use ao consultar dados GA4, validar conversões e UTMs de campanha, montar relatórios de canal/campanha ou investigar discrepância entre plataforma de ads e GA4.", "agents": ["traffic-analyst", "traffic-bi", "traffic-google", "traffic-qa", "traffic-strategist"]}, "traffic-google-ads-mcp": {"desc": "Uso do MCP oficial do Google Ads (googleads/google-ads-mcp) — tools, GAQL cookbook, workflow de descoberta de contas, limites read-only e handoff para mutations. Use ao consultar dados de conta/campanha Google Ads via MCP, escrever queries GAQL, auditar performance, budget pacing, search terms ou preparar relatórios com dados reais da API.", "agents": ["traffic-analyst", "traffic-automation", "traffic-bi", "traffic-google", "traffic-qa"]}, "traffic-paid-ads-optimization": {"desc": "Estratégia e otimização de tráfego pago — briefs de campanha, estrutura de conta, alocação de budget, creative-first targeting, retargeting por funil, scaling discipline e guardrails de auditoria para Google, Meta, LinkedIn e TikTok. Use ao planejar campanhas, criar briefings de ads, otimizar CPA/ROAS, escalar budget, montar retargeting ou auditar contas de anúncios.", "agents": ["traffic-copywriter", "traffic-google", "traffic-meta", "traffic-strategist", "traffic-tiktok"]}, "ui-ux-pro-max": {"desc": "\"UI/UX design intelligence for web and mobile — searchable database of styles, palettes, font pairings, product types and UX guidelines. Use when designing, building, reviewing or fixing UI/UX (landing page, dashboard, SaaS, mobile app) or choosing style, color and typography.\"", "agents": ["dev-ux", "sites-dev-alpha", "sites-ux", "traffic-designer"]}, "verify-before-done": {"desc": "Verificação obrigatória antes de declarar qualquer trabalho como concluído — evidência antes de afirmação. Use SEMPRE antes de dizer que algo \"está pronto\", \"funciona\", \"passa nos testes\", \"está corrigido\" ou antes de commit/marcar story como done. Gatilhos - concluir tarefa, fechar story, reportar sucesso, emitir veredicto de QA, dar bug como resolvido.", "agents": ["dev-dev-alpha", "dev-dev-beta", "dev-dev-gamma", "dev-qa", "pm-qa", "sites-dev-alpha", "sites-dev-beta", "sites-dev-delta", "sites-dev-gamma", "sites-qa", "traffic-qa"]}, "web-design-guidelines": {"desc": "Review de código UI contra as Vercel Web Interface Guidelines — carrega as guidelines (remoto ou cache local) e reporta violações em formato file:line. Use ao \"revisar minha UI\", \"audit design\", \"review UX\" ou checar o site contra as guidelines da Vercel. Para acessibilidade/WCAG, use a skill accessibility.", "agents": ["dev-ux", "sites-qa"]}};
+const btns=[...document.querySelectorAll(".fbtn")],cards=[...document.querySelectorAll(".agent")],
+      squads=[...document.querySelectorAll(".squad")],q=document.getElementById("q"),
+      empty=document.getElementById("empty"),ov=document.getElementById("ov");
+let f="all";
+function apply(){
+  const t=q.value.trim().toLowerCase();
+  cards.forEach(c=>{c.hidden=!((f==="all"||c.dataset.squad===f)&&(!t||c.dataset.q.includes(t)))});
+  let any=false;
+  squads.forEach(s=>{const vis=cards.some(c=>c.dataset.squad===s.dataset.squad&&!c.hidden);s.hidden=!vis;any=any||vis});
+  empty.style.display=any?"none":"block";
+}
+btns.forEach(b=>b.addEventListener("click",()=>{f=b.dataset.f;btns.forEach(x=>x.classList.toggle("active",x===b));apply()}));
+q.addEventListener("input",apply);
+function openSkill(name){
+  const s=SKILLS[name]; if(!s)return;
+  document.getElementById("mtitle").textContent="/"+name;
+  document.getElementById("mdesc").textContent=s.desc||"(sem descrição)";
+  document.getElementById("muk").textContent=s.agents.length?`usada por ${s.agents.length} agente(s)`:"skill de uso geral";
+  document.getElementById("musers").innerHTML=s.agents.map(a=>`<code>${a}</code>`).join("");
+  ov.classList.add("open");document.getElementById("mclose").focus();
+}
+document.addEventListener("click",e=>{
+  const sk=e.target.closest(".skill"); if(sk){openSkill(sk.dataset.skill);return}
+  if(e.target===ov||e.target.id==="mclose")ov.classList.remove("open");
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")ov.classList.remove("open")});
+</script>
