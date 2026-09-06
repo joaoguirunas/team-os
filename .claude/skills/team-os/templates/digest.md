@@ -1,37 +1,26 @@
 ---
-title: "DIGEST — {área}"
 kind: digest
-type: overview
-status: active
-agent: "{agente-da-área}"
-created: { data }
-updated: { data }
-tags: [digest, { área }]
+area: {area}
+updated: {data}
 ---
+# DIGEST — {area}
 
-# DIGEST — {área}
+## Core (permanente)
+<!-- fatos atômicos duráveis, 1 linha cada, com data. Fato novo SUBSTITUI o antigo. -->
+- [YYYY-MM-DD] {fato}
 
-> Resumo vivo da área. **Única leitura obrigatória** para agentes desta especialidade
-> (além do INDEX e stories ativas). Teto: ~150 linhas. Notas profundas só via wikilink,
-> quando o trabalho exigir.
+## Contexto recente (expira em ~14 dias se não renovado)
+- [YYYY-MM-DD] {estado em andamento}
 
-## Estado atual
+## Apontadores
+- [[nota-relevante]] — por que importa (1 linha)
 
-<!-- 5-15 bullets: o que está vigente nesta área AGORA. Schema atual, decisões em vigor,
-     métricas canônicas, o que está em andamento. Atualizar in-place a cada mudança. -->
-
-## Referências vivas (kind: reference)
-
-| Nota | O que é |
-|---|---|
-| [[schema-map]] | <!-- 1 linha --> |
-
-## Episódios
-
-<!-- 1 linha por episódio, do campo `summary` do frontmatter. Episódios resolved/superseded
-     permanecem aqui como memória institucional MESMO depois de arquivados (o corpo vai
-     pro _archive/, a linha fica). -->
-
-| Episódio | Status | Conclusão (summary) |
-|---|---|---|
-| [[audit-exemplo]] | resolved | <!-- summary da nota --> |
+<!-- ═══════════════ REGRAS DO DIGEST (v3) ═══════════════
+  · Máx ~40 linhas por DIGEST — se estourar, algo devia estar em nota (apontador) ou no _archive/.
+  · Bullets ≤ 200 chars. Nada de prosa, parágrafos ou narrativa.
+  · Todo fato é ATÔMICO e DATADO: "- [YYYY-MM-DD] {fato}".
+  · Fato novo SUBSTITUI o antigo na mesma linha (data nova) — não acumule histórico.
+  · Core = durável (schema vigente, decisões, métricas canônicas).
+  · Contexto recente = em andamento; renove a data ao tocar, ou some em ~14 dias (*compact).
+  · Apontadores = wikilinks para notas profundas, 1 linha de justificativa cada.
+-->

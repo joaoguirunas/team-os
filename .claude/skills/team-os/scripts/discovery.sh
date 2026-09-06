@@ -3,20 +3,32 @@
 # Analisa o codebase real e gera uma docs/smart-memory/ POPULADA (não scaffolding vazio).
 # Roda nos projetos (onde só existe a skill team-os). Sem dependências externas (jq não exigido).
 #
-# Usage: discovery.sh [--target <dir>] [--force] [--dry-run]
-#   --target <dir>  raiz do projeto (default: git root ou pwd)
-#   --force         sobrescreve docs/smart-memory/ existente
-#   --dry-run       mostra o que faria, sem escrever
+# Usage: discovery.sh [--target <dir>] [--force] [--repair] [--dry-run] [--areas "a,b,c"]
+#   --target <dir>   raiz do projeto (default: git root ou pwd)
+#   --force          sobrescreve docs/smart-memory/ existente — MAS antes faz backup de
+#                    cada arquivo que vai sobrescrever em _archive/pre-force-<data>/
+#   --repair         cria SÓ o que falta (pastas/DIGESTs/INDEX/arquivos ausentes);
+#                    nunca sobrescreve nada existente
+#   --dry-run        mostra o que faria, sem escrever
+#   --areas "a,b,c"  override manual das áreas de agents/ (ignora a detecção por squad)
+#
+# Áreas de agents/: derivadas das squads INSTALADAS no projeto (ls .claude/agents/ do target):
+#   dev     → research, qa, ux, bi, data-engineer, data-performance
+#   sites   → research, qa, ux, data
+#   social  → content, design, photo, video, publisher
+#   traffic → traffic, qa, copy, automation
+#   pm      → portfolio, qa, processos
+# Squads combinam (união). Sem .claude/agents/ → fallback (dev).
 #
 # Saída: cria docs/smart-memory/{INDEX.md, project/, decisions/,
-#        stories/{backlog,active,in-review,done}, agents/<área>/, _archive/} com conteúdo
-#        detectado (architecture e modules vivem como arquivos dentro de project/).
+#        stories/{backlog,active,in-review,done}, agents/<área>/, _inbox/, _archive/}
+#        com conteúdo detectado (architecture e modules vivem como arquivos em project/).
 # Pontos narrativos (domínio/propósito) ficam marcados com <!-- TODO --> para o agente enriquecer.
 
 # NB: sem `set -e` — o script usa muitos `teste && add ...` cujo lado esquerdo
 # falha de propósito quando um arquivo não existe (isso não é erro).
 
-TARGET=""; FORCE=0; DRY=0
+TARGET=""; FORCE=0; DRY=0; REPAIR=0; AREAS_OVERRIDE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --target)
@@ -26,10 +38,22 @@ while [ $# -gt 0 ]; do
       fi
       TARGET="$2"; shift 2 ;;
     --force)  FORCE=1; shift ;;
+    --repair) REPAIR=1; shift ;;
     --dry-run) DRY=1; shift ;;
+    --areas)
+      if [ $# -lt 2 ] || [ -z "$2" ]; then
+        echo "ERRO: --areas requer um valor (lista \"a,b,c\")" >&2
+        exit 2
+      fi
+      AREAS_OVERRIDE="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
+
+if [ "$FORCE" -eq 1 ] && [ "$REPAIR" -eq 1 ]; then
+  echo "ERRO: --force e --repair são mutuamente exclusivos." >&2
+  exit 2
+fi
 
 if [ -z "$TARGET" ]; then
   TARGET="$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -48,9 +72,66 @@ PROJECT_NAME="$(basename "$TARGET")"
 
 echo "DISCOVERY target=$TARGET"
 
-if [ -d "$SM" ] && [ "$FORCE" -ne 1 ] && [ "$DRY" -ne 1 ]; then
-  echo "ABORT: docs/smart-memory já existe. Use --force para sobrescrever." >&2
+if [ -d "$SM" ] && [ "$FORCE" -ne 1 ] && [ "$REPAIR" -ne 1 ] && [ "$DRY" -ne 1 ]; then
+  echo "ABORT: docs/smart-memory já existe. Use --repair (cria só o que falta) ou --force (sobrescreve com backup)." >&2
   exit 2
+fi
+
+# ── Escrita segura (repair nunca sobrescreve; force faz backup antes) ─────────
+BACKUP_DIR="$SM/_archive/pre-force-$DATE"
+
+# want <path> → retorna 0 se o arquivo deve ser (re)escrito.
+#   --repair : escreve só se NÃO existir.
+#   --force  : faz backup do existente em _archive/pre-force-<data>/ e escreve.
+#   fresh    : escreve.
+want() { # $1=path-absoluto-dentro-da-SM
+  local p="$1" rel
+  if [ -e "$p" ]; then
+    if [ "$REPAIR" -eq 1 ]; then
+      return 1
+    fi
+    if [ "$FORCE" -eq 1 ]; then
+      rel="${p#$SM/}"
+      mkdir -p "$BACKUP_DIR/$(dirname "$rel")"
+      cp "$p" "$BACKUP_DIR/$rel"
+      echo "  backup: $rel → _archive/pre-force-$DATE/$rel"
+    fi
+  fi
+  return 0
+}
+
+# ── Áreas de agents/ — derivadas das squads instaladas ────────────────────────
+AREAS=""
+add_area() { case " $AREAS " in *" $1 "*) : ;; *) AREAS="$AREAS${AREAS:+ }$1" ;; esac; }
+
+squad_areas() { # $1=squad
+  case "$1" in
+    dev)     echo "research qa ux bi data-engineer data-performance" ;;
+    sites)   echo "research qa ux data" ;;
+    social)  echo "content design photo video publisher" ;;
+    traffic) echo "traffic qa copy automation" ;;
+    pm)      echo "portfolio qa processos" ;;
+  esac
+}
+
+SQUADS_DETECTED=""
+if [ -n "$AREAS_OVERRIDE" ]; then
+  for a in $(echo "$AREAS_OVERRIDE" | tr ',' ' '); do
+    [ -n "$a" ] && add_area "$a"
+  done
+  SQUADS_DETECTED="(override --areas)"
+elif [ -d "$TARGET/.claude/agents" ]; then
+  for sq in dev sites social traffic pm; do
+    if ls "$TARGET/.claude/agents/$sq-"*.md >/dev/null 2>&1; then
+      SQUADS_DETECTED="$SQUADS_DETECTED${SQUADS_DETECTED:+, }$sq"
+      for a in $(squad_areas "$sq"); do add_area "$a"; done
+    fi
+  done
+fi
+if [ -z "$AREAS" ]; then
+  # fallback: sem .claude/agents/ (ou sem squad reconhecida) → áreas da squad dev
+  for a in $(squad_areas dev); do add_area "$a"; done
+  [ -z "$SQUADS_DETECTED" ] && SQUADS_DETECTED="(fallback dev — sem .claude/agents/)"
 fi
 
 # ── Helpers de detecção (dependency-free) ────────────────────────────────────
@@ -146,6 +227,9 @@ done
 # ── Dry-run: só reporta ──────────────────────────────────────────────────────
 if [ "$DRY" -eq 1 ]; then
   echo "--- DRY-RUN ---"
+  echo "Modo       : $([ "$REPAIR" -eq 1 ] && echo repair || { [ "$FORCE" -eq 1 ] && echo "force (com backup)" || echo create; })"
+  echo "Squads     : ${SQUADS_DETECTED:-—}"
+  echo "Áreas      : $AREAS"
   echo "Linguagens : ${LANGS:-(nenhuma detectada)}"
   echo "Frameworks : ${FRAMEWORKS:-—}"
   echo "Styling/UI : ${STYLING:-—}"
@@ -162,48 +246,44 @@ fi
 
 mkdir -p "$SM"/project "$SM"/decisions \
          "$SM"/stories/backlog "$SM"/stories/active "$SM"/stories/in-review "$SM"/stories/done \
-         "$SM"/agents/research "$SM"/agents/qa "$SM"/agents/data-engineer \
-         "$SM"/agents/ux "$SM"/agents/bi "$SM"/agents/data-performance \
-         "$SM"/_archive
+         "$SM"/_inbox "$SM"/_archive
+for area in $AREAS; do
+  mkdir -p "$SM/agents/$area"
+done
 
-# DIGEST.md stub por área de agente — porta de entrada da leitura em camadas.
-for area in research qa data-engineer ux bi data-performance; do
-  cat > "$SM/agents/$area/DIGEST.md" <<EOF
+# _inbox/ — anotações baratas durante a sessão; consolidação em lote no *compact
+[ -e "$SM/_inbox/.gitkeep" ] || touch "$SM/_inbox/.gitkeep"
+
+# DIGEST.md por área de agente — porta de entrada da leitura em camadas (L0).
+# Formato v3: fatos atômicos datados (Core / Contexto recente / Apontadores).
+for area in $AREAS; do
+  DPATH="$SM/agents/$area/DIGEST.md"
+  want "$DPATH" || continue
+  cat > "$DPATH" <<EOF
 ---
-title: "DIGEST — $area"
 kind: digest
-type: overview
-status: active
-agent: team-os (discovery)
-created: $DATE
+area: $area
 updated: $DATE
-tags: [digest, $area]
 ---
-
 # DIGEST — $area
 
-> Resumo vivo da área. **Única leitura obrigatória** para agentes desta especialidade
-> (além do INDEX e stories ativas). Teto: ~150 linhas. Notas profundas só via wikilink.
+## Core (permanente)
+<!-- fatos atômicos duráveis, 1 linha cada, com data. Fato novo SUBSTITUI o antigo. -->
+- [$DATE] Área criada pelo discovery — sem fatos registrados ainda.
 
-## Estado atual
+## Contexto recente (expira em ~14 dias se não renovado)
+<!-- - [YYYY-MM-DD] {estado em andamento} -->
 
-<!-- 5-15 bullets: o que está vigente nesta área AGORA. Atualizar in-place. -->
+## Apontadores
+<!-- - [[nota-relevante]] — por que importa (1 linha) -->
 
-## Referências vivas (kind: reference)
-
-| Nota | O que é |
-|---|---|
-<!-- schema-maps, dicionários, specs vigentes -->
-
-## Episódios
-
-| Episódio | Status | Conclusão (summary) |
-|---|---|---|
-<!-- 1 linha por episódio (campo summary). A linha FICA mesmo após o corpo ir pro _archive/. -->
+<!-- Regras: máx ~40 linhas por DIGEST · bullets ≤200 chars · nada de prosa.
+     Fato novo SUBSTITUI o antigo (mesma linha, data nova) — não acumule histórico. -->
 EOF
 done
 
 # _archive/ — arquivo morto (fora do working set). Nunca lido no bootstrap nem pelos agentes.
+if want "$SM/_archive/README.md"; then
 cat > "$SM/_archive/README.md" <<EOF
 ---
 title: "Arquivo Morto (_archive)"
@@ -216,15 +296,38 @@ tags: [archive]
 # _archive — conteúdo frio compactado
 
 Esta pasta guarda o que saiu do **working set** da smart-memory via \`/team-os *compact\`:
-stories concluídas, QA/planos antigos, logs append-only esfriados.
+stories concluídas, QA/planos antigos, logs append-only esfriados, notas expiradas (TTL)
+e inbox já consolidado.
 
 - **Não é lido** no bootstrap do team-os nem pelos agentes (o \`weigh-memory.sh\` o exclui do peso).
 - Conteúdo **movido, nunca deletado** — nada se perde.
 - Os LEDGERs (\`stories/done/LEDGER.md\` e \`_archive/LEDGER.md\`) indexam o que foi arquivado.
 - Consulte um item aqui **só** quando um LEDGER apontar que você precisa dele.
 EOF
+fi
+
+# Links nominais dos DIGESTs por área
+AGENT_LINKS=""
+for area in $AREAS; do
+  AGENT_LINKS="${AGENT_LINKS}- [[agents/$area/DIGEST]] — resumo vivo da área $area
+"
+done
+
+# Stories ativas existentes (repair/força em memória viva) — lista nominal
+ACTIVE_LINKS=""
+while IFS= read -r s; do
+  [ -n "$s" ] || continue
+  b="$(basename "$s" .md)"
+  ACTIVE_LINKS="${ACTIVE_LINKS}- [[stories/active/$b]]
+"
+done <<EOF
+$(find "$SM/stories/active" -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort)
+EOF
+[ -z "$ACTIVE_LINKS" ] && ACTIVE_LINKS="<!-- sem stories ativas — o architect move stories para cá e as lista aqui -->
+"
 
 # INDEX.md (MOC raiz)
+if want "$SM/INDEX.md"; then
 cat > "$SM/INDEX.md" <<EOF
 ---
 title: "Smart-Memory — $PROJECT_NAME"
@@ -253,11 +356,17 @@ tags: [index, smart-memory]
 ## Stories
 - [[stories/BACKLOG]] — Backlog master
 
-## Saídas por agente
-- [[agents/research/]] · [[agents/qa/]] · [[agents/data-engineer/]] · [[agents/ux/]] · [[agents/bi/]] · [[agents/data-performance/]]
+### Ativas
+$ACTIVE_LINKS
+## DIGESTs por área (porta de entrada L0)
+$AGENT_LINKS
+## Inbox
+- \`_inbox/\` — anotações baratas da sessão; consolidadas em lote no \`*compact\` (archivist)
 EOF
+fi
 
 # project/overview.md
+if want "$SM/project/overview.md"; then
 cat > "$SM/project/overview.md" <<EOF
 ---
 title: "Visão Geral — $PROJECT_NAME"
@@ -279,8 +388,10 @@ tags: [project]
 ## Estado atual
 <!-- TODO: maturidade, o que já existe, o que está em construção -->
 EOF
+fi
 
 # project/tech-stack.md
+if want "$SM/project/tech-stack.md"; then
 cat > "$SM/project/tech-stack.md" <<EOF
 ---
 title: "Tech Stack — $PROJECT_NAME"
@@ -306,8 +417,10 @@ tags: [project, tech-stack]
 
 > Detectado automaticamente dos manifestos do projeto. Confirme/complete o que faltar.
 EOF
+fi
 
 # project/conventions.md
+if want "$SM/project/conventions.md"; then
 cat > "$SM/project/conventions.md" <<EOF
 ---
 title: "Convenções — $PROJECT_NAME"
@@ -328,8 +441,10 @@ tags: [project, conventions]
 ## Padrões observados
 <!-- TODO: naming, organização de pastas, padrões de import, etc. (enriquecer ao explorar) -->
 EOF
+fi
 
 # project/architecture.md
+if want "$SM/project/architecture.md"; then
 cat > "$SM/project/architecture.md" <<EOF
 ---
 title: "Arquitetura — $PROJECT_NAME"
@@ -350,8 +465,10 @@ $(printf "%b" "$MODULE_DIRS" | sed 's#.*/##' | awk 'NF{printf "  app --> m_%s[%s
 
 <!-- TODO: refinar o diagrama com as relações reais entre os módulos -->
 EOF
+fi
 
 # project/modules.md (mapa de módulos + God Nodes — lido pelos implementers antes de codar)
+if want "$SM/project/modules.md"; then
 cat > "$SM/project/modules.md" <<EOF
 ---
 title: "Módulos — $PROJECT_NAME"
@@ -374,8 +491,10 @@ done)
 <!-- TODO: arquivos críticos / de alto acoplamento que exigem testes + QA formal ao serem tocados.
      Liste paths \`src/...\` aqui (um por linha). Os implementers grep esta seção antes de implementar. -->
 EOF
+fi
 
 # stories/BACKLOG.md
+if want "$SM/stories/BACKLOG.md"; then
 cat > "$SM/stories/BACKLOG.md" <<EOF
 ---
 title: "Backlog — $PROJECT_NAME"
@@ -392,10 +511,16 @@ tags: [backlog]
 |---|---|---|---|---|
 <!-- architect adiciona stories aqui -->
 EOF
+fi
 
 # Conta o que foi gerado
 MOD_COUNT="$(printf "%b" "$MODULE_DIRS" | grep -c . || true)"
-echo "DONE: smart-memory gerada em $SM"
+MODE_LABEL="create"
+[ "$REPAIR" -eq 1 ] && MODE_LABEL="repair (só o que faltava)"
+[ "$FORCE" -eq 1 ] && MODE_LABEL="force (sobrescrito com backup em _archive/pre-force-$DATE/)"
+echo "DONE: smart-memory gerada em $SM  [modo: $MODE_LABEL]"
+echo "  squads: ${SQUADS_DETECTED:-—}"
+echo "  áreas de agents/: $AREAS"
 echo "  módulos mapeados: ${MOD_COUNT:-0}"
 echo "  stack: ${FRAMEWORKS:-${LANGS:-—}}${DB:+ · $DB}"
 echo "PRÓXIMO: o agente enriquece os <!-- TODO --> (domínio, responsabilidades) e o architect cria stories."
