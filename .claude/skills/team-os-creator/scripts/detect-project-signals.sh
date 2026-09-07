@@ -12,6 +12,7 @@ HAS_MOBILE=0
 HAS_CI=0
 HAS_ML=0
 HAS_CONTENT=0
+HAS_PROPOSALS=0
 
 # Detectar linguagem principal
 if [ -f "package.json" ]; then
@@ -86,12 +87,22 @@ if find . -maxdepth 3 \( -path "*/content/*" -o -path "*/posts/*" -o -name "*.md
   HAS_CONTENT=1
 fi
 
+# Proposals signals — workspace de propostas comerciais/apresentações (sem código):
+# PDFs/decks de proposta, planejamentos internos, convenção de pastas, brandbook/design system.
+PROPOSAL_HITS=$(find . -maxdepth 3 \( -iname "*proposta*" -o -iname "*proposal*" -o -iname "*planejamento*" -o -iname "*pitch*deck*" -o -iname "*_CONVENCAO*" -o -iname "*brandbook*" -o -iname "*design-system*" \) -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -20 | wc -l | tr -d ' ')
+if [ "${PROPOSAL_HITS:-0}" -ge 2 ] && [ $HAS_FRONTEND -eq 0 ] && [ $HAS_BACKEND -eq 0 ]; then
+  HAS_PROPOSALS=1
+fi
+
 # Classificar archetype
 # Ordem importa: fullstack primeiro (um SaaS com pandas no requirements não é
 # data-pipeline — o teste HAS_ML vem DEPOIS da classificação fullstack).
 # "website" = Next/Astro/landing sem backend pesado (backend + database juntos)
-# — sem ele o preset `sites` era inalcançável.
-if [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
+# — sem ele o preset `sites` era inalcançável. "proposals" = pasta de propostas
+# comerciais sem código → preset `sales`.
+if [ $HAS_PROPOSALS -eq 1 ]; then
+  ARCHETYPE="proposals"
+elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
   ARCHETYPE="fullstack-saas"
 elif [ $HAS_ML -eq 1 ]; then
   ARCHETYPE="data-pipeline"
@@ -116,6 +127,8 @@ case "$ARCHETYPE" in
     SUGGESTED_PRESET="dev" ;;
   website|content-site)
     SUGGESTED_PRESET="sites" ;;
+  proposals)
+    SUGGESTED_PRESET="sales" ;;
   mobile-app)
     # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
     SUGGESTED_PRESET="dev"

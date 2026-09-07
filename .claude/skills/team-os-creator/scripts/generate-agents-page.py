@@ -28,6 +28,7 @@ SQUADS = [
     ("social", "Social", "Social media — copy, design, foto, vídeo, publicação"),
     ("traffic", "Traffic", "Tráfego pago — Google, Meta, TikTok, BI e atribuição"),
     ("pm", "PM", "Gestão de projetos — sprints, dailies, portfólio"),
+    ("sales", "Sales", "Propostas e apresentações — discovery, tese, números, copy, PDF, QA, fechamento"),
 ]
 
 # Resumo em PT por agente (linha principal do card). Agente ausente → 1ª frase da description.
@@ -61,6 +62,14 @@ RESUMOS_PT = {
     "social-publisher": "Publica (via Meta) e analisa métricas — só depois da aprovação da VERA E confirmação do usuário.",
     "social-strategist": "Estrategista e validadora editorial. Nunca cria — valida e direciona; aprovação obrigatória antes de publicar.",
     "social-video": "Editor de vídeo: Reels, Stories, TikToks com ffmpeg + avatar AI e dublagem via HeyGen.",
+    "sales-analyst": "Discovery: transforma reunião/transcrição em ficha de intake e pesquisa cliente, setor e benchmarks — todo número com fonte.",
+    "sales-strategist": "Estrategista do negócio: tese, enquadramento da oferta, postura de negociação e gate de aprovação do planejamento. Nunca escreve a proposta.",
+    "sales-planner": "Arquiteto da proposta. Autoridade exclusiva para criar a story e escrever o planejamento interno — roadmap com aceite, bastidor e estrutura página a página do PDF.",
+    "sales-finance": "Fonte única dos números: preço vs. tabela, desconto e breakeven, payback do cliente, permuta, plano de negócios e valuation com sensibilidade.",
+    "sales-copywriter": "Redatora da proposta: texto página a página com voz declarativa, compromisso conjunto e número só com origem na ficha.",
+    "sales-designer": "Produz PDF e deck no design system do projeto — HTML com print CSS, export headless e checagem de páginas, fontes e overflow.",
+    "sales-qa": "QA da proposta. Veredictos PASS / CONCERNS / FAIL / WAIVED antes de qualquer envio — convenção, marca, rastreabilidade numérica, zero risco no cliente.",
+    "sales-closer": "Fechamento: brief de reunião a partir das objeções, follow-up, ledger de propostas. Só envia com PASS e confirmação do usuário.",
 }
 
 
@@ -121,7 +130,7 @@ def load_skill_map(skills):
     """Última célula das linhas de agente nas tabelas §5 do README + skills novas curadas."""
     amap = {}
     for row in open(os.path.join(ROOT, "README.md")).read().splitlines():
-        m = re.match(r"^\|\s*`((?:dev|sites|social|traffic|pm)-[a-z-]+)`\s*\|", row)
+        m = re.match(r"^\|\s*`((?:dev|sites|social|traffic|pm|sales)-[a-z-]+)`\s*\|", row)
         if not m:
             continue
         last = row.rstrip("|").rsplit("|", 1)[-1]

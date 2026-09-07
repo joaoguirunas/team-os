@@ -1,8 +1,8 @@
 # team-os — by João Guirunas
 
-Repositório fonte do pack **team-os**: 48 agentes e 52 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Repositório fonte do pack **team-os**: 56 agentes e 63 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
-> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 48 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
+> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 56 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
 ## O que é este projeto
 
@@ -35,6 +35,7 @@ Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos a
 - `task-quality.sh` — hook `TaskCreated` (registrado no settings): rejeita task vaga (título curto/genérico ou sem descrição)
 - `check-story-progress.sh` — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story
 - `check-social-progress.sh` — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist)
+- `check-proposal-progress.sh` — hook `TaskCompleted`: task de emissão/envio de proposta (squad sales) só fecha com PASS do `sales-qa` **e** confirmação explícita do usuário
 - `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
 
 ## Fluxo de trabalho

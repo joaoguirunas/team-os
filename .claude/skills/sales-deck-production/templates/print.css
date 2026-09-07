@@ -1,0 +1,52 @@
+/* print.css — mecânica de impressão para propostas (A4 retrato por padrão).
+   Marca (cores, fontes, espaçamentos) vem do design system do projeto — substitua as variáveis. */
+
+@page { size: A4; margin: 0; }
+/* Deck 16:9: @page { size: 338.67mm 190.5mm; margin: 0; } e .page { width: 338.67mm; height: 190.5mm; } */
+
+:root {
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --pad: 18mm;
+  /* tokens do design system do projeto — NÃO inventar valores aqui */
+  --bg: var(--ds-bg, #ffffff);
+  --fg: var(--ds-fg, #111111);
+  --accent: var(--ds-accent, #000000);
+  --font-display: var(--ds-font-display, serif);
+  --font-body: var(--ds-font-body, sans-serif);
+  --font-mono: var(--ds-font-mono, monospace);
+}
+
+html, body { margin: 0; padding: 0; background: transparent; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+.page {
+  position: relative;
+  width: var(--page-w);
+  height: var(--page-h);
+  padding: var(--pad);
+  overflow: hidden;              /* excesso é detectado na checagem, nunca vaza para página fantasma */
+  background: var(--bg);         /* fundo SEMPRE na .page, nunca em html/body */
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 11pt;
+  line-height: 1.45;
+  break-after: page;
+  page-break-after: always;
+}
+.page:last-child { break-after: auto; page-break-after: auto; }
+
+h1, h2, h3 { font-family: var(--font-display); break-after: avoid; page-break-after: avoid; margin: 0 0 6mm; }
+p { orphans: 3; widows: 3; margin: 0 0 3.5mm; }
+table, figure, .card, blockquote, img, svg { break-inside: avoid; page-break-inside: avoid; }
+img { max-width: 100%; display: block; }
+
+.page-number { position: absolute; bottom: 8mm; right: var(--pad); font-family: var(--font-mono); font-size: 8pt; opacity: .7; }
+.page-kicker { font-family: var(--font-mono); font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
+
+table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+th, td { text-align: left; padding: 2.2mm 2mm; vertical-align: top; border-bottom: 1px solid rgba(0,0,0,.12); }
+th { font-weight: 600; }
+
+/* Nunca em impressão: animações, position: fixed global, unidades vh/vw */
+@media print { .no-print { display: none !important; } }

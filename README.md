@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**48 agentes e 52 skills** organizados em 5 squads (Dev, Sites, Social, Traffic, PM), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**56 agentes e 63 skills** organizados em 6 squads (Dev, Sites, Social, Traffic, PM, Sales), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -13,7 +13,7 @@
 Times de IA superam uma sessão única quando o trabalho tem partes independentes. O team-os transforma isso em algo pronto pra usar:
 
 - **Paralelismo real** — várias sessões trabalham ao mesmo tempo, cada uma com seu próprio context window. Research, review e features divididas por módulo terminam em uma fração do tempo de uma sessão sequencial.
-- **Especialização com autoridade clara** — 49 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
+- **Especialização com autoridade clara** — 56 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
 - **Coordenação autônoma** — comunicação peer-to-peer + TaskList compartilhada + self-claim. Os teammates se organizam sozinhos; o lead orquestra em vez de microgerenciar.
 - **Memória que persiste** — smart-memory em formato Obsidian acumula arquitetura, decisões, stories e QA entre sessões. O time não recomeça do zero.
 - **Qualidade embutida** — hooks (`block-git-push`, gates de task), QA com veredicto formal PASS/CONCERNS/FAIL/WAIVED e plan mode obrigatório em mudanças de risco (schema, auth, CI/CD).
@@ -30,7 +30,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 48 agentes e suas skills](#5-os-48-agentes-e-suas-skills)
+5. [Os 56 agentes e suas skills](#5-os-56-agentes-e-suas-skills)
 6. [Catálogo de skills de apoio](#6-catálogo-de-skills-de-apoio)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
@@ -164,7 +164,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 ```
 /team-os-creator                → menu principal (scan + sugestões)
 /team-os-creator *analyze       → detecta archetype/stack, sem criar
-/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm)
+/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales)
 /team-os-creator *create <role> → cria UM agente interativamente
 /team-os-creator *migrate       → migra agentes do padrão antigo p/ Native Teams Protocol
 /team-os-creator *bootstrap     → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md
@@ -198,7 +198,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ---
 
-## 5. Os 48 agentes e suas skills
+## 5. Os 56 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
@@ -279,11 +279,26 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `pm-qa` | Thyron | Auditor formal de entregas | — |
 | `pm-reporter` | Lyrith | Meeting intelligence (dailies, retros) | `/dev-technical-writing`, `/deep-research` |
 
+### Sales — Propostas e apresentações (8, personas olímpicas)
+
+> Squad **genérica**: o método (intake → tese → planejamento → números → copy ∥ design → QA → envio) é do CT; o contexto da empresa — catálogo de ofertas e preços (`project/offer-catalog.md`), marca e design system (`project/brand.md`), convenção de pastas e versões (`project/conventions.md`) — vive na smart-memory do projeto e é preenchido com o usuário, nunca inventado. **Dois gates:** ATHENA aprova o *plano* (7 pontos) antes da produção; ARGUS aprova o *artefato* (12 pontos) antes do envio. Sem devops: enviar ao cliente é ato do usuário, e o hook `check-proposal-progress.sh` só fecha task de envio com PASS + confirmação explícita.
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `sales-analyst` | ATLAS | Intake de reunião + pesquisa de cliente/setor/benchmarks, tudo com fonte | `/sales-discovery-intake`, `/deep-research`, `/dev-defuddle`, `/verify-before-done` |
+| `sales-strategist` | ATHENA | Tese do negócio, enquadramento, postura de negociação, **gate do planejamento** (exclusivo) | `/negotiation`, `/sales-pricing-payback`, `/pricing`, `/sales-enablement` |
+| `sales-planner` | DAEDALUS | Story da proposta + planejamento interno de 9 seções + estrutura página a página (exclusivo) | `/sales-proposal-planning`, `/sales-discovery-intake`, `/dev-technical-writing`, `/sales-enablement` |
+| `sales-finance` | LIBRA | **Fonte única dos números**: preço vs. tabela, desconto/breakeven, payback, permuta, BP, valuation | `/sales-pricing-payback`, `/startup-financial-modeling`, `/pricing`, `/verify-before-done` |
+| `sales-copywriter` | CALLIOPE | Texto página a página — voz declarativa, compromisso conjunto, número só com `#id` da ficha | `/sales-proposal-copy`, `/sales-enablement`, `/sites-copy`, `/sales-proposal-planning` |
+| `sales-designer` | HELIOS | PDF e deck no design system do projeto — HTML + print CSS → export headless → checagem | `/sales-deck-production`, `/slides`, `/presentation-design`, `/ui-ux-pro-max`, `/verify-before-done` |
+| `sales-qa` | ARGUS | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre o artefato — 12 pontos (exclusivo) | `/sales-proposal-copy`, `/sales-deck-production`, `/presentation-design`, `/verify-before-done` |
+| `sales-closer` | PEITHO | Brief de reunião, follow-up, ledger de propostas, envio só com PASS + confirmação do usuário | `/negotiation`, `/sales-enablement`, `/sales-proposal-copy`, `/verify-before-done` |
+
 ---
 
 ## 6. Catálogo de skills de apoio
 
-52 skills, todas diretórios reais e versionados (repositório self-contained).
+63 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -297,9 +312,13 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 **Traffic (4):** `traffic-paid-ads-optimization`, `traffic-analytics-tracking`, `traffic-google-ads-mcp`, `traffic-ga4-mcp`
 
-**Design & geral (8):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`
+**Sales (6):** `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production`, `sales-enablement`
+
+**Design & geral (13):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`, `negotiation`, `pricing`, `slides`, `presentation-design`, `startup-financial-modeling`
 
 > **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
+>
+> **Novas 2026-09 (squad Sales):** autorais do CT — `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production` (com `html-to-pdf.mjs` e `check-pdf.sh`); adotadas do registry após vetting — `sales-enablement` e `pricing` (marketingskills), `startup-financial-modeling` (wshobson), `negotiation` (wondelai — framework Voss), `slides` (nextlevelbuilder, mesmo autor do `ui-ux-pro-max`), `presentation-design` (jwynia). Descartadas no vetting: `proposal-writer` (template raso com número inventado), `html-slides`/`meeting-notes` (frontmatter quebrado), `html-to-pdf` (abaixo do corte — abordagem incorporada em `sales-deck-production`).
 
 **Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos).
 
@@ -384,12 +403,13 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
-- **`block-git-push.sh`** — `PreToolUse` em **44 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
+- **`block-git-push.sh`** — `PreToolUse` em **54 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
 - **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
 - **`guard-push-branch.sh`** — `PreToolUse` nos 2 devops: push permitido só na `main`/`master`; fora dela exige pedido explícito do usuário na sessão.
 - **`task-quality.sh`** — hook `TaskCreated` (registrado no settings pelo `ensure-settings.sh`/`*install`): rejeita task vaga — título curto/genérico ou sem descrição.
 - **`check-story-progress.sh`** — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story.
 - **`check-social-progress.sh`** — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist).
+- **`check-proposal-progress.sh`** — hook `TaskCompleted`: task de emissão/envio de proposta ou deck (squad Sales) só fecha com veredicto **PASS** do `sales-qa` **e** confirmação explícita do usuário registradas na descrição.
 
 `TeammateIdle` fica como receita opcional (ver `team-os/reference/hooks-de-time.md` — hook incondicional cria loop infinito). Settings padrão também garantem `subagentPromptCacheTtl: "1h"`.
 
@@ -399,14 +419,17 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
 ```
 .claude/
-├── agents/              ← 49 definições de agentes (fonte da verdade)
+├── agents/              ← 56 definições de agentes (fonte da verdade)
 ├── hooks/               ← hooks de qualidade
 │   ├── block-git-push.sh
 │   ├── block-worktree.sh          ← anti-worktree: bloqueia isolation: worktree, EnterWorktree e git worktree add (registrado no settings.json de cada projeto)
+│   ├── guard-push-branch.sh       ← devops: push só na main/master
+│   ├── task-quality.sh            ← TaskCreated: rejeita task vaga
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
+│   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 52 skills (diretórios reais)
+└── skills/              ← 63 skills (diretórios reais)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md
@@ -415,11 +438,10 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
     │       ├── weigh-memory.sh          ← pesa a smart-memory no bootstrap (sinaliza se pesada)
     │       └── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
-        ├── templates/           ← 8 templates de archetype
-        ├── reference/           ← archetypes, smart-memory, catálogo de skills
+        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (7 cenários)
+        ├── reference/           ← archetypes, smart-memory, catálogo de skills, pressure-testing
         ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install · generate-agents-page.py
-        ├── presets/             ← presets de squad
-        └── hooks/
+        └── presets/             ← 6 presets de squad (dev, sites, social, traffic, pm, sales)
 
 .github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push
 
@@ -456,14 +478,14 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 ```
 1. Editar agente/skill AQUI (nunca no destino)
-2. /team-os-creator *audit       → 49/49 conforme
+2. /team-os-creator *audit       → 56/56 conforme
 3. /team-os-creator *propagate   → leva aos projetos destino
 4. commit por projeto
 ```
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 48 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 56 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

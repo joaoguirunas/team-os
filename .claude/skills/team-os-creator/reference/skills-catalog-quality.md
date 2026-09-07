@@ -52,6 +52,11 @@ Quando um archetype precisa de skills, usar os keywords correspondentes no `sear
 | `data` | `postgres`, `supabase`, `prisma`, `schema`, `migration` |
 | `devops` | `git`, `ci-cd`, `github-actions`, `conventional-commits` |
 | `ux` | `accessibility`, `wcag`, `design-system`, `figma`, `ui-ux` |
+| `researcher` (sales) | `sales`, `discovery-call`, `meeting-notes`, `research` |
+| `strategist` (sales) | `negotiation`, `pricing`, `sales-enablement`, `proposal` |
+| `data` (sales-finance) | `financial-model`, `pricing`, `valuation`, `business-plan` |
+| `implementer` (sales-copywriter/closer) | `proposal`, `copywriting`, `sales-enablement`, `negotiation` |
+| `ux` (sales-designer) | `slides`, `presentation`, `pdf`, `design-system` |
 
 ---
 
@@ -75,6 +80,14 @@ Skills que já passaram review humano e são seguras de propor direto:
 | QA Test Planner | `softaworks/agent-toolkit@qa-test-planner` | reviewer |
 | Git Commit | `github/awesome-copilot@git-commit` | devops |
 | GitHub CLI | `github/awesome-copilot@gh-cli` | devops |
+| Sales Enablement | `coreyhaines31/marketingskills@sales-enablement` | sales-copywriter, sales-closer, sales-strategist |
+| Pricing Strategy | `coreyhaines31/marketingskills@pricing` | sales-finance, sales-strategist |
+| Startup Financial Modeling | `wshobson/agents@startup-financial-modeling` | sales-finance |
+| Negotiation (Voss) | `wondelai/skills@negotiation` | sales-strategist, sales-closer |
+| Slides (HTML) | `nextlevelbuilder/ui-ux-pro-max-skill@slides` | sales-designer |
+| Presentation Design | `jwynia/agent-skills@presentation-design` | sales-designer, sales-qa |
+
+> **Vetados em 2026-09 (não propor):** `claude-office-skills/skills@proposal-writer` (template raso, exemplo com número inventado, depende de office-mcp), `claude-office-skills/skills@html-slides` e `@meeting-notes` (frontmatter `description: ">"` quebrado, conteúdo genérico), `aviz85/claude-skills-library@html-to-pdf` (abaixo do corte; abordagem incorporada em `sales-deck-production`), `anthropics/financial-services@pitch-deck` (preenche template IB), `anthropics/skills@brand-guidelines` (marca da Anthropic), `himself65/finance-skills@company-valuation` (ações públicas/ticker), `deanpeters/product-manager-skills@finance-based-pricing-advisor` (mudança de preço SaaS).
 
 ---
 

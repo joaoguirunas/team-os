@@ -23,3 +23,18 @@ docs/smart-memory/
 # macOS — ícones custom de pasta (Icon\r): nunca versionar
 Icon?
 **/Icon?
+
+# Artefatos do skills.sh CLI (npx skills add) — só .claude/skills/ é fonte
+skills-lock.json
+.commandcode/
+.devin/
+.factory/
+.grok/
+.hermes/
+.pi/
+.trae/
+.cursor/
+.windsurf/
+.codex/
+.gemini/
+.opencode/

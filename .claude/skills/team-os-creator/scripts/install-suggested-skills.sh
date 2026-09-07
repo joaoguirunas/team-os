@@ -12,6 +12,17 @@ else
   AGENTS_DIR_PREEXISTED=0
 fi
 
+# O CLI do skills.sh instala para "todos os agentes" por padrão e cria pastas
+# de outras ferramentas (.commandcode/ .devin/ .factory/ .grok/ .hermes/ .pi/
+# .trae/ .cursor/ …) + skills-lock.json. Só .claude/skills/ é fonte no CT:
+# instalamos com `-a claude-code` e limpamos o que o CLI criar mesmo assim
+# (apenas o que NÃO existia antes da execução).
+CLI_JUNK=".commandcode .devin .factory .grok .hermes .pi .trae .cursor .windsurf .codex .gemini .opencode"
+JUNK_PREEXISTED=""
+for j in $CLI_JUNK skills-lock.json; do
+  [ -e "$j" ] && JUNK_PREEXISTED="$JUNK_PREEXISTED $j"
+done
+
 install_one() {
   local repo="$1"
   local slug="$2"
@@ -23,7 +34,7 @@ install_one() {
   fi
 
   echo "⬇️  Instalando $repo → $slug..."
-  if npx --yes skills add "$repo" -s "$slug" -y --copy >/dev/null 2>&1; then
+  if npx --yes skills add "$repo" -s "$slug" -a claude-code -y --copy >/dev/null 2>&1; then
     echo "✅ $slug instalada"
   else
     echo "⚠️  Falha ao instalar $slug (rede? repo privado?)"
@@ -56,5 +67,11 @@ fi
 if [ -d ".agents" ] && [ "${AGENTS_DIR_PREEXISTED:-0}" -eq 0 ]; then
   rm -rf .agents
 fi
+
+# Limpar pastas de outras ferramentas + lockfile criados pelo CLI (só o que não existia)
+for j in $CLI_JUNK skills-lock.json; do
+  case " $JUNK_PREEXISTED " in *" $j "*) continue ;; esac
+  [ -e "$j" ] && rm -rf "$j"
+done
 
 exit $EXIT

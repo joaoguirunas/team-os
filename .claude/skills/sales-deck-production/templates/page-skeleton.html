@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{Cliente} × {Empresa} — Proposta</title>
+<!-- Fontes LOCAIS do design system do projeto (nunca CDN no export) -->
+<style>
+  @font-face { font-family: "DisplayFont"; src: url("./fonts/Display.woff2") format("woff2"); font-weight: 300 800; font-display: block; }
+  @font-face { font-family: "BodyFont";    src: url("./fonts/Body.woff2")    format("woff2"); font-weight: 300 700; font-display: block; }
+  @font-face { font-family: "MonoFont";    src: url("./fonts/Mono.woff2")    format("woff2"); font-weight: 400 600; font-display: block; }
+  :root {
+    /* tokens vindos do design system do projeto (project/brand.md aponta a fonte) */
+    --ds-bg: #ffffff; --ds-fg: #111111; --ds-accent: #000000;
+    --ds-font-display: "DisplayFont", serif; --ds-font-body: "BodyFont", sans-serif; --ds-font-mono: "MonoFont", monospace;
+  }
+  /* cole aqui o conteúdo de print.css */
+</style>
+</head>
+<body>
+
+<!-- 1 · Capa -->
+<section class="page cover" data-page="1" data-title="Capa">
+  <div class="page-kicker">{Empresa} · Proposta</div>
+  <h1>{Cliente} × {Empresa}</h1>
+  <p>{subtítulo · data de emissão}</p>
+</section>
+
+<!-- 2 · Índice — títulos idênticos aos data-title das páginas -->
+<section class="page toc" data-page="2" data-title="Índice">
+  <h2>Índice</h2>
+  <ol>
+    <li>Abertura I — {o ponto de partida}</li>
+    <li>…</li>
+  </ol>
+  <div class="page-number">2</div>
+</section>
+
+<!-- 3 · Abertura I -->
+<section class="page opener" data-page="3" data-title="Abertura I — {o ponto de partida}">
+  <div class="page-kicker">Abertura I</div>
+  <h1>{título-asserção}</h1>
+  <div class="page-number">3</div>
+</section>
+
+<!-- N · Conteúdo — título-asserção + corpo + prova (números só com #id da ficha) -->
+<section class="page content" data-page="4" data-title="{Título-asserção}">
+  <div class="page-kicker">{seção}</div>
+  <h2>{Título-asserção}</h2>
+  <p>{corpo — copiado da copy aprovada}</p>
+  <table>
+    <thead><tr><th>Etapa</th><th>O que acontece</th><th>Onde perde</th></tr></thead>
+    <tbody><tr><td>…</td><td>…</td><td>…</td></tr></tbody>
+  </table>
+  <div class="page-number">4</div>
+</section>
+
+<!-- Compromisso conjunto -->
+<section class="page table" data-page="N-2" data-title="Para começar">
+  <h2>Para o {marco 1} rodar</h2>
+  <table>
+    <thead><tr><th>O que entregamos</th><th>O que precisamos de vocês</th></tr></thead>
+    <tbody><tr><td>…</td><td>…</td></tr></tbody>
+  </table>
+  <div class="page-number">N-2</div>
+</section>
+
+<!-- Investimento — só #ids da ficha -->
+<section class="page table" data-page="N-1" data-title="O investimento">
+  <h2>O investimento</h2>
+  <table>
+    <tbody>
+      <tr><td>Investimento mensal</td><td>{#1}</td></tr>
+      <tr><td>Inclui</td><td>…</td></tr>
+      <tr><td>Fora do investimento</td><td>…</td></tr>
+      <tr><td>Termos</td><td>…</td></tr>
+    </tbody>
+  </table>
+  <div class="page-number">N-1</div>
+</section>
+
+<!-- Contracapa -->
+<section class="page back-cover" data-page="N" data-title="Contracapa">
+  <p>{Empresa} · {contato} · {próximo passo}</p>
+</section>
+
+</body>
+</html>

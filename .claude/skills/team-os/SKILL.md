@@ -145,7 +145,7 @@ echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 
 Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
-2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
+2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe (contexto geral). As **stories ativas** são extraídas **diretamente de `docs/smart-memory/stories/active/*.md`** (frontmatter `summary`/`status` de cada arquivo) — não do INDEX.
 4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/weigh-memory.sh" --quiet` e capturar o bloco `WEIGH_*`. O script emite:
    - `WEIGH_DASHBOARD` — **só o valor** (sem prefixo de rótulo; o rótulo `smart-memory :` é do painel da Fase 1)
@@ -634,6 +634,14 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 | **traffic-designer** | `/social-format-specs`, `/social-key-visual` |
 | **pm-data / pm-analyst** | `/data-supabase-patterns`, `/data-sql-optimization`, `/data-analytics-engineering` |
 | **pm-reporter / pm-coach** | `/dev-technical-writing` |
+| **sales-analyst** | `/sales-discovery-intake`, `/deep-research`, `/dev-defuddle` |
+| **sales-strategist** | `/negotiation`, `/sales-pricing-payback`, `/pricing` |
+| **sales-planner** | `/sales-proposal-planning`, `/sales-discovery-intake`, `/dev-technical-writing` |
+| **sales-finance** | `/sales-pricing-payback`, `/startup-financial-modeling`, `/pricing` |
+| **sales-copywriter** | `/sales-proposal-copy`, `/sales-enablement`, `/sites-copy` |
+| **sales-designer** | `/sales-deck-production`, `/slides`, `/presentation-design`, `/ui-ux-pro-max` |
+| **sales-qa** | `/sales-proposal-copy`, `/sales-deck-production`, `/presentation-design` |
+| **sales-closer** | `/negotiation`, `/sales-enablement`, `/sales-proposal-copy` |
 
 > Nomes novos após a fusão de skills (não usar os antigos): `/sites-copy` (ex sites-copywriting/copy-editing/content-strategy) e `/sites-frontend-stack` (ex sites-frontend-design/tailwind-design-system/shadcn-ui); `/accessibility` (ex sites-web-accessibility).
 

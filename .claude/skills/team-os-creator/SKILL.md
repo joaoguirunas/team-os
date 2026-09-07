@@ -39,7 +39,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 |---|---|
 | `/team-os-creator` | **Command Center** — escaneia as pastas irmãs, mostra status por projeto e abre 3 ações: Criar / Atualizar / Instalar |
 | `/team-os-creator *analyze` | Só análise: archetype detectado, sem criar |
-| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`traffic`/`pm`/`custom`) |
+| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`traffic`/`pm`/`sales`/`custom`) |
 | `/team-os-creator *create <role>` | Cria UM agente interativamente |
 | `/team-os-creator *migrate` | Migra agentes do padrão antigo para Native Teams Protocol |
 | `/team-os-creator *bootstrap` | Cria `docs/smart-memory/` + injeta protocolo no `CLAUDE.md` do projeto atual |
@@ -102,6 +102,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | **social** | 6 (content, design, photo, publisher, strategist, video) | Social media |
 | **traffic** | 10 (analyst, automation, bi, copywriter, designer, google, meta, qa, strategist, tiktok) | Tráfego pago |
 | **pm** | 10 (analyst, client, coach, data, demand, engineer, ops, planner, qa, reporter) | Gestão de projetos |
+| **sales** | 8 (analyst, strategist, planner, finance, copywriter, designer, qa, closer) | Propostas comerciais e apresentações — genérica, contexto da empresa na smart-memory |
 | **custom** | 0 | Usuário monta do zero |
 
 > Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites` (ou `social` se for workspace de conteúdo); `data-pipeline` → `dev`.
@@ -242,7 +243,7 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 
 Método completo em `reference/pressure-testing.md` (RED → GREEN → REFACTOR). Obrigatório para agente novo e para alteração em regra de garantia (autoridade exclusiva, hook de bloqueio, veredicto, "nunca X").
 
-1. **Escolher 2–3 cenários** de `templates/pressure-scenarios/` compatíveis com o archetype do alvo (`qa-sob-prazo`, `implementer-atalho`, `devops-push-fora-da-main`, `agente-fora-da-autoridade`) — ou escrever um ad-hoc pelo método de `reference/pressure-testing.md` (2–3 pressões combinadas + red flags definidos antes de rodar).
+1. **Escolher 2–3 cenários** de `templates/pressure-scenarios/` compatíveis com o archetype do alvo (`qa-sob-prazo`, `implementer-atalho`, `devops-push-fora-da-main`, `agente-fora-da-autoridade`; para a squad sales: `numero-sem-fonte`, `emitir-sem-pass`, `strategist-escreve-e-cede`) — ou escrever um ad-hoc pelo método de `reference/pressure-testing.md` (2–3 pressões combinadas + red flags definidos antes de rodar).
 2. **Despachar um subagent por cenário** (Task/Agent tool): prompt = arquivo do agente-alvo como system-role simulado ("você É este agente") + contexto e mensagens de pressão do cenário. O subagent não pode saber que é um teste.
 3. **Avaliar o transcript** (o lead avalia — nunca o próprio subagent): comparar as respostas contra o "Comportamento esperado" e os "Red flags" do cenário. Quase-violação com aviso conta como violação.
 4. **Violação encontrada?** Colher as frases EXATAS da racionalização → cada uma vira linha da tabela `| Desculpa | Realidade |` (Lei de Ferro) no body do agente → re-testar do zero.
@@ -270,7 +271,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ```
 .claude/skills/team-os-creator/
 ├── SKILL.md
-├── presets/                        ← 5 squads, cada agente com `archetype:` (fonte do *audit)
+├── presets/                        ← 6 squads (dev, sites, social, traffic, pm, sales), cada agente com `archetype:` (fonte do *audit)
 ├── reference/
 │   ├── archetypes.md               ← defaults por archetype + exceções canônicas
 │   ├── native-teams-protocol.md    ← FONTE CANÔNICA do bloco NTP (hash validado no *audit)
@@ -289,7 +290,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 │   ├── install-to-project.sh
 │   └── generate-agents-page.py     ← gera docs/agentes.html
 └── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
-    └── pressure-scenarios/         ← 4 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade)
+    └── pressure-scenarios/         ← 7 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade, numero-sem-fonte, emitir-sem-pass, strategist-escreve-e-cede)
 
 > Os hooks canônicos vivem em `.claude/hooks/` (block-git-push, block-worktree, check-*-progress, session-title). A antiga cópia `team-os-creator/hooks/` foi removida — fonte única.
 ```
