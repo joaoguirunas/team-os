@@ -232,6 +232,7 @@ def build():
                .replace("{{SECTIONS}}", "".join(sections))
                .replace("{{SKILLS_JSON}}", skills_json)
                .replace("{{N_AGENTS}}", str(len(agents)))
+               .replace("{{N_SQUADS}}", str(len(SQUADS)))
                .replace("{{N_SKILLS}}", str(len(skills) - 1))  # -1: team-os-creator é interna
                .replace("{{N_OPUS}}", str(opus_n)))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
