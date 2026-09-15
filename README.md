@@ -331,6 +331,7 @@ Para quem roda os projetos como terminais no [Maestri](https://maestri.app): uma
 - **Enxerga só o que está ligado por fio** a ela no canvas (intencional). Terminal renomeado = pergunta de novo.
 - **Lê, mas nunca escreve nem executa** em outra pasta — todo trabalho vai pelo terminal do projeto, com os agentes e travas daquele projeto.
 - **Espia antes de mandar** (`maestri check`), pedido curto espera a resposta, pedido longo libera e é avisada de volta.
+- **Autopilot no retorno:** quando um terminal responde, ela atualiza o histórico e despacha sozinha a próxima parte dependente do plano já confirmado; só para quando o terminal devolve `DECISÃO:` (pergunta que é do usuário). Os terminais já rodam `/team-os` — o cabeçalho manda usar a orquestração ativa, não recarregar.
 - **Instalação:** `/team-os-creator *install` reconhece a pasta "Sala de Controle" e oferece só a skill (`--squads none --extra-skills maestri-os`). Nunca é propagada sozinha para projetos com squad. Uma Sala de Controle por dono/marca.
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).

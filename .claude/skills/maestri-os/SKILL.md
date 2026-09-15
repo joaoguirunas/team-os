@@ -28,7 +28,9 @@ Os subagentes instalados **nesta** pasta (ex.: squad `pm`) são locais e funcion
 
 - CLI `maestri` no PATH (senão use `"$MAESTRI_CLI"`). Comandos usados: `maestri list`, `maestri check`, `maestri ask` (incl. `--batch`). Nenhum exige Maestro Mode.
 - **Fios ligados no canvas.** `maestri list` só mostra terminais **conectados** a este. Terminal aberto mas sem fio até a Sala de Controle é invisível — isso é intencional. Passo de configuração: no Maestri, ligue cada terminal que a Sala de Controle deve enxergar.
+- **`maestri list` devolve só `name` (e `role`) — nunca a pasta.** Formato real: `You:` / `  - name: "..."` e depois os conectados. Por isso o onboarding pergunta a pasta. Para reduzir atrito, **nomeie os terminais no canvas com a mesma convenção das pastas** (ex.: `João Guirunas | Site | Home` para a pasta `João Guirunas | Site`): a skill pré-seleciona a pasta parecida como opção recomendada. **Renomeie também o terminal da Sala de Controle** — o padrão é `"Claude Code"`, e esse nome vai no cabeçalho de todo despacho ("avise de volta para …").
 - Terminal **renomeado** no canvas é tratado como terminal novo (pergunta de novo). Intencional: nome novo é contexto novo.
+- **Os terminais de projeto já rodam `/team-os` ao abrir a sessão** (processo do usuário). O cabeçalho do despacho **não** pede para recarregar — só cobre o caso de a sessão estar crua.
 
 ---
 
@@ -50,10 +52,10 @@ Templates em `templates/`. Padrão Obsidian do `team-os`: frontmatter YAML, fato
 
 1. **Quem está ligado.** `maestri list`. Anote o seu próprio nome (linha `You:`) — vai no cabeçalho. Só **agentes/terminais** são alvo; notas e portais aninhados não.
 2. **O que já sei.** Leia `docs/smart-memory/maestri/registry.md` (crie do template se não existir).
-3. **Onboarding do desconhecido.** Terminal no `list` e fora do registro → pergunte **só duas coisas** (`AskUserQuestion`): *qual pasta?* (opções = pastas irmãs desta que têm `.claude/agents/`, + "Outra") e *apelidos?* (como o usuário costuma chamá-lo). Grave a seção. **Nunca roteie antes disso.**
+3. **Onboarding do desconhecido.** Terminal no `list` e fora do registro → pergunte **só duas coisas** (`AskUserQuestion`): *qual pasta?* (opções = pastas irmãs desta que têm `.claude/agents/`, + "Outra"; se o nome de uma pasta for prefixo ou muito parecido com o nome do terminal, coloque-a primeiro como "(Recomendado)") e *apelidos?* (como o usuário costuma chamá-lo). Grave a seção. **Nunca roteie antes disso.**
 4. **Atualizar o mapa.** Para cada terminal registrado: `bash .claude/skills/maestri-os/scripts/scan-project.sh "<pasta>"` → atualize a parte "lido automaticamente" da seção e regenere `OVERVIEW.md` (coluna "conectado agora" vem do `list`). A parte informada pelo usuário **nunca** é sobrescrita aqui.
 5. **Sem pedido?** Mostre o OVERVIEW e pare.
-6. **Decompor.** Pedido composto ("atualize o site, crie um post e faça um relatório de tráfego") → liste os sub-pedidos. Pedido simples = 1 sub-pedido.
+6. **Decompor e marcar dependências.** Pedido composto ("atualize o site, crie um post e faça um relatório de tráfego") → liste os sub-pedidos. Pedido simples = 1 sub-pedido. Marque o que depende de outro ("crie um post **sobre isso**" depende do site atualizado; "relatório de tráfego" é independente). Independentes vão em paralelo; dependentes formam uma cadeia que anda sozinha em autopilot (ver "Retornos e autopilot").
 7. **Rotear cada sub-pedido.** Cruze com: apelidos, `description` dos agentes, resumo do projeto. Um terminal claro → segue. Dois ou mais plausíveis → pergunte. Nenhum → avise e pergunte se é um terminal novo ou se o certo está desligado.
 8. **Confirmar o mapa.** Mostre `sub-pedido → terminal` e peça confirmação **sempre que houver mais de um destino** ou quando a escolha não foi óbvia. Um destino óbvio não precisa de confirmação.
 9. **Alvo fora do `list`?** Terminal registrado mas não conectado agora → *"'<Nome>' está fechado **ou desconectado** — confira o fio no canvas"*. Não adivinhe outro terminal, não recrute.
@@ -68,8 +70,10 @@ Templates em `templates/`. Padrão Obsidian do `team-os`: frontmatter YAML, fato
 **Cabeçalho padrão** — toda mensagem começa assim (substitua `<You>` pelo seu nome no `list`):
 
 ```
-Pedido vindo da Sala de Controle (<You>). Use sua squad via /team-os para executar.
-Ao terminar, responda com: maestri ask "<You>" "<resumo do resultado>".
+Pedido vindo da Sala de Controle (<You>). Sua sessão já roda /team-os — NÃO recarregue;
+use a orquestração de agentes já ativa (se por acaso ainda não rodou /team-os nesta sessão, rode antes).
+Ao terminar, responda com: maestri ask "<You>" "<resumo do resultado>". Se precisar de uma
+decisão do usuário, responda do mesmo jeito começando com "DECISÃO:" e a pergunta.
 
 <pedido reescrito de forma autocontida — o terminal não tem o contexto desta conversa>
 ```
@@ -88,6 +92,22 @@ Timeout estourou → **não reenvie**. `maestri check "<Nome>"` para ver o progr
 
 ---
 
+## Retornos e autopilot
+
+Um **retorno** é qualquer destes: (a) o `maestri ask` bloqueante devolveu; (b) o `ask` em background terminou (notificação); (c) chegou nesta sessão uma mensagem vinda de outro terminal via `maestri ask "<You>" "..."` — trate-a como retorno do despacho em aberto daquele terminal, **não** como um pedido novo do usuário.
+
+Ao receber um retorno, **ande sozinho, sem esperar o usuário**:
+
+1. Atualize a linha do terminal em `dispatches.md` (`respondido: <resumo>` ou `erro: <motivo>`).
+2. Se o retorno começa com `DECISÃO:` (ou é claramente uma pergunta que só o usuário responde) → **pare só isso**: mostre a pergunta ao usuário, e quando ele responder, repasse ao terminal com `maestri ask`. Outros sub-pedidos independentes continuam.
+3. Se havia sub-pedido **dependente** desse retorno → monte o próximo prompt já com o resultado recebido (ex.: "o depoimento X entrou na home em <url>; crie o post sobre isso") e despache **sem perguntar de novo** — o plano já foi confirmado no passo 8.
+4. Se o retorno indica falha (QA FAIL, erro, bloqueio) → avise o usuário com o motivo e a linha do histórico; **não** reenvie nem tente consertar por conta própria.
+5. Quando todos os sub-pedidos de um pedido estiverem respondidos → um resumo único para o usuário (o que foi feito onde, o que falhou, o que aguarda decisão).
+
+O que o autopilot **nunca** faz: mudar o destino confirmado, inventar um sub-pedido que não estava no plano, responder uma `DECISÃO:` no lugar do usuário, ou executar algo em outra pasta para "adiantar".
+
+---
+
 ## Exemplo de rodada completa
 
 Usuário: `/maestri-os atualize a home do site com o novo depoimento, crie um post sobre isso e me traga o relatório de tráfego da semana`
@@ -98,7 +118,8 @@ Usuário: `/maestri-os atualize a home do site com o novo depoimento, crie um po
 4. Decompõe em 3 sub-pedidos e roteia: depoimento na home → **Site** (apelido "home" + sites-dev-alpha); post → **Marketing** (social-content/social-strategist); relatório de tráfego → **Campanhas** (apelido "tráfego" + traffic-bi). Mostra o mapa e pede confirmação (3 destinos).
 5. `maestri check` nos 3 → Marketing está no meio de uma tarefa → avisa; usuário diz "manda mesmo assim".
 6. Dois sub-pedidos são longos → `maestri ask --batch '{"João Guirunas | Site | Home":"<cabeçalho>+<pedido>","João Guirunas | Marketing | Calendário":"…","João Guirunas | Campanhas":"…"}'` com `run_in_background`.
-7. Três linhas em `dispatches.md` com `status: aguardando aviso`. Usuário liberado. Quando cada terminal responder (notificação do background ou ask-back), a linha vira `respondido: <resumo>` e o usuário é avisado.
+7. Três linhas em `dispatches.md` com `status: aguardando aviso`. Usuário liberado.
+8. **Autopilot:** o Site responde ("depoimento no ar em /#depoimentos"). A linha vira `respondido`, e como o post **dependia** disso, a skill despacha sozinha para o Marketing: "o depoimento de X já está na home em <url>; crie o post sobre isso". Campanhas devolve o relatório → linha `respondido`. Marketing devolve `DECISÃO: publicar hoje ou agendar para segunda?` → só aí a skill pergunta ao usuário e repassa a resposta. No fim, um resumo único das três partes.
 
 ---
 
@@ -120,6 +141,8 @@ Permitido, e só para mapear (é o que `scan-project.sh` faz): `.claude/agents/*
 | "O timeout estourou, reenvio pra garantir" | Reenviar duplica o trabalho no outro terminal. `check`, depois espero. |
 | "Esse terminal novo deve ser o antigo 'Site' renomeado, uso o registro dele" | Nome novo = pergunto de novo. Intencional. |
 | "Registro os agentes de cabeça, já sei quais são" | O mapa vem do `scan-project.sh`, toda rodada. Cabeça envelhece; pasta não. |
+| "Chegou o retorno do Site; espero o usuário mandar continuar" | Plano confirmado anda sozinho: atualizo o histórico e despacho a próxima parte dependente. Só paro para `DECISÃO:`. |
+| "O terminal respondeu com uma pergunta simples, eu mesmo decido" | `DECISÃO:` é do usuário. Repasso a pergunta e espero. |
 
 ---
 
@@ -133,3 +156,5 @@ Permitido, e só para mapear (é o que `scan-project.sh` faz): `.claude/agents/*
 | Usuário corrige um terminal ("esse não é mais o Site") | Sobrescreva a seção in-place; nunca crie seção duplicada |
 | Usuário pede pra ver o mapa | `/maestri-os` sem pedido → OVERVIEW |
 | Terminal responde com erro no `--batch` | Registre `status: erro` na linha do histórico, mostre ao usuário, não reenvie sozinho |
+| Chegou uma mensagem de outro terminal (`maestri ask` para você) | É um **retorno**, não um pedido novo — siga "Retornos e autopilot" |
+| Terminal da Sala de Controle ainda se chama `"Claude Code"` | Avise o usuário para renomear no canvas antes do primeiro despacho (o nome vai no cabeçalho de ask-back) |
