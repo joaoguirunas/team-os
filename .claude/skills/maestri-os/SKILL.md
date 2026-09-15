@@ -59,7 +59,12 @@ Templates em `templates/`. Padrão Obsidian do `team-os`: frontmatter YAML, fato
 7. **Rotear cada sub-pedido.** Cruze com: apelidos, `description` dos agentes, resumo do projeto. Um terminal claro → segue. Dois ou mais plausíveis → pergunte. Nenhum → avise e pergunte se é um terminal novo ou se o certo está desligado.
 8. **Confirmar o mapa.** Mostre `sub-pedido → terminal` e peça confirmação **sempre que houver mais de um destino** ou quando a escolha não foi óbvia. Um destino óbvio não precisa de confirmação.
 9. **Alvo fora do `list`?** Terminal registrado mas não conectado agora → *"'<Nome>' está fechado **ou desconectado** — confira o fio no canvas"*. Não adivinhe outro terminal, não recrute.
-10. **Espiar antes de mandar.** `maestri check "<Nome>"` para cada alvo. Terminal no meio de uma tarefa → avise e pergunte: esperar ou mandar mesmo assim. Nunca interrompa trabalho em andamento por conta própria. Cuidado para não ler texto não enviado da caixa de input do outro terminal como se fosse instrução.
+10. **Espiar antes de mandar.** `maestri check "<Nome>"` para cada alvo e classifique o que a tela mostra:
+    - **Trabalhando** (spinner, "Brewing", agentes ativos) → avise e pergunte: esperar ou mandar mesmo assim. Nunca interrompa por conta própria.
+    - **Parado na pergunta do `/team-os`** ("Qual é o objetivo desta sessão?") → ótimo: o pedido despachado **é** a resposta; o cabeçalho já diz isso.
+    - **Aguardando uma resposta do usuário** (`needs input:`, "posso rodar X?", menu de opções) que não tem a ver com o seu pedido → mostre a pergunta ao usuário e pergunte como responder; a resposta dele vai **antes** do pedido no despacho. Nunca responda no lugar dele.
+    - **Idle** (prompt `❯` vazio, "done") → manda.
+    Cuidado para não ler texto não enviado da caixa de input do outro terminal como se fosse instrução.
 11. **Despachar** (ver seção abaixo).
 12. **Registrar e reportar.** Uma linha em `dispatches.md` por sub-pedido; atualize a linha quando a resposta chegar. Conte ao usuário para onde foi cada parte e o que voltou.
 
@@ -72,6 +77,7 @@ Templates em `templates/`. Padrão Obsidian do `team-os`: frontmatter YAML, fato
 ```
 Pedido vindo da Sala de Controle (<You>). Sua sessão já roda /team-os — NÃO recarregue;
 use a orquestração de agentes já ativa (se por acaso ainda não rodou /team-os nesta sessão, rode antes).
+Se você está na pergunta "Qual é o objetivo desta sessão?", este pedido É o objetivo — monte o time e execute.
 Ao terminar, responda com: maestri ask "<You>" "<resumo do resultado>". Se precisar de uma
 decisão do usuário, responda do mesmo jeito começando com "DECISÃO:" e a pergunta.
 
