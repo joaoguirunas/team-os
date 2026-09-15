@@ -53,7 +53,12 @@ Templates em `templates/`. Padrão Obsidian do `team-os`: frontmatter YAML, fato
 
 1. **Quem está ligado.** `maestri list`. Anote o seu próprio nome (linha `You:`) — vai no cabeçalho. Só **agentes/terminais** são alvo; notas e portais aninhados não.
 2. **O que já sei.** Leia `docs/smart-memory/maestri/registry.md` (crie do template se não existir).
-3. **Onboarding do desconhecido.** Terminal no `list` e fora do registro → pergunte **só duas coisas** (`AskUserQuestion`): *qual pasta?* (opções = pastas irmãs desta que têm `.claude/agents/`, + "Outra"; se o nome de uma pasta for prefixo do nome do terminal, coloque-a primeiro como "(Recomendado)") e *apelidos?* (como o usuário costuma chamá-lo). O que sobra do nome depois do prefixo da pasta (ex.: `Home` em `João Guirunas | Site | Home`) é gravado automaticamente como `escopo` — mostre e deixe o usuário corrigir na mesma pergunta se quiser. Grave a seção. **Nunca roteie antes disso.**
+3. **Onboarding em lote — uma tabela, um OK.** Para **todos** os terminais no `list` que estão fora do registro, de uma vez:
+   a. Liste as pastas irmãs desta (mesmo diretório-pai) que têm `.claude/agents/`.
+   b. Para cada terminal, infira: **pasta** = a pasta irmã cujo nome é prefixo do nome do terminal (a mais longa que bater); **escopo** = o que sobra do nome depois desse prefixo (ex.: `Home` em `João Guirunas | Site | Home`; vazio se o nome é igual ao da pasta); **apelidos sugeridos** = palavras do escopo + última parte do nome da pasta, em minúsculas (ex.: `home, site`).
+   c. Mostre **uma tabela** `Janela → Pasta → Escopo → Apelidos` e peça **um OK só** (`AskUserQuestion`: "OK, gravar tudo" / "Ajustar" — no Ajustar, o usuário comenta só o que está diferente). Linha sem pasta inferível aparece com `?` na pasta — é a única que exige resposta.
+   d. Grave todas as seções no `registry.md` de uma vez e **não pergunte mais por esses nomes**. Só volta a perguntar quando aparecer uma janela nova no `list` (ou quando o usuário pedir para corrigir).
+   **Nunca roteie antes do OK.**
 4. **Atualizar o mapa.** Para cada terminal registrado: `bash .claude/skills/maestri-os/scripts/scan-project.sh "<pasta>"` → atualize a parte "lido automaticamente" da seção e regenere `OVERVIEW.md` (coluna "conectado agora" vem do `list`). A parte informada pelo usuário **nunca** é sobrescrita aqui.
 5. **Sem pedido?** Mostre o OVERVIEW e pare.
 6. **Decompor e marcar dependências.** Pedido composto ("atualize o site, crie um post e faça um relatório de tráfego") → liste os sub-pedidos. Pedido simples = 1 sub-pedido. Marque o que depende de outro ("crie um post **sobre isso**" depende do site atualizado; "relatório de tráfego" é independente). Independentes vão em paralelo; dependentes formam uma cadeia que anda sozinha em autopilot (ver "Retornos e autopilot").
@@ -120,7 +125,15 @@ O que o autopilot **nunca** faz: mudar o destino confirmado, inventar um sub-ped
 Usuário: `/maestri-os atualize a home do site com o novo depoimento, crie um post sobre isso e me traga o relatório de tráfego da semana`
 
 1. `maestri list` → `You: João Guirunas | Sala De Controle`; conectados: `João Guirunas | Site | Home`, `João Guirunas | Marketing | Calendário`, `João Guirunas | Campanhas`.
-2. `registry.md` conhece Site e Marketing; **Campanhas é novo** → pergunta: *"Qual pasta é 'João Guirunas | Campanhas'?"* (opções: pastas irmãs com `.claude/agents/`) e *"Apelidos?"* → usuário: `/Volumes/…/João Guirunas | Campanhas`, "campanhas, tráfego, ads". Grava a seção.
+2. `registry.md` está vazio (primeira rodada) → monta a tabela de relação e pede um OK:
+
+   | Janela | Pasta (inferida) | Escopo | Apelidos sugeridos |
+   |---|---|---|---|
+   | João Guirunas \| Site \| Home | João Guirunas \| Site | Home | home, site |
+   | João Guirunas \| Marketing \| Calendário | João Guirunas \| Marketing | Calendário | calendário, marketing |
+   | João Guirunas \| Campanhas | João Guirunas \| Campanhas | — | campanhas |
+
+   Usuário: "OK, só acrescenta 'tráfego, ads' em Campanhas". Grava as 3 seções; não pergunta mais por esses nomes.
 3. `scan-project.sh` nas 3 pastas → Site: `sites` (10 agentes) · Marketing: `social` (6) · Campanhas: `traffic` (10). Atualiza a parte automática de cada seção e regenera `OVERVIEW.md`.
 4. Decompõe em 3 sub-pedidos e roteia: depoimento na home → **Site** (apelido "home" + sites-dev-alpha); post → **Marketing** (social-content/social-strategist); relatório de tráfego → **Campanhas** (apelido "tráfego" + traffic-bi). Mostra o mapa e pede confirmação (3 destinos).
 5. `maestri check` nos 3 → Marketing está no meio de uma tarefa → avisa; usuário diz "manda mesmo assim".

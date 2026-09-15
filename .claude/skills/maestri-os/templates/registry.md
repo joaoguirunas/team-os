@@ -11,7 +11,7 @@ related: ["[[maestri/OVERVIEW]]", "[[maestri/dispatches]]"]
 
 # Registro de terminais — {nome da Sala de Controle}
 
-Uma seção por terminal, com o **nome exato** que aparece no `maestri list`. A parte "Informado por você" só muda por pedido do usuário. A parte "Lido automaticamente" é reescrita a cada rodada pelo `scan-project.sh`.
+Uma seção por terminal, com o **nome exato** que aparece no `maestri list`. Nasce do onboarding em lote (tabela janela → pasta → escopo → apelidos, confirmada com um OK) e **não é perguntada de novo** — só quando aparece janela nova ou o usuário pede correção. A parte "Informado por você" só muda por pedido do usuário. A parte "Lido automaticamente" é reescrita a cada rodada pelo `scan-project.sh`.
 
 <!-- Exemplo de seção — apague ao registrar o primeiro terminal real.
 
