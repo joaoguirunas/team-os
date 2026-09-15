@@ -13,8 +13,8 @@ related: ["[[maestri/registry]]", "[[maestri/dispatches]]"]
 
 Gerado em {data} a partir do `maestri list` + `scan-project.sh` de cada pasta registrada. Não edite à mão — corrija no `registry.md` e rode `/maestri-os`.
 
-| Terminal | Pasta | Squads | Agentes | Resumo | Conectado agora |
-|---|---|---|---|---|---|
-| {nome exato} | {pasta} | {squads} | {n} | {resumo curto} | ✓ / ✗ |
+| Terminal | Pasta | Escopo | Squads | Agentes | Resumo | Conectado agora |
+|---|---|---|---|---|---|---|
+| {nome exato} | {pasta} | {escopo} | {squads} | {n} | {resumo curto} | ✓ / ✗ |
 
 Legenda: ✓ apareceu no `maestri list` desta rodada · ✗ registrado mas fechado ou sem fio.

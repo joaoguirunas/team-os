@@ -18,6 +18,7 @@ Uma seção por terminal, com o **nome exato** que aparece no `maestri list`. A 
 ### João Guirunas | Site | Home
 **Informado por você**
 - pasta: /Volumes/João | Externo/João Guirunas | Site
+- escopo: Home (página inicial do site) — derivado do nome da janela; outra janela da mesma pasta pode ser "Site | Mentoria"
 - apelidos: site, home, landing
 - como acionar: (opcional — ex.: "sempre começa pelo sites-architect")
 **Lido automaticamente** (atualizado em 2026-09-14)
