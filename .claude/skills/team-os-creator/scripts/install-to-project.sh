@@ -7,6 +7,11 @@
 #
 # Options:
 #   --squads dev,sites,social,traffic   squads a instalar (default: all)
+#   --squads none                       modo Sala de Controle: nenhum agente, nenhuma skill geral,
+#                                       sem team-os/hooks/settings — só o que vier em --extra-skills
+#                                       (+ CLAUDE.md mínimo se não existir)
+#   --extra-skills maestri-os           skills opt-in, fora do filtro por squad. maestri-os NUNCA
+#                                       entra sozinha: só por esta flag ou se já existir no destino
 #   --include-hooks                     copia também hooks extras (fora do pacote padrão)
 #                                       (block-worktree.sh, block-git-push.sh, task-quality.sh,
 #                                       check-story-progress.sh, check-social-progress.sh,
@@ -20,6 +25,8 @@ SQUADS="all"
 INCLUDE_HOOKS=0
 DRY_RUN=0
 MATCH_TARGET=0   # --match-target-squads: deriva squads do que JÁ existe no destino (modo propagate)
+EXTRA_SKILLS=""  # --extra-skills: opt-in fora do filtro por squad (ex.: maestri-os)
+CONTROL_ROOM=0   # Sala de Controle: --squads none, ou propagate em destino sem agentes mas com maestri-os
 
 need_value() { # $1=flag — aborta se a flag veio sem valor (evita loop infinito do shift 2)
   if [ $# -lt 2 ] || [ -z "$2" ]; then
@@ -33,6 +40,7 @@ while [[ $# -gt 0 ]]; do
     --source)       need_value "$1" "${2:-}"; SOURCE="$2";   shift 2 ;;
     --target)       need_value "$1" "${2:-}"; TARGET="$2";   shift 2 ;;
     --squads)       need_value "$1" "${2:-}"; SQUADS="$2";   shift 2 ;;
+    --extra-skills) need_value "$1" "${2:-}"; EXTRA_SKILLS="$2"; shift 2 ;;
     --match-target-squads) MATCH_TARGET=1; shift ;;
     --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
@@ -82,11 +90,28 @@ if [ $MATCH_TARGET -eq 1 ]; then
   fi
   [ -z "$SQUADS" ] && SQUADS="__none__"   # destino sem agentes → não sincroniza nenhum
   echo "MATCH_TARGET_SQUADS=$SQUADS"
-  # Destino sem nenhum agente = team-os não instalado → propagate não tem o que
-  # sincronizar (nem skills). Instalação inicial exige --squads <categoria> explícito.
   if [ "$SQUADS" = "__none__" ]; then
-    echo "SKIP=target_sem_squad|propagate não instala nada num projeto sem agentes; use --squads <categoria> para instalar."
-    exit 0
+    if [ -d "$TARGET/.claude/skills/maestri-os" ]; then
+      # Sala de Controle: sem agentes, mas com maestri-os → propagate mantém SÓ a skill atualizada.
+      CONTROL_ROOM=1
+      echo "CONTROL_ROOM=1"
+    else
+      # Destino sem nenhum agente = team-os não instalado → propagate não tem o que
+      # sincronizar (nem skills). Instalação inicial exige --squads <categoria> explícito.
+      echo "SKIP=target_sem_squad|propagate não instala nada num projeto sem agentes; use --squads <categoria> para instalar (ou --squads none --extra-skills maestri-os para uma Sala de Controle)."
+      exit 0
+    fi
+  fi
+fi
+
+# --squads none = instalação explícita de Sala de Controle (só --extra-skills; nada de squad)
+if [ "$SQUADS" = "none" ]; then
+  CONTROL_ROOM=1
+  SQUADS="__none__"
+  echo "CONTROL_ROOM=1"
+  if [ -z "$EXTRA_SKILLS" ]; then
+    echo "ERROR=control_room_without_extra_skills|--squads none exige --extra-skills (ex.: --extra-skills maestri-os); sem isso não há nada a instalar." >&2
+    exit 1
   fi
 fi
 
@@ -134,9 +159,23 @@ dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
   ! diff -rq -x '.DS_Store' -x 'Icon?' "${1%/}" "${2%/}" >/dev/null 2>&1
 }
 
+# .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?)
+ensure_gitignore() {
+  [ $DRY_RUN -eq 1 ] && return
+  local gi="$TARGET/.gitignore" added=""
+  [ -f "$gi" ] || : > "$gi"
+  if ! grep -q '^\.DS_Store$\|^\*\*/\.DS_Store$\|^\.DS_Store\b' "$gi" 2>/dev/null; then
+    printf '.DS_Store\n' >> "$gi"; added="$added .DS_Store"
+  fi
+  if ! grep -q '^Icon?$\|^Icon\\r$\|^Icon\?' "$gi" 2>/dev/null; then
+    printf 'Icon?\n' >> "$gi"; added="$added Icon?"
+  fi
+  [ -n "$added" ] && echo "GITIGNORE_ADDED=${added# }"
+}
+
 # ── Agentes ──────────────────────────────────────────────────────────────────
 
-do_mkdir "$TARGET/.claude/agents"
+[ $CONTROL_ROOM -eq 0 ] && do_mkdir "$TARGET/.claude/agents"
 
 agents_copied=0
 agents_skipped=0
@@ -199,10 +238,25 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
   # team-os-creator nunca é copiada para projetos destino
   [[ "$skill_name" == "team-os-creator" ]] && { skills_skipped=$((skills_skipped + 1)); continue; }
 
-  # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales}-*)
-  # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
-  # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
-  if [ "$SQUADS" != "all" ]; then
+  # Opt-in explícito (--extra-skills) vale em qualquer modo
+  extra=0
+  for es in $(echo "$EXTRA_SKILLS" | tr ',' ' '); do
+    [ "$es" = "$skill_name" ] && { extra=1; break; }
+  done
+
+  if [ "$skill_name" = "maestri-os" ]; then
+    # Sala de Controle: NUNCA entra sozinha (cairia na regra "geral → sempre incluir" e vazaria
+    # para todos os projetos). Só por --extra-skills, ou se já existe no destino (update via propagate).
+    match=0
+    { [ $extra -eq 1 ] || [ -d "$TARGET/.claude/skills/maestri-os" ]; } && match=1
+    [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+  elif [ $CONTROL_ROOM -eq 1 ]; then
+    # Modo Sala de Controle: nenhuma skill geral, nem team-os — só opt-in
+    [ $extra -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+  elif [ "$SQUADS" != "all" ]; then
+    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales}-*)
+    # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
+    # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
     skill_prefix="${skill_name%%-*}"
     case "$skill_prefix" in
       dev|sites|social|traffic|pm|sales)
@@ -214,6 +268,7 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     esac
     # team-os é sempre incluída; team-os-creator fica só no projeto de origem
     [[ "$skill_name" == "team-os" ]] && match=1
+    [ $extra -eq 1 ] && match=1
     [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
   fi
 
@@ -241,7 +296,9 @@ done
 # Garante team-os no destino (obrigatória para /team-os funcionar).
 # team_os_handled evita dupla contagem quando o loop já processou team-os
 # (no --dry-run nada é copiado de fato, então o teste de diretório enganava).
-if [ $team_os_handled -eq 0 ] && [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
+if [ $CONTROL_ROOM -eq 1 ]; then
+  :   # Sala de Controle não tem squad → não força team-os
+elif [ $team_os_handled -eq 0 ] && [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
   do_sync_dir "$SOURCE/.claude/skills/team-os" "$TARGET/.claude/skills/team-os"
   skills_copied=$((skills_copied + 1))
   skills_list="$skills_list team-os"
@@ -262,6 +319,30 @@ if [ $DRY_RUN -eq 0 ]; then
   icon_cleaned=$(find "$TARGET/.claude/agents" "$TARGET/.claude/skills" "$TARGET/.claude/hooks" \
     -name "Icon"$'\r' -type f -print -delete 2>/dev/null | wc -l | tr -d ' ')
   echo "ICON_CLEANED=$icon_cleaned"
+fi
+
+# ── Sala de Controle: para aqui ──────────────────────────────────────────────
+# Sem agentes → sem hooks de quality gate, sem settings de Agent Teams, sem session-title.
+# Só a(s) skill(s) opt-in + CLAUDE.md mínimo (se não existir) + .gitignore.
+if [ $CONTROL_ROOM -eq 1 ]; then
+  if [ ! -f "$TARGET/CLAUDE.md" ]; then
+    if [ $DRY_RUN -eq 0 ]; then
+      cat > "$TARGET/CLAUDE.md" <<EOF
+# $TARGET_NAME — Sala de Controle
+
+Esta pasta é uma **Sala de Controle** do pack team-os: não tem agentes nem código. Sua única função é rotear pedidos para os outros terminais do Maestri (Site, Marketing, Campanhas…) ligados a ela por fio no canvas.
+
+- Comando: \`/maestri-os <pedido>\` — ou \`/maestri-os\` sem pedido para ver o compilado dos projetos.
+- Registro de terminais, compilado e histórico de despachos ficam em \`docs/smart-memory/maestri/\`.
+- Regra de ouro: esta sessão **lê** as outras pastas só para mapear (agentes + INDEX/overview), mas **nunca edita nem executa nada** nelas. Todo trabalho vai pelo terminal do projeto, com os agentes e travas daquele projeto.
+EOF
+    fi
+    echo "CLAUDE_MD_CREATED=1"
+  fi
+  ensure_gitignore
+  echo "---"
+  echo "STATUS=done"
+  exit 0
 fi
 
 # ── Hooks universais (sempre instalados, independente de --include-hooks) ────
@@ -308,20 +389,7 @@ done
 [ -n "$quality_hooks_missing" ] && echo "QUALITY_HOOKS_MISSING=${quality_hooks_missing# }"
 
 # ── .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?) ──────────────
-if [ $DRY_RUN -eq 0 ]; then
-  TARGET_GITIGNORE="$TARGET/.gitignore"
-  gitignore_added=""
-  [ -f "$TARGET_GITIGNORE" ] || : > "$TARGET_GITIGNORE"
-  if ! grep -q '^\.DS_Store$\|^\*\*/\.DS_Store$\|^\.DS_Store\b' "$TARGET_GITIGNORE" 2>/dev/null; then
-    printf '.DS_Store\n' >> "$TARGET_GITIGNORE"
-    gitignore_added="$gitignore_added .DS_Store"
-  fi
-  if ! grep -q '^Icon?$\|^Icon\\r$\|^Icon\?' "$TARGET_GITIGNORE" 2>/dev/null; then
-    printf 'Icon?\n' >> "$TARGET_GITIGNORE"
-    gitignore_added="$gitignore_added Icon?"
-  fi
-  [ -n "$gitignore_added" ] && echo "GITIGNORE_ADDED=${gitignore_added# }"
-fi
+ensure_gitignore
 
 # ── Settings.json ────────────────────────────────────────────────────────────
 

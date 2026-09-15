@@ -25,6 +25,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 10. **`*migrate` converte agentes antigos** — remove "Contrato com team-os", injeta "Native Teams Protocol".
 11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
 12. **DEFINITION OF DONE — toda alteração em agente/skill é entregue COMPLETA e REFINADA, sem ser lembrado.** Ao criar/atualizar qualquer agente ou skill, executar SEMPRE o ciclo inteiro de uma vez (ver "Definition of Done" abaixo): refinar tudo → sincronizar docs (contagens + catálogo no `README.md` e `CLAUDE.md`) → `*audit` → **commit no CT com descrição** → `*propagate --match-target-squads` para TODOS os projetos com a squad afetada → relatar quais destinos ficaram com mudanças no working tree. **O COMMIT É SÓ NO CT.** Nunca commitar os projetos destino a partir do CT — o commit de cada destino é feito dentro da sessão daquele projeto, pelo usuário. Nunca entregar pela metade nem deixar contagem/catálogo desatualizados. Push continua exigindo confirmação de branch (padrão `main`).
+13. **`maestri-os` é opt-in, nunca automática.** É o recurso "Sala de Controle" para o Maestri (roteia pedidos entre terminais). Não pertence a squad nenhuma e **nunca** entra num projeto por `*install`/`*propagate` comum — só por `--squads none --extra-skills maestri-os` (pasta Sala de Controle, sem agentes, sem `team-os`). Depois de instalada, o `*propagate` a mantém atualizada (`CONTROL_ROOM=1`). Nunca instalar squad numa Sala de Controle, nem `maestri-os` num projeto com squad.
 
 > **Nota — dois mecanismos de memória (complementares):**
 > - `memory: project` (RULE #1) é um **campo real de subagent** que cria uma **memória persistente por-agente** em `.claude/agent-memory/<nome>/`, mantida pelo runtime.
@@ -47,7 +48,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *pressure-test <agente>` | Testa um agente contra cenários adversariais — obrigatório para agente novo antes do `*propagate` |
 | `/team-os-creator *audit` | Valida compliance de todos os agentes |
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
-| `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino |
+| `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill `maestri-os` (recurso Maestri) |
 
 ---
 
@@ -213,7 +214,8 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 ## Fluxo `*install`
 
 1. Lista projetos via `scan-ct-projects.sh`
-2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script **aborta** com `ERROR=squads_all_without_match_target`). Na dúvida, pergunte ao usuário.
+2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script **aborta** com `ERROR=squads_all_without_match_target`). Na dúvida, pergunte ao usuário. Use `detect-project-signals.sh "<pasta>"` (aceita o caminho como argumento) para o palpite inicial.
+2b. **Sala de Controle (recurso Maestri) — não é squad.** Se o `scan-ct-projects.sh` marcar `IS_CONTROL_ROOM=1` (nome da pasta contém "Sala de Controle"/"control room", ou já tem `maestri-os`), ou o `detect-project-signals.sh` devolver `PROJECT_ARCHETYPE=control-room`, **pergunte** ao usuário: *"Esta pasta parece uma Sala de Controle — instalar só a skill `maestri-os` (roteador de pedidos entre os terminais do Maestri), sem agentes nem `team-os`?"*. Sim → `--squads none --extra-skills maestri-os`. O script então copia só a skill, cria um `CLAUDE.md` mínimo (se não existir) e **não** instala hooks, `settings.json` nem `team-os` (`CONTROL_ROOM=1`). Oriente: abrir a pasta como terminal no Maestri, ligar por fio os terminais que ela deve enxergar e rodar `/maestri-os`. Nunca oferecer `maestri-os` fora deste caso.
 3. Preview da instalação
 4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `"worktree": { "bgIsolation": "none" }` e o registro PreToolUse do `block-worktree.sh` (+ hooks se `--include-hooks`)
 4b. **Instala a trava anti-worktree (sempre, independente de `--include-hooks`):** copia `block-worktree.sh` para `.claude/hooks/` do destino. Se o `settings.json` do destino já existia, o script emite `SETTINGS_WORKTREE_TODO` / `SETTINGS_WORKTREE_HOOK_TODO` — nesse caso, edite o settings preservando o JSON existente. Worktrees são proibidos em todos os projetos: agentes trabalham direto na branch ativa (ownership disjunto resolve conflitos).
@@ -231,7 +233,8 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 3. Confirmação com preview (use `--dry-run` para inspecionar antes)
 4. Sincroniza para cada destino, **sempre com `--match-target-squads`** (modo propagate):
    - **Agentes**: atualiza só os das squads **já instaladas** no destino. **NUNCA re-adiciona squad podada** — squad ausente é poda intencional por categoria, não drift. (Internamente o script deriva as squads do que existe no destino; agente de squad ausente é pulado.)
-   - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada
+   - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada; `maestri-os` só é atualizada onde **já existe** (nunca adicionada)
+   - **Sala de Controle** (sem agentes, com `maestri-os`): o script entra em `CONTROL_ROOM=1` e sincroniza só a skill `maestri-os` — nada de squad, `team-os`, hooks ou settings
 5. **NÃO commita nos destinos** — as mudanças ficam no working tree de cada projeto (RULE #12). O commit é feito **dentro da sessão daquele projeto**, pelo usuário. Commit a partir do CT é **só no CT**.
 6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, projetos com working tree atualizado, …)
 
@@ -280,14 +283,14 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 │   └── pressure-testing.md         ← método RED→GREEN→REFACTOR do *pressure-test
 ├── scripts/
 │   ├── preflight.sh
-│   ├── detect-project-signals.sh
+│   ├── detect-project-signals.sh   ← aceita [pasta]; devolve control-room + SUGGESTED_EXTRA_SKILLS=maestri-os para Sala de Controle
 │   ├── validate-agent.sh           ← *audit v2 (archetype-driven: model/effort/permissionMode/color/hooks/tools/NTP-hash/skills citadas/contagens)
 │   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills; TSV)
 │   ├── dashboard.sh                ← Command Center (render do painel)
 │   ├── diff-agents.sh              ← respeita poda por squad (TSV)
 │   ├── generate-agent.sh           ← materializa template + valida com *audit ao final
 │   ├── search-skills.sh · install-suggested-skills.sh
-│   ├── install-to-project.sh
+│   ├── install-to-project.sh       ← --squads <lista|none> · --extra-skills · --match-target-squads (CONTROL_ROOM=1 para Sala de Controle)
 │   └── generate-agents-page.py     ← gera docs/agentes.html
 └── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
     └── pressure-scenarios/         ← 7 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade, numero-sem-fonte, emitir-sem-pass, strategist-escreve-e-cede)
@@ -309,3 +312,6 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 | `scan-ct-projects.sh` acha só CT | Oferecer digitar caminho manual |
 | Agentes sem "Contrato com team-os" no `*migrate` | Pular silenciosamente (já migrados) |
 | Usuário pede para instalar `team-os` no destino | Fazer — `team-os` é obrigatória nos projetos. Recusar APENAS `team-os-creator` (exclusiva do CT). |
+| Pasta é uma Sala de Controle (nome ou `maestri-os` presente) | Perguntar e instalar **só** `maestri-os`: `--squads none --extra-skills maestri-os`. Nunca squad, nunca `team-os` ali. |
+| Usuário pede `maestri-os` num projeto que tem squad | Recusar e explicar: a Sala de Controle é uma pasta própria, sem agentes — misturar quebra a regra "lê mas não executa". Oferecer criar a pasta. |
+| Usuário pede squad `pm` (ou outra) numa Sala de Controle | Recusar: Sala de Controle não tem agentes por design. Se quer gestão de projetos, é outro projeto/pasta. |

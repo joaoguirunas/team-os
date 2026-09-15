@@ -83,6 +83,14 @@ for dir in "$CT_ROOT"/*/; do
   # Smart-memory
   { [ -d "$dir/docs/smart-memory" ] || [ -f "$dir/docs/smart-memory/INDEX.md" ]; } && has_smart_memory=1
 
+  # Sala de Controle (recurso Maestri): pasta cujo nome diz "sala de controle"/"control room",
+  # ou que já tem a skill opt-in maestri-os. Não é squad — o dashboard trata à parte.
+  has_maestri_os=0; is_control_room=0
+  [ -d "$dir/.claude/skills/maestri-os" ] && has_maestri_os=1
+  lname=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
+  case "$lname" in *"sala de controle"*|*"sala-de-controle"*|*"control room"*|*"control-room"*) is_control_room=1 ;; esac
+  [ $has_maestri_os -eq 1 ] && is_control_room=1
+
   # Drift vs CT (só para projetos que não são o CT e têm agentes)
   if [ "$is_current" -eq 0 ] && [ "$has_agents" -eq 1 ] && [ -n "$SOURCE_AGENTS" ]; then
     for pf in "$dir/.claude/agents/"*.md; do
@@ -127,9 +135,9 @@ for dir in "$CT_ROOT"/*/; do
 
   # Formato TSV (TAB-delimitado): nomes reais de pasta contêm "|" (ex.: "João | Externo"),
   # então pipe como delimitador quebrava o parse do dashboard.
-  printf 'PROJECT=%s\tPATH=%s\tIS_CURRENT=%s\tHAS_AGENTS=%s\tAGENT_COUNT=%s\tAGENT_SQUADS=%s\tHAS_SKILLS=%s\tSKILL_COUNT=%s\tHAS_HOOKS=%s\tHAS_TEAM_OS=%s\tHAS_SMART_MEMORY=%s\tDRIFT_OK=%s\tDRIFT_OUTDATED=%s\tDRIFT_EXTRA=%s\tDRIFT_MISSING=%s\tSKILLS_OUTDATED=%s\n' \
+  printf 'PROJECT=%s\tPATH=%s\tIS_CURRENT=%s\tHAS_AGENTS=%s\tAGENT_COUNT=%s\tAGENT_SQUADS=%s\tHAS_SKILLS=%s\tSKILL_COUNT=%s\tHAS_HOOKS=%s\tHAS_TEAM_OS=%s\tHAS_SMART_MEMORY=%s\tDRIFT_OK=%s\tDRIFT_OUTDATED=%s\tDRIFT_EXTRA=%s\tDRIFT_MISSING=%s\tSKILLS_OUTDATED=%s\tHAS_MAESTRI_OS=%s\tIS_CONTROL_ROOM=%s\n' \
     "$name" "$dir" "$is_current" "$has_agents" "$agent_count" "$agent_squads" \
     "$has_skills" "$skill_count" "$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)" \
     "$has_team_os" "$has_smart_memory" "$drift_ok" "$drift_outdated" "$drift_extra" \
-    "$drift_missing" "$skills_outdated"
+    "$drift_missing" "$skills_outdated" "$has_maestri_os" "$is_control_room"
 done

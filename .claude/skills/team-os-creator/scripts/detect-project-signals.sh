@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 # detect-project-signals.sh — infere archetype do projeto baseado em sinais
+# Usage: detect-project-signals.sh [pasta]   (default: pasta atual)
 # Output: key=value linhas (consumível por eval ou grep)
 
+if [ -n "${1:-}" ]; then
+  cd "$1" 2>/dev/null || { echo "ERROR=not_a_dir|PATH=$1" >&2; exit 1; }
+fi
+
 ARCHETYPE="custom"
+HAS_CONTROL_ROOM=0
 LANGUAGE="unknown"
 FRAMEWORK="none"
 HAS_FRONTEND=0
@@ -94,13 +100,22 @@ if [ "${PROPOSAL_HITS:-0}" -ge 2 ] && [ $HAS_FRONTEND -eq 0 ] && [ $HAS_BACKEND 
   HAS_PROPOSALS=1
 fi
 
+# Sala de Controle (recurso Maestri): pasta cujo nome diz "sala de controle"/"control room",
+# ou que já tem a skill maestri-os. Sem código, sem squad — só a skill opt-in.
+DIRNAME_LC=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')
+case "$DIRNAME_LC" in *"sala de controle"*|*"sala-de-controle"*|*"control room"*|*"control-room"*) HAS_CONTROL_ROOM=1 ;; esac
+[ -d ".claude/skills/maestri-os" ] && HAS_CONTROL_ROOM=1
+
 # Classificar archetype
-# Ordem importa: fullstack primeiro (um SaaS com pandas no requirements não é
-# data-pipeline — o teste HAS_ML vem DEPOIS da classificação fullstack).
+# Ordem importa: control-room primeiro (é declarado pelo nome/skill, não inferido);
+# depois fullstack (um SaaS com pandas no requirements não é data-pipeline — o
+# teste HAS_ML vem DEPOIS da classificação fullstack).
 # "website" = Next/Astro/landing sem backend pesado (backend + database juntos)
 # — sem ele o preset `sites` era inalcançável. "proposals" = pasta de propostas
 # comerciais sem código → preset `sales`.
-if [ $HAS_PROPOSALS -eq 1 ]; then
+if [ $HAS_CONTROL_ROOM -eq 1 ]; then
+  ARCHETYPE="control-room"
+elif [ $HAS_PROPOSALS -eq 1 ]; then
   ARCHETYPE="proposals"
 elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
   ARCHETYPE="fullstack-saas"
@@ -121,8 +136,13 @@ fi
 
 # Mapear archetype → preset do team-os-creator
 SUGGESTED_PRESET="custom"
+SUGGESTED_EXTRA_SKILLS=""
 WARNING=""
 case "$ARCHETYPE" in
+  control-room)
+    # Não é squad: instala só a skill maestri-os (--squads none --extra-skills maestri-os)
+    SUGGESTED_PRESET="none"
+    SUGGESTED_EXTRA_SKILLS="maestri-os" ;;
   fullstack-saas|data-pipeline|api-service|frontend-app)
     SUGGESTED_PRESET="dev" ;;
   website|content-site)
@@ -139,6 +159,7 @@ esac
 
 echo "PROJECT_ARCHETYPE=$ARCHETYPE"
 echo "SUGGESTED_PRESET=$SUGGESTED_PRESET"
+[ -n "$SUGGESTED_EXTRA_SKILLS" ] && echo "SUGGESTED_EXTRA_SKILLS=$SUGGESTED_EXTRA_SKILLS"
 [ -n "$WARNING" ] && echo "WARNING=$WARNING"
 echo "LANGUAGE=$LANGUAGE"
 echo "FRAMEWORK=$FRAMEWORK"

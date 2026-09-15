@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**56 agentes e 63 skills** organizados em 6 squads (Dev, Sites, Social, Traffic, PM, Sales), com a skill `/team-os` para orquestrar sessões e a `/team-os-creator` para gerar e instalar squads em qualquer projeto. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**56 agentes e 64 skills** organizados em 6 squads (Dev, Sites, Social, Traffic, PM, Sales), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -298,7 +298,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo de skills de apoio
 
-63 skills, todas diretórios reais e versionados (repositório self-contained).
+64 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -318,9 +318,20 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 > **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
 >
+> **Nova 2026-09 (Sala de Controle):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
+>
 > **Novas 2026-09 (squad Sales):** autorais do CT — `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production` (com `html-to-pdf.mjs` e `check-pdf.sh`); adotadas do registry após vetting — `sales-enablement` e `pricing` (marketingskills), `startup-financial-modeling` (wshobson), `negotiation` (wondelai — framework Voss), `slides` (nextlevelbuilder, mesmo autor do `ui-ux-pro-max`), `presentation-design` (jwynia). Descartadas no vetting: `proposal-writer` (template raso com número inventado), `html-slides`/`meeting-notes` (frontmatter quebrado), `html-to-pdf` (abaixo do corte — abordagem incorporada em `sales-deck-production`).
 
-**Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos).
+**Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos) · `maestri-os` (**opt-in, só em Salas de Controle** — ver abaixo).
+
+### Sala de Controle — `maestri-os` (recurso para o Maestri)
+
+Para quem roda os projetos como terminais no [Maestri](https://maestri.app): uma pasta própria, **sem agentes e sem `team-os`**, que funciona como recepcionista dos outros terminais. Você fala em português normal (simples ou composto: *"atualize o site, crie um post e faça um relatório de tráfego"*); a skill descobre qual terminal cuida de cada parte, confirma o mapa e despacha em paralelo via `maestri ask`. Como o Maestri não diz o que cada terminal faz, na primeira vez ela pergunta só **qual pasta** e **apelidos** — o resto (squads, agentes, resumo do projeto) ela lê da pasta e relê a cada rodada. Tudo fica em `docs/smart-memory/maestri/` da Sala de Controle (`registry.md`, `OVERVIEW.md`, `dispatches.md`).
+
+- **Enxerga só o que está ligado por fio** a ela no canvas (intencional). Terminal renomeado = pergunta de novo.
+- **Lê, mas nunca escreve nem executa** em outra pasta — todo trabalho vai pelo terminal do projeto, com os agentes e travas daquele projeto.
+- **Espia antes de mandar** (`maestri check`), pedido curto espera a resposta, pedido longo libera e é avisada de volta.
+- **Instalação:** `/team-os-creator *install` reconhece a pasta "Sala de Controle" e oferece só a skill (`--squads none --extra-skills maestri-os`). Nunca é propagada sozinha para projetos com squad. Uma Sala de Controle por dono/marca.
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).
 
@@ -429,7 +440,8 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 │   ├── check-social-progress.sh
 │   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 63 skills (diretórios reais)
+└── skills/              ← 64 skills (diretórios reais)
+    ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
     │   ├── reference/obsidian-patterns.md
@@ -440,7 +452,7 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (7 cenários)
         ├── reference/           ← archetypes, smart-memory, catálogo de skills, pressure-testing
-        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install · generate-agents-page.py
+        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install (--squads none --extra-skills p/ Sala de Controle) · generate-agents-page.py
         └── presets/             ← 6 presets de squad (dev, sites, social, traffic, pm, sales)
 
 .github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push

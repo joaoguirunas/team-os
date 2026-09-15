@@ -1,6 +1,6 @@
 # team-os — by João Guirunas
 
-Repositório fonte do pack **team-os**: 56 agentes e 63 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Repositório fonte do pack **team-os**: 56 agentes e 64 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
 > 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 56 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
@@ -13,6 +13,7 @@ O CT é a **fonte da verdade** — qualquer alteração em agentes ou skills é 
 
 - **`/team-os`** — Bootstrap e orquestração de sessões Agent Teams. **É distribuída para todos os projetos** (obrigatória — o usuário roda `/team-os` no início de cada sessão). → [README.md §3](./README.md#3-skill-principal-team-os)
 - **`/team-os-creator`** — Factory de agentes. **Única skill exclusiva do CT** — nunca copiada para projetos destino. → [README.md §4](./README.md#4-skill-principal-team-os-creator)
+- **`/maestri-os`** — **Sala de Controle** (recurso opt-in para o Maestri): roteia pedidos entre os terminais dos projetos. Vive numa pasta própria **sem agentes e sem `team-os`**; nunca é propagada sozinha — só via `*install --squads none --extra-skills maestri-os`. → [README.md §6 — Sala de Controle](./README.md#sala-de-controle--maestri-os-recurso-para-o-maestri)
 
 ## Padrão de agentes
 

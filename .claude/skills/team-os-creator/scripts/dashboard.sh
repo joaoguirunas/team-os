@@ -34,6 +34,7 @@ printf "  %-24s %-8s %-8s %-13s %s\n" "------------------------" "-------" "----
 projects=0
 need_update=0
 not_installed=0
+control_rooms=0
 
 while IFS= read -r line; do
   case "$line" in PROJECT=*) ;; *) continue ;; esac
@@ -52,9 +53,27 @@ while IFS= read -r line; do
   d_extra="$(field "$line" DRIFT_EXTRA)"
   d_miss="$(field "$line" DRIFT_MISSING)"
   s_out="$(field "$line" SKILLS_OUTDATED)"
+  has_mos="$(field "$line" HAS_MAESTRI_OS)"
+  is_cr="$(field "$line" IS_CONTROL_ROOM)"
 
   tos=$([ "$has_team_os" = "1" ] && echo "sim" || echo "--")
   sm=$([ "$has_sm" = "1" ] && echo "sim" || echo "--")
+
+  if [ "$is_cr" = "1" ]; then
+    # Sala de Controle (recurso Maestri): sem squad por design — só a skill maestri-os
+    control_rooms=$((control_rooms + 1))
+    if [ "$has_mos" != "1" ]; then
+      drift="sala de controle · instalar maestri-os"
+      not_installed=$((not_installed + 1))
+    elif [ "${s_out:-0}" -gt 0 ]; then
+      drift="sala de controle · maestri-os desatual."
+      need_update=$((need_update + 1))
+    else
+      drift="sala de controle · em dia"
+    fi
+    printf "  %-24.24s %-8s %-8s %-13s %s\n" "$name" "--" "n/a" "$sm" "$drift"
+    continue
+  fi
 
   if [ "$has_agents" != "1" ] || [ "${acount:-0}" -eq 0 ]; then
     drift="nao instalado"
@@ -72,10 +91,11 @@ $RAW
 EOF
 
 echo
-echo "  Resumo: $projects projeto(s)  ·  $need_update precisam atualizar  ·  $not_installed sem squad"
+echo "  Resumo: $projects projeto(s)  ·  $need_update precisam atualizar  ·  $not_installed sem squad/skill  ·  $control_rooms sala(s) de controle"
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  [1] Criar equipe      → novos agentes/squad (*create / *squad)"
 echo "  [2] Atualizar equipes → propaga o drift detectado (*propagate)"
 echo "  [3] Instalar equipe   → squad + skills + team-os num projeto (*install)"
+echo "                          · pasta 'Sala de Controle' → só a skill maestri-os (--squads none --extra-skills maestri-os)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
