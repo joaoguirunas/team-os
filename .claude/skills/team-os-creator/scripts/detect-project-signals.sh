@@ -100,6 +100,15 @@ if [ "${PROPOSAL_HITS:-0}" -ge 2 ] && [ $HAS_FRONTEND -eq 0 ] && [ $HAS_BACKEND 
   HAS_PROPOSALS=1
 fi
 
+# Branding signals — workspace de marca/reposicionamento (sem código): plataforma de marca,
+# posicionamento, manifesto, identidade, brandbook, tom de voz, arquitetura de marca.
+# Brandbook sozinho não basta (pasta de propostas também tem) — exige ≥2 sinais e nenhum de proposta.
+HAS_BRANDING=0
+BRANDING_HITS=$(find . -maxdepth 3 \( -iname "*posicionamento*" -o -iname "*reposicionamento*" -o -iname "*brand-platform*" -o -iname "*plataforma-de-marca*" -o -iname "*manifesto*" -o -iname "*identidade*" -o -iname "*tom-de-voz*" -o -iname "*brand-voice*" -o -iname "*brandbook*" -o -iname "*rebrand*" -o -iname "*arquitetura-de-marca*" \) -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -20 | wc -l | tr -d ' ')
+if [ "${BRANDING_HITS:-0}" -ge 2 ] && [ "${PROPOSAL_HITS:-0}" -lt 2 ] && [ $HAS_FRONTEND -eq 0 ] && [ $HAS_BACKEND -eq 0 ]; then
+  HAS_BRANDING=1
+fi
+
 # Sala de Controle (recurso Maestri): pasta cujo nome diz "sala de controle"/"control room",
 # ou que já tem a skill maestri-os. Sem código, sem squad — só a skill opt-in.
 DIRNAME_LC=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')
@@ -115,6 +124,8 @@ case "$DIRNAME_LC" in *"sala de controle"*|*"sala-de-controle"*|*"control room"*
 # comerciais sem código → preset `sales`.
 if [ $HAS_CONTROL_ROOM -eq 1 ]; then
   ARCHETYPE="control-room"
+elif [ $HAS_BRANDING -eq 1 ]; then
+  ARCHETYPE="branding"
 elif [ $HAS_PROPOSALS -eq 1 ]; then
   ARCHETYPE="proposals"
 elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
@@ -149,6 +160,8 @@ case "$ARCHETYPE" in
     SUGGESTED_PRESET="sites" ;;
   proposals)
     SUGGESTED_PRESET="sales" ;;
+  branding)
+    SUGGESTED_PRESET="brand" ;;
   mobile-app)
     # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
     SUGGESTED_PRESET="dev"

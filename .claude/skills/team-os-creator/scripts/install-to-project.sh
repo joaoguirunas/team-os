@@ -254,12 +254,12 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     # Modo Sala de Controle: nenhuma skill geral, nem team-os — só opt-in
     [ $extra -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
   elif [ "$SQUADS" != "all" ]; then
-    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales}-*)
+    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales,brand}-*)
     # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
     # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
     skill_prefix="${skill_name%%-*}"
     case "$skill_prefix" in
-      dev|sites|social|traffic|pm|sales)
+      dev|sites|social|traffic|pm|sales|brand)
         match=0
         for squad in $(echo "$SQUADS" | tr ',' ' '); do
           [ "$skill_prefix" = "$squad" ] && { match=1; break; }

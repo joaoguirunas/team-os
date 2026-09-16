@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**56 agentes e 64 skills** organizados em 6 squads (Dev, Sites, Social, Traffic, PM, Sales), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**64 agentes e 70 skills** organizados em 7 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -30,7 +30,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 56 agentes e suas skills](#5-os-56-agentes-e-suas-skills)
+5. [Os 64 agentes e suas skills](#5-os-64-agentes-e-suas-skills)
 6. [Catálogo de skills de apoio](#6-catálogo-de-skills-de-apoio)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
@@ -164,7 +164,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 ```
 /team-os-creator                → menu principal (scan + sugestões)
 /team-os-creator *analyze       → detecta archetype/stack, sem criar
-/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales)
+/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales/brand)
 /team-os-creator *create <role> → cria UM agente interativamente
 /team-os-creator *migrate       → migra agentes do padrão antigo p/ Native Teams Protocol
 /team-os-creator *bootstrap     → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md
@@ -198,7 +198,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ---
 
-## 5. Os 56 agentes e suas skills
+## 5. Os 64 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
@@ -294,11 +294,26 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `sales-qa` | ARGUS | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre o artefato — 12 pontos (exclusivo) | `/sales-proposal-copy`, `/sales-deck-production`, `/presentation-design`, `/verify-before-done` |
 | `sales-closer` | PEITHO | Brief de reunião, follow-up, ledger de propostas, envio só com PASS + confirmação do usuário | `/negotiation`, `/sales-enablement`, `/sales-proposal-copy`, `/verify-before-done` |
 
+### Brand — Reposicionamento de marca (8, personas estelares)
+
+> Squad **genérica**: o método (auditoria → plataforma → arquitetura e stories → voz ∥ visual → QA → baseline → rollout → leitura do depois) é do CT; o contexto da marca — histórico, ofertas, públicos, ativos, motivo do reposicionamento (`project/brand-context.md`) — vive na smart-memory do projeto e é preenchido com o usuário, nunca inventado. **Define e guarda a marca, não executa canal:** site, social, tráfego e propostas seguem com as squads deles, que recebem o kit de handoff em `project/brand.md`. **Dois gates:** POLARIS aprova a *plataforma* (7 pontos, com o usuário) e escolhe a *direção* entre ≥2 opções; RIGEL aprova cada *deliverable* (10 pontos) antes de virar lei para as outras squads. Sem devops: a virada externa exige PASS + baseline travada + confirmação explícita do usuário.
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `brand-analyst` | SIRIUS | Auditoria da marca atual, mapa de concorrentes e territórios, públicos na linguagem deles — tudo com fonte | `/brand-research`, `/deep-research`, `/dev-defuddle`, `/verify-before-done` |
+| `brand-strategist` | POLARIS | Plataforma de marca, postura do reposicionamento, **gate da plataforma e escolha de direção** (exclusivo) | `/brand-platform`, `/brand-research`, `/pricing`, `/verify-before-done` |
+| `brand-architect` | ORION | Arquitetura de marca (marca-mãe, sub-marcas, marca pessoal, nomes), roadmap de migração, **stories** (exclusivo) | `/brand-platform`, `/dev-technical-writing`, `/brand-rollout`, `/verify-before-done` |
+| `brand-voice` | LYRA | Guia de voz, framework de mensagens, manifesto, tagline, glossário, nomes dentro do sistema — ≥2 opções de direção | `/brand-verbal-identity`, `/sites-copy`, `/brand-platform`, `/verify-before-done` |
+| `brand-designer` | AURORA | Direções visuais com opções, sistema de cor/tipo/grid/imagem, brandbook — via Claude Design | `/brand-visual-system`, `/design`, `/ui-ux-pro-max`, `/web-design-guidelines`, `/social-key-visual`, `/verify-before-done` |
+| `brand-insights` | VEGA | **Fonte única dos números da marca**: scorecard, baseline antes, leitura depois, ficha com `#id` | `/brand-tracking`, `/data-analytics-engineering`, `/social-analytics`, `/verify-before-done` |
+| `brand-rollout` | ALTAIR | Plano interno → externo, inventário e desligamentos, checklist por canal, kit de handoff — só com PASS + baseline + confirmação | `/brand-rollout`, `/brand-verbal-identity`, `/brand-visual-system`, `/verify-before-done` |
+| `brand-qa` | RIGEL | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre cada deliverable — 10 pontos (exclusivo); auditoria de consistência pós-virada | `/brand-verbal-identity`, `/brand-visual-system`, `/brand-platform`, `/verify-before-done` |
+
 ---
 
 ## 6. Catálogo de skills de apoio
 
-64 skills, todas diretórios reais e versionados (repositório self-contained).
+70 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -314,9 +329,13 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 **Sales (6):** `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production`, `sales-enablement`
 
+**Brand (6):** `brand-research`, `brand-platform`, `brand-verbal-identity`, `brand-visual-system`, `brand-tracking`, `brand-rollout`
+
 **Design & geral (13):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`, `negotiation`, `pricing`, `slides`, `presentation-design`, `startup-financial-modeling`
 
 > **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
+>
+> **Novas 2026-09 (squad Brand):** autorais do CT, todas com templates Obsidian — `brand-research` (auditoria, mapa de territórios, públicos), `brand-platform` (plataforma + gate de 7 pontos + arquitetura de marca), `brand-verbal-identity` (dimensões de tom, dizemos/não dizemos, mensagens, manifesto, naming), `brand-visual-system` (cor com papel e contraste, tipo, grid, imagem, brandbook via Claude Design), `brand-tracking` (scorecard, baseline, leitura do depois, ficha com `#id`), `brand-rollout` (pré-condições, fases, checklist por canal, kit de handoff `brand.md`).
 >
 > **Nova 2026-09 (Sala de Controle):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
 >
@@ -431,7 +450,7 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
 ```
 .claude/
-├── agents/              ← 56 definições de agentes (fonte da verdade)
+├── agents/              ← 64 definições de agentes (fonte da verdade)
 ├── hooks/               ← hooks de qualidade
 │   ├── block-git-push.sh
 │   ├── block-worktree.sh          ← anti-worktree: bloqueia isolation: worktree, EnterWorktree e git worktree add (registrado no settings.json de cada projeto)
@@ -441,7 +460,7 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 │   ├── check-social-progress.sh
 │   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 64 skills (diretórios reais)
+└── skills/              ← 70 skills (diretórios reais)
     ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
@@ -451,10 +470,10 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
     │       ├── weigh-memory.sh          ← pesa a smart-memory no bootstrap (sinaliza se pesada)
     │       └── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
-        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (7 cenários)
+        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (9 cenários)
         ├── reference/           ← archetypes, smart-memory, catálogo de skills, pressure-testing
         ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install (--squads none --extra-skills p/ Sala de Controle) · generate-agents-page.py
-        └── presets/             ← 6 presets de squad (dev, sites, social, traffic, pm, sales)
+        └── presets/             ← 7 presets de squad (dev, sites, social, traffic, pm, sales, brand)
 
 .github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push
 
@@ -498,7 +517,7 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 56 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 64 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

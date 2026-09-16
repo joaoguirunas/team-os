@@ -29,6 +29,7 @@ SQUADS = [
     ("traffic", "Traffic", "Tráfego pago — Google, Meta, TikTok, BI e atribuição"),
     ("pm", "PM", "Gestão de projetos — sprints, dailies, portfólio"),
     ("sales", "Sales", "Propostas e apresentações — discovery, tese, números, copy, PDF, QA, fechamento"),
+    ("brand", "Brand", "Reposicionamento de marca — pesquisa, plataforma, arquitetura, voz, visual, medição, rollout, QA"),
 ]
 
 # Resumo em PT por agente (linha principal do card). Agente ausente → 1ª frase da description.
@@ -62,6 +63,14 @@ RESUMOS_PT = {
     "social-publisher": "Publica (via Meta) e analisa métricas — só depois da aprovação da VERA E confirmação do usuário.",
     "social-strategist": "Estrategista e validadora editorial. Nunca cria — valida e direciona; aprovação obrigatória antes de publicar.",
     "social-video": "Editor de vídeo: Reels, Stories, TikToks com ffmpeg + avatar AI e dublagem via HeyGen.",
+    "brand-analyst": "Audita a marca como ela é hoje, mapeia concorrentes e territórios, sintetiza públicos — toda afirmação com fonte. Entrega evidência; outros decidem.",
+    "brand-strategist": "Escreve a plataforma de marca e a postura do reposicionamento; gate da plataforma e da direção de identidade. Nunca escreve a peça.",
+    "brand-architect": "Arquitetura de marca (marca-mãe, sub-marcas, marca pessoal, sistema de nomes) e autoridade exclusiva das stories do reposicionamento.",
+    "brand-voice": "Identidade verbal a partir da plataforma aprovada: guia de voz, framework de mensagens, manifesto, tagline, glossário, nomes dentro do sistema.",
+    "brand-designer": "Identidade visual via Claude Design: direções com opções, sistema de cor/tipo/grid/imagem e brandbook — cada elemento rastreado à plataforma.",
+    "brand-insights": "Fonte única dos números da marca: scorecard, linha de base antes da virada, leitura do depois com o mesmo método, ficha com #id.",
+    "brand-rollout": "Implantação depois do PASS: plano interno → externo, inventário de ativos, checklist por canal e o kit de handoff que as outras squads seguem.",
+    "brand-qa": "Gate final de todo deliverable de marca — fidelidade à plataforma, coerência verbal ↔ visual, fonte e #id em tudo. Veredictos PASS / CONCERNS / FAIL / WAIVED.",
     "sales-analyst": "Discovery: transforma reunião/transcrição em ficha de intake e pesquisa cliente, setor e benchmarks — todo número com fonte.",
     "sales-strategist": "Estrategista do negócio: tese, enquadramento da oferta, postura de negociação e gate de aprovação do planejamento. Nunca escreve a proposta.",
     "sales-planner": "Arquiteto da proposta. Autoridade exclusiva para criar a story e escrever o planejamento interno — roadmap com aceite, bastidor e estrutura página a página do PDF.",

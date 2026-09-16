@@ -112,6 +112,7 @@ squad_areas() { # $1=squad
     traffic) echo "traffic qa copy automation" ;;
     pm)      echo "portfolio qa processos" ;;
     sales)   echo "discovery strategy planning finance copy design qa closer" ;;
+    brand)   echo "research strategy architecture voice visual tracking rollout qa" ;;
   esac
 }
 
@@ -122,7 +123,7 @@ if [ -n "$AREAS_OVERRIDE" ]; then
   done
   SQUADS_DETECTED="(override --areas)"
 elif [ -d "$TARGET/.claude/agents" ]; then
-  for sq in dev sites social traffic pm sales; do
+  for sq in dev sites social traffic pm sales brand; do
     if ls "$TARGET/.claude/agents/$sq-"*.md >/dev/null 2>&1; then
       SQUADS_DETECTED="$SQUADS_DETECTED${SQUADS_DETECTED:+, }$sq"
       for a in $(squad_areas "$sq"); do add_area "$a"; done
