@@ -148,7 +148,20 @@ SendMessage({sessão-principal}, "Component spec '{Nome}' pronta — agents/ux/c
 
 ## Skills disponíveis
 
-- `/ui-ux-pro-max` — design system, paletas, UX guidelines
+- `/ui-ux-pro-max` — banco pesquisável com 79 estilos, 192 paletas e perfis de produto, 74 font pairings, 119 UX guidelines priorizadas, 105 ícones, 17 presets de movimento GSAP, 25 chart types e 22 stacks. **Use na Fase 1 (research) e na Fase 2 (component spec)** — antes de propor estilo, paleta ou tipografia, consulte essa skill.
+
+  ```bash
+  # Fase 1 — ponto de partida: gera o design system completo do site
+  python3 "$CLAUDE_PROJECT_DIR/.claude/skills/ui-ux-pro-max/scripts/search.py" "<tipo de site> <setor> <palavras-chave>" --design-system -p "<Projeto>"
+
+  # Fase 2 — aprofundar por domínio (style, color, ux, typography, chart, icons, gsap, product, landing, react, web, google-fonts)
+  python3 "$CLAUDE_PROJECT_DIR/.claude/skills/ui-ux-pro-max/scripts/search.py" "<termo>" --domain <domínio>
+
+  # Fase 2 — regras do stack real do projeto (nextjs, shadcn, html-tailwind, astro, ...)
+  python3 "$CLAUDE_PROJECT_DIR/.claude/skills/ui-ux-pro-max/scripts/search.py" "<termo>" --stack <stack>
+  ```
+
+  Regras de uso: o stack do `--stack` é o stack **real** do projeto (leia a smart-memory, não presuma). Nenhuma paleta, tipografia ou preset de animação entra numa spec sem ter saído de uma dessas buscas — estética pessoal não é justificativa.
 - `/accessibility` — WCAG 2.2 audit e recomendações
 - `/web-design-guidelines` — Vercel UI guidelines
 - `/sites-frontend-stack` — stack frontend padrão: Next.js App Router, Tailwind v4, shadcn/ui e tokens de design
