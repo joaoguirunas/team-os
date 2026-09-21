@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**80 agentes e 80 skills** organizados em 9 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand, Finance, Legal), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**95 agentes e 107 skills** organizados em 10 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand, Finance, Legal, SEO), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -30,7 +30,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 80 agentes e suas skills](#5-os-80-agentes-e-suas-skills)
+5. [Os 95 agentes e suas skills](#5-os-95-agentes-e-suas-skills)
 6. [Catálogo de skills de apoio](#6-catálogo-de-skills-de-apoio)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
@@ -198,7 +198,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ---
 
-## 5. Os 80 agentes e suas skills
+## 5. Os 95 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
@@ -343,7 +343,29 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `legal-ops` | AEQUITAS | Versão travada, assinatura, arquivamento, registro, renovações — envio só com PASS + confirmação | `/legal-contract-lifecycle`, `/legal-clause-library`, `/dev-technical-writing`, `/verify-before-done` |
 | `legal-qa` | IUSTITIA | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre minuta, notificação, política e dossiê — 12 pontos (exclusivo) | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-compliance-lgpd`, `/verify-before-done` |
 
-80 skills, todas diretórios reais e versionados (repositório self-contained).
+### SEO — Auditoria e otimização de busca (15, personas egípcias)
+
+> Squad **genérica**: motor é o pacote [claude-seo](https://github.com/AgriciDaniel/claude-seo) v2.3.1 (MIT, AgriciDaniel) incorporado ao CT — 27 skills e o runtime Python em `.claude/skills/seo/` (`/seo setup` cria o ambiente isolado + Chromium na primeira vez; `/seo doctor` diagnostica). **Audita, prioriza e recomenda; nunca implementa o fix nem sobe deploy** — o handoff vai para a squad Sites via smart-memory. Dois gates: THOTH sequencia o roadmap com checklist de 5 pontos (achado rastreável · observação · dependência · critério de aceite · falseamento + indicador); MAAT aprova cada auditoria/relatório antes de virar story ou chegar ao cliente. SESHAT é fonte única dos números (GSC/PageSpeed/CrUX/GA4/Bing) — nenhum dado de campo ou estimativa entra sem `#id` dela; campo sempre vence laboratório, e FID (aposentado em 2024) nunca é citado — a métrica de interatividade é INP. Pressure-tested: 9/9 cenários limpos (THOTH, MAAT, SESHAT).
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `seo-architect` | THOTH | Roadmap e stories de SEO, checklist de 5 pontos (exclusivo) | `/seo-plan`, `/seo-audit`, `/seo-flow`, `/dev-technical-writing` |
+| `seo-technical` | PTAH | SEO técnico — 9 categorias (rastreabilidade, indexação, segurança, CWV, JS, IndexNow) | `/seo-technical`, `/seo-page`, `/sites-seo-technical` |
+| `seo-content` | NEITH | E-E-A-T, conteúdo raso, citabilidade por IA, briefs, limpeza de última milha | `/seo-content`, `/seo-content-brief`, `/seo-image-gen`, `/sites-copy` |
+| `seo-schema` | KHNUM | Detecção, validação e geração de Schema.org (JSON-LD) | `/seo-schema`, `/seo-technical` |
+| `seo-sitemap` | GEB | Sitemap XML, hreflang/i18n, SEO programático em escala | `/seo-sitemap`, `/seo-hreflang`, `/seo-programmatic` |
+| `seo-performance` | SHU | Core Web Vitals (LCP/INP/CLS), subpartes de LCP, renderização e visual | `/seo-technical`, `/seo-images`, `/nextjs-react-best-practices` |
+| `seo-geo` | NUT | GEO/AI search — crawlers de IA, llms.txt, citabilidade por passagem | `/seo-geo`, `/seo-content` |
+| `seo-sxo` | HORUS | SERP ao contrário, user stories, páginas de comparação | `/seo-sxo`, `/seo-competitor-pages`, `/sites-page-cro` |
+| `seo-cluster` | HEKA | Clustering semântico por sobreposição real de SERP, hub-and-spoke | `/seo-cluster`, `/seo-content-brief`, `/sites-seo-keywords` |
+| `seo-local` | BASTET | GBP, NAP, citações, avaliações, multi-localidade, geo-grid | `/seo-local`, `/seo-maps` |
+| `seo-backlinks` | ANUBIS | Perfil de links multi-fonte com peso por confiança, verificação obrigatória | `/seo-backlinks`, `/seo-ahrefs`, `/seo-dataforseo` |
+| `seo-ecommerce` | HAPI | Schema de produto, Google Shopping, marketplace, catálogo | `/seo-ecommerce`, `/seo-schema`, `/seo-images` |
+| `seo-google` | SESHAT | **Fonte única dos números**: GSC, PageSpeed, CrUX, Indexing API, GA4 | `/seo-google`, `/seo-bing`, `/data-analytics-engineering` |
+| `seo-drift` | WADJET | Baseline e comparação — detecção de regressão pós-deploy | `/seo-drift`, `/seo-technical` |
+| `seo-qa` | MAAT | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre auditoria/relatório (exclusivo) | `/seo-audit`, `/seo-technical`, `/seo-content` |
+
+107 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -365,6 +387,8 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 **Legal (5):** `legal-research`, `legal-contract-drafting`, `legal-clause-library`, `legal-compliance-lgpd`, `legal-contract-lifecycle`
 
+**SEO (27, incorporado do pacote [claude-seo](https://github.com/AgriciDaniel/claude-seo) v2.3.1, MIT):** `seo` (orquestradora + runtime Python em `scripts/`, `schema/`, `data/`, `pdf/`), `seo-audit`, `seo-page`, `seo-plan`, `seo-technical`, `seo-content`, `seo-content-brief`, `seo-schema`, `seo-sitemap`, `seo-hreflang`, `seo-programmatic`, `seo-images`, `seo-image-gen`, `seo-geo`, `seo-sxo`, `seo-competitor-pages`, `seo-cluster`, `seo-local`, `seo-maps`, `seo-backlinks`, `seo-ahrefs`, `seo-ecommerce`, `seo-google`, `seo-bing`, `seo-drift`, `seo-dataforseo`, `seo-flow`
+
 **Design & geral (13):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`, `negotiation`, `pricing`, `slides`, `presentation-design`, `startup-financial-modeling`
 
 > **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
@@ -376,6 +400,8 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 > **Nova 2026-09 (Sala de Controle):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
 >
 > **Novas 2026-09 (squad Sales):** autorais do CT — `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production` (com `html-to-pdf.mjs` e `check-pdf.sh`); adotadas do registry após vetting — `sales-enablement` e `pricing` (marketingskills), `startup-financial-modeling` (wshobson), `negotiation` (wondelai — framework Voss), `slides` (nextlevelbuilder, mesmo autor do `ui-ux-pro-max`), `presentation-design` (jwynia). Descartadas no vetting: `proposal-writer` (template raso com número inventado), `html-slides`/`meeting-notes` (frontmatter quebrado), `html-to-pdf` (abaixo do corte — abordagem incorporada em `sales-deck-production`).
+>
+> **Nova 2026-09 (squad SEO):** pacote externo [claude-seo](https://github.com/AgriciDaniel/claude-seo) v2.3.1 (MIT, AgriciDaniel) incorporado 100% ao CT — as 25 skills do core + `seo-ahrefs` e `seo-bing` (mirrors de extensão), com o runtime Python (58 scripts: GSC, PageSpeed, CrUX, GA4, Playwright, geração de schema, drift) reidratado em `.claude/skills/seo/scripts/` e reescrito para rodar via `${CLAUDE_PROJECT_DIR}` em vez de `${CLAUDE_PLUGIN_ROOT}` (não é plugin, é skill do CT). `seo-flow`, `seo-dataforseo` e `seo-image-gen` entram como skill mas sem agente dedicado — `seo-flow` é framework de prompt, os outros dois dependem de MCP pago (DataForSEO, Gemini/nanobanana) ainda não autorizado. Os 15 agentes (personas egípcias) e a autoria do preset/bodies são do CT — pressure-tested 9/9.
 
 **Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos) · `maestri-os` (**opt-in, só em Salas de Controle** — ver abaixo).
 
@@ -500,7 +526,7 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 │   ├── check-finance-progress.sh  ← TaskCompleted: execução financeira só com PASS + confirmação do usuário
 │   ├── check-legal-progress.sh    ← TaskCompleted: saída jurídica só com PASS + confirmação do usuário
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 80 skills (diretórios reais)
+└── skills/              ← 107 skills (diretórios reais)
     ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
@@ -557,7 +583,7 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 80 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 
