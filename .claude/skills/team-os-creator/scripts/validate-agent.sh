@@ -292,7 +292,7 @@ validate() {
       warnings+=("cita persona '$cited_persona' para $cited_agent, mas o H1 atual dele é '$current_persona'")
     fi
   done <<EOF_CITES
-$(printf '%s\n' "$BODY" | grep -oE '[A-Z][A-Za-z+]+ \((dev|sites|social|traffic|pm|sales|brand)-[a-z][a-z-]+\)' | sort -u)
+$(printf '%s\n' "$BODY" | grep -oE '[A-Z][A-Za-z+]+ \((dev|sites|social|traffic|pm|sales|brand|finance|legal)-[a-z][a-z-]+\)' | sort -u)
 EOF_CITES
   # (b) persona de OUTRA squad citada no body
   if [ -n "$SQUAD" ]; then

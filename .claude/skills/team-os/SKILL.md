@@ -145,7 +145,7 @@ echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 
 Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
-2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`/`brand-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
+2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`/`brand-`/`finance-`/`legal-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe (contexto geral). As **stories ativas** são extraídas **diretamente de `docs/smart-memory/stories/active/*.md`** (frontmatter `summary`/`status` de cada arquivo) — não do INDEX.
 4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/weigh-memory.sh" --quiet` e capturar o bloco `WEIGH_*`. O script emite:
    - `WEIGH_DASHBOARD` — **só o valor** (sem prefixo de rótulo; o rótulo `smart-memory :` é do painel da Fase 1)
@@ -650,6 +650,22 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 | **brand-insights** | `/brand-tracking`, `/data-analytics-engineering`, `/social-analytics` |
 | **brand-rollout** | `/brand-rollout`, `/brand-verbal-identity`, `/brand-visual-system` |
 | **brand-qa** | `/brand-verbal-identity`, `/brand-visual-system`, `/brand-platform` |
+| **finance-analyst** | `/finance-bookkeeping`, `/deep-research`, `/dev-defuddle` |
+| **finance-strategist** | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/pricing` |
+| **finance-planner** | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/dev-technical-writing` |
+| **finance-controller** | `/finance-bookkeeping`, `/finance-cash-flow`, `/data-analytics-engineering` |
+| **finance-billing** | `/finance-receivables-payables`, `/finance-bookkeeping`, `/negotiation` |
+| **finance-tax** | `/finance-tax-compliance`, `/finance-bookkeeping`, `/deep-research` |
+| **finance-reporter** | `/finance-reporting`, `/finance-cash-flow`, `/dev-technical-writing` |
+| **finance-qa** | `/finance-bookkeeping`, `/finance-receivables-payables`, `/finance-reporting` |
+| **legal-analyst** | `/legal-research`, `/deep-research`, `/dev-defuddle` |
+| **legal-strategist** | `/legal-contract-drafting`, `/legal-research`, `/negotiation` |
+| **legal-architect** | `/legal-clause-library`, `/legal-contract-lifecycle`, `/dev-technical-writing` |
+| **legal-drafter** | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-research` |
+| **legal-compliance** | `/legal-compliance-lgpd`, `/legal-contract-lifecycle`, `/data-analytics-engineering` |
+| **legal-disputes** | `/legal-contract-lifecycle`, `/legal-research`, `/negotiation` |
+| **legal-ops** | `/legal-contract-lifecycle`, `/legal-clause-library`, `/dev-technical-writing` |
+| **legal-qa** | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-compliance-lgpd` |
 
 > Nomes novos após a fusão de skills (não usar os antigos): `/sites-copy` (ex sites-copywriting/copy-editing/content-strategy) e `/sites-frontend-stack` (ex sites-frontend-design/tailwind-design-system/shadcn-ui); `/accessibility` (ex sites-web-accessibility).
 
@@ -767,7 +783,7 @@ Cada agente lê **L0** (INDEX + DIGEST da sua área + stories ativas), busca via
 
 ## Hooks de time
 
-`TaskCreated` (`task-quality.sh` — rejeita task vaga) e `TaskCompleted` (`check-story-progress.sh` — story só fecha com evidência) fazem parte do **settings padrão** (garantidos pelo `ensure-settings.sh`/`*install`). `TeammateIdle` é receita **opcional** — CUIDADO: `exit 2` incondicional gera loop infinito (idle é o estado desejado). Detalhes e exemplos → ver `reference/hooks-de-time.md`.
+`TaskCreated` (`task-quality.sh` — rejeita task vaga) e `TaskCompleted` (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh` e `check-legal-progress.sh` — publicação, envio de proposta, execução financeira e saída jurídica só com PASS + confirmação do usuário) fazem parte do **settings padrão** (garantidos pelo `ensure-settings.sh`/`*install`). `TeammateIdle` é receita **opcional** — CUIDADO: `exit 2` incondicional gera loop infinito (idle é o estado desejado). Detalhes e exemplos → ver `reference/hooks-de-time.md`.
 
 ---
 

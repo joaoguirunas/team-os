@@ -44,7 +44,7 @@ command -v python3 >/dev/null 2>&1 || { echo "⛔ python3 é necessário para o 
 SETTINGS_FILE="$PROJECT_DIR/.claude/settings.json"
 
 # Avisa (sem bloquear) hooks referenciados que ainda não existem no projeto.
-for h in block-worktree.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh; do
+for h in block-worktree.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh; do
   if [ ! -f "$PROJECT_DIR/.claude/hooks/$h" ]; then
     echo "⚠ hook ausente no projeto: .claude/hooks/$h — rode /team-os-creator *propagate no CT" >&2
   fi
@@ -151,6 +151,8 @@ ensure_hook("TaskCreated", "", "task-quality.sh", match_on_matcher=False)
 ensure_hook("TaskCompleted", "", "check-story-progress.sh", match_on_matcher=False)
 ensure_hook("TaskCompleted", "", "check-social-progress.sh", match_on_matcher=False)
 ensure_hook("TaskCompleted", "", "check-proposal-progress.sh", match_on_matcher=False)
+ensure_hook("TaskCompleted", "", "check-finance-progress.sh", match_on_matcher=False)
+ensure_hook("TaskCompleted", "", "check-legal-progress.sh", match_on_matcher=False)
 
 # --- validação final (sempre) ---
 final_text = json.dumps(settings, indent=2, ensure_ascii=False) + "\n"

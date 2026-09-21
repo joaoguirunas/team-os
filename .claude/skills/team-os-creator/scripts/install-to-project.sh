@@ -15,7 +15,8 @@
 #   --include-hooks                     copia também hooks extras (fora do pacote padrão)
 #                                       (block-worktree.sh, block-git-push.sh, task-quality.sh,
 #                                       check-story-progress.sh, check-social-progress.sh,
-#                                       check-proposal-progress.sh e guard-push-branch.sh são
+#                                       check-proposal-progress.sh, check-finance-progress.sh,
+#                                       check-legal-progress.sh e guard-push-branch.sh são
 #                                       SEMPRE instalados)
 #   --dry-run                           simula sem copiar nada
 
@@ -254,12 +255,12 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     # Modo Sala de Controle: nenhuma skill geral, nem team-os — só opt-in
     [ $extra -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
   elif [ "$SQUADS" != "all" ]; then
-    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales,brand}-*)
+    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales,brand,finance,legal}-*)
     # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
     # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
     skill_prefix="${skill_name%%-*}"
     case "$skill_prefix" in
-      dev|sites|social|traffic|pm|sales|brand)
+      dev|sites|social|traffic|pm|sales|brand|finance|legal)
         match=0
         for squad in $(echo "$SQUADS" | tr ',' ' '); do
           [ "$skill_prefix" = "$squad" ] && { match=1; break; }
@@ -371,11 +372,12 @@ fi
 
 # ── Hooks de quality gate (pacote padrão — sempre instalados) ─────────────────
 # task-quality.sh (TaskCreated), check-story-progress.sh, check-social-progress.sh e
-# check-proposal-progress.sh (TaskCompleted) e guard-push-branch.sh (PreToolUse Bash do
+# check-proposal-progress.sh, check-finance-progress.sh e check-legal-progress.sh (TaskCompleted)
+# e guard-push-branch.sh (PreToolUse Bash do
 # devops). Registrados como quality gates no settings.json gerado — não são mais opcionais.
 quality_hooks_installed=""
 quality_hooks_missing=""
-for qh in task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh guard-push-branch.sh; do
+for qh in task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh; do
   if [ -f "$SOURCE/.claude/hooks/$qh" ]; then
     do_mkdir "$TARGET/.claude/hooks"
     do_cp "$SOURCE/.claude/hooks/$qh" "$TARGET/.claude/hooks/$qh"
@@ -453,6 +455,14 @@ if [ ! -f "$TARGET_SETTINGS" ]; then
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-proposal-progress.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-finance-progress.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-legal-progress.sh"
           }
         ]
       }
@@ -476,7 +486,7 @@ else
     echo "SETTINGS_WORKTREE_HOOK_TODO=1|registre o hook block-worktree.sh em PreToolUse (matchers: Agent|Task|EnterWorktree e Bash) no settings.json do destino"
   fi
   if ! grep -q "task-quality" "$TARGET_SETTINGS" 2>/dev/null || ! grep -q "subagentPromptCacheTtl" "$TARGET_SETTINGS" 2>/dev/null; then
-    echo "SETTINGS_TASKHOOKS_TODO=1|adicione \"subagentPromptCacheTtl\": \"1h\" e registre os hooks TaskCreated → task-quality.sh e TaskCompleted → check-story-progress.sh + check-social-progress.sh + check-proposal-progress.sh (matcher \"\") no settings.json do destino"
+    echo "SETTINGS_TASKHOOKS_TODO=1|adicione \"subagentPromptCacheTtl\": \"1h\" e registre os hooks TaskCreated → task-quality.sh e TaskCompleted → check-story-progress.sh + check-social-progress.sh + check-proposal-progress.sh + check-finance-progress.sh + check-legal-progress.sh (matcher \"\") no settings.json do destino"
   fi
 fi
 
@@ -487,14 +497,14 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
 
   hooks_copied=0
   # Copiar apenas hooks extras — o pacote padrão (block-worktree, block-git-push,
-  # task-quality, check-story-progress, check-social-progress, check-proposal-progress,
+  # task-quality, check-story-progress, check-social-progress, check-proposal-progress, check-finance-progress, check-legal-progress,
   # guard-push-branch) já foi instalado acima, incondicionalmente.
   for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
     [ -f "$hook_file" ] || continue
     hook_name=$(basename "$hook_file")
 
     case "$hook_name" in
-      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|check-proposal-progress.sh|guard-push-branch.sh)
+      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|check-proposal-progress.sh|check-finance-progress.sh|check-legal-progress.sh|guard-push-branch.sh)
         continue ;;
     esac
 

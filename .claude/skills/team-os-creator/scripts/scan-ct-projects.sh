@@ -53,9 +53,39 @@ echo "CT_ROOT=$CT_ROOT"
   | sed 's/-.*//' | sort -u | wc -l | tr -d ' ')"
 echo "---"
 
-for dir in "$CT_ROOT"/*/; do
+# Candidatos: as pastas irmãs do CT. Uma pasta SEM .claude/ e SEM .git próprios que CONTÉM
+# subpastas com .claude/ é um CONTÊINER (ex.: "Scalify" com "Comercial", "Site", "Marketing"…):
+# seus filhos diretos entram como projetos "Contêiner/Filho" — inclusive os vazios, para
+# aparecerem como "não instalado" no dashboard. Sala de Controle nunca é contêiner.
+CANDIDATES="$(mktemp "${TMPDIR:-/tmp}/scan-ct.XXXXXX")" || exit 1
+for d in "$CT_ROOT"/*/; do
+  [ -d "$d" ] || continue
+  n=$(basename "$d")
+  case "$n" in .*) continue ;; esac
+  is_container=0
+  if [ ! -d "$d/.claude" ] && [ ! -d "$d/.git" ]; then
+    lc=$(printf '%s' "$n" | tr '[:upper:]' '[:lower:]')
+    case "$lc" in
+      *"sala de controle"*|*"sala-de-controle"*|*"control room"*|*"control-room"*) ;;
+      *) for sub in "$d"*/; do [ -d "$sub/.claude" ] && { is_container=1; break; }; done ;;
+    esac
+  fi
+  if [ $is_container -eq 1 ]; then
+    for sub in "$d"*/; do
+      [ -d "$sub" ] || continue
+      sn=$(basename "$sub")
+      case "$sn" in .*) continue ;; esac
+      # Filho já nomeado "<Contêiner> | <escopo>" (convenção Maestri) → usa o nome do filho
+      case "$sn" in "$n |"*|"$n|"*) label="$sn" ;; *) label="$n/$sn" ;; esac
+      printf '%s\t%s\n' "$sub" "$label" >> "$CANDIDATES"
+    done
+  else
+    printf '%s\t%s\n' "$d" "$n" >> "$CANDIDATES"
+  fi
+done
+
+while IFS=$'\t' read -r dir name; do
   [ -d "$dir" ] || continue
-  name=$(basename "$dir")
 
   has_agents=0; agent_count=0; agent_squads=""
   has_skills=0; skill_count=0; has_hooks=0; is_current=0
@@ -140,4 +170,5 @@ for dir in "$CT_ROOT"/*/; do
     "$has_skills" "$skill_count" "$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)" \
     "$has_team_os" "$has_smart_memory" "$drift_ok" "$drift_outdated" "$drift_extra" \
     "$drift_missing" "$skills_outdated" "$has_maestri_os" "$is_control_room"
-done
+done < "$CANDIDATES"
+rm -f "$CANDIDATES"

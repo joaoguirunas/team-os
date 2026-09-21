@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**64 agentes e 70 skills** organizados em 7 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**80 agentes e 80 skills** organizados em 9 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand, Finance, Legal), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -30,7 +30,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 64 agentes e suas skills](#5-os-64-agentes-e-suas-skills)
+5. [Os 80 agentes e suas skills](#5-os-80-agentes-e-suas-skills)
 6. [Catálogo de skills de apoio](#6-catálogo-de-skills-de-apoio)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
@@ -164,7 +164,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 ```
 /team-os-creator                → menu principal (scan + sugestões)
 /team-os-creator *analyze       → detecta archetype/stack, sem criar
-/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales/brand)
+/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales/brand/finance/legal)
 /team-os-creator *create <role> → cria UM agente interativamente
 /team-os-creator *migrate       → migra agentes do padrão antigo p/ Native Teams Protocol
 /team-os-creator *bootstrap     → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md
@@ -198,7 +198,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ---
 
-## 5. Os 64 agentes e suas skills
+## 5. Os 80 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
@@ -313,7 +313,37 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo de skills de apoio
 
-70 skills, todas diretórios reais e versionados (repositório self-contained).
+### Finance — Gestão financeira (8, personas fluviais)
+
+> Squad **genérica**: o método (coleta com documento → política e orçamento → plano de caixa e stories → lançamento e conciliação → contas a pagar/receber preparadas → fiscal preparado → relatório com `#id` → QA → execução pelo humano) é do CT; o contexto da empresa — entidades e contas por alias, regime tributário, contador, ciclo de fechamento, política (`project/finance-context.md`, `project/finance-policy.md`) — vive na smart-memory do projeto e é preenchido com o usuário. **A squad prepara, registra e confere; nunca move dinheiro nem declara ao fisco.** Dois gates: AMAZONAS aprova orçamento e plano de caixa (7 pontos); TIGRE aprova fechamento, lote, cobrança, apuração e relatório (12 pontos). O hook `check-finance-progress.sh` só fecha task de pagamento, cobrança, nota, guia ou relatório enviado com PASS + confirmação explícita do usuário. Dado sensível (conta, chave PIX, CPF/CNPJ de terceiro) nunca entra na smart-memory — só alias.
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `finance-analyst` | NILO | Coleta e classificação de documentos do período, benchmarks, tarifas e índices — toda cifra com documento ou fonte datada | `/finance-bookkeeping`, `/deep-research`, `/dev-defuddle`, `/verify-before-done` |
+| `finance-strategist` | AMAZONAS | Política financeira (margem, reserva, alçadas, prioridade, distribuição), **gate do orçamento e do plano de caixa** (exclusivo) | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/pricing`, `/verify-before-done` |
+| `finance-planner` | DANUBIO | Orçamento, plano de caixa 13 semanas, forecast com cenários, roadmap — **stories `F{N}`** (exclusivo) | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/dev-technical-writing`, `/verify-before-done` |
+| `finance-controller` | GANGES | **Fonte única dos números**: plano de contas, conciliação item a item, DRE gerencial, fechamento com `#id` | `/finance-bookkeeping`, `/finance-cash-flow`, `/data-analytics-engineering`, `/verify-before-done` |
+| `finance-billing` | TEJO | Cobranças e régua de inadimplência, agenda e lotes de pagamento preparados — prepara, nunca executa | `/finance-receivables-payables`, `/finance-bookkeeping`, `/negotiation`, `/verify-before-done` |
+| `finance-tax` | RENO | Calendário de obrigações, apuração preparatória com regra e fonte, pacote para o contador — não declara nem recolhe | `/finance-tax-compliance`, `/finance-bookkeeping`, `/deep-research`, `/verify-before-done` |
+| `finance-reporter` | SENA | Relatório mensal para sócios, indicadores, relatório para investidor e banco — só com `#id` do fechamento FECHADO | `/finance-reporting`, `/finance-cash-flow`, `/dev-technical-writing`, `/verify-before-done` |
+| `finance-qa` | TIGRE | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre fechamento, lote, cobrança, apuração e relatório — 12 pontos (exclusivo) | `/finance-bookkeeping`, `/finance-receivables-payables`, `/finance-reporting`, `/verify-before-done` |
+
+### Legal — Jurídico do dia a dia (8, personas latinas)
+
+> Squad **genérica**: o método (pesquisa com fonte primária → postura jurídica → arquitetura documental e stories → minuta com desvios marcados → registro de prazos e LGPD → conflitos preparados → QA → envio/assinatura pelo humano) é do CT; o contexto da empresa — tipo societário, jurisdição, advogado e contador por alias, apetite a risco, contratos vigentes (`project/legal-context.md`, `project/legal-posture.md`) — vive na smart-memory do projeto. **A squad prepara, organiza e confere; não substitui advogado** — parecer, assinatura de peça e protocolo são do advogado inscrito; envio e assinatura são do usuário. Dois gates: PRUDENTIA aprova a postura de cada minuta e notificação (7 pontos); IUSTITIA aprova o documento (12 pontos). O hook `check-legal-progress.sh` só fecha task de envio, assinatura, protocolo ou publicação com PASS + confirmação explícita do usuário.
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `legal-analyst` | VERITAS | Lei, jurisprudência, doutrina e precedentes internos — fonte primária com artigo/acórdão e data; achado ≠ leitura ≠ parecer | `/legal-research`, `/deep-research`, `/dev-defuddle`, `/verify-before-done` |
+| `legal-strategist` | PRUDENTIA | Postura jurídica (apetite a risco, inegociáveis, negociáveis com piso/teto, foro, conflito), **gate de minuta e notificação** (exclusivo) | `/legal-contract-drafting`, `/legal-research`, `/negotiation`, `/verify-before-done` |
+| `legal-architect` | LEX | Arquitetura documental, sistema de modelos `M{N}` versionado, hierarquia contrato-mãe/anexos/aditivos — **stories `L{N}`** (exclusivo) | `/legal-clause-library`, `/legal-contract-lifecycle`, `/dev-technical-writing`, `/verify-before-done` |
+| `legal-drafter` | CONCORDIA | Contratos, aditivos, distratos, NDAs, termos e políticas a partir do modelo e da postura, com matriz de desvios — nunca envia | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-research`, `/verify-before-done` |
+| `legal-compliance` | FIDES | **Fonte única de prazos e obrigações**: registro de contratos com `#id`, mapa de dados com base legal, consentimentos, incidentes | `/legal-compliance-lgpd`, `/legal-contract-lifecycle`, `/data-analytics-engineering`, `/verify-before-done` |
+| `legal-disputes` | CLEMENTIA | Notificação, cobrança extrajudicial, acordo, distrato e dossiê para o advogado — prepara, nunca envia nem ameaça | `/legal-contract-lifecycle`, `/legal-research`, `/negotiation`, `/verify-before-done` |
+| `legal-ops` | AEQUITAS | Versão travada, assinatura, arquivamento, registro, renovações — envio só com PASS + confirmação | `/legal-contract-lifecycle`, `/legal-clause-library`, `/dev-technical-writing`, `/verify-before-done` |
+| `legal-qa` | IUSTITIA | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre minuta, notificação, política e dossiê — 12 pontos (exclusivo) | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-compliance-lgpd`, `/verify-before-done` |
+
+80 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -331,11 +361,17 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 **Brand (6):** `brand-research`, `brand-platform`, `brand-verbal-identity`, `brand-visual-system`, `brand-tracking`, `brand-rollout`
 
+**Finance (5):** `finance-cash-flow`, `finance-bookkeeping`, `finance-receivables-payables`, `finance-tax-compliance`, `finance-reporting`
+
+**Legal (5):** `legal-research`, `legal-contract-drafting`, `legal-clause-library`, `legal-compliance-lgpd`, `legal-contract-lifecycle`
+
 **Design & geral (13):** `ui-ux-pro-max`, `web-design-guidelines`, `accessibility`, `deep-research`, `tiktok-marketing`, `nextjs-react-best-practices`, `testing-playwright-e2e`, `verify-before-done`, `negotiation`, `pricing`, `slides`, `presentation-design`, `startup-financial-modeling`
 
 > **Novas (adaptadas do registry [skills.sh](https://www.skills.sh/), auditadas):** `nextjs-react-best-practices` (Vercel — performance React/Next para devs de dev/sites), `data-supabase-patterns` (Supabase — Postgres/RLS/indexing para data engineers), `testing-playwright-e2e` (E2E para os QAs), `traffic-paid-ads-optimization` e `traffic-analytics-tracking` (marketingskills — para strategist/copywriter/bi/qa da traffic), `verify-before-done` (superpowers — gate de verificação antes de declarar "pronto", uso geral de todos os agentes).
 >
 > **Novas 2026-09 (squad Brand):** autorais do CT, todas com templates Obsidian — `brand-research` (auditoria, mapa de territórios, públicos), `brand-platform` (plataforma + gate de 7 pontos + arquitetura de marca), `brand-verbal-identity` (dimensões de tom, dizemos/não dizemos, mensagens, manifesto, naming), `brand-visual-system` (cor com papel e contraste, tipo, grid, imagem, brandbook via Claude Design), `brand-tracking` (scorecard, baseline, leitura do depois, ficha com `#id`), `brand-rollout` (pré-condições, fases, checklist por canal, kit de handoff `brand.md`).
+>
+> **Novas 2026-09 (squads Finance e Legal):** autorais do CT, com templates Obsidian — `finance-cash-flow` (plano de caixa 13 semanas, forecast, runway), `finance-bookkeeping` (plano de contas, conciliação, fechamento com `#id`), `finance-receivables-payables` (régua de cobrança, aging, lote de pagamento preparado), `finance-tax-compliance` (calendário fiscal, apuração preparatória, pacote para o contador; `reference/brasil.md` sem alíquotas cravadas), `finance-reporting` (relatório mensal, dicionário de indicadores); `legal-research` (fonte primária, achado ≠ parecer; `reference/fontes-brasil.md`), `legal-contract-drafting` (anatomia em 15 blocos, matriz de desvios, revisão da contraparte), `legal-clause-library` (modelos `M{N}.{c}`, variantes com piso/teto), `legal-compliance-lgpd` (mapa de dados, bases legais, incidentes), `legal-contract-lifecycle` (registro, assinatura travada por hash, notificação, dossiê).
 >
 > **Nova 2026-09 (Sala de Controle):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
 >
@@ -434,13 +470,15 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
-- **`block-git-push.sh`** — `PreToolUse` em **54 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
+- **`block-git-push.sh`** — `PreToolUse` em **70 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
 - **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
 - **`guard-push-branch.sh`** — `PreToolUse` nos 2 devops: push permitido só na `main`/`master`; fora dela exige pedido explícito do usuário na sessão.
 - **`task-quality.sh`** — hook `TaskCreated` (registrado no settings pelo `ensure-settings.sh`/`*install`): rejeita task vaga — título curto/genérico ou sem descrição.
 - **`check-story-progress.sh`** — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story.
 - **`check-social-progress.sh`** — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist).
 - **`check-proposal-progress.sh`** — hook `TaskCompleted`: task de emissão/envio de proposta ou deck (squad Sales) só fecha com veredicto **PASS** do `sales-qa` **e** confirmação explícita do usuário registradas na descrição.
+- **`check-finance-progress.sh`** — hook `TaskCompleted`: task de **execução financeira** (pagar, transferir, PIX, boleto, nota, guia, cobrança enviada, relatório enviado — squad Finance) só fecha com **PASS** do `finance-qa` **e** confirmação explícita do usuário. Task de preparação (preparar lote, conciliar, calcular) não dispara.
+- **`check-legal-progress.sh`** — hook `TaskCompleted`: task de **saída jurídica** (enviar minuta/notificação, assinar, protocolar, publicar termos — squad Legal) só fecha com **PASS** do `legal-qa` **e** confirmação explícita do usuário. Task de preparação (redigir, revisar, registrar) não dispara.
 
 `TeammateIdle` fica como receita opcional (ver `team-os/reference/hooks-de-time.md` — hook incondicional cria loop infinito). Settings padrão também garantem `subagentPromptCacheTtl: "1h"`.
 
@@ -450,7 +488,7 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
 ```
 .claude/
-├── agents/              ← 64 definições de agentes (fonte da verdade)
+├── agents/              ← 80 definições de agentes (fonte da verdade)
 ├── hooks/               ← hooks de qualidade
 │   ├── block-git-push.sh
 │   ├── block-worktree.sh          ← anti-worktree: bloqueia isolation: worktree, EnterWorktree e git worktree add (registrado no settings.json de cada projeto)
@@ -459,8 +497,10 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 │   ├── check-story-progress.sh
 │   ├── check-social-progress.sh
 │   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
+│   ├── check-finance-progress.sh  ← TaskCompleted: execução financeira só com PASS + confirmação do usuário
+│   ├── check-legal-progress.sh    ← TaskCompleted: saída jurídica só com PASS + confirmação do usuário
 │   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 70 skills (diretórios reais)
+└── skills/              ← 80 skills (diretórios reais)
     ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
@@ -470,10 +510,10 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
     │       ├── weigh-memory.sh          ← pesa a smart-memory no bootstrap (sinaliza se pesada)
     │       └── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
-        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (9 cenários)
+        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (13 cenários)
         ├── reference/           ← archetypes, smart-memory, catálogo de skills, pressure-testing
         ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install (--squads none --extra-skills p/ Sala de Controle) · generate-agents-page.py
-        └── presets/             ← 7 presets de squad (dev, sites, social, traffic, pm, sales, brand)
+        └── presets/             ← 9 presets de squad (dev, sites, social, traffic, pm, sales, brand, finance, legal)
 
 .github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push
 
@@ -517,7 +557,7 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 64 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 80 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

@@ -1,8 +1,8 @@
 # team-os — by João Guirunas
 
-Repositório fonte do pack **team-os**: 64 agentes e 70 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Repositório fonte do pack **team-os**: 80 agentes e 80 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
-> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 64 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
+> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 80 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
 ## O que é este projeto
 
@@ -37,6 +37,8 @@ Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos a
 - `check-story-progress.sh` — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story
 - `check-social-progress.sh` — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist)
 - `check-proposal-progress.sh` — hook `TaskCompleted`: task de emissão/envio de proposta (squad sales) só fecha com PASS do `sales-qa` **e** confirmação explícita do usuário
+- `check-finance-progress.sh` — hook `TaskCompleted`: task de execução financeira (pagar, transferir, emitir, recolher, enviar relatório — squad finance) só fecha com PASS do `finance-qa` **e** confirmação explícita do usuário; a squad prepara, o humano executa
+- `check-legal-progress.sh` — hook `TaskCompleted`: task de saída jurídica (enviar minuta/notificação, assinar, protocolar, publicar — squad legal) só fecha com PASS do `legal-qa` **e** confirmação explícita do usuário; a squad prepara, o advogado e o usuário executam
 - `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
 
 ## Fluxo de trabalho

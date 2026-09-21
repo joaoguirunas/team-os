@@ -30,6 +30,8 @@ SQUADS = [
     ("pm", "PM", "Gestão de projetos — sprints, dailies, portfólio"),
     ("sales", "Sales", "Propostas e apresentações — discovery, tese, números, copy, PDF, QA, fechamento"),
     ("brand", "Brand", "Reposicionamento de marca — pesquisa, plataforma, arquitetura, voz, visual, medição, rollout, QA"),
+    ("finance", "Finance", "Gestão financeira — coleta, política, plano de caixa, conciliação, contas a pagar/receber, fiscal, relatório, QA"),
+    ("legal", "Legal", "Jurídico do dia a dia — pesquisa, postura, arquitetura documental, minutas, registro e LGPD, conflitos, operações, QA"),
 ]
 
 # Resumo em PT por agente (linha principal do card). Agente ausente → 1ª frase da description.
@@ -79,6 +81,22 @@ RESUMOS_PT = {
     "sales-designer": "Produz PDF e deck no design system do projeto — HTML com print CSS, export headless e checagem de páginas, fontes e overflow.",
     "sales-qa": "QA da proposta. Veredictos PASS / CONCERNS / FAIL / WAIVED antes de qualquer envio — convenção, marca, rastreabilidade numérica, zero risco no cliente.",
     "sales-closer": "Fechamento: brief de reunião a partir das objeções, follow-up, ledger de propostas. Só envia com PASS e confirmação do usuário.",
+    "finance-analyst": "Coleta e classifica documentos do período, extrai dados para o controller e pesquisa benchmarks, tarifas e índices — toda cifra com documento ou fonte datada. Entrega evidência; não lança.",
+    "finance-strategist": "Escreve a política financeira (margem, reserva, alçadas, prioridade de pagamento, distribuição) e é o gate do orçamento e do plano de caixa. Nunca lança, paga ou escreve relatório.",
+    "finance-planner": "Orçamento, plano de caixa de 13 semanas, forecast com cenários e roadmap de metas — sempre sobre fechamento fechado e política aprovada. Autoridade exclusiva das stories financeiras.",
+    "finance-controller": "Fonte única dos números: plano de contas, conciliação item a item, DRE gerencial, fechamento mensal com #id. Nenhum número entra em relatório, plano ou cobrança sem passar por ele.",
+    "finance-billing": "Contas a receber e a pagar preparadas — cobranças, régua de inadimplência, agenda e lotes de pagamento com documento. Prepara, nunca executa: quem paga é o humano, com PASS e confirmação.",
+    "finance-tax": "Calendário de obrigações, apuração preparatória por tributo com regra e fonte, pacote para o contador. Não declara, não transmite, não recolhe — o contador valida e o usuário executa.",
+    "finance-reporter": "Fechamento em linguagem de sócio, painel de indicadores, relatório para sócios, investidores e banco — todo número com #id do fechamento fechado, nenhum aproximado.",
+    "finance-qa": "Gate final de fechamento, plano, lote de pagamento, cobrança, apuração e relatório — conciliação conferida, cada número com #id, confirmação do usuário antes de executar dinheiro. Veredictos PASS / CONCERNS / FAIL / WAIVED.",
+    "legal-analyst": "Pesquisa lei, jurisprudência, doutrina e o histórico contratual da empresa — fonte primária com artigo ou acórdão e data; separa achado de leitura e nunca emite parecer.",
+    "legal-strategist": "Escreve a postura jurídica (apetite a risco, inegociáveis, negociáveis com piso e teto, foro, postura em conflito) e é o gate de toda minuta e notificação. Nunca redige.",
+    "legal-architect": "Arquitetura documental: matriz de relações por documento, sistema de modelos versionado, hierarquia contrato-mãe/anexos/aditivos. Autoridade exclusiva das stories jurídicas.",
+    "legal-drafter": "Redige e revisa contratos, aditivos, distratos, NDAs e termos a partir do modelo e da postura aprovada, com matriz de desvios em toda minuta. Nunca inventa cláusula sem origem, nunca envia.",
+    "legal-compliance": "Fonte única de prazos e obrigações: registro de contratos vigentes com #id, mapa de dados com base legal, consentimentos, incidentes e calendário regulatório.",
+    "legal-disputes": "Notificação extrajudicial, cobrança, acordo, distrato e dossiê para o advogado externo com prazos com fonte. Prepara; nunca envia, ameaça, assina ou protocola.",
+    "legal-ops": "Depois do PASS: fluxo de assinatura com versão travada, arquivamento, registro, renovações e envio à contraparte só com PASS e confirmação do usuário. Minuta enviada vira versão nova.",
+    "legal-qa": "Gate final de minuta, aditivo, notificação, política e dossiê — matriz de desvios completa, inegociáveis intactos, partes e valores coerentes, base legal com fonte. Veredictos PASS / CONCERNS / FAIL / WAIVED.",
 }
 
 
@@ -183,6 +201,9 @@ def load_photos():
 
 def build():
     agents = load_agents()
+    # Só squads oficiais (com preset). Agente de squad ainda sem preset — em construção noutra sessão — não entra na página.
+    _official = {s[0] for s in SQUADS}
+    agents = [a for a in agents if a['squad'] in _official]
     skills = load_skills()
     amap = load_skill_map(skills)
     photos = load_photos()
