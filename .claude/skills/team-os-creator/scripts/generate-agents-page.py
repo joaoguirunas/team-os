@@ -210,6 +210,16 @@ def build():
     photos = load_photos()
     counts = {s: sum(1 for a in agents if a["squad"] == s) for s, _, _ in SQUADS}
     opus_n = sum(1 for a in agents if a["model"] == "opus")
+    _squad_prefixes = {s for s, _, _ in SQUADS}
+    skill_names_all = [s for s in skills if s != "team-os-creator"]
+    skill_counts = {
+        s: sum(1 for sk in skill_names_all if sk == s or sk.startswith(s + "-"))
+        for s, _, _ in SQUADS
+    }
+    general_skill_names = [
+        sk for sk in skill_names_all
+        if not any(sk == s or sk.startswith(s + "-") for s in _squad_prefixes)
+    ]
     used_by = {}
     for a, sks in amap.items():
         for s in sks:
@@ -250,6 +260,22 @@ def build():
 <div class="agents">{cards}</div>
 </section>''')
 
+    n_skills_total = len(skill_names_all)
+    n_general_skills = len(general_skill_names)
+    totals_rows = "\n".join(
+        f'<tr><td class="squad">{label}</td><td class="n">{counts[s]}</td><td class="n">{skill_counts[s]}</td></tr>'
+        for s, label, _ in SQUADS
+    )
+    totals_table = f'''<table class="totals">
+<caption>Totais por squad — gerado de <code>.claude/agents/</code> e <code>.claude/skills/</code></caption>
+<thead><tr><th>Squad</th><th>Agentes</th><th>Skills próprias</th></tr></thead>
+<tbody>
+{totals_rows}
+<tr><td class="squad">Gerais / orquestração <span style="color:var(--mute);font-weight:300">(deep-research, accessibility, team-os…)</span></td><td class="n">—</td><td class="n">{n_general_skills}</td></tr>
+<tr class="tot"><td>Total</td><td class="n">{len(agents)}</td><td class="n">{n_skills_total}</td></tr>
+</tbody>
+</table>'''
+
     filters = f'<button class="fbtn active" data-f="all">Todos · {len(agents)}</button>' + "".join(
         f'<button class="fbtn" data-f="{s}">{label} · {counts[s]}</button>' for s, label, _ in SQUADS)
 
@@ -262,6 +288,7 @@ def build():
     page = (tpl.replace("{{FILTERS}}", filters)
                .replace("{{SECTIONS}}", "".join(sections))
                .replace("{{SKILLS_JSON}}", skills_json)
+               .replace("{{TOTALS_TABLE}}", totals_table)
                .replace("{{N_AGENTS}}", str(len(agents)))
                .replace("{{N_SQUADS}}", str(len(SQUADS)))
                .replace("{{N_SKILLS}}", str(len(skills) - 1))  # -1: team-os-creator é interna

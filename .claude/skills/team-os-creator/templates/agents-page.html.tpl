@@ -23,6 +23,15 @@ h1{font-family:var(--dsp);font-weight:300;font-size:56px;letter-spacing:-.035em;
 .stat{padding:18px 36px 18px 0;margin-right:36px}
 .stat b{display:block;font-family:var(--dsp);font-weight:300;font-size:34px;color:var(--bone);font-variant-numeric:tabular-nums;line-height:1.1}
 .stat span{font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.totals{margin:32px 0 0;width:100%;border-collapse:collapse;font-size:13.5px}
+.totals caption{text-align:left;font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.totals th,.totals td{padding:9px 14px 9px 0;border-bottom:1px solid var(--hl);text-align:left;font-weight:300}
+.totals th{font-family:var(--mn);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:400}
+.totals td.n{font-variant-numeric:tabular-nums;color:var(--bone)}
+.totals tr.tot td{border-top:1px solid var(--hls);border-bottom:none;color:var(--bone);font-weight:500}
+.totals tr.tot td.n{color:var(--em)}
+.totals td.squad{color:var(--bone)}
+@media (max-width:640px){.totals{font-size:12.5px}.totals th,.totals td{padding:7px 8px 7px 0}}
 .toolbar{position:sticky;top:0;z-index:10;background:linear-gradient(var(--void) 82%,transparent);
  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:20px 0 18px;margin-top:28px}
 .fbtn{font-family:var(--mn);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
@@ -104,6 +113,7 @@ details p{color:var(--mute);margin-top:6px;line-height:1.6}
     <div class="stat"><b>{{N_OPUS}}</b><span>em opus fixo</span></div>
     <div class="stat"><b>100%</b><span>audit conforme</span></div>
   </div>
+  {{TOTALS_TABLE}}
   <div class="toolbar">{{FILTERS}}<input id="q" type="search" placeholder="buscar agente ou skill…" aria-label="Buscar agente ou skill"></div>
   {{SECTIONS}}
   <div class="empty" id="empty">nenhum agente corresponde à busca</div>

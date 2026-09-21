@@ -23,6 +23,15 @@ h1{font-family:var(--dsp);font-weight:300;font-size:56px;letter-spacing:-.035em;
 .stat{padding:18px 36px 18px 0;margin-right:36px}
 .stat b{display:block;font-family:var(--dsp);font-weight:300;font-size:34px;color:var(--bone);font-variant-numeric:tabular-nums;line-height:1.1}
 .stat span{font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.totals{margin:32px 0 0;width:100%;border-collapse:collapse;font-size:13.5px}
+.totals caption{text-align:left;font-family:var(--mn);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.totals th,.totals td{padding:9px 14px 9px 0;border-bottom:1px solid var(--hl);text-align:left;font-weight:300}
+.totals th{font-family:var(--mn);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:400}
+.totals td.n{font-variant-numeric:tabular-nums;color:var(--bone)}
+.totals tr.tot td{border-top:1px solid var(--hls);border-bottom:none;color:var(--bone);font-weight:500}
+.totals tr.tot td.n{color:var(--em)}
+.totals td.squad{color:var(--bone)}
+@media (max-width:640px){.totals{font-size:12.5px}.totals th,.totals td{padding:7px 8px 7px 0}}
 .toolbar{position:sticky;top:0;z-index:10;background:linear-gradient(var(--void) 82%,transparent);
  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:20px 0 18px;margin-top:28px}
 .fbtn{font-family:var(--mn);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
@@ -104,6 +113,24 @@ details p{color:var(--mute);margin-top:6px;line-height:1.6}
     <div class="stat"><b>23</b><span>em opus fixo</span></div>
     <div class="stat"><b>100%</b><span>audit conforme</span></div>
   </div>
+  <table class="totals">
+<caption>Totais por squad — gerado de <code>.claude/agents/</code> e <code>.claude/skills/</code></caption>
+<thead><tr><th>Squad</th><th>Agentes</th><th>Skills próprias</th></tr></thead>
+<tbody>
+<tr><td class="squad">Dev</td><td class="n">12</td><td class="n">9</td></tr>
+<tr><td class="squad">Sites</td><td class="n">10</td><td class="n">9</td></tr>
+<tr><td class="squad">Social</td><td class="n">6</td><td class="n">14</td></tr>
+<tr><td class="squad">Traffic</td><td class="n">10</td><td class="n">4</td></tr>
+<tr><td class="squad">PM</td><td class="n">10</td><td class="n">0</td></tr>
+<tr><td class="squad">Sales</td><td class="n">8</td><td class="n">6</td></tr>
+<tr><td class="squad">Brand</td><td class="n">8</td><td class="n">6</td></tr>
+<tr><td class="squad">Finance</td><td class="n">8</td><td class="n">5</td></tr>
+<tr><td class="squad">Legal</td><td class="n">8</td><td class="n">5</td></tr>
+<tr><td class="squad">SEO</td><td class="n">15</td><td class="n">27</td></tr>
+<tr><td class="squad">Gerais / orquestração <span style="color:var(--mute);font-weight:300">(deep-research, accessibility, team-os…)</span></td><td class="n">—</td><td class="n">21</td></tr>
+<tr class="tot"><td>Total</td><td class="n">95</td><td class="n">106</td></tr>
+</tbody>
+</table>
   <div class="toolbar"><button class="fbtn active" data-f="all">Todos · 95</button><button class="fbtn" data-f="dev">Dev · 12</button><button class="fbtn" data-f="sites">Sites · 10</button><button class="fbtn" data-f="social">Social · 6</button><button class="fbtn" data-f="traffic">Traffic · 10</button><button class="fbtn" data-f="pm">PM · 10</button><button class="fbtn" data-f="sales">Sales · 8</button><button class="fbtn" data-f="brand">Brand · 8</button><button class="fbtn" data-f="finance">Finance · 8</button><button class="fbtn" data-f="legal">Legal · 8</button><button class="fbtn" data-f="seo">SEO · 15</button><input id="q" type="search" placeholder="buscar agente ou skill…" aria-label="Buscar agente ou skill"></div>
   <section class="squad" data-squad="dev" id="dev">
 <h2><span class="idx">01</span> Dev <span class="count">12 agentes</span></h2>
