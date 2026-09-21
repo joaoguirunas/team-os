@@ -30,7 +30,7 @@ h1{font-family:var(--dsp);font-weight:300;font-size:56px;letter-spacing:-.035em;
 .totals td.n{font-variant-numeric:tabular-nums;color:var(--bone)}
 .totals tr.tot td{border-top:1px solid var(--hls);border-bottom:none;color:var(--bone);font-weight:500}
 .totals tr.tot td.n{color:var(--em)}
-.totals td.squad{color:var(--bone)}
+.totals td.sqname{color:var(--bone)}
 @media (max-width:640px){.totals{font-size:12.5px}.totals th,.totals td{padding:7px 8px 7px 0}}
 .toolbar{position:sticky;top:0;z-index:10;background:linear-gradient(var(--void) 82%,transparent);
  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:20px 0 18px;margin-top:28px}
@@ -135,7 +135,7 @@ details p{color:var(--mute);margin-top:6px;line-height:1.6}
 <script>
 const SKILLS = {{SKILLS_JSON}};
 const btns=[...document.querySelectorAll(".fbtn")],cards=[...document.querySelectorAll(".agent")],
-      squads=[...document.querySelectorAll(".squad")],q=document.getElementById("q"),
+      squads=[...document.querySelectorAll("section.squad")],q=document.getElementById("q"),
       empty=document.getElementById("empty"),ov=document.getElementById("ov");
 let f="all";
 function apply(){

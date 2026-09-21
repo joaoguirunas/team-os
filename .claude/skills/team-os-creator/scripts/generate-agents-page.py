@@ -263,7 +263,7 @@ def build():
     n_skills_total = len(skill_names_all)
     n_general_skills = len(general_skill_names)
     totals_rows = "\n".join(
-        f'<tr><td class="squad">{label}</td><td class="n">{counts[s]}</td><td class="n">{skill_counts[s]}</td></tr>'
+        f'<tr><td class="sqname">{label}</td><td class="n">{counts[s]}</td><td class="n">{skill_counts[s]}</td></tr>'
         for s, label, _ in SQUADS
     )
     totals_table = f'''<table class="totals">
@@ -271,7 +271,7 @@ def build():
 <thead><tr><th>Squad</th><th>Agentes</th><th>Skills próprias</th></tr></thead>
 <tbody>
 {totals_rows}
-<tr><td class="squad">Gerais / orquestração <span style="color:var(--mute);font-weight:300">(deep-research, accessibility, team-os…)</span></td><td class="n">—</td><td class="n">{n_general_skills}</td></tr>
+<tr><td class="sqname">Gerais / orquestração <span style="color:var(--mute);font-weight:300">(deep-research, accessibility, team-os…)</span></td><td class="n">—</td><td class="n">{n_general_skills}</td></tr>
 <tr class="tot"><td>Total</td><td class="n">{len(agents)}</td><td class="n">{n_skills_total}</td></tr>
 </tbody>
 </table>'''
