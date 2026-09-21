@@ -1,8 +1,8 @@
 ---
 name: sites-ux-interaction
-description: Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em páginas Next.js.
-version: "1.0"
-updated: "2026-09-04"
+description: Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em Next.js ou Astro.
+version: "1.1"
+updated: "2026-09-20"
 ---
 
 # Sites UX Interaction — Padrões de Interação
@@ -24,6 +24,16 @@ useEffect(() => {
 )}>
 ```
 
+**Astro nativo** (sem hooks — `<script>` roda uma vez no client, escopado ao componente):
+```astro
+<header id="site-header">…</header>
+<script>
+  const header = document.getElementById('site-header')
+  const onScroll = () => header?.classList.toggle('scrolled', window.scrollY > 20)
+  window.addEventListener('scroll', onScroll, { passive: true })
+</script>
+```
+
 ### Mobile nav (Sheet)
 ```tsx
 <Sheet>
@@ -35,6 +45,10 @@ useEffect(() => {
   <SheetContent side="right">...</SheetContent>
 </Sheet>
 ```
+
+**Em Astro**, duas opções — escolher conforme o projeto já tiver React instalado ou não:
+- **Nativo, sem framework:** `<details>`/`<summary>` com CSS, zero JS enviado ao navegador.
+- **Ilha React do `Sheet` acima**, hidratada só no breakpoint mobile: `<Sheet client:media="(max-width: 768px)">…</Sheet>` — vale quando o projeto já usa React em outras ilhas e não compensa reescrever o componente em CSS puro.
 
 ## Animações com Motion (`motion/react`, ex-Framer Motion)
 
@@ -54,6 +68,11 @@ useEffect(() => {
 const { ref, inView } = useInView({ threshold: 0.1, triggerOnce: true })
 <motion.div ref={ref} initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} />
 ```
+
+**Em Astro**, sem Motion/hooks, o equivalente nativo é `IntersectionObserver` puro + classes CSS (ver
+`/sites-scroll-motion` Seção 2 para o padrão completo). Quando o projeto já usa React em outras ilhas e
+precisa da física do Motion (spring, stagger), o componente acima vira uma ilha com `client:visible` —
+a API do Motion não muda, só a forma como ela é hidratada.
 
 ## Micro-interações
 
@@ -84,3 +103,13 @@ useEffect(() => {
 
 const transition = prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }
 ```
+
+**Astro nativo:** sem `useEffect` (não existe em `.astro`) e sem re-render para gerenciar — o `<script>`
+roda uma vez no load:
+```astro
+<script>
+  const mq = matchMedia('(prefers-reduced-motion: reduce)')
+  document.documentElement.classList.toggle('reduce-motion', mq.matches)
+</script>
+```
+mais simples que a versão Next porque não há hidratação de UI para sincronizar.

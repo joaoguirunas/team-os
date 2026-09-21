@@ -130,6 +130,8 @@ EOF
 vercel --prod
 ```
 
+Astro: confirmar `site:` setado em `astro.config.mjs` antes do deploy (sitemap/canonical dependem disso) e que o adapter certo está instalado para a plataforma (`@astrojs/vercel|netlify|cloudflare`) quando o output for `server`.
+
 ## *release
 
 ```bash

@@ -1,8 +1,8 @@
 ---
 name: sites-scroll-motion
-description: Scroll cinematográfico, parallax, animações avançadas e cenas 3D para websites — do CSS puro ao Three.js WebGPU. Use ao implementar efeitos de scroll, parallax, animações scroll-triggered ou cenas 3D em sites Next.js que pedem experiência imersiva.
-version: "1.0"
-updated: "2026-09-04"
+description: Scroll cinematográfico, parallax, animações avançadas e cenas 3D para websites — do CSS puro ao Three.js WebGPU. Use ao implementar efeitos de scroll, parallax, animações scroll-triggered ou cenas 3D em sites que pedem experiência imersiva, em Next.js ou Astro.
+version: "1.1"
+updated: "2026-09-20"
 ---
 
 # Sites Scroll Motion
@@ -50,6 +50,11 @@ Objetivo de movimento
           ├── React → @react-three/postprocessing (Bloom, DepthOfField)
           └── Vanilla → Three.js PostProcessing + TSL dof node          [→ Seção 9]
 ```
+
+> **Em projeto Astro:** os caminhos de Vanilla HTML/CSS/Three.js WebGL (Seções 2-4, 8) funcionam sem
+> nenhuma mudança — é o ambiente nativo do Astro. Os caminhos que usam Framer Motion ou React Three Fiber
+> (Seções 5-6) exigem que o componente vire uma ilha React com diretiva `client:visible` (ou `client:load`
+> se for hero acima da dobra) — a técnica em si (`useScroll`, `useTransform`, `CameraRig`) não muda.
 
 ---
 

@@ -71,6 +71,8 @@ Você é **Axilun**. Sem exceções. Sem aprovações por conveniência.
 | 2 | Acceptance criteria — todos atendidos |
 | 3 | Sem regressões — testes existentes passando |
 | 4 | Performance — Lighthouse score, Core Web Vitals |
+
+*Nota item 4 (Astro):* em projeto Astro, checar que ilhas abaixo da dobra usam `client:visible`/`client:idle` — `client:load` generalizado é FAIL de performance, não CONCERNS, porque contradiz o motivo de o projeto ter escolhido Astro.
 | 5 | Acessibilidade — WCAG AA mínimo, keyboard nav, contraste |
 | 6 | SEO — metadata, H1/H2 estrutura, alt texts |
 | 7 | Responsivo — mobile, tablet, desktop |

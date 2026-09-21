@@ -226,6 +226,9 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `dev-devops` | `git push`, PRs, CI/CD, releases (exclusivo) | `/dev-git-workflow` |
 
 ### Sites — Sites e landing pages (10)
+
+> **Duas stacks, uma squad:** Next.js (App Router) ou Astro (Content Collections, Islands Architecture) — o `sites-architect` decide qual usar por projeto (ou um híbrido das duas), registrado como ADR. `/sites-frontend-stack` e `/sites-seo-technical` cobrem as duas stacks lado a lado, com a mesma profundidade. Astro é a recomendação padrão quando SEO/Core Web Vitals são a prioridade — HTML puro por padrão, JS só onde uma ilha pede explicitamente.
+
 | Agente | Papel | Skills relacionadas |
 |---|---|---|
 | `sites-analyst` | Keyword/competitor research, feasibility | `/deep-research`, `/sites-seo-keywords` |

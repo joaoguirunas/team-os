@@ -119,9 +119,46 @@ Template: `.claude/skills/team-os/templates/story.md`. Seguir formato Obsidian.
 
 **GO** (≥ 4/5): status → `active`. **NO-GO**: lista fixes, permanece em `backlog`. Story sem GO nunca vai para desenvolvimento.
 
+## Workflow — escolher stack (Next.js / Astro / Híbrido)
+
+Registrar sempre como ADR (`docs/smart-memory/decisions/ADR-{N}-stack-choice.md`), com a pergunta feita ao usuário quando o sinal não for claro (ex.: "quanto do site precisa de área logada/dashboard?").
+
+**Critérios (nesta ordem — o primeiro que bater decide):**
+
+| # | Critério | Decisão |
+|---|---|---|
+| 1 | Precisa de área autenticada complexa, painel com muito estado no cliente, ou infraestrutura de API pesada (webhooks, filas, jobs)? | **Next.js** (App Router, Server Actions, Route Handlers) |
+| 2 | É majoritariamente conteúdo — institucional, landing page, blog, documentação, portfólio — e o critério de sucesso inclui SEO/Core Web Vitals como prioridade dura? | **Astro** — entrega HTML puro por padrão (zero JavaScript enviado ao navegador, a menos que uma ilha peça explicitamente); crawler de busca e de IA lê o conteúdo completo sem depender de execução de JS, e LCP/CLS/INP partem de uma base muito melhor que qualquer app React hidratado inteiro |
+| 3 | Tem as duas coisas — um site de conteúdo pesado em SEO E uma área logada/dashboard robusta? | **Híbrido**, e aqui existem dois formatos, nunca confundir: **Híbrido "de ilha"** — um único projeto Astro, com componentes React/Vue/Svelte pontuais hidratados via diretiva `client:*` só onde há interatividade real (um carrinho, um formulário complexo, um widget); resto da página continua HTML estático, um só deploy. **Híbrido "separado"** — dois projetos/deploys: o site de conteúdo em Astro (domínio raiz ou `www.`) e o app autenticado em Next.js (subdomínio `app.` ou path via reverse proxy/rewrite); cada um evolui e escala independente, a complexidade extra é manter os dois em sincronia de marca e navegação cruzada |
+| 4 | Site pequeno, institucional, sem blog nem necessidade de escalar conteúdo? | Ambos servem — decisão vira preferência do time/deadline; registrar isso no ADR também (não deixar "achismo" sem nota) |
+
+**Nunca decidir por "o que o time já sabe"** — registrar a lacuna de conhecimento como risco no ADR, não como critério de escolha.
+
+**Template do ADR:**
+```markdown
+# ADR-{N}: Escolha de stack — {slug do projeto}
+
+## Contexto
+{o que o projeto precisa}
+
+## Critério decisivo
+{qual dos 4 critérios acima bateu}
+
+## Decisão
+Next.js | Astro | Híbrido de ilha | Híbrido separado
+
+## Consequências
+{o que isso implica para dev-alpha/beta/gamma, deploy, SEO}
+```
+
+Notificar lead ao concluir:
+```
+SendMessage({sessão-principal}, "Stack decidida: {X} — ADR-{N} em decisions/. Motivo: {critério}.")
+```
+
 ## Especializações de sites
 
-- Arquitetura de rotas (App Router Next.js)
+- Arquitetura de rotas — App Router (Next.js), roteamento por arquivo + Content Collections (Astro), ou híbrido
 - Performance: Core Web Vitals, LCP, CLS, INP
 - SEO on-page structure (H1/H2 hierarchy, canonical, sitemap)
 - Landing page vs multi-page vs blog architecture

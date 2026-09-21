@@ -164,7 +164,7 @@ SendMessage({sessão-principal}, "Component spec '{Nome}' pronta — agents/ux/c
   Regras de uso: o stack do `--stack` é o stack **real** do projeto (leia a smart-memory, não presuma). Nenhuma paleta, tipografia ou preset de animação entra numa spec sem ter saído de uma dessas buscas — estética pessoal não é justificativa.
 - `/accessibility` — WCAG 2.2 audit e recomendações
 - `/web-design-guidelines` — Vercel UI guidelines
-- `/sites-frontend-stack` — stack frontend padrão: Next.js App Router, Tailwind v4, shadcn/ui e tokens de design
+- `/sites-frontend-stack` — stack frontend padrão: Next.js ou Astro, Tailwind v4 e tokens de design
 - `/sites-ux-interaction` — micro-interações, animações, scroll
 - `/sites-scroll-motion` — scroll cinematográfico, parallax, Three.js/WebGPU
 - `/sites-canvas-design` — Canvas HTML5 e SVG custom

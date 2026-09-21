@@ -1,8 +1,8 @@
 ---
 name: sites-deployment
-description: Deploy de sites Next.js — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release. Use ao publicar ou configurar deploy de um site, montar pipeline de CI/CD, gerenciar variáveis de ambiente ou preparar release para produção.
-version: "1.0"
-updated: "2026-09-04"
+description: Deploy de sites Next.js ou Astro — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release.
+version: "1.1"
+updated: "2026-09-20"
 ---
 
 # Sites Deployment — Plataformas e Processo
@@ -14,7 +14,7 @@ updated: "2026-09-04"
 [ ] npm run lint — sem warnings críticos
 [ ] npm run typecheck — sem erros de tipo
 [ ] Variáveis de ambiente verificadas (.env.example actualizado)
-[ ] Images optimizadas (next/image em todos os casos)
+[ ] Images otimizadas (next/image no Next.js; astro:assets Image/Picture no Astro)
 [ ] Lighthouse score > 90 em todas as categorias
 ```
 
@@ -44,6 +44,56 @@ netlify deploy --dir=.next --prod
 npm i -g wrangler
 wrangler pages deploy .next --project-name=nome-projeto
 ```
+
+## Astro
+
+Diferença chave vs Next.js: build output padrão do Astro é `dist/` (não `.next/`) quando `output: 'static'`;
+com adapter + `output: 'server'`, cada plataforma gera seu próprio formato de função serverless/edge (não
+mais `.next/`). Sempre registrar `site:` no `astro.config.mjs` **antes** de configurar sitemap/canonical —
+sem isso as URLs absolutas quebram.
+
+| Plataforma | Adapter Astro | Build output | Comando |
+|---|---|---|---|
+| Vercel | `@astrojs/vercel` (ou zero-config — Vercel detecta Astro nativamente) | `.vercel/output` | `vercel --prod` (igual à trilha Next) |
+| Netlify | `@astrojs/netlify` | `dist/` (SSG) ou função serverless (SSR) | `netlify deploy --dir=dist --prod` (SSG) |
+| Cloudflare Pages | `@astrojs/cloudflare` | `dist/` | `wrangler pages deploy dist --project-name=nome` |
+
+```bash
+# Vercel — zero-config ou com adapter explícito
+npm i -g vercel
+vercel login
+vercel link
+vercel --prod
+
+# Netlify — output estático (SSG)
+npm i -g netlify-cli
+npm i @astrojs/netlify
+netlify login
+netlify init
+netlify deploy --dir=dist --prod
+
+# Cloudflare Pages
+npm i -g wrangler
+npm i @astrojs/cloudflare
+wrangler pages deploy dist --project-name=nome-projeto
+```
+
+```js
+// astro.config.mjs
+import { defineConfig } from 'astro/config'
+import vercel from '@astrojs/vercel' // ou netlify / cloudflare, conforme a plataforma
+
+export default defineConfig({
+  site: 'https://exemplo.pt', // obrigatório — sitemap e canonical dependem disso
+  output: 'static',           // default — tudo pré-renderizado (SSG)
+  adapter: vercel(),          // só necessário quando output: 'server' ou SSR seletivo por rota
+})
+```
+
+Não existe mais um modo `'hybrid'` separado nas versões atuais do Astro. Todos os três adapters suportam
+SSR total (`output: 'server'`) e SSR seletivo por rota — que é `output: 'static'` (o modo padrão) mais
+`export const prerender = false` dentro da página/endpoint específico que precisa rodar por request. Ou
+seja, "híbrido" hoje é uma flag por página dentro do modo `static`, não uma opção separada de `output`.
 
 ## GitHub Actions (CI/CD)
 
