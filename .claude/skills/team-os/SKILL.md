@@ -277,7 +277,7 @@ Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
 
 **4c. Dimensionamento — um agente por workstream genuinamente independente:**
 
-A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale só conforme o trabalho genuinamente se beneficiar de mais paralelismo — **nunca acima de 10 simultâneos** (teto duro do ecossistema). O limite abaixo do teto NÃO é um número mágico — é **independência real** + budget de tokens. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default.
+A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale conforme o trabalho genuinamente se beneficiar de mais paralelismo. **Sem teto fixo** — o dimensionamento não é um número mágico, é **independência real** (workstreams com ownership de arquivos disjunto) + budget de tokens: 15 workstreams genuinamente independentes justificam 15 teammates. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default nem imponha um limite arbitrário quando o paralelismo real justifica mais.
 
 ```
 1 workstream independente  =  1 agente
@@ -823,7 +823,7 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 }
 ```
 
-**Dimensionamento:** a regra canônica é a da **Fase 4c** — 1 workstream independente = 1 agente; comece com 3-5; máx 10 simultâneos; research adversarial = 3-5 pesquisadores. ("5-6 tasks por agente" é só o **throughput esperado** do self-claim, nunca regra de dimensionamento.)
+**Dimensionamento:** a regra canônica é a da **Fase 4c** — 1 workstream independente = 1 agente; comece com 3-5; escale sem teto fixo conforme a independência real do trabalho; research adversarial = 3-5 pesquisadores. ("5-6 tasks por agente" é só o **throughput esperado** do self-claim, nunca regra de dimensionamento.)
 
 **Subagent definitions:** Use nomes dos agentes em `.claude/agents/` ao spawnar:
 ```

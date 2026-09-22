@@ -72,14 +72,14 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 | 1 | **Setup** | Instalar a squad no projeto via `/team-os-creator *install` (uma vez por projeto). | CT |
 | 2 | **Bootstrap** | `/team-os` no início de **toda** sessão — valida o ambiente de Agent Teams nativo. | Projeto |
 | 3 | **Discovery** | Sem smart-memory? O team-os lê o codebase real e **constrói a smart-memory populada** antes de qualquer trabalho. | Projeto |
-| 4 | **Team Design** | Objetivo → mapeia **workstreams independentes** → spawna o time certo (**comece com 3-5**, 1 por workstream independente, máx 10), com ownership exclusivo de arquivos — onde o ownership não é disjunto, serializa com task dependencies. | Projeto |
+| 4 | **Team Design** | Objetivo → mapeia **workstreams independentes** → spawna o time certo (**comece com 3-5**, 1 por workstream independente, sem teto fixo), com ownership exclusivo de arquivos — onde o ownership não é disjunto, serializa com task dependencies. | Projeto |
 | 5 | **Parallel Execution** | TaskList compartilhada + self-claim + comunicação **peer-to-peer** entre teammates. | Projeto |
 | 6 | **Sync & QA** | Veredictos formais (PASS/CONCERNS/FAIL/WAIVED), gates por hook, hardening. | Projeto |
 | 7 | **Memory & Ship** | Cada agente grava findings na smart-memory; DevOps faz push/PR/release. | Projeto |
 
 ### Princípios
 
-- **Paralelismo é o default.** O limite não é um número mágico — é **independência real** (ownership de arquivos disjunto) + budget de tokens. 10 módulos independentes → 10 agentes.
+- **Paralelismo é o default, sem teto fixo.** O limite não é um número mágico — é **independência real** (ownership de arquivos disjunto) + budget de tokens. N módulos independentes → N agentes, seja 5 ou 15.
 - **Smart-memory é o cérebro compartilhado.** Todo agente lê ao iniciar e grava ao concluir. O time nunca recomeça do zero.
 - **Autoridade clara, sem sobreposição.** Quem cria story, quem dá veredicto, quem faz push — cada papel tem fronteira explícita.
 - **Uma fonte da verdade.** Tudo nasce no CT e é propagado; nunca se edita agente direto no projeto.
@@ -209,7 +209,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ### Dev — Fullstack SaaS (12)
 
-> Exceção documentada ao teto de 10 por squad: a dev inclui a camada completa de dados/BI (`dev-bi`, `dev-data-engineer`, `dev-data-performance`), chegando a 12.
+> Sem teto de tamanho por squad — a dev inclui a camada completa de dados/BI (`dev-bi`, `dev-data-engineer`, `dev-data-performance`), chegando a 12.
 | Agente | Papel | Skills relacionadas |
 |---|---|---|
 | `dev-analyst` | Pesquisa técnica, libs, CVEs, feasibility | `/deep-research`, `/data-analytics-engineering` |
