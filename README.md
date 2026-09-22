@@ -586,7 +586,7 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 
 **Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes (fotos, personas, autoridades, skills clicáveis com resumo). Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

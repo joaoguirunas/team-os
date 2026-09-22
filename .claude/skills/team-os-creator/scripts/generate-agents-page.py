@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """generate-agents-page.py — gera docs/agentes.html (página oficial dos agentes do CT).
 
+Card inteiro clicável abre modal de PERFIL COMPLETO por agente (bio, matriz de autoridade,
+regras absolutas, skills) e modal de skill enriquecido (versão, seções), com navegação
+cruzada entre os dois modais. JSON embutido protegido contra fechamento prematuro de
+<script> (safe_json escapa "</" — nunca confiar em texto livre sem escapar).
+
 Fontes de dados (tudo do repositório, nada manual na página):
-  - .claude/agents/*.md          → frontmatter + persona + autoridade exclusiva
+  - .claude/agents/*.md          → frontmatter + persona + autoridade exclusiva + bio (1º parágrafo
+                                    após o H1) + matriz de autoridade + regras absolutas (para o modal)
   - README.md                    → coluna "Skills relacionadas" (última célula das tabelas §5)
-  - .claude/skills/*/SKILL.md    → descrição de cada skill (para o modal)
+  - .claude/skills/*/SKILL.md    → descrição, versão, data e títulos de seção de cada skill (para o modal)
   - RESUMOS_PT (dict abaixo)     → resumo em PT por agente (fallback: 1ª frase da description)
   - fotos (opcional): docs/fotos-agentes/<nome>.png no próprio CT, ou --photos <dir> → comprimidas e embutidas
     como data URI (agente sem foto fica com o monograma).
@@ -111,6 +117,63 @@ def first_sentence(text):
     return s if len(s) <= 220 else s[:217] + "…"
 
 
+def clean_md(text):
+    """Tira ** * ` de ênfase markdown pra texto puro de modal, preserva o resto."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"(?<!\w)\*(.+?)\*(?!\w)", r"\1", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    return " ".join(text.split())
+
+
+def load_agent_details(path):
+    """Lê o corpo do agente e extrai bio (1º parágrafo após o H1), matriz de autoridade e regras absolutas."""
+    out = {"bio": "", "matrix": [], "rules": []}
+    text = open(path).read()
+    m = re.match(r"^---\n(.*?)\n---\n(.*)", text, re.S)
+    if not m:
+        return out
+    body = m.group(2)
+    h1 = re.search(r"^# (.+)$", body, re.M)
+    if h1:
+        after = body[h1.end():]
+        para = re.match(r"\s*\n+([^\n].*?)(?=\n\s*\n|\n##)", after, re.S)
+        if para:
+            out["bio"] = clean_md(para.group(1))
+    mat = re.search(r"\*\*Matriz de autoridade:?\*\*\s*\n((?:\|.*\n?)+)", body)
+    if mat:
+        rows = [r for r in mat.group(1).strip().split("\n") if r.strip().startswith("|")]
+        rows = [r for r in rows if not re.match(r"^\|[\s:|-]+\|$", r)]  # tira separador ---
+        for r in rows[1:] if rows else []:  # rows[0] é o cabeçalho
+            cells = [clean_md(c.strip()) for c in r.strip("|").split("|")]
+            if len(cells) >= 2:
+                out["matrix"].append(cells[:3])
+    ra = re.search(r"##\s*Regras absolutas\s*\n((?:.*\n?)+?)(?=\n##|\Z)", body)
+    if ra:
+        bullets = re.findall(r"^[-*]\s+(.+)$", ra.group(1), re.M)
+        out["rules"] = [clean_md(b) for b in bullets[:8]]
+    return out
+
+
+def load_skill_details(path):
+    """Lê o SKILL.md e extrai versão, data de atualização e os títulos de seção (## ...)."""
+    out = {"version": "", "updated": "", "sections": []}
+    text = open(path).read()
+    m = re.match(r"^---\n(.*?)\n---", text, re.S)
+    if m:
+        vm = re.search(r'^version:\s*"?([\w.]+)"?', m.group(1), re.M)
+        um = re.search(r'^updated:\s*"?([\d-]+)"?', m.group(1), re.M)
+        out["version"] = vm.group(1) if vm else ""
+        out["updated"] = um.group(1) if um else ""
+    out["sections"] = [clean_md(t) for t in re.findall(r"^##\s+(.+)$", text, re.M)][:8]
+    return out
+
+
+def safe_json(obj):
+    """json.dumps não escapa '</' — texto livre com '</script' fecharia a tag cedo e quebraria
+    todo o JS depois. Escapar '</' pra '<\\/' é o padrão pra JSON embutido em HTML."""
+    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+
+
 def load_agents():
     agents = []
     adir = os.path.join(ROOT, ".claude", "agents")
@@ -125,6 +188,7 @@ def load_agents():
         persona = (h1.group(1).strip() if h1 else name)
         aut = re.search(r"\*\*Autoridade[s]? exclusiva[s]?:?\*\*:?\s*(.+)", body)
         desc = fm_field(fm, "description")
+        details = load_agent_details(os.path.join(adir, f))
         agents.append({
             "name": name, "squad": name.split("-")[0], "persona": persona,
             "desc": desc, "resumo": RESUMOS_PT.get(name) or first_sentence(desc),
@@ -132,6 +196,7 @@ def load_agents():
             "hook": "block-git-push" in fm,
             "aut": re.sub(r"[`*]", "", aut.group(1)).strip()[:180] if aut else "",
             "mcp": len([t for t in fm_field(fm, "tools").split(",") if t.strip().startswith("mcp__")]),
+            **details,
         })
     return agents
 
@@ -150,7 +215,7 @@ def load_skills():
             dm = re.search(r"^description:\s*(.+?)(?=\n[a-zA-Z_-]+:|\Z)", m.group(1), re.S | re.M)
             if dm:
                 desc = " ".join(dm.group(1).split())
-        skills[d] = desc
+        skills[d] = {"desc": desc, **load_skill_details(p)}
     return skills
 
 
@@ -242,13 +307,13 @@ def build():
         aut = (f'<div class="aut"><span>autoridade exclusiva</span>{html.escape(a["aut"])}</div>' if a["aut"] else "")
         q = html.escape((a["name"] + " " + persona + " " + a["desc"] + " " + a["resumo"] + " "
                          + " ".join(amap.get(a["name"], []))).lower(), quote=True)
-        return f'''<article class="agent" data-squad="{a["squad"]}" data-q="{q}">
+        return f'''<article class="agent" data-squad="{a["squad"]}" data-q="{q}" data-agent="{a["name"]}" tabindex="0" role="button" aria-label="Ver perfil completo de {html.escape(pname)}">
 <div class="agent-top">{photo}<div><h3>{html.escape(pname)}</h3>{f'<div class="role">{html.escape(ptitle)}</div>' if ptitle else ''}<code>{a["name"]}</code></div></div>
 <p class="resumo">{html.escape(a["resumo"])}</p>
-<details><summary>descrição completa</summary><p>{html.escape(a["desc"])}</p></details>
 {aut}
 {f'<div class="skills"><span class="skills-l">skills</span>{chips}</div>' if chips else ''}
 <footer>{"".join(meta)}</footer>
+<div class="vermais"><span>perfil completo</span></div>
 </article>'''
 
     sections = []
@@ -279,14 +344,31 @@ def build():
     filters = f'<button class="fbtn active" data-f="all">Todos · {len(agents)}</button>' + "".join(
         f'<button class="fbtn" data-f="{s}">{label} · {counts[s]}</button>' for s, label, _ in SQUADS)
 
-    skills_json = json.dumps(
-        {s: {"desc": skills[s], "agents": sorted(used_by.get(s, []))} for s in skills},
-        ensure_ascii=False)
+    squad_label = {s: label for s, label, _ in SQUADS}
+
+    def agent_js_entry(a):
+        persona = a["persona"]
+        pname, ptitle = (persona.split("—", 1) + [""])[:2] if "—" in persona else (persona, "")
+        pname, ptitle = pname.strip(), ptitle.strip() or persona
+        return {
+            "role": ptitle, "persona": pname, "squad": squad_label.get(a["squad"], a["squad"]),
+            "desc": a["desc"], "bio": a["bio"], "matrix": a["matrix"], "rules": a["rules"],
+            "skills": amap.get(a["name"], []),
+            "model": a["model"], "effort": a["effort"], "hook": a["hook"], "mcp": a["mcp"],
+        }
+
+    agents_json = safe_json({a["name"]: agent_js_entry(a) for a in agents})
+    skills_json = safe_json({
+        s: {"desc": skills[s]["desc"], "version": skills[s]["version"], "updated": skills[s]["updated"],
+            "sections": skills[s]["sections"], "agents": sorted(used_by.get(s, []))}
+        for s in skills
+    })
 
     tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates",
                             "agents-page.html.tpl")).read()
     page = (tpl.replace("{{FILTERS}}", filters)
                .replace("{{SECTIONS}}", "".join(sections))
+               .replace("{{AGENTS_JSON}}", agents_json)
                .replace("{{SKILLS_JSON}}", skills_json)
                .replace("{{TOTALS_TABLE}}", totals_table)
                .replace("{{N_AGENTS}}", str(len(agents)))
