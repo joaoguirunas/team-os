@@ -1,6 +1,6 @@
 # team-os — by João Guirunas
 
-Repositório fonte do pack **team-os**: 95 agentes e 107 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Repositório fonte do pack **team-os**: 95 agentes e 108 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
 > 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 95 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
@@ -13,7 +13,8 @@ O CT é a **fonte da verdade** — qualquer alteração em agentes ou skills é 
 
 - **`/team-os`** — Bootstrap e orquestração de sessões Agent Teams. **É distribuída para todos os projetos** (obrigatória — o usuário roda `/team-os` no início de cada sessão). → [README.md §3](./README.md#3-skill-principal-team-os)
 - **`/team-os-creator`** — Factory de agentes. **Única skill exclusiva do CT** — nunca copiada para projetos destino. → [README.md §4](./README.md#4-skill-principal-team-os-creator)
-- **`/maestri-os`** — **Sala de Controle** (recurso opt-in para o Maestri): roteia pedidos entre os terminais dos projetos. Vive numa pasta própria **sem agentes e sem `team-os`**; nunca é propagada sozinha — só via `*install --squads none --extra-skills maestri-os`. → [README.md §6 — Sala de Controle](./README.md#sala-de-controle--maestri-os-recurso-para-o-maestri)
+- **`/sala-de-controle`** — **Sala de Controle** (opt-in) das sessões do Claude Code: lugar único de comando — relê todas as sessões e a etapa de cada projeto pela smart-memory, despacha cada pedido para a sessão certa e propõe a organização de pastas. Vive numa pasta isolada (`<raiz>/1 | Sala de Controle`) **sem agentes e sem `team-os`**; só via `*install --squads none --extra-skills sala-de-controle`. → [README.md §6 — Sala de Controle](./README.md#sala-de-controle--sala-de-controle-sessões-do-claude-code)
+- **`/maestri-os`** — **Sala de Controle** no modo Maestri (recurso opt-in para o Maestri): roteia pedidos entre os terminais dos projetos. Vive numa pasta própria **sem agentes e sem `team-os`**; nunca é propagada sozinha — só via `*install --squads none --extra-skills maestri-os`. → [README.md §6 — Sala de Controle](./README.md#sala-de-controle--maestri-os-recurso-para-o-maestri)
 
 ## Padrão de agentes
 
@@ -39,7 +40,7 @@ Os hooks em `.claude/hooks/` são referenciados diretamente no frontmatter dos a
 - `check-proposal-progress.sh` — hook `TaskCompleted`: task de emissão/envio de proposta (squad sales) só fecha com PASS do `sales-qa` **e** confirmação explícita do usuário
 - `check-finance-progress.sh` — hook `TaskCompleted`: task de execução financeira (pagar, transferir, emitir, recolher, enviar relatório — squad finance) só fecha com PASS do `finance-qa` **e** confirmação explícita do usuário; a squad prepara, o humano executa
 - `check-legal-progress.sh` — hook `TaskCompleted`: task de saída jurídica (enviar minuta/notificação, assinar, protocolar, publicar — squad legal) só fecha com PASS do `legal-qa` **e** confirmação explícita do usuário; a squad prepara, o advogado e o usuário executam
-- `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
+- `team-os-session-title.sh` — hook `SessionStart` que nomeia a sessão por "projeto · branch" (preserva o padrão `<PASTA> | <Título>`) (instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`)
 
 ## Fluxo de trabalho
 

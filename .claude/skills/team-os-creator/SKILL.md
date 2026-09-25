@@ -25,7 +25,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 10. **`*migrate` converte agentes antigos** — remove "Contrato com team-os", injeta "Native Teams Protocol".
 11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
 12. **DEFINITION OF DONE — toda alteração em agente/skill é entregue COMPLETA e REFINADA, sem ser lembrado.** Ao criar/atualizar qualquer agente ou skill, executar SEMPRE o ciclo inteiro de uma vez (ver "Definition of Done" abaixo): refinar tudo → sincronizar docs (contagens + catálogo no `README.md` e `CLAUDE.md`) → `*audit` → **commit no CT com descrição** → `*propagate --match-target-squads` para TODOS os projetos com a squad afetada → relatar quais destinos ficaram com mudanças no working tree. **O COMMIT É SÓ NO CT.** Nunca commitar os projetos destino a partir do CT — o commit de cada destino é feito dentro da sessão daquele projeto, pelo usuário. Nunca entregar pela metade nem deixar contagem/catálogo desatualizados. Push continua exigindo confirmação de branch (padrão `main`).
-13. **`maestri-os` é opt-in, nunca automática.** É o recurso "Sala de Controle" para o Maestri (roteia pedidos entre terminais). Não pertence a squad nenhuma e **nunca** entra num projeto por `*install`/`*propagate` comum — só por `--squads none --extra-skills maestri-os` (pasta Sala de Controle, sem agentes, sem `team-os`). Depois de instalada, o `*propagate` a mantém atualizada (`CONTROL_ROOM=1`). Nunca instalar squad numa Sala de Controle, nem `maestri-os` num projeto com squad.
+13. **Skills de Sala de Controle são opt-in, nunca automáticas.** São duas, e a pessoa escolhe o modo: **`sala-de-controle`** (padrão — enxerga todas as sessões do Claude Code da máquina, contextualiza cada projeto pela smart-memory e despacha por mensagem entre sessões) e **`maestri-os`** (modo Maestri — terminais ligados por fio no canvas). Não pertencem a squad nenhuma e **nunca** entram num projeto por `*install`/`*propagate` comum — só por `--squads none --extra-skills <skill>` numa **pasta isolada** (sem agentes, sem `team-os`). Uma skill de Sala por pasta. A `sala-de-controle` mora de preferência em `<raiz>/1 | Sala de Controle` — uma só para todos os negócios. Se não existir pasta isolada, **sugerir criar** `1 | Sala de Controle` na raiz. Depois de instalada, o `*propagate` a mantém atualizada (`CONTROL_ROOM=1`). Nunca instalar squad numa Sala de Controle, nem skill de Sala num projeto com squad.
 
 > **Nota — dois mecanismos de memória (complementares):**
 > - `memory: project` (RULE #1) é um **campo real de subagent** que cria uma **memória persistente por-agente** em `.claude/agent-memory/<nome>/`, mantida pelo runtime.
@@ -48,7 +48,8 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *pressure-test <agente>` | Testa um agente contra cenários adversariais — obrigatório para agente novo antes do `*propagate` |
 | `/team-os-creator *audit` | Valida compliance de todos os agentes |
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
-| `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill `maestri-os` (recurso Maestri) |
+| `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill de Sala (`sala-de-controle` por padrão, ou `maestri-os` no modo Maestri) |
+| `/team-os-creator *organize` | Mapa da organização de pastas (negócio → projeto → squads → salas), pontos fora do padrão e proposta de melhoria. **Só propõe** — nada é movido, renomeado ou instalado sem OK explícito, ação por ação |
 
 ---
 
@@ -218,7 +219,11 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 
 1. Lista projetos via `scan-ct-projects.sh`
 2. **Determina a categoria do projeto e instala SÓ a(s) squad(s) correspondente(s)** — NUNCA todas. Social→`social`, site→`sites`, etc. Pode combinar quando o projeto exige (ex.: workspace de conteúdo com site → `social,sites`). Passe `--squads <categoria>` — **nunca** `--squads all` (o script **aborta** com `ERROR=squads_all_without_match_target`). Na dúvida, pergunte ao usuário. Use `detect-project-signals.sh "<pasta>"` (aceita o caminho como argumento) para o palpite inicial.
-2b. **Sala de Controle (recurso Maestri) — não é squad.** Se o `scan-ct-projects.sh` marcar `IS_CONTROL_ROOM=1` (nome da pasta contém "Sala de Controle"/"control room", ou já tem `maestri-os`), ou o `detect-project-signals.sh` devolver `PROJECT_ARCHETYPE=control-room`, **pergunte** ao usuário: *"Esta pasta parece uma Sala de Controle — instalar só a skill `maestri-os` (roteador de pedidos entre os terminais do Maestri), sem agentes nem `team-os`?"*. Sim → `--squads none --extra-skills maestri-os`. O script então copia só a skill, cria um `CLAUDE.md` mínimo (se não existir) e **não** instala hooks, `settings.json` nem `team-os` (`CONTROL_ROOM=1`). Oriente: abrir a pasta como terminal no Maestri, ligar por fio os terminais que ela deve enxergar e rodar `/maestri-os`. Nunca oferecer `maestri-os` fora deste caso.
+2b. **Sala de Controle — não é squad.** Antes de tudo, rode `python3 .claude/skills/sala-de-controle/scripts/org-map.py "<raiz>" --tree` para ver onde estão (ou não) as Salas. Casos:
+   - **Pasta isolada de Sala existe** — o `scan-ct-projects.sh` marca `IS_CONTROL_ROOM=1` (nome contém "Sala de Controle"/"control room", ou já tem `sala-de-controle`/`maestri-os`), ou o `detect-project-signals.sh` devolve `PROJECT_ARCHETYPE=control-room`. **Pergunte o modo**: *"Esta pasta é uma Sala de Controle. Instalo a `sala-de-controle` (lugar único de comando: enxerga todas as sessões do Claude, sabe a etapa de cada projeto pela smart-memory e despacha cada pedido para a sessão certa) — ou prefere o modo Maestri (`maestri-os`, terminais ligados por fio no canvas)?"*. A recomendada é a `sala-de-controle` (o `detect` devolve `SUGGESTED_EXTRA_SKILLS`).
+   - **Não existe pasta isolada** (achado `SALA_AUSENTE`) → **sugira criar** `<raiz>/1 | Sala de Controle` e só crie com OK. Nunca instale a Sala dentro de um projeto com squad.
+   - Instalação: `--squads none --extra-skills sala-de-controle` (ou `maestri-os`). O script copia só a skill, cria um `CLAUDE.md` mínimo do modo escolhido (se não existir) e **não** instala agentes, hooks, `settings.json` nem `team-os` (`CONTROL_ROOM=1`).
+   - Orientação final — `sala-de-controle`: abrir uma sessão do Claude Code na pasta, nomeá-la `1 | Sala de Controle | Comando` e rodar `/sala-de-controle`. `maestri-os`: abrir a pasta como terminal no Maestri, ligar por fio os terminais e rodar `/maestri-os`.
 3. Preview da instalação
 4. Copia agents da(s) squad(s) escolhida(s) + skills (incluindo **`team-os` obrigatória**) + cria `settings.json` com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `"worktree": { "bgIsolation": "none" }` e o registro PreToolUse do `block-worktree.sh` (+ hooks se `--include-hooks`)
 4b. **Instala a trava anti-worktree (sempre, independente de `--include-hooks`):** copia `block-worktree.sh` para `.claude/hooks/` do destino. Se o `settings.json` do destino já existia, o script emite `SETTINGS_WORKTREE_TODO` / `SETTINGS_WORKTREE_HOOK_TODO` — nesse caso, edite o settings preservando o JSON existente. Worktrees são proibidos em todos os projetos: agentes trabalham direto na branch ativa (ownership disjunto resolve conflitos).
@@ -236,12 +241,28 @@ Cada ação mapeia para os fluxos abaixo (`*create`/`*squad`, `*propagate`, `*in
 3. Confirmação com preview (use `--dry-run` para inspecionar antes)
 4. Sincroniza para cada destino, **sempre com `--match-target-squads`** (modo propagate):
    - **Agentes**: atualiza só os das squads **já instaladas** no destino. **NUNCA re-adiciona squad podada** — squad ausente é poda intencional por categoria, não drift. (Internamente o script deriva as squads do que existe no destino; agente de squad ausente é pulado.)
-   - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada; `maestri-os` só é atualizada onde **já existe** (nunca adicionada)
-   - **Sala de Controle** (sem agentes, com `maestri-os`): o script entra em `CONTROL_ROOM=1` e sincroniza só a skill `maestri-os` — nada de squad, `team-os`, hooks ou settings
+   - **Skills**: atualiza as que diferem (incluindo `team-os`); skills extras do destino são preservadas; `team-os-creator` nunca é enviada; `sala-de-controle`/`maestri-os` só são atualizadas onde **já existem** (nunca adicionadas)
+   - **Sala de Controle** (sem agentes, com `sala-de-controle` ou `maestri-os`): o script entra em `CONTROL_ROOM=1` e sincroniza só a skill de Sala — nada de squad, `team-os`, hooks ou settings
 5. **NÃO commita nos destinos** — as mudanças ficam no working tree de cada projeto (RULE #12). O commit é feito **dentro da sessão daquele projeto**, pelo usuário. Commit a partir do CT é **só no CT**.
 6. Relatório (AGENTS_UPDATED, SKILLS_UPDATED, projetos com working tree atualizado, …)
 
 > ⚠️ **Nunca** rode propagate/install sem escopo de squad num projeto já podado — isso re-instalaria as squads removidas. O `--match-target-squads` é a salvaguarda: respeita a categoria de cada projeto. Para um projeto novo, use `--squads <categoria>` explícito.
+
+---
+
+## Fluxo `*organize`
+
+Organização de pastas é parte do Command Center — o `dashboard.sh` já imprime a árvore; este fluxo aprofunda e propõe.
+
+1. `python3 .claude/skills/sala-de-controle/scripts/org-map.py "<raiz>" --tree` (fonte única, read-only — mesma do `/sala-de-controle *organizar`).
+2. Padrão esperado: `<raiz>/0 | Centro de Treinamento` (CT) · `<raiz>/1 | Sala de Controle` (uma só, `sala-de-controle`) · `<raiz>/<Negócio>/<Negócio> | <Projeto>` (projeto com squad + smart-memory) · `<Negócio> | Sala de Controle` só no modo Maestri.
+3. Mostre, em linguagem simples: **árvore atual → o que está fora do padrão → árvore proposta → lista de ações**, cada ação com quem executa e o aviso de risco:
+   - mover/renomear pasta → **usuário** no Finder (ou você, só com OK explícito para aquela ação). Avisar antes: sessões abertas na pasta ficam órfãs e o histórico do Claude (`~/.claude/projects/<caminho>`) fica preso ao caminho antigo — fechar as sessões antes;
+   - squad faltando / squad errada para a categoria → `*install --squads <categoria>` (poda de squad errada: só com OK, e nunca apagar smart-memory);
+   - `team-os` ausente ou desatualizada → `*propagate`;
+   - smart-memory ausente → abrir sessão na pasta e rodar `/team-os`;
+   - Sala ausente/vazia/duplicada → fluxo 2b do `*install`.
+4. Uma decisão por vez (memória do usuário: resumo primeiro, sem jargão). **Nada é movido, renomeado ou instalado sem OK explícito, ação por ação.**
 
 ---
 
@@ -286,7 +307,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 │   └── pressure-testing.md         ← método RED→GREEN→REFACTOR do *pressure-test
 ├── scripts/
 │   ├── preflight.sh
-│   ├── detect-project-signals.sh   ← aceita [pasta]; devolve control-room + SUGGESTED_EXTRA_SKILLS=maestri-os para Sala de Controle
+│   ├── detect-project-signals.sh   ← aceita [pasta]; devolve control-room + SUGGESTED_EXTRA_SKILLS=sala-de-controle (ou maestri-os) + CONTROL_ROOM_OPTIONS
 │   ├── validate-agent.sh           ← *audit v2 (archetype-driven: model/effort/permissionMode/color/hooks/tools/NTP-hash/skills citadas/contagens)
 │   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills; TSV)
 │   ├── dashboard.sh                ← Command Center (render do painel)
@@ -315,6 +336,8 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 | `scan-ct-projects.sh` acha só CT | Oferecer digitar caminho manual |
 | Agentes sem "Contrato com team-os" no `*migrate` | Pular silenciosamente (já migrados) |
 | Usuário pede para instalar `team-os` no destino | Fazer — `team-os` é obrigatória nos projetos. Recusar APENAS `team-os-creator` (exclusiva do CT). |
-| Pasta é uma Sala de Controle (nome ou `maestri-os` presente) | Perguntar e instalar **só** `maestri-os`: `--squads none --extra-skills maestri-os`. Nunca squad, nunca `team-os` ali. |
-| Usuário pede `maestri-os` num projeto que tem squad | Recusar e explicar: a Sala de Controle é uma pasta própria, sem agentes — misturar quebra a regra "lê mas não executa". Oferecer criar a pasta. |
+| Pasta é uma Sala de Controle (nome, `sala-de-controle` ou `maestri-os` presente) | Perguntar o modo e instalar **só** a skill de Sala: `--squads none --extra-skills sala-de-controle` (padrão) ou `maestri-os`. Nunca squad, nunca `team-os` ali. |
+| Não existe pasta isolada de Sala de Controle | Sugerir criar `<raiz>/1 \| Sala de Controle` (uma só para todos os negócios) e instalar a `sala-de-controle` lá — com OK. |
+| Usuário pede skill de Sala (`sala-de-controle`/`maestri-os`) num projeto que tem squad | Recusar e explicar: a Sala de Controle é uma pasta própria, sem agentes — misturar quebra a regra "lê mas não executa". Oferecer criar a pasta. |
+| Usuário pede as duas skills de Sala na mesma pasta | Recusar: um modo por pasta (achado `SALA_DUPLA`). Se quer os dois, são duas pastas. |
 | Usuário pede squad `pm` (ou outra) numa Sala de Controle | Recusar: Sala de Controle não tem agentes por design. Se quer gestão de projetos, é outro projeto/pasta. |

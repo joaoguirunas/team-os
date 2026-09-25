@@ -55,21 +55,25 @@ while IFS= read -r line; do
   s_out="$(field "$line" SKILLS_OUTDATED)"
   has_mos="$(field "$line" HAS_MAESTRI_OS)"
   is_cr="$(field "$line" IS_CONTROL_ROOM)"
+  has_sala="$(field "$line" HAS_SALA_DE_CONTROLE)"
 
   tos=$([ "$has_team_os" = "1" ] && echo "sim" || echo "--")
   sm=$([ "$has_sm" = "1" ] && echo "sim" || echo "--")
 
   if [ "$is_cr" = "1" ]; then
-    # Sala de Controle (recurso Maestri): sem squad por design — só a skill maestri-os
+    # Sala de Controle: sem squad por design — só a skill de Sala (sala-de-controle ou maestri-os)
     control_rooms=$((control_rooms + 1))
-    if [ "$has_mos" != "1" ]; then
-      drift="sala de controle · instalar maestri-os"
+    cr_skill=""
+    [ "$has_sala" = "1" ] && cr_skill="sala-de-controle"
+    [ "$has_mos" = "1" ] && cr_skill="${cr_skill:+$cr_skill+}maestri-os"
+    if [ -z "$cr_skill" ]; then
+      drift="sala de controle · vazia — instalar sala-de-controle (ou maestri-os)"
       not_installed=$((not_installed + 1))
     elif [ "${s_out:-0}" -gt 0 ]; then
-      drift="sala de controle · maestri-os desatual."
+      drift="sala de controle · $cr_skill desatual."
       need_update=$((need_update + 1))
     else
-      drift="sala de controle · em dia"
+      drift="sala de controle · $cr_skill · em dia"
     fi
     printf "  %-24.24s %-8s %-8s %-13s %s\n" "$name" "--" "n/a" "$sm" "$drift"
     continue
@@ -93,9 +97,20 @@ EOF
 echo
 echo "  Resumo: $projects projeto(s)  ·  $need_update precisam atualizar  ·  $not_installed sem squad/skill  ·  $control_rooms sala(s) de controle"
 echo
+
+# ── Organização de pastas (negócio → projeto → squads) ───────────────────────
+# Fonte única: org-map.py da skill sala-de-controle (read-only; só aponta e sugere).
+ORG_MAP="$HERE/../../sala-de-controle/scripts/org-map.py"
+if [ -f "$ORG_MAP" ] && command -v python3 >/dev/null 2>&1; then
+  echo "  Organização (negócio → projeto):"
+  python3 "$ORG_MAP" "$ct_root" --tree 2>/dev/null | sed 's/^/    /'
+  echo
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  [1] Criar equipe      → novos agentes/squad (*create / *squad)"
 echo "  [2] Atualizar equipes → propaga o drift detectado (*propagate)"
 echo "  [3] Instalar equipe   → squad + skills + team-os num projeto (*install)"
-echo "                          · pasta 'Sala de Controle' → só a skill maestri-os (--squads none --extra-skills maestri-os)"
+echo "                          · pasta 'Sala de Controle' → só a skill de Sala, sem agentes:"
+echo "                            sala-de-controle (sessões do Claude) ou maestri-os (Maestri) — --squads none --extra-skills <skill>"
+echo "  [4] Organizar pastas  → árvore + pontos fora do padrão + proposta (*organize) — nada é movido sem OK"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

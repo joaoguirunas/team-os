@@ -136,6 +136,7 @@ fi
 DIRNAME_LC=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')
 case "$DIRNAME_LC" in *"sala de controle"*|*"sala-de-controle"*|*"control room"*|*"control-room"*) HAS_CONTROL_ROOM=1 ;; esac
 [ -d ".claude/skills/maestri-os" ] && HAS_CONTROL_ROOM=1
+[ -d ".claude/skills/sala-de-controle" ] && HAS_CONTROL_ROOM=1
 
 # Classificar archetype
 # Ordem importa: control-room primeiro (é declarado pelo nome/skill, não inferido);
@@ -177,9 +178,15 @@ SUGGESTED_EXTRA_SKILLS=""
 WARNING=""
 case "$ARCHETYPE" in
   control-room)
-    # Não é squad: instala só a skill maestri-os (--squads none --extra-skills maestri-os)
+    # Não é squad: instala só a skill de Sala (--squads none --extra-skills <skill>).
+    # Default sala-de-controle (sessões do Claude); maestri-os se a pasta já é do Maestri.
     SUGGESTED_PRESET="none"
-    SUGGESTED_EXTRA_SKILLS="maestri-os" ;;
+    if [ -d ".claude/skills/maestri-os" ]; then
+      SUGGESTED_EXTRA_SKILLS="maestri-os"
+    else
+      SUGGESTED_EXTRA_SKILLS="sala-de-controle"
+    fi
+    CONTROL_ROOM_OPTIONS="sala-de-controle,maestri-os" ;;
   fullstack-saas|data-pipeline|api-service|frontend-app)
     SUGGESTED_PRESET="dev" ;;
   website|content-site)
@@ -203,6 +210,7 @@ esac
 echo "PROJECT_ARCHETYPE=$ARCHETYPE"
 echo "SUGGESTED_PRESET=$SUGGESTED_PRESET"
 [ -n "$SUGGESTED_EXTRA_SKILLS" ] && echo "SUGGESTED_EXTRA_SKILLS=$SUGGESTED_EXTRA_SKILLS"
+[ -n "${CONTROL_ROOM_OPTIONS:-}" ] && echo "CONTROL_ROOM_OPTIONS=$CONTROL_ROOM_OPTIONS"
 [ -n "$WARNING" ] && echo "WARNING=$WARNING"
 echo "LANGUAGE=$LANGUAGE"
 echo "FRAMEWORK=$FRAMEWORK"

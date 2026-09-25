@@ -9,7 +9,7 @@
 #   "cwd":"/path/do/projeto", "session_title":"<título atual>", ...}
 # - Só age em source == startup | resume (sessionTitle é ignorado em clear/compact pela spec).
 # - title = nome da pasta do projeto, + " · <branch>" quando há branch git (não-detached).
-# - Em resume, PRESERVA um rename deliberado do usuário; só sobrescreve título vazio,
+# - Em resume, PRESERVA um rename deliberado do usuário e o padrão "<PASTA> | <Título>"; só sobrescreve título vazio,
 #   título antigo genérico ("team-os ...") ou o próprio padrão (refresh da branch).
 # - Emite {"hookSpecificOutput":{"hookEventName":"SessionStart","sessionTitle":"..."}}.
 #
@@ -48,6 +48,7 @@ fi
 # Sobrescreve apenas: título vazio | genérico antigo ("team-os ...") | nosso próprio padrão (começa com o nome do projeto).
 if [ "$SOURCE" = "resume" ] && [ -n "$CURRENT" ]; then
   case "$CURRENT" in
+    "$PROJ | "*) exit 0 ;;             # padrão "<PASTA> | <Título>" (Sala de Controle) → mantém
     team-os*|"$PROJ"|"$PROJ "*) ;;   # genérico antigo ou nosso padrão → atualiza
     *) exit 0 ;;                       # rename deliberado do usuário → mantém
   esac

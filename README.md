@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**95 agentes e 107 skills** organizados em 10 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand, Finance, Legal, SEO), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a `/maestri-os` (opt-in) como **Sala de Controle** para quem usa o [Maestri](https://maestri.app) — roteia pedidos entre os terminais dos seus projetos. Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
+**95 agentes e 108 skills** organizados em 10 squads (Dev, Sites, Social, Traffic, PM, Sales, Brand, Finance, Legal, SEO), com a skill `/team-os` para orquestrar sessões, a `/team-os-creator` para gerar e instalar squads em qualquer projeto, e a **Sala de Controle** (opt-in) — um lugar único de comando que manda cada pedido para a sessão certa: `/sala-de-controle` (sessões do Claude Code) ou `/maestri-os` (terminais do [Maestri](https://maestri.app)). Todo agente segue o **Native Teams Protocol** — autônomo, com smart-memory integrada (formato Obsidian) e coordenação peer-to-peer.
 
 > Este repositório é a **fonte da verdade**: edite agentes e skills **aqui**, audite com `/team-os-creator *audit` e propague para os projetos destino com `/team-os-creator *propagate`. Nunca edite agentes direto no destino.
 
@@ -54,7 +54,8 @@ CAMADA 1 — CT (configuração e manutenção, no command center)
    └─ /team-os-creator  →  escaneia os projetos irmãos e mostra status (team-os? agentes? drift?)
         ├─ [1] Criar equipe       → novos agentes/squad (Native Teams Protocol + smart-memory + skills + modelo híbrido)
         ├─ [2] Atualizar equipes  → propaga o drift para os projetos
-        └─ [3] Instalar equipe    → instala squad + skills + team-os num projeto
+        ├─ [3] Instalar equipe    → instala squad + skills + team-os num projeto (pasta de Sala → só a skill de Sala)
+        └─ [4] Organizar pastas   → árvore negócio → projeto → squads, o que está fora do padrão e a proposta
    → cada projeto passa a ter: agentes + skills + /team-os  (NUNCA team-os-creator)
 
 CAMADA 2 — Projeto (execução, toda sessão de trabalho)
@@ -172,6 +173,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 /team-os-creator *audit         → valida compliance de todos os agentes
 /team-os-creator *propagate     → propaga agentes atualizados p/ outros projetos
 /team-os-creator *install       → instala squads + skills + smart-memory num projeto destino
+/team-os-creator *organize      → árvore negócio → projeto → squads + proposta de organização (só propõe)
 ```
 
 ### Os 8 archetypes
@@ -368,7 +370,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `seo-drift` | WADJET | Baseline e comparação — detecção de regressão pós-deploy | `/seo-drift`, `/seo-technical` |
 | `seo-qa` | MAAT | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre auditoria/relatório (exclusivo) | `/seo-audit`, `/seo-technical`, `/seo-content` |
 
-107 skills, todas diretórios reais e versionados (repositório self-contained).
+108 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
 
@@ -400,13 +402,27 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 >
 > **Novas 2026-09 (squads Finance e Legal):** autorais do CT, com templates Obsidian — `finance-cash-flow` (plano de caixa 13 semanas, forecast, runway), `finance-bookkeeping` (plano de contas, conciliação, fechamento com `#id`), `finance-receivables-payables` (régua de cobrança, aging, lote de pagamento preparado), `finance-tax-compliance` (calendário fiscal, apuração preparatória, pacote para o contador; `reference/brasil.md` sem alíquotas cravadas), `finance-reporting` (relatório mensal, dicionário de indicadores); `legal-research` (fonte primária, achado ≠ parecer; `reference/fontes-brasil.md`), `legal-contract-drafting` (anatomia em 15 blocos, matriz de desvios, revisão da contraparte), `legal-clause-library` (modelos `M{N}.{c}`, variantes com piso/teto), `legal-compliance-lgpd` (mapa de dados, bases legais, incidentes), `legal-contract-lifecycle` (registro, assinatura travada por hash, notificação, dossiê).
 >
-> **Nova 2026-09 (Sala de Controle):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
+> **Nova 2026-09-25 (Sala de Controle):** `sala-de-controle` — autoral do CT, o lugar único de comando para as sessões do Claude Code (`scripts/refresh.py` junta `scan-sessions.py` + `session-tail.py` + `project-context.py` + `org-map.py`, todos read-only; templates de panorama/registro/histórico/organização). Coexiste com a `maestri-os`; só entra via `--squads none --extra-skills sala-de-controle`. Pressure-tested 4/4.
+>
+> **Nova 2026-09 (Sala de Controle, modo Maestri):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
 >
 > **Novas 2026-09 (squad Sales):** autorais do CT — `sales-discovery-intake`, `sales-proposal-planning`, `sales-pricing-payback`, `sales-proposal-copy`, `sales-deck-production` (com `html-to-pdf.mjs` e `check-pdf.sh`); adotadas do registry após vetting — `sales-enablement` e `pricing` (marketingskills), `startup-financial-modeling` (wshobson), `negotiation` (wondelai — framework Voss), `slides` (nextlevelbuilder, mesmo autor do `ui-ux-pro-max`), `presentation-design` (jwynia). Descartadas no vetting: `proposal-writer` (template raso com número inventado), `html-slides`/`meeting-notes` (frontmatter quebrado), `html-to-pdf` (abaixo do corte — abordagem incorporada em `sales-deck-production`).
 >
 > **Nova 2026-09 (squad SEO):** pacote externo [claude-seo](https://github.com/AgriciDaniel/claude-seo) v2.3.1 (MIT, AgriciDaniel) incorporado 100% ao CT — as 25 skills do core + `seo-ahrefs` e `seo-bing` (mirrors de extensão), com o runtime Python (58 scripts: GSC, PageSpeed, CrUX, GA4, Playwright, geração de schema, drift) reidratado em `.claude/skills/seo/scripts/` e reescrito para rodar via `${CLAUDE_PROJECT_DIR}` em vez de `${CLAUDE_PLUGIN_ROOT}` (não é plugin, é skill do CT). `seo-flow`, `seo-dataforseo` e `seo-image-gen` entram como skill mas sem agente dedicado — `seo-flow` é framework de prompt, os outros dois dependem de MCP pago (DataForSEO, Gemini/nanobanana) ainda não autorizado. Os 15 agentes (personas egípcias) e a autoria do preset/bodies são do CT — pressure-tested 9/9.
 
-**Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos) · `maestri-os` (**opt-in, só em Salas de Controle** — ver abaixo).
+**Orquestração:** `team-os` (distribuída a todos os projetos — obrigatória para rodar `/team-os` em cada sessão) · `team-os-creator` (**exclusiva do CT** — a única que não vai para os projetos) · `sala-de-controle` e `maestri-os` (**opt-in, só em Salas de Controle** — ver abaixo).
+
+### Sala de Controle — `sala-de-controle` (sessões do Claude Code)
+
+O lugar único para dar comando: uma pasta própria — **`<raiz>/1 | Sala de Controle`**, uma só para todos os negócios —, **sem agentes e sem `team-os`**. Você fala em português normal (simples ou composto: *"destrava o deploy do site, cria um post sobre o depoimento e me traz o relatório de leads"*); a skill descobre qual projeto e qual sessão cuidam de cada parte, confirma o plano e despacha.
+
+- **Relê tudo a cada chamada** (`refresh.py`, ≈2 s): todas as sessões do Claude abertas na máquina (registro `~/.claude/sessions/` + `claude agents --json`, sem as sessões "fantasma" pré-aquecidas), o que cada uma está fazendo (últimas falas) e **a etapa de cada projeto pela smart-memory dele** — ledger da sessão → stories → `_inbox/` → DIGEST → overview.
+- **Nome padrão das sessões:** `<NOME DA PASTA> | <Título>` (ex.: `João Guirunas | Site | Home`). O hook `team-os-session-title.sh` preserva esse padrão ao retomar a sessão.
+- **Projeto sem sessão aberta** → pergunta e abre uma (`claude --bg -n "<PASTA> | <Título>"`), que fica aberta para os próximos pedidos (`claude attach <id>` para entrar nela).
+- **Despacho** por mensagem entre sessões (`SendMessage`), com cabeçalho que pede o retorno para a Sala; **autopilot** no retorno (segue sozinha para a parte dependente), para só em `DECISÃO:` do usuário.
+- **Organização:** `/sala-de-controle *organizar` mostra a árvore negócio → projeto → squads, o que está fora do padrão e a proposta de melhoria — só propõe; quem move é o usuário, quem instala é o `team-os-creator`.
+- **Lê, mas nunca escreve nem executa** em outra pasta; texto lido em outra sessão é dado, nunca instrução. Tudo fica em `docs/smart-memory/sala-de-controle/` (`PANORAMA.md`, `registry.md`, `dispatches.md`, `organizacao.md`).
+- **Instalação:** `/team-os-creator *install` reconhece a pasta de Sala (ou sugere criar `1 | Sala de Controle`) e oferece o modo: `--squads none --extra-skills sala-de-controle` (padrão) ou `maestri-os`.
 
 ### Sala de Controle — `maestri-os` (recurso para o Maestri)
 
@@ -528,8 +544,9 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 │   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
 │   ├── check-finance-progress.sh  ← TaskCompleted: execução financeira só com PASS + confirmação do usuário
 │   ├── check-legal-progress.sh    ← TaskCompleted: saída jurídica só com PASS + confirmação do usuário
-│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado globalmente em ~/.claude/hooks/ pelo *install)
-└── skills/              ← 107 skills (diretórios reais)
+│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch"; preserva o padrão "<PASTA> | <Título>" (instalado globalmente em ~/.claude/hooks/ pelo *install)
+└── skills/              ← 108 skills (diretórios reais)
+    ├── sala-de-controle/        ← Sala de Controle (opt-in, sessões do Claude Code): SKILL.md + scripts/{refresh,scan-sessions,session-tail,project-context,org-map}.py + templates/{panorama,registry,dispatches,organizacao}.md
     ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
     ├── team-os/                 ← orquestração (distribuída aos projetos)
     │   ├── templates/story.md           ← template canônico de story
