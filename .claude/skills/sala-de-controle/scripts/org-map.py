@@ -18,13 +18,18 @@ Usage: org-map.py [raiz] [--tree] [--json]
 Saída padrão (TSV): ROOT=…, uma linha NODE=… por pasta, uma linha FINDING=… por problema,
 e SUMMARY=… no fim. --tree imprime a árvore legível + os achados.
 """
-import json, os, sys
+import json, os, sys, unicodedata
+
+# macOS: nomes de pasta vêm do disco em NFD ('ã' decomposto) e o cwd das sessões em NFC.
+# Tudo que é comparado ou exibido passa por nfc() — senão sessão e projeto nunca batem.
+def nfc(s):
+    return unicodedata.normalize("NFC", s or "")
 
 ARGS = sys.argv[1:]
 TREE = "--tree" in ARGS
 AS_JSON = "--json" in ARGS
 POS = [a for a in ARGS if not a.startswith("--")]
-ROOT = os.path.abspath(POS[0]) if POS else os.path.dirname(os.getcwd())
+ROOT = nfc(os.path.abspath(POS[0]) if POS else os.path.dirname(os.getcwd()))
 SKIP = {"node_modules", ".git", ".claude", "docs"}
 
 
@@ -46,8 +51,8 @@ def info(path):
     agents = [f[:-3] for f in os.listdir(ad) if f.endswith(".md")] if os.path.isdir(ad) else []
     sk = os.path.join(path, ".claude", "skills")
     return {
-        "path": path,
-        "name": os.path.basename(path),
+        "path": nfc(path),
+        "name": nfc(os.path.basename(path)),
         "agents": len(agents),
         "squads": sorted({a.split("-")[0] for a in agents}),
         "team_os": os.path.isdir(os.path.join(sk, "team-os")),

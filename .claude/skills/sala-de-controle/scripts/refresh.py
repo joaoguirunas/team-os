@@ -15,7 +15,16 @@ Usage: refresh.py [--root <raiz>] [--days 7] [--turns 6] [--no-write]
   --root default: pai da pasta atual.
 Saída: relatório legível, projeto a projeto, agrupado por negócio.
 """
-import json, os, subprocess, sys, time
+import json, os, subprocess, sys, time, unicodedata
+
+# macOS: nomes de pasta vêm do disco em NFD ('ã' decomposto) e o cwd das sessões em NFC.
+# Tudo que é comparado ou exibido passa por nfc() — senão sessão e projeto nunca batem.
+def nfc(s):
+    return unicodedata.normalize("NFC", s or "")
+
+
+def same_dir(a, b):
+    return nfc(os.path.abspath(a or "/")).rstrip("/") == nfc(os.path.abspath(b or "/")).rstrip("/")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ARGS = sys.argv[1:]
@@ -65,16 +74,16 @@ self_name = sess.get("self", "") if isinstance(sess, dict) else ""
 
 projects = []
 for n in org.get("nodes", []):
-    if n.get("kind") not in ("projeto",) or n.get("is_ct"):
+    if n.get("kind") not in ("projeto", "ct"):
         continue
     ctx = run_json("project-context.py", n["path"], "--days", DAYS)
-    here = [s for s in sessions if s.get("IS_SELF") != "1" and os.path.abspath(s.get("CWD", "")) == n["path"]]
+    here = [s for s in sessions if s.get("IS_SELF") != "1" and same_dir(s.get("CWD", ""), n["path"])]
     for s in here:
         s["TAIL"], s["LAST_ACTIVITY"] = tail(s.get("TRANSCRIPT", ""))
     projects.append({"node": n, "context": ctx, "sessions": here})
 
-known = {p["node"]["path"] for p in projects}
-others = [s for s in sessions if s.get("IS_SELF") != "1" and os.path.abspath(s.get("CWD", "")) not in known]
+others = [s for s in sessions if s.get("IS_SELF") != "1"
+          and not any(same_dir(s.get("CWD", ""), p["node"]["path"]) for p in projects)]
 for s in others:
     s["TAIL"], s["LAST_ACTIVITY"] = tail(s.get("TRANSCRIPT", ""))
 
@@ -102,7 +111,8 @@ for p in sorted(projects, key=lambda x: (x["node"].get("business") or "~", x["no
     if b != biz:
         biz = b
         print(f"━━ {b} ━━")
-    print(f"■ {n['name']}  ·  {n['agents']} agentes ({','.join(n['squads']) or 'sem squad'})"
+    tag = "  [CT — fonte do pack]" if n.get("kind") == "ct" else ""
+    print(f"■ {n['name']}{tag}  ·  {n['agents']} agentes ({','.join(n['squads']) or 'sem squad'})"
           f"  ·  smart-memory: {'sim' if n['smart_memory'] else 'NÃO'}  ·  última atividade: {c.get('LAST_TOUCH', '?')}")
     print(f"  o que é: {c.get('SUMMARY', '?')}")
     if c.get("LEDGER_FILE"):
@@ -115,8 +125,14 @@ for p in sorted(projects, key=lambda x: (x["node"].get("business") or "~", x["no
             print(f"  {label}: {v}")
     if p["sessions"]:
         for s in p["sessions"]:
-            st = "AGUARDANDO USUÁRIO" if s.get("STATE") == "blocked" else s.get("STATUS", "?")
-            flag = "" if s.get("NAME_STANDARD") == "1" else f"  (nome fora do padrão → sugerir '{s.get('SUGGESTED_NAME')}')"
+            st = "PARADA — ler a última fala (pergunta/permissão = aguardando você)" if s.get("STATE") == "blocked" else s.get("STATUS", "?")
+            ns = s.get("NAME_STANDARD")
+            if ns == "1" or (ns == "2" and len(p["sessions"]) == 1):
+                flag = ""
+            elif ns == "2":
+                flag = f"  (várias sessões nesta pasta — dar título: '{s.get('SUGGESTED_NAME')}')"
+            else:
+                flag = f"  (nome fora do padrão → sugerir '{s.get('SUGGESTED_NAME')}')"
             print(f"  ▶ sessão \"{s['NAME']}\" · {s.get('KIND')} · {st} · última fala {s.get('LAST_ACTIVITY')}"
                   f"{' · id ' + s['SHORT_ID'] if s.get('SHORT_ID') else ''}{flag}")
             for t in s.get("TAIL", []):

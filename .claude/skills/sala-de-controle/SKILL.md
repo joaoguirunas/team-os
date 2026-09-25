@@ -81,8 +81,8 @@ Nunca pule a rodada "porque já sei": sessões abrem e fecham, projetos andam. O
 
 Painel curto, para o usuário ler em 20 segundos:
 1. Uma linha por projeto, agrupada por negócio: `projeto · etapa · sessões abertas (livre/ocupada/aguardando você)`.
-2. **Precisa de você**: sessões com `AGUARDANDO USUÁRIO` (state `blocked`), `PENDENTE DO USUÁRIO` nos ledgers, `DECISÃO:` em aberto no `dispatches.md`.
-3. Sessões fora do padrão de nome (com a sugestão) e sessões órfãs (pasta não existe mais).
+2. **Precisa de você**: sessões `blocked` cuja última fala é pergunta/permissão, `PENDENTE DO USUÁRIO` nos ledgers, `DECISÃO:` em aberto no `dispatches.md`.
+3. Sessões fora do padrão de nome (com a sugestão) e sessões órfãs (pasta não existe mais). Nome igual ao da pasta (`João Guirunas | Site`) é aceito quando é a única sessão do projeto; com duas ou mais, cada uma precisa de título.
 4. Organização: só a contagem de pontos fora do padrão + "rode `/sala-de-controle *organizar` para ver a proposta".
 
 ### 4. Com pedido — decompor e marcar dependências
@@ -119,7 +119,7 @@ cd "<pasta do projeto>" && claude --bg -n "<PASTA> | <Título>" "<mensagem com o
 
 Use o `STATUS`/`STATE` da rodada + as últimas falas:
 - **`busy`** (trabalhando) → avise e pergunte: esperar ou mandar mesmo assim (a mensagem entra na fila e roda quando ela terminar o turno). Nunca interrompa por conta própria.
-- **`blocked`** (aguardando o usuário: permissão, pergunta, menu) → mostre a pergunta que está lá e pergunte ao usuário como responder; a resposta dele vai **antes** do pedido no despacho. Nunca responda no lugar dele.
+- **`blocked`** (a sessão parou esperando alguém) → **leia a última fala**. Se é pergunta, pedido de permissão ou menu → é *aguardando o usuário*: mostre a pergunta e pergunte como responder; a resposta dele vai **antes** do pedido no despacho. Nunca responda no lugar dele. Se é um relatório concluído (sessão de fundo que só terminou o turno também aparece `blocked`) → trate como livre.
 - **Parada na pergunta do `/team-os`** ("Qual é o objetivo desta sessão?") → ótimo: o pedido despachado **é** a resposta.
 - **`idle`** → manda.
 
@@ -225,6 +225,7 @@ Entregue ao usuário:
 
 | Situação | Ação |
 |---|---|
+| Nomes de pasta com acento (ex.: "João") | Os scripts normalizam Unicode (o disco grava em NFD, as sessões em NFC). Se uma sessão aparecer "fora dos projetos" com a pasta certa, é bug de script — avise, não adivinhe. |
 | Esta pasta tem `.claude/agents/` ou `team-os` | Avise: a Sala de Controle é pasta isolada; o certo é mover a squad para um projeto (`*organizar`). Continue só roteando. |
 | Nenhuma sessão aberta além de você | Normal. Mostre o painel; pedidos abrem sessão nova com OK. |
 | Sessão órfã (pasta não existe mais) | Mostre no painel com a última fala; não despache para ela; sugira ao usuário fechar. |

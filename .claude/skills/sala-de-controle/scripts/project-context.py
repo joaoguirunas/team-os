@@ -13,7 +13,12 @@ Lê, em ordem de importância, SÓ estes pontos (nunca código, nunca pasta inte
 Usage: project-context.py <pasta> [--days 7] [--json]
 Saída: KEY=value por linha; listas em linhas repetidas (LEDGER=…, STORY_ACTIVE=…, INBOX=…).
 """
-import json, os, re, sys, time
+import json, os, re, sys, time, unicodedata
+
+# macOS: nomes de pasta vêm do disco em NFD ('ã' decomposto) e o cwd das sessões em NFC.
+# Tudo que é comparado ou exibido passa por nfc() — senão sessão e projeto nunca batem.
+def nfc(s):
+    return unicodedata.normalize("NFC", s or "")
 
 ARGS = [a for a in sys.argv[1:]]
 AS_JSON = "--json" in ARGS
@@ -33,7 +38,7 @@ if not os.path.isdir(ROOT):
     sys.exit(1)
 SM = os.path.join(ROOT, "docs", "smart-memory")
 NOW = time.time()
-out = {"PATH": ROOT, "NAME": os.path.basename(ROOT)}
+out = {"PATH": nfc(ROOT), "NAME": nfc(os.path.basename(ROOT))}
 
 
 def read(p, limit=400_000):
@@ -96,7 +101,7 @@ def md_files(d):
 
 # ── Negócio (contêiner) ───────────────────────────────────────────────────────
 parent = os.path.dirname(ROOT)
-pname = os.path.basename(parent)
+pname = nfc(os.path.basename(parent))
 out["BUSINESS"] = pname if out["NAME"].startswith(pname + " |") or out["NAME"].startswith(pname + "|") else ""
 
 # ── Agentes / squads ─────────────────────────────────────────────────────────

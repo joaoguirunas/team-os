@@ -14,7 +14,12 @@ Saída padrão: uma linha TSV por sessão, campos KEY=value:
   NAME_STANDARD  SUGGESTED_NAME  ORPHAN  IS_SELF  TRANSCRIPT
 e no fim: SESSIONS_TOTAL=<n>  SELF_NAME=<nome desta sessão>
 """
-import json, os, re, subprocess, sys, time
+import json, os, re, subprocess, sys, time, unicodedata
+
+# macOS: nomes de pasta vêm do disco em NFD ('ã' decomposto) e o cwd das sessões em NFC.
+# Tudo que é comparado ou exibido passa por nfc() — senão sessão e projeto nunca batem.
+def nfc(s):
+    return unicodedata.normalize("NFC", s or "")
 
 HOME = os.path.expanduser("~")
 SESS_DIR = os.path.join(HOME, ".claude", "sessions")
@@ -82,12 +87,18 @@ def main():
             pid = s.get("pid")
             if not alive(pid):
                 continue                      # processo já morreu
-            cwd = s.get("cwd") or ""
-            name = s.get("name") or ""
+            cwd = nfc(s.get("cwd") or "")
+            name = nfc(s.get("name") or "")
             folder = os.path.basename(cwd.rstrip("/")) if cwd not in ("", "/") else ""
             o = off.get(s.get("sessionId"), {})
             # Padrão de nome: "<NOME DA PASTA> | <Título>"
-            std = 1 if folder and name.startswith(folder + " | ") and len(name) > len(folder) + 3 else 0
+            # 1 = "<PASTA> | <Título>" · 2 = só "<PASTA>" (aceitável se for a única sessão da pasta) · 0 = fora
+            if folder and name.startswith(folder + " | ") and len(name) > len(folder) + 3:
+                std = 1
+            elif folder and name == folder:
+                std = 2
+            else:
+                std = 0
             rows.append({
                 "NAME": name,
                 "SESSION_ID": s.get("sessionId", ""),
@@ -102,10 +113,10 @@ def main():
                 "UPDATED": time.strftime("%Y-%m-%d %H:%M",
                                          time.localtime((s.get("updatedAt") or 0) / 1000)),
                 "NAME_STANDARD": str(std),
-                "SUGGESTED_NAME": name if std else (f"{folder} | <Título>" if folder else ""),
+                "SUGGESTED_NAME": name if std == 1 else (f"{folder} | <Título>" if folder else ""),
                 "ORPHAN": "1" if cwd and cwd != "/" and not os.path.isdir(cwd) else "0",
                 "IS_SELF": "1" if int(pid) in ancestors else "0",
-                "TRANSCRIPT": transcript_path(cwd, s.get("sessionId", "")),
+                "TRANSCRIPT": transcript_path(s.get("cwd") or "", s.get("sessionId", "")),
             })
     rows.sort(key=lambda r: (r["FOLDER"], r["NAME"]))
     self_name = next((r["NAME"] for r in rows if r["IS_SELF"] == "1"), "")
