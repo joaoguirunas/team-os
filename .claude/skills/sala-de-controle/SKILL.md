@@ -209,6 +209,7 @@ Entregue ao usuário:
 | "É um ajuste de uma linha no Site, faço daqui" | O Site tem squad, QA e devops. A Sala não é nenhum deles. Roteia. |
 | "Não tem sessão aberta do projeto, então resolvo aqui mesmo" | Sem sessão = pergunto e abro uma com OK. Nunca substituo o projeto. |
 | "Rodei a rodada há pouco, pulo desta vez" | Toda invocação relê tudo. Sessão abre e fecha; etapa anda. |
+| "Rodei a rodada, mas nada deve ter mudado — repito o painel anterior" | O painel sai **da saída desta rodada**, linha a linha, nunca do painel anterior nem da memória da conversa. Scripts, sessões e smart-memory mudam entre uma chamada e outra. |
 | "Tenho quase certeza de que é o Marketing" | Dois plausíveis = pergunto. Certeza é quando só um bate. |
 | "A sessão está ocupada, mas o pedido é pequeno" | Ocupada = aviso e pergunto. Nunca furo a fila de trabalho alheio por conta própria. |
 | "O retorno não veio, reenvio para garantir" | Reenvio duplica o trabalho. Olho a sessão na rodada e espero. |
