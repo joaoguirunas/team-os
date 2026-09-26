@@ -50,8 +50,8 @@
   .ev.dispatch i,.ev.user i{background:var(--azure-light);box-shadow:0 0 8px var(--azure-glow)} .ev.approval i{background:var(--amber);box-shadow:0 0 0 3px #3d8fff33} .ev.done i{background:var(--success)} .ev.start i,.ev.tool i{background:var(--bone)}
   .ev b{font-weight:500} .ev small{display:block;color:var(--bone-mute);margin-top:1px;font-weight:300;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  .drawer{top:0;right:0;bottom:0;width:380px;background:var(--ink);border-left:1px solid var(--hair);transform:translateX(100%);transition:transform .32s var(--e);display:flex;flex-direction:column;z-index:5}
-  body.open .drawer{transform:none}
+  .drawer{top:0;right:0;bottom:0;width:380px;background:var(--ink);border-left:1px solid var(--hair);transform:translateX(100%);visibility:hidden;transition:transform .32s var(--e),visibility 0s linear .32s;display:flex;flex-direction:column;z-index:5}
+  body.open .drawer{transform:none;visibility:visible;transition:transform .32s var(--e),visibility 0s}
   .drawer header{padding:22px 24px 16px;border-bottom:1px solid var(--hair);display:flex;gap:14px;align-items:flex-start}
   .drawer h2{margin:0;font-size:17px;font-weight:500;line-height:1.25}
   .drawer h2 small{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--bone-mute);margin-top:6px;text-transform:uppercase;font-weight:400}
@@ -80,8 +80,8 @@
   .lamp{width:32px;height:32px;border-radius:50%;border:2px solid var(--bone-mute);flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center}
   .lamp.f{background:var(--bone);border-color:var(--bone)} .lamp.a{background:var(--amber);border-color:var(--amber);box-shadow:0 0 0 4px #3d8fff33} .lamp.d{border-style:dashed} .lamp.hub{border:0}
 
-  .vault{inset:0;background:var(--void);z-index:10;display:grid;grid-template-columns:270px 1fr 300px;grid-template-rows:56px 1fr;opacity:0;pointer-events:none;transition:opacity .32s var(--e)}
-  body.vault-open .vault{opacity:1;pointer-events:auto}
+  .vault{inset:0;background:var(--void);z-index:10;display:grid;grid-template-columns:270px 1fr 300px;grid-template-rows:56px 1fr;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .32s var(--e),visibility 0s linear .32s}
+  body.vault-open .vault{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .32s var(--e),visibility 0s}
   .vault .top{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--hair);background:var(--ink)}
   .vault .top .back{background:none;border:1px solid var(--hair-strong);color:var(--bone);border-radius:6px;padding:7px 12px;font-family:var(--sans);font-size:12px;cursor:pointer}
   .vault .top .back:hover{border-color:var(--bone-mute)}
