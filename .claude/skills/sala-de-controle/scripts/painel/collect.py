@@ -145,7 +145,7 @@ def read_transcript_state(path, n_turns=6):
 _cache = {"org": (0, None), "ctx": {}, "scan": (0, None)}
 
 
-def org(root, ttl=60):
+def org(root, ttl=20):
     t, v = _cache["org"]
     if v is None or time.time() - t > ttl:
         v = run_json([os.path.join(SCRIPTS, "org-map.py"), root, "--json"]) or {"nodes": []}
@@ -153,7 +153,7 @@ def org(root, ttl=60):
     return v
 
 
-def context(path, ttl=45):
+def context(path, ttl=30):
     t, v = _cache["ctx"].get(path, (0, None))
     if v is None or time.time() - t > ttl:
         v = run_json([os.path.join(SCRIPTS, "project-context.py"), path, "--json"]) or {}
@@ -161,7 +161,7 @@ def context(path, ttl=45):
     return v
 
 
-def scan(ttl=4):
+def scan(ttl=3):
     t, v = _cache["scan"]
     if v is None or time.time() - t > ttl:
         v = run_json([os.path.join(SCRIPTS, "scan-sessions.py"), "--json"]) or {"sessions": []}
