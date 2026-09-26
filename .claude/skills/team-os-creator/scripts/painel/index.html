@@ -13,12 +13,13 @@
   #c{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
   .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--bone-mute)}
   .ui{position:absolute;z-index:2}
-  .brand{left:24px;top:20px;display:flex;align-items:center;gap:12px;pointer-events:none}
+  .top{position:absolute;z-index:2;left:0;top:0;right:0;display:flex;align-items:center;gap:28px;padding:16px 24px;transition:right .32s var(--e)}
+  body.open .top{right:380px}
+  .brand{display:flex;align-items:center;gap:12px;pointer-events:none;flex:none}
   .brand svg{height:26px;width:auto;display:block}
   .brand .w{font-size:13px;font-weight:500;letter-spacing:.02em;line-height:1}
   .brand .w small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;color:var(--bone-mute);margin-top:4px}
-  .stats{right:24px;top:20px;display:flex;gap:24px;pointer-events:none;transition:right .32s var(--e)}
-  body.open .stats{right:404px}
+  .stats{margin-left:auto;display:flex;gap:24px;pointer-events:none;flex:none}
   .stat b{display:block;font-family:var(--mono);font-weight:500;font-size:22px;line-height:1;color:var(--bone)} .stat.az b{color:var(--az)}
   .stat span{display:block;margin-top:5px}
   .legend{left:24px;bottom:22px;display:flex;gap:18px;font-size:11px;color:var(--bone-mute);pointer-events:none}
@@ -27,7 +28,7 @@
   .legend i.sq{width:11px;height:11px;border-color:var(--bone)} .legend i.sk{background:var(--az);border-color:var(--az);width:6px;height:6px} .legend i.core{border-color:var(--az);border-width:2px}
   .hint{left:50%;bottom:24px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#3a3a42;pointer-events:none;text-transform:uppercase;transition:opacity .2s}
   body.open .hint{opacity:0}
-  .search{position:absolute;z-index:2;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);border:1px solid var(--hair);border-radius:6px;padding:8px 12px;color:var(--bone);font-family:var(--mono);font-size:11px;width:300px;outline:none}
+  .search{background:var(--ink);border:1px solid var(--hair);border-radius:6px;padding:8px 12px;color:var(--bone);font-family:var(--mono);font-size:11px;width:280px;max-width:30vw;outline:none;flex:none}
   .search:focus{border-color:var(--az)}
   .drawer{top:0;right:0;bottom:0;width:380px;background:var(--ink);border-left:1px solid var(--hair);transform:translateX(100%);transition:transform .32s var(--e);display:flex;flex-direction:column;z-index:5}
   body.open .drawer{transform:none}
@@ -84,9 +85,11 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div class="ui brand"><svg viewBox="0 0 84.54 136"><polygon fill="#3d8fff" points="69.84,0.00 0.00,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg><div class="w">Centro de Treinamento<small>TEAM-OS · FONTE DA VERDADE</small></div></div>
-<input class="search" id="search" placeholder="buscar agente, squad ou skill…">
-<div class="ui stats"><div class="stat"><b id="sSq">0</b><span class="kicker">squads</span></div><div class="stat"><b id="sAg">0</b><span class="kicker">agentes</span></div><div class="stat az"><b id="sSk">0</b><span class="kicker">skills</span></div><div class="stat"><b id="sPr">0</b><span class="kicker">projetos</span></div></div>
+<div class="top">
+  <div class="brand"><svg viewBox="0 0 84.54 136"><polygon fill="#3d8fff" points="69.84,0.00 0.00,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg><div class="w">Centro de Treinamento<small>TEAM-OS · FONTE DA VERDADE</small></div></div>
+  <input class="search" id="search" placeholder="buscar agente, squad ou skill…">
+  <div class="stats"><div class="stat"><b id="sSq">0</b><span class="kicker">squads</span></div><div class="stat"><b id="sAg">0</b><span class="kicker">agentes</span></div><div class="stat az"><b id="sSk">0</b><span class="kicker">skills</span></div><div class="stat"><b id="sPr">0</b><span class="kicker">projetos</span></div></div>
+</div>
 <div class="ui legend"><span><i class="sq"></i> squad</span><span><i></i> agente</span><span><i class="sk"></i> skill</span><span><i class="core"></i> skill principal</span></div>
 <div class="ui hint">arraste · role para zoom · clique abre · clique na squad expande as skills · duplo clique no fundo recentra</div>
 <div class="tip" id="tip"></div>
@@ -98,7 +101,7 @@
 </section>
 
 <script>
-let S=null;const nodes=new Map();let links=[],hub=null,sel=null;const view={x:0,y:0,k:1};const expanded=new Set();
+let S=null;const nodes=new Map();let links=[],hub=null,sel=null;const view={x:0,y:0,k:1};const expanded=new Set();const expandedSkills=new Set();
 const BOLT=[[69.84,0],[0,78.66],[36.76,79.39],[11.76,135.26],[83.81,60.28],[43.37,58.81]];
 const COL={bone:'#F2F3F0',dim:'#C4C8C1',mute:'#8F948D',az:'#3d8fff',azg:'#5b6bff',off:'#585C57'};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');let W=0,H=0,DPR=Math.min(devicePixelRatio||1,2);
@@ -111,13 +114,13 @@ function rebuild(){
   if(!S)return;const keep=new Set();
   const get=(id,init)=>{let n=nodes.get(id);if(!n){n=Object.assign({id,x:0,y:0,vx:0,vy:0,pulse:0,glow:0,phase:Math.random()*6.28},init);nodes.set(id,n);}else Object.assign(n,init);keep.add(id);return n;};
   hub=get('hub',{kind:'hub',r:34,fixed:true});
-  const sqs=S.squads;const n=sqs.length;const R=Math.max(Math.min(W,H)*0.36,n*52);
+  const sqs=S.squads;const n=sqs.length;const R=Math.max(Math.min(W,H)*0.3,n*40);
   const cores=Object.values(S.skills).filter(s=>s.core);
   cores.forEach((sk,i)=>{const a=Math.PI/2+(i-(cores.length-1)/2)*0.5;const isN=!nodes.has('k:'+sk.name);const K=get('k:'+sk.name,{kind:'skill',r:8,sk,core:true,lead:hub});if(isN){K.x=hub.x+Math.cos(a)*120;K.y=hub.y+Math.sin(a)*120;}});
-  sqs.forEach((sq,i)=>{const a=-Math.PI/2+i*(Math.PI*2/n);const isN=!nodes.has('q:'+sq.name);const Q=get('q:'+sq.name,{kind:'squad',r:16,sq,ang:a});if(isN){Q.x=hub.x+Math.cos(a)*R;Q.y=hub.y+Math.sin(a)*R;}
+  sqs.forEach((sq,i)=>{const a=-Math.PI/2+i*(Math.PI*2/n);const isN=!nodes.has('q:'+sq.name);const Q=get('q:'+sq.name,{kind:'squad',r:17,sq,ang:a});if(isN){Q.x=hub.x+Math.cos(a)*R;Q.y=hub.y+Math.sin(a)*R;}
     const m=sq.agents.length,spread=Math.min(Math.PI*0.9,0.42*m+0.3),ar=95+m*5;
-    sq.agents.forEach((an,j)=>{const ag=S.agents[an];if(!ag)return;const b=a+(m===1?0:(-spread/2+j*(spread/(m-1))));const isA=!nodes.has('a:'+an);const A=get('a:'+an,{kind:'agent',r:9,ag,lead:Q});if(isA){A.x=Q.x+Math.cos(b)*ar+(Math.random()-0.5)*6;A.y=Q.y+Math.sin(b)*ar+(Math.random()-0.5)*6;}});
-    if(expanded.has(sq.name)){const ks=sq.skills;const km=ks.length,ksp=Math.min(Math.PI*1.2,0.28*km+0.3),kr=175+km*3;
+    if(expanded.has(sq.name))sq.agents.forEach((an,j)=>{const ag=S.agents[an];if(!ag)return;const b=a+(m===1?0:(-spread/2+j*(spread/(m-1))));const isA=!nodes.has('a:'+an);const A=get('a:'+an,{kind:'agent',r:9,ag,lead:Q});if(isA){A.x=Q.x+Math.cos(b)*ar+(Math.random()-0.5)*6;A.y=Q.y+Math.sin(b)*ar+(Math.random()-0.5)*6;}});
+    if(expandedSkills.has(sq.name)){const ks=sq.skills;const km=ks.length,ksp=Math.min(Math.PI*1.2,0.28*km+0.3),kr=175+km*3;
       ks.forEach((kn,j)=>{const sk=S.skills[kn];if(!sk)return;const b=a+(km===1?0:(-ksp/2+j*(ksp/(km-1))));const id='k:'+sq.name+'/'+kn;const isK=!nodes.has(id);const K=get(id,{kind:'skill',r:5.5,sk,core:false,lead:Q,sqName:sq.name});if(isK){K.x=Q.x+Math.cos(b)*kr;K.y=Q.y+Math.sin(b)*kr;}});}
   });
   for(const id of [...nodes.keys()])if(!keep.has(id))nodes.delete(id);
@@ -145,7 +148,8 @@ cv.addEventListener('dblclick',e=>{if(!pick(e.clientX,e.clientY))fitAll();});
 cv.addEventListener('wheel',e=>{e.preventDefault();userMoved=true;const k=Math.min(2.4,Math.max(0.3,view.k*(e.deltaY<0?1.08:0.925)));const p=toWorld(e.clientX,e.clientY);view.k=k;view.x=e.clientX-p.x*k;view.y=e.clientY-p.y*k;},{passive:false});
 
 /* ===== desenho ===== */
-function circ(x,y,r,fill,stroke,lw,glow,gb){ctx.beginPath();ctx.arc(x,y,r,0,6.283);if(fill){ctx.fillStyle=fill;if(glow){ctx.shadowColor=glow;ctx.shadowBlur=gb||18;}ctx.fill();ctx.shadowBlur=0;}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.75;ctx.stroke();}}
+function halo(x,y,r,color,alpha){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');const a=ctx.globalAlpha;ctx.globalAlpha=a*(alpha||0.35);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fill();ctx.globalAlpha=a;}
+function circ(x,y,r,fill,stroke,lw,glow,gb){if(glow)halo(x,y,r+(gb||18)*0.8,glow,0.35);ctx.beginPath();ctx.arc(x,y,r,0,6.283);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.75;ctx.stroke();}}
 function text(t,x,y,size,col,w,al,fam){ctx.font=`${w||400} ${size}px ${fam==='mono'?'"IBM Plex Mono",Menlo,monospace':'Montserrat,system-ui,sans-serif'}`;ctx.fillStyle=col;ctx.textAlign=al||'center';ctx.fillText(t,x,y);}
 let q='';const matches=n=>{if(!q)return true;const s=(n.kind==='agent'?n.ag.name+' '+n.ag.persona+' '+n.ag.role+' '+n.ag.squad:n.kind==='squad'?n.sq.name+' '+n.sq.description:n.kind==='skill'?n.sk.name+' '+n.sk.description:'').toLowerCase();return s.includes(q);};
 document.getElementById('search').oninput=e=>{q=e.target.value.trim().toLowerCase();};
@@ -160,11 +164,12 @@ function frame(now){const dt=Math.min(40,now-tPrev);tPrev=now;const T=now/1000;
     if(!l.thin&&(l.b===sel||l.b===hov||l.a===sel)){ctx.strokeStyle='rgba(91,107,255,0.45)';ctx.setLineDash([1.5,12]);ctx.lineDashOffset=-(T*28)%14;ctx.beginPath();ctx.moveTo(l.a.x,l.a.y);ctx.lineTo(l.b.x,l.b.y);ctx.stroke();ctx.setLineDash([]);}ctx.globalAlpha=1;});
   // hub
   hub.pulse=Math.max(0,hub.pulse-dt/900);circ(hub.x,hub.y,hub.r,'#131412','#2A2D29',1.5,COL.azg,34);ctx.strokeStyle=COL.az;ctx.globalAlpha=0.25+0.25*Math.sin(T*1.6);ctx.lineWidth=1;ctx.beginPath();ctx.arc(hub.x,hub.y,hub.r+7,T*0.6,T*0.6+4.4);ctx.stroke();ctx.globalAlpha=1;
-  ctx.save();const bs=34/136;ctx.translate(hub.x-84.54*bs/2,hub.y-17);ctx.scale(bs,bs);ctx.beginPath();BOLT.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=COL.az;ctx.shadowColor=COL.az;ctx.shadowBlur=20/bs;ctx.fill();ctx.restore();
+  halo(hub.x,hub.y,30,COL.az,0.45);ctx.save();const bs=34/136;ctx.translate(hub.x-84.54*bs/2,hub.y-17);ctx.scale(bs,bs);ctx.beginPath();BOLT.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=COL.az;ctx.fill();ctx.restore();
   text('CENTRO DE TREINAMENTO',hub.x,hub.y+hub.r+26,9.5,COL.mute,500,'center','mono');
   for(const Q of nodes.values()){if(Q.kind!=='squad')continue;Q.glow=Math.max(0,Q.glow-dt/700);const isSel=sel===Q||hov===Q,dim=q&&!matches(Q)&&!Q.sq.agents.some(a=>matches({kind:'agent',ag:S.agents[a]}));ctx.globalAlpha=dim?0.3:1;
-    if(expanded.has(Q.sq.name)){ctx.strokeStyle=COL.az;ctx.globalAlpha=(dim?0.3:1)*0.5;ctx.lineWidth=1;ctx.beginPath();ctx.arc(Q.x,Q.y,Q.r+6,T*0.9,T*0.9+5);ctx.stroke();ctx.globalAlpha=dim?0.3:1;}
-    circ(Q.x,Q.y,Q.r,'#1C1E1B',COL.bone,isSel?2.5:1.75,Q.glow||isSel?COL.bone:null,22);text(String(Q.sq.agents.length),Q.x,Q.y+3.5,9.5,COL.bone,500,'center','mono');
+    const ex=expanded.has(Q.sq.name);if(ex){ctx.strokeStyle=COL.bone;ctx.globalAlpha=(dim?0.3:1)*0.35;ctx.lineWidth=1;ctx.beginPath();ctx.arc(Q.x,Q.y,Q.r+6,T*0.9,T*0.9+5);ctx.stroke();ctx.globalAlpha=dim?0.3:1;}
+    if(!ex){ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(Q.x,Q.y,Q.r+5,0,6.283);ctx.stroke();}
+    circ(Q.x,Q.y,Q.r,ex?'#1C1E1B':'#131412',COL.bone,isSel?2.5:1.75,Q.glow||isSel?COL.bone:null,22);text(String(Q.sq.agents.length),Q.x,Q.y+3.5,9.5,COL.bone,500,'center','mono');
     const dx=Q.x-hub.x,dy=Q.y-hub.y,d=Math.hypot(dx,dy)||1,ux=-dx/d,uy=-dy/d;const inside=Math.abs(ux)<0.5;const lx=Q.x+(inside?0:ux*(Q.r+12)),ly=Q.y+(inside?uy*(Q.r+22):5);const al=inside?'center':(ux>0?'left':'right');
     text(Q.sq.name,lx,ly,13,COL.bone,500,al);text((Q.sq.skills.length+' SKILLS · '+Q.sq.projects.length+' PROJETOS'),lx,ly+14,8.5,COL.mute,400,al,'mono');ctx.globalAlpha=1;}
   for(const A of nodes.values()){if(A.kind!=='agent')continue;A.glow=Math.max(0,A.glow-dt/700);const isSel=sel===A||hov===A,dim=q&&!matches(A);ctx.globalAlpha=dim?0.2:1;
@@ -185,10 +190,10 @@ function frame(now){const dt=Math.min(40,now-tPrev);tPrev=now;const T=now/1000;
   requestAnimationFrame(frame);}
 
 /* ===== drawer ===== */
-function open(n){if(n.kind==='squad'){if(expanded.has(n.sq.name))expanded.delete(n.sq.name);else expanded.add(n.sq.name);rebuild();}if(!document.body.classList.contains('open'))view.x-=190;document.body.classList.add('open');sel=n;renderDrawer(n);}
+function open(n){if(n.kind==='squad'){if(expanded.has(n.sq.name)){expanded.delete(n.sq.name);expandedSkills.delete(n.sq.name);}else expanded.add(n.sq.name);rebuild();}if(!document.body.classList.contains('open'))view.x-=190;document.body.classList.add('open');sel=n;renderDrawer(n);}
 function closeDrawer(){if(document.body.classList.contains('open'))view.x+=190;document.body.classList.remove('open');sel=null;}
 document.getElementById('dClose').onclick=closeDrawer;
-document.getElementById('dBody').addEventListener('click',e=>{const t=e.target.closest('[data-open]');if(t){const n=nodes.get(t.dataset.open);if(n)open(n);else if(t.dataset.open.startsWith('k:')){const nm=t.dataset.open.slice(2);openReader('skill',nm);}return;}const r=e.target.closest('[data-read]');if(r)openReader(r.dataset.read.split(':')[0],r.dataset.read.split(':')[1]);});
+document.getElementById('dBody').addEventListener('click',e=>{const sk=e.target.closest('[data-skills]');if(sk){const nm=sk.dataset.skills;if(expandedSkills.has(nm))expandedSkills.delete(nm);else{expanded.add(nm);expandedSkills.add(nm);}rebuild();renderDrawer(sel);return;}const t=e.target.closest('[data-open]');if(t){const n=nodes.get(t.dataset.open);if(n)open(n);else if(t.dataset.open.startsWith('k:')){const nm=t.dataset.open.slice(2);openReader('skill',nm);}return;}const r=e.target.closest('[data-read]');if(r)openReader(r.dataset.read.split(':')[0],r.dataset.read.split(':')[1]);});
 function renderDrawer(n){const real=document.getElementById('dBody'),tmp=document.createElement('div');_render(n,tmp);if(tmp.innerHTML!==real.innerHTML)real.innerHTML=tmp.innerHTML;}
 const skRow=(kn,prefix)=>{const sk=S.skills[kn];if(!sk)return '';const id=nodes.has('k:'+kn)?'k:'+kn:(prefix&&nodes.has('k:'+prefix+'/'+kn)?'k:'+prefix+'/'+kn:'k:'+kn);return `<div class="row click" data-open="${esc(id)}"><span class="n sk"></span><span class="t"><b>${esc(kn)}</b><br>${esc(sk.description.slice(0,90))}</span><span class="s">${sk.used_by.length} ag.</span></div>`;};
 const agRow=an=>{const ag=S.agents[an];if(!ag)return '';return `<div class="row click" data-open="a:${esc(an)}"><span class="n"></span><span class="t"><b>${esc(ag.persona||an)}</b> · ${esc(ag.role||an)}<br>${esc(an)}</span><span class="s">${esc(ag.model)}</span></div>`;};
@@ -198,9 +203,10 @@ function _render(n,body){const lamp=document.getElementById('dLamp'),name=docume
       <div class="sec"><div class="kicker">Skills principais</div>${Object.values(S.skills).filter(s=>s.core).map(s=>skRow(s.name)).join('')}</div>
       <div class="sec"><div class="kicker">Projetos que recebem o pack</div>${S.projects.map(p=>`<div class="row"><span class="n" style="${p.kind==='sala'?'border-color:#3d8fff':''}"></span><span class="t"><b>${esc(p.name)}</b><br>${esc(p.squads.join(' · ')||(p.kind==='sala'?'sala de controle':'sem squad'))}</span><span class="s">${p.smart_memory?'memória':''}</span></div>`).join('')}</div>
       <div class="sec"><div class="kicker">Hooks</div><div class="chips">${S.hooks.map(h=>`<span class="chip">${esc(h)}</span>`).join('')}</div></div>`;return;}
-  if(n.kind==='squad'){const sq=n.sq;lamp.className='lamp sq';lamp.textContent=sq.agents.length;name.textContent=sq.name;sub.textContent=sq.agents.length+' agentes · '+sq.skills.length+' skills · '+(expanded.has(sq.name)?'skills expandidas':'clique de novo para recolher');
+  if(n.kind==='squad'){const sq=n.sq;lamp.className='lamp sq';lamp.textContent=sq.agents.length;name.textContent=sq.name;sub.textContent=sq.agents.length+' agentes · '+sq.skills.length+' skills · '+(expanded.has(sq.name)?'aberta · clique de novo para recolher':'recolhida');
     body.innerHTML=`<div class="sec"><div class="now">${esc(sq.description||'—')}</div>${sq.archetypes.length?`<div class="chips" style="margin-top:10px">${sq.archetypes.map(a=>`<span class="chip">${esc(a)}</span>`).join('')}</div>`:''}</div>
       <div class="sec"><div class="kicker">Agentes</div>${sq.agents.map(agRow).join('')}</div>
+      <div class="sec"><button class="btn ghost" data-skills="${esc(sq.name)}">${expandedSkills.has(sq.name)?'Recolher skills do mapa':'Mostrar skills no mapa'} <span>${sq.skills.length}</span></button></div>
       <div class="sec"><div class="kicker">Skills da squad</div>${sq.skills.map(k=>skRow(k,sq.name)).join('')||'<div class="row"><span class="t">—</span></div>'}</div>
       <div class="sec"><div class="kicker">Instalada em</div>${sq.projects.map(p=>`<div class="row"><span class="n"></span><span class="t">${esc(p)}</span></div>`).join('')||'<div class="row"><span class="t">nenhum projeto ainda</span></div>'}</div>`;return;}
   if(n.kind==='agent'){const a=n.ag;lamp.className='lamp';lamp.textContent='';name.textContent=(a.persona?a.persona+' · ':'')+a.name;sub.textContent=[a.role,a.squad,a.archetype].filter(Boolean).join(' · ');

@@ -232,7 +232,8 @@ const COL={bone:'#F2F3F0',dim:'#C4C8C1',mute:'#8F948D',az:'#3d8fff',azg:'#5b6bff
 function stateOfSession(s){if(s.state==='blocked'||s.agents.some(a=>a.state==='approval'))return 'approval';if(s.status==='busy'||s.agents.some(a=>a.state==='active'))return 'active';return 'idle';}
 function stateOfLead(L){if(!L.sess.length)return 'off';const ags=L.sess.flatMap(s=>s.agents);if(ags.some(a=>a.state==='approval')||L.sess.some(s=>s.state==='blocked'))return 'approval';if(ags.some(a=>a.state==='active')||L.sess.some(s=>s.status==='busy'))return 'active';return 'idle';}
 function colorOf(st){return st==='approval'?COL.amber:st==='active'?COL.bone:st==='waiting'?COL.dim:COL.mute;}
-function circ(x,y,r,fill,stroke,lw,glow,gb){ctx.beginPath();ctx.arc(x,y,r,0,6.283);if(fill){ctx.fillStyle=fill;if(glow){ctx.shadowColor=glow;ctx.shadowBlur=gb||18;}ctx.fill();ctx.shadowBlur=0;}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.75;ctx.stroke();}}
+function halo(x,y,r,color,alpha){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');const a=ctx.globalAlpha;ctx.globalAlpha=a*(alpha||0.35);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fill();ctx.globalAlpha=a;}
+function circ(x,y,r,fill,stroke,lw,glow,gb){if(glow)halo(x,y,r+(gb||18)*0.8,glow,0.35);ctx.beginPath();ctx.arc(x,y,r,0,6.283);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.75;ctx.stroke();}}
 function text(t,x,y,size,col,w,al,fam){ctx.font=`${w||400} ${size}px ${fam==='mono'?'"IBM Plex Mono",Menlo,monospace':'Montserrat,system-ui,sans-serif'}`;ctx.fillStyle=col;ctx.textAlign=al||'center';ctx.fillText(t,x,y);}
 function shortName(s){const parts=s.split(' | ');return parts.length>2?parts.slice(2).join(' | '):parts.length===2?parts[1]:s;}
 let tPrev=performance.now();
@@ -257,7 +258,7 @@ function frame(now){
   const hubOn=hub.sess&&hub.sess.status==='busy';
   circ(hub.x,hub.y,hub.r+hub.pulse*6,'#131412','#2A2D29',1.5,(hub.glow||hubOn)?COL.azg:null,34+hub.pulse*30);
   ctx.strokeStyle=COL.az;ctx.globalAlpha=0.25+0.25*Math.sin(T*1.6);ctx.lineWidth=1;ctx.beginPath();ctx.arc(hub.x,hub.y,hub.r+7,T*0.6,T*0.6+4.4);ctx.stroke();ctx.globalAlpha=1;
-  ctx.save();const bs=34/136;ctx.translate(hub.x-84.54*bs/2,hub.y-17);ctx.scale(bs,bs);ctx.beginPath();BOLT.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fillStyle=COL.az;ctx.shadowColor=COL.az;ctx.shadowBlur=(20+hub.pulse*30)/bs;ctx.fill();ctx.restore();
+  halo(hub.x,hub.y,30+hub.pulse*20,COL.az,0.45);ctx.save();const bs=34/136;ctx.translate(hub.x-84.54*bs/2,hub.y-17);ctx.scale(bs,bs);ctx.beginPath();BOLT.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fillStyle=COL.az;ctx.fill();ctx.restore();
   text('SALA DE CONTROLE',hub.x,hub.y+hub.r+26,9.5,COL.mute,500,'center','mono');
   if(hub.sess&&hub.sess.status==='busy')text('roteando',hub.x,hub.y+hub.r+40,9.5,COL.az,400,'center','mono');
   // líderes (projetos)
@@ -418,7 +419,7 @@ function vframe(){if(document.body.classList.contains('vault-open')&&vnodes.leng
     vnodes.forEach(n=>{n.vx+=(w/2-n.x)*0.003;n.vy+=(h/2-n.y)*0.003;n.vx*=0.8;n.vy*=0.8;n.x=Math.max(10,Math.min(w-10,n.x+n.vx));n.y=Math.max(10,Math.min(h-14,n.y+n.vy));});
     vctx.strokeStyle='rgba(255,255,255,0.14)';vctx.lineWidth=1;edges.forEach(([a,b])=>{vctx.beginPath();vctx.moveTo(a.x,a.y);vctx.lineTo(b.x,b.y);vctx.stroke();});
     const cur=byK.get(V.cur);const near=new Set(edges.filter(e=>e[0]===cur||e[1]===cur).flat());
-    vnodes.forEach(n=>{const on=n===cur,nb=near.has(n);vctx.beginPath();vctx.arc(n.x,n.y,on?6:nb?4.5:3.5,0,6.283);vctx.fillStyle=on?'#3d8fff':nb?'#c5c5ca':'#84848c';if(on){vctx.shadowColor='#5b6bff';vctx.shadowBlur=14;}vctx.fill();vctx.shadowBlur=0;
+    vnodes.forEach(n=>{const on=n===cur,nb=near.has(n);vctx.beginPath();vctx.arc(n.x,n.y,on?6:nb?4.5:3.5,0,6.283);vctx.fillStyle=on?'#3d8fff':nb?'#c5c5ca':'#84848c';vctx.fill();
       if(on||nb||vnodes.length<=14){vctx.font='300 9.5px Montserrat,sans-serif';vctx.fillStyle=on?'#f1f1f3':'#84848c';vctx.textAlign='center';vctx.fillText(n.t.slice(0,22),n.x,n.y+15);}});}
   requestAnimationFrame(vframe);}
 vg.addEventListener('click',e=>{const r=vg.getBoundingClientRect();const n=vnodes.find(n=>Math.hypot(e.clientX-r.left-n.x,e.clientY-r.top-n.y)<10);if(n)showNote(n.k);});
