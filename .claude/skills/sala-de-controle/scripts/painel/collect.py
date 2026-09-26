@@ -68,7 +68,10 @@ def tool_summary(name, inp):
         p = inp.get("file_path") or inp.get("notebook_path") or ""
         return name, os.path.basename(p) or p
     if name == "Bash":
-        return name, clean(inp.get("command", ""), 80)
+        cmd = inp.get("command", "") or ""
+        cmd = re.sub(r'^\s*cd\s+("[^"]*"|\'[^\']*\'|\S+)\s*(&&|;)\s*', "", cmd)   # tira o `cd "..." &&` inicial
+        cmd = cmd.split("\n")[0]
+        return name, clean(cmd, 80)
     if name in ("Grep", "Glob"):
         return name, inp.get("pattern", "")
     if name == "SendMessage":
