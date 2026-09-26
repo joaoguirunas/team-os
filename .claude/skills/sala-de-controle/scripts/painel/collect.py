@@ -23,6 +23,8 @@ from collections import deque
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 HOME = os.path.expanduser("~")
+AGENT_TTL = 30 * 60      # agente sem atividade há mais de 30 min sai do painel
+AGENT_FADE = 10 * 60     # a partir de 10 min parado começa a desbotar (a página usa)
 TEAMS_DIR = os.path.join(HOME, ".claude", "teams")
 PROJ_DIR = os.path.join(HOME, ".claude", "projects")
 
@@ -261,7 +263,9 @@ def agents_of(session_dir, members):
         elif last_text:
             a["now"] = last_text
         a["age"] = int(age) if age < 1e9 else None
-    return sorted(agents.values(), key=lambda x: x["name"])
+    # só quem teve atividade recente: some do mapa depois de AGENT_TTL segundos parado
+    fresh = [a for a in agents.values() if a.get("age") is not None and a["age"] < AGENT_TTL]
+    return sorted(fresh, key=lambda x: x["name"])
 
 
 def stage_line(ctx):
