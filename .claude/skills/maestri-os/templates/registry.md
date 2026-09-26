@@ -15,15 +15,15 @@ Uma seção por terminal, com o **nome exato** que aparece no `maestri list`. Na
 
 <!-- Exemplo de seção — apague ao registrar o primeiro terminal real.
 
-### João Guirunas | Site | Home
+### Minha Marca | Site | Home
 **Informado por você**
-- pasta: /Volumes/João | Externo/João Guirunas | Site
+- pasta: <raiz>/Minha Marca | Site
 - escopo: Home (página inicial do site) — derivado do nome da janela; outra janela da mesma pasta pode ser "Site | Mentoria"
 - apelidos: site, home, landing
 - como acionar: (opcional — ex.: "sempre começa pelo sites-architect")
 **Lido automaticamente** (atualizado em 2026-09-14)
 - squads: sites · agentes (10): sites-analyst, sites-architect, sites-data, sites-ux, sites-dev-alpha, sites-dev-beta, sites-dev-delta, sites-dev-gamma, sites-qa, sites-devops
 - team-os: sim · smart-memory: sim · áreas: architect, data, qa, research, ux
-- resumo: Site de autoridade pessoal + funil de conversão, publicado em joaoguirunas.com.
+- resumo: Site de autoridade pessoal + funil de conversão, publicado em minhamarca.com.
 
 -->

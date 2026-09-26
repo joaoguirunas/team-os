@@ -62,6 +62,8 @@ Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/a
 /team-os-creator *audit     → validar todos os agentes e skills
 /team-os-creator *propagate → propagar para projetos destino
 /team-os-creator *install   → instalar squads em projeto novo
+/team-os-creator *painel    → mapa vivo do CT (squads, agentes, skills) em 127.0.0.1:8788
+/sala-de-controle *painel   → mapa vivo das sessões e agentes (só na pasta da Sala) em 127.0.0.1:8787
 ```
 
 > Para qualquer dúvida de uso, agentes, skills ou fluxo: **[README.md](./README.md)** é a referência completa. Licença MIT — [LICENSE](./LICENSE); terceiros em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md); contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md).

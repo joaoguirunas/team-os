@@ -67,10 +67,7 @@ jobs:
         run: |
           if grep -rnE '/Users/[a-z]+|/Volumes/|/opt/homebrew' --include='*.md' --include='*.json' --include='*.sh' --include='*.py' --include='*.yaml' . \
                --exclude-dir=.git --exclude-dir=.venv --exclude-dir=ms-playwright \
-               --exclude-dir=sala-de-controle --exclude-dir=maestri-os \
                | grep -v 'settings.local.json' | grep -v 'CHANGELOG.md'; then
-            # TODO: remover a exclusão de sala-de-controle/maestri-os quando os templates
-            # dessas skills trocarem os exemplos de pasta real por <raiz>/<Negócio>/<Projeto>
             echo "❌ Caminho de máquina encontrado (veja acima)."
             exit 1
           fi

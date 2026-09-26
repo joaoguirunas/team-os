@@ -16,8 +16,8 @@ Sessão que sumiu do scan fica marcada `fechada em <data>` — se reabrir com o 
 
 <!-- Exemplo — apague ao registrar a primeira sessão real.
 
-### João Guirunas | Site | Home
-- pasta: /Volumes/João | Externo/João Guirunas/João Guirunas | Site
+### Minha Marca | Site | Home
+- pasta: <raiz>/Minha Marca/Minha Marca | Site
 - título / escopo: Home (página inicial)
 - apelidos: home, site, landing
 - aberta pela Sala: não  ·  id: —

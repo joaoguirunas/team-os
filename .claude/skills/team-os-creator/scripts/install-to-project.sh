@@ -210,6 +210,11 @@ ensure_gitignore() {
   if ! grep -q '^Icon?$\|^Icon\\r$\|^Icon\?' "$gi" 2>/dev/null; then
     printf 'Icon?\n' >> "$gi"; added="$added Icon?"
   fi
+  # Sala de Controle: o snapshot guarda trechos das conversas de TODAS as sessões da
+  # máquina — nunca versionar.
+  if [ "${CONTROL_ROOM:-0}" = "1" ] && ! grep -q 'sala-de-controle/snapshot.json' "$gi" 2>/dev/null; then
+    printf 'docs/smart-memory/sala-de-controle/snapshot.json\n' >> "$gi"; added="$added snapshot.json"
+  fi
   [ -n "$added" ] && echo "GITIGNORE_ADDED=${added# }"
 }
 

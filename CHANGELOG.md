@@ -2,15 +2,22 @@
 
 Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
-## [Unreleased] — 2026-09-26 · Economia de tokens
+## [2.3.0] — 2026-09-26 · Economia de tokens e painéis ao vivo
 
 ### Adicionado
+- **`/sala-de-controle *painel`** — mapa vivo em tempo real (atualiza a cada segundo) no navegador do próprio Claude: a Sala no centro, um nó por projeto, um nó por sessão e os agentes de cada uma, com estado por cor, mensagens entre agentes, feed de eventos e leitor da smart-memory de cada projeto no estilo Obsidian (árvore, wikilinks, grafo). Mostra só quem está operando ou esperando o usuário; agentes parados somem após 30 minutos. Só lê, servidor apenas em `127.0.0.1:8787` (59dc366 … 7139309).
+- **`/team-os-creator *painel`** — mapa vivo do CT em `127.0.0.1:8788`: raio no centro, as 10 squads no anel, agentes (persona + cargo) e skills; clique abre o perfil e o arquivo inteiro; layout com barra superior, busca e drawer (443b7a9 … 00f5902).
 - **Compactação automática**: no início de cada `/team-os`, se a memória estiver pesada ou tiver notas arquiváveis, a fase mecânica do compact roda sozinha (só `mv`, nunca apaga). Opt-out: `TEAM_OS_AUTO_COMPACT=0`. A fase semântica continua no `*compact`.
 - **Teto de DIGEST por script**: `weigh-memory.sh` marca todo `DIGEST.md` acima de 60 linhas (`DIGEST_MAX_LINES`) como HEAVY e o archivist tem o enxugamento como item obrigatório.
 - **Hook `guard-smart-memory-read.sh`**: bloqueia leitura de `_archive/`, de pasta inteira e a 4ª nota fora do L0 sem nova busca (`sm-find.sh` zera o contador).
 - **Hook `guard-message-size.sh`**: mensagens entre agentes com teto de 20 linhas / 1.500 caracteres; `[handoff]` até 60 linhas.
 - **Placar da sessão**: `weigh-memory.sh --save-start` no início e `--report` no fim de rodada, no `*status` e no `*compact` ("Memória: 1.240 → 1.180 linhas (−60) · …").
 - `compact-memory.sh --mechanical-only` e saída `COMPACT_MOVED=<n>`; 91 casos novos em `test-hooks.sh` (493 no total).
+
+### Corrigido
+- Modelos da Sala de Controle e do maestri-os trocam caminhos reais de máquina por exemplos genéricos (`<raiz>/Minha Marca/…`); o CI volta a checar essas pastas.
+- `*install` da Sala de Controle põe `docs/smart-memory/sala-de-controle/snapshot.json` no `.gitignore` — o snapshot guarda trechos das conversas de todas as sessões da máquina.
+- Painel da Sala: casa sessão ↔ projeto com acento, não pisca ao redimensionar, clique não se perde, botão da smart-memory aceita aspas no caminho.
 
 ### Alterado
 - Bloco Native Teams Protocol (regras 1 e 4) cita os dois hooks novos e remove a brecha "grep de frontmatter"; reaplicado nos 95 agentes e 9 templates via `migrate-ntp.sh`.
