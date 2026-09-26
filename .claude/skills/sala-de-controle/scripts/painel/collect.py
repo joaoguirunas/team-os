@@ -263,8 +263,8 @@ def agents_of(session_dir, members):
         elif last_text:
             a["now"] = last_text
         a["age"] = int(age) if age < 1e9 else None
-    # só quem teve atividade recente: some do mapa depois de AGENT_TTL segundos parado
-    fresh = [a for a in agents.values() if a.get("age") is not None and a["age"] < AGENT_TTL]
+    # só quem está operando agora (ou esperando o usuário); parado/finalizado não entra no mapa
+    fresh = [a for a in agents.values() if a["state"] in ("active", "approval")]
     return sorted(fresh, key=lambda x: x["name"])
 
 
