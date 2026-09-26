@@ -171,7 +171,7 @@ const BOLT=[[69.84,0],[0,78.66],[36.76,79.39],[11.76,135.26],[83.81,60.28],[43.3
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 let W,H,DPR=Math.min(devicePixelRatio||1,2);
 function resize(){W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;if(!hub){view.x=W*0.46;view.y=H*0.52;}}
-addEventListener('resize',resize);
+let userMoved=false,resizeT=null;addEventListener('resize',()=>{resize();if(!userMoved){clearTimeout(resizeT);resizeT=setTimeout(fitAll,250);}});
 
 /* ===================== MODELO → GRAFO ===================== */
 function sessionsOf(p){return S.sessions.filter(s=>s.project===p.path&&!s.is_sala);}
@@ -215,17 +215,17 @@ function physics(){
 let drag=null,pan=null,moved=false,down=null,mouse={x:-1e9,y:-1e9};
 const toWorld=(px,py)=>({x:(px-view.x)/view.k,y:(py-view.y)/view.k});
 function pick(px,py){const p=toWorld(px,py);const arr=[...nodes.values()];for(let i=arr.length-1;i>=0;i--){const n=arr[i];if(Math.hypot(p.x-n.x,p.y-n.y)<n.r+9/view.k)return n;}return null;}
-cv.addEventListener('pointerdown',e=>{if(e.button!==0)return;cv.setPointerCapture(e.pointerId);moved=false;down={x:e.clientX,y:e.clientY};const n=pick(e.clientX,e.clientY);
+cv.addEventListener('pointerdown',e=>{if(e.button!==0)return;userMoved=true;cv.setPointerCapture(e.pointerId);moved=false;down={x:e.clientX,y:e.clientY};const n=pick(e.clientX,e.clientY);
   if(n){drag=n;n.drag=true;const p=toWorld(e.clientX,e.clientY);n.off={x:n.x-p.x,y:n.y-p.y};}else pan={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};});
 cv.addEventListener('pointermove',e=>{mouse={x:e.clientX,y:e.clientY};if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>4)moved=true;
   if(drag){const p=toWorld(e.clientX,e.clientY);drag.x=p.x+drag.off.x;drag.y=p.y+drag.off.y;drag.vx=drag.vy=0;}
   else if(pan){view.x=pan.vx+e.clientX-pan.x;view.y=pan.vy+e.clientY-pan.y;}});
 function up(e){if(drag){drag.drag=false;drag.vx=drag.vy=0;if(!moved)open(drag);drag=null;}else if(pan&&!moved&&e&&e.detail===2){}pan=null;down=null;}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.addEventListener('lostpointercapture',()=>{if(drag){drag.drag=false;drag=null;}pan=null;down=null;});
-function fitAll(){const arr=[...nodes.values()];if(!arr.length)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;arr.forEach(n=>{x0=Math.min(x0,n.x-60);y0=Math.min(y0,n.y-40);x1=Math.max(x1,n.x+60);y1=Math.max(y1,n.y+40);});const pad=70,availW=(document.body.classList.contains('open')?W-380:W)-pad*2,availH=H-pad*2-60;const k=Math.min(1.6,Math.max(0.35,Math.min(availW/(x1-x0),availH/(y1-y0))));view.k=k;view.x=pad+(availW-(x1-x0)*k)/2-x0*k;view.y=pad+60+(availH-(y1-y0)*k)/2-y0*k;}
+function fitAll(){const arr=[...nodes.values()];if(!arr.length||W<200||H<200)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;arr.forEach(n=>{x0=Math.min(x0,n.x-60);y0=Math.min(y0,n.y-40);x1=Math.max(x1,n.x+60);y1=Math.max(y1,n.y+40);});const pad=70,availW=(document.body.classList.contains('open')?W-380:W)-pad*2,availH=H-pad*2-60;const k=Math.min(1.6,Math.max(0.35,Math.min(availW/(x1-x0),availH/(y1-y0))));view.k=k;view.x=pad+(availW-(x1-x0)*k)/2-x0*k;view.y=pad+60+(availH-(y1-y0)*k)/2-y0*k;}
 cv.addEventListener('dblclick',e=>{if(!pick(e.clientX,e.clientY))fitAll();});
 let fitted=false;
-cv.addEventListener('wheel',e=>{e.preventDefault();const k=Math.min(2.4,Math.max(0.4,view.k*(e.deltaY<0?1.08:0.925)));const p=toWorld(e.clientX,e.clientY);view.k=k;view.x=e.clientX-p.x*k;view.y=e.clientY-p.y*k;},{passive:false});
+cv.addEventListener('wheel',e=>{e.preventDefault();userMoved=true;const k=Math.min(2.4,Math.max(0.4,view.k*(e.deltaY<0?1.08:0.925)));const p=toWorld(e.clientX,e.clientY);view.k=k;view.x=e.clientX-p.x*k;view.y=e.clientY-p.y*k;},{passive:false});
 
 /* ===================== DESENHO ===================== */
 const COL={bone:'#F2F3F0',dim:'#C4C8C1',mute:'#8F948D',az:'#3d8fff',azg:'#5b6bff',amber:'#3d8fff',ok:'#3fbf7a',off:'#585C57'};
@@ -332,7 +332,7 @@ function handleEvent(e){
 /* ===================== CONEXÃO ===================== */
 let es=null,lastSeq=0;
 function connect(){es=new EventSource('/events?since='+lastSeq);
-  es.addEventListener('state',ev=>{const d=JSON.parse(ev.data);S=d.state;document.getElementById('live').classList.remove('off');rebuild();updateStats();if(!fitted){fitted=true;setTimeout(fitAll,700);}(d.events||[]).forEach(e=>{lastSeq=Math.max(lastSeq,e.seq||0);handleEvent(e);});});
+  es.addEventListener('state',ev=>{const d=JSON.parse(ev.data);S=d.state;document.getElementById('live').classList.remove('off');rebuild();updateStats();if(!fitted){fitted=true;setTimeout(fitAll,700);setTimeout(()=>{if(!userMoved)fitAll();},2200);}(d.events||[]).forEach(e=>{lastSeq=Math.max(lastSeq,e.seq||0);handleEvent(e);});});
   es.onerror=()=>{document.getElementById('live').classList.add('off');};}
 function updateStats(){const c=S.counts||{};sSess.textContent=c.sessions||0;sAg.textContent=c.agents||0;sWork.textContent=c.active||0;sWait.textContent=c.approval||0;clock.textContent=(S.generated||'').slice(11,19)+' · '+(S.took_ms||0)+' ms';}
 
