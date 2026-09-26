@@ -218,6 +218,7 @@ Credenciais (token, key, project-ref) nunca vão no agente nem na smart-memory �
 /team-os-creator *propagate            → propaga agentes/skills atualizados para os destinos (sempre --match-target-squads)
 /team-os-creator *install              → instala squads + skills (incl. team-os) + settings.json + hooks num projeto destino
 /team-os-creator *organize             → árvore negócio → projeto → squads → salas + proposta de organização (só propõe)
+/team-os-creator *painel               → mapa vivo do CT no navegador do Claude: squads, agentes (persona + cargo), skills; clique abre perfil e arquivo (127.0.0.1:8788)
 ```
 
 **Como o `*install` funciona** (`scripts/install-to-project.sh`):
@@ -630,7 +631,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 9 templates de archetype + agents-page.html.tpl + pressure-scenarios/ (13 cenários)
         ├── reference/           ← archetypes · native-teams-protocol · smart-memory-integration · mcp-servers · skills-catalog-quality · pressure-testing
-        ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · install-suggested-skills.sh · search-skills.sh · preflight.sh · generate-agents-page.py
+        ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · install-suggested-skills.sh · search-skills.sh · preflight.sh · generate-agents-page.py · painel/ (`*painel`: mapa vivo do CT)
         └── presets/             ← 10 presets de squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo)
 
 .github/workflows/audit.yml  ← CI: validate-agent.sh (+ --skills) · test-hooks.sh · sintaxe dos scripts · 0 symlinks quebrados · contagens do README/CLAUDE.md · zero caminho de máquina · docs/agentes.html atualizado

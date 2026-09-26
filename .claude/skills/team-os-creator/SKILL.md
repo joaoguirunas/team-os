@@ -54,6 +54,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
 | `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill de Sala (`sala-de-controle` por padrão, ou `maestri-os` no modo Maestri) |
 | `/team-os-creator *organize` | Mapa da organização de pastas (negócio → projeto → squads → salas), pontos fora do padrão e proposta de melhoria. **Só propõe** — nada é movido, renomeado ou instalado sem OK explícito, ação por ação |
+| `/team-os-creator *painel` | **Mapa vivo do CT** no navegador do próprio Claude: o raio no centro, as 10 squads no anel, os agentes de cada squad ao redor (persona + cargo), skills principais ligadas ao centro; clique na squad expande as skills dela, clique no agente/skill abre o perfil e o arquivo inteiro. Estático (o que existe), read-only. `*painel stop` derruba |
 
 ---
 
@@ -265,6 +266,25 @@ Script: `scripts/migrate-ntp.sh` — substitui, em cada `.claude/agents/*.md`, o
 
 ---
 
+## Fluxo `*painel`
+
+Mesma identidade e mecânica do `*painel` da `sala-de-controle`, mas para o **pack**: mostra tudo que existe no CT, não quem está trabalhando.
+
+```bash
+python3 .claude/skills/team-os-creator/scripts/painel/serve.py --bg       # sobe (ou reaproveita) em http://127.0.0.1:8788
+python3 .claude/skills/team-os-creator/scripts/painel/serve.py --status
+python3 .claude/skills/team-os-creator/scripts/painel/serve.py --stop
+```
+
+1. Rode o `serve.py --bg` (imprime `STARTED=1 URL=…` ou `ALREADY=1 URL=…`).
+2. Abra a URL **no navegador do próprio Claude** (`preview_start` com `url: "http://127.0.0.1:8788"`; em terminal puro, `open http://127.0.0.1:8788`).
+3. Diga em uma linha o que está no ar (nº de squads, agentes, skills, projetos) e volte ao Command Center.
+4. `*painel stop` → `serve.py --stop`.
+
+O que ele lê (só leitura, só no CT): `presets/*.yaml` (squads, persona, cargo, archetype, skills por agente), `.claude/agents/*.md` (frontmatter, seções, skills citadas), `.claude/skills/*/SKILL.md` (frontmatter, seções, quem usa), `org-map.py` da `sala-de-controle` (em que projetos cada squad está). Relê os arquivos a cada 10 s — agente ou skill novo aparece sozinho. Nunca é propagado: é parte da `team-os-creator`.
+
+---
+
 ## Fluxo `*organize`
 
 Organização de pastas é parte do Command Center — o `dashboard.sh` já imprime a árvore; este fluxo aprofunda e propõe.
@@ -333,7 +353,8 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 │   ├── generate-agent.sh           ← materializa template + valida com *audit ao final
 │   ├── search-skills.sh · install-suggested-skills.sh
 │   ├── install-to-project.sh       ← --squads <lista|none> · --extra-skills · --match-target-squads · --dry-run (origem de cada skill) · backup .claude.bak-* · ensure-settings
-│   └── generate-agents-page.py     ← gera docs/agentes.html (--check para CI)
+│   ├── generate-agents-page.py     ← gera docs/agentes.html (--check para CI)
+│   └── painel/                     ← *painel: collect_ct.py + serve.py (127.0.0.1:8788) + index.html (mapa vivo do CT)
 └── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
     └── pressure-scenarios/         ← 13 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade, numero-sem-fonte, emitir-sem-pass, strategist-escreve-e-cede, identidade-sem-plataforma, rollout-sem-pass, pagamento-sem-confirmacao, numero-sem-conciliacao, clausula-fora-da-postura, minuta-sem-pass)
 
