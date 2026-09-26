@@ -170,8 +170,8 @@ const BOLT=[[69.84,0],[0,78.66],[36.76,79.39],[11.76,135.26],[83.81,60.28],[43.3
 
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 let W,H,DPR=Math.min(devicePixelRatio||1,2);
-function resize(){W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;if(!hub){view.x=W*0.46;view.y=H*0.52;}}
-let userMoved=false,resizeT=null;addEventListener('resize',()=>{resize();if(!userMoved){clearTimeout(resizeT);resizeT=setTimeout(fitAll,250);}});
+function resize(){const w=innerWidth,h=innerHeight;if(w===W&&h===H)return false;W=w;H=h;DPR=Math.min(devicePixelRatio||1,2);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);if(!hub){view.x=W*0.46;view.y=H*0.52;}return true;}
+let userMoved=false,resizeT=null,loadedAt=performance.now();addEventListener('resize',()=>{if(!resize())return;if(!userMoved&&performance.now()-loadedAt<15000){clearTimeout(resizeT);resizeT=setTimeout(fitAll,1000);}});
 
 /* ===================== MODELO → GRAFO ===================== */
 function sessionsOf(p){return S.sessions.filter(s=>s.project===p.path&&!s.is_sala);}
@@ -238,7 +238,7 @@ function shortName(s){const parts=s.split(' | ');return parts.length>2?parts.sli
 let tPrev=performance.now();
 function frame(now){
   const dt=Math.min(40,now-tPrev);tPrev=now;const T=now/1000;
-  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#090A08';ctx.fillRect(0,0,W,H);
   if(!hub){requestAnimationFrame(frame);return;}
   physics();
   ctx.setTransform(DPR*view.k,0,0,DPR*view.k,DPR*view.x,DPR*view.y);
