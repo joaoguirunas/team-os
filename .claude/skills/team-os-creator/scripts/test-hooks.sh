@@ -5,6 +5,8 @@
 #   • PreToolUse Bash           → tool_name / tool_input.command / cwd
 #   • PreToolUse Agent          → tool_input.isolation
 #   • SessionStart              → source / cwd / session_title
+#   • PreToolUse Read           → tool_input.file_path (+ session_id p/ o orçamento L2)
+#   • PreToolUse SendMessage    → tool_input.message (string ou objeto de protocolo)
 # Monta um repositório git temporário com docs/smart-memory/stories/{active,in-review,backlog,done}
 # e stories de exemplo, roda cada hook e confere o exit code (0 = passa, 2 = bloqueia).
 # Também simula falha do python3 (PATH com python3 falso) para cobrir os fallbacks em grep.
@@ -101,6 +103,9 @@ status: backlog
 # S4 — Relatório
 EOF
 
+# TMPDIR isolado para os hooks (contador L2 do guard-smart-memory-read.sh)
+mkdir -p "$TMP/tmpd"
+
 # python3 falso: simula falha do intérprete (hook deve avisar em stderr e usar o fallback grep)
 mkdir -p "$TMP/nopy"
 cat > "$TMP/nopy/python3" <<'EOF'
@@ -146,7 +151,7 @@ session_payload() {  # <source> <cwd> <session_title>
 
 LAST_OUT=""
 run_hook() {  # <hook> <payload>  → LAST_OUT = stdout+stderr ; retorna rc
-  LAST_OUT=$(printf '%s' "$2" | PATH="$TESTPATH" CLAUDE_PROJECT_DIR="$CPD" bash "$HOOKS/$1" 2>&1)
+  LAST_OUT=$(printf '%s' "$2" | PATH="$TESTPATH" CLAUDE_PROJECT_DIR="$CPD" TMPDIR="$TMP/tmpd" bash "$HOOKS/$1" 2>&1)
   return $?
 }
 
@@ -558,6 +563,103 @@ expect_out_empty $H "$(session_payload resume "$REPO" "Meu título escolhido")" 
 expect_out_empty $H "$(session_payload clear "$REPO" "")" "clear → ignora (sem saída)"
 expect 0 $H "$(session_payload startup "$REPO" "")" "exit 0 em startup"
 
+# ── 10b. guard-smart-memory-read.sh (PreToolUse Read|Bash) ───────────────────
+section "guard-smart-memory-read.sh"
+H=guard-smart-memory-read.sh
+SMD="$REPO/docs/smart-memory"
+mkdir -p "$SMD/_archive/2026-Q3" "$SMD/agents/dev/backend" "$SMD/_inbox" "$SMD/project"
+GSM_N=0
+gsm_sid() { GSM_N=$((GSM_N + 1)); GSM_SID="gsm-$$-$GSM_N"; }   # session_id novo por cenário
+read_payload() {  # <file_path> [session_id|-]  ("-" = sem session_id)
+  if [ "${2:-}" = "-" ]; then
+    printf '{"hook_event_name":"PreToolUse","cwd":%s,"tool_name":"Read","tool_input":{"file_path":%s}}' "$(jstr "$REPO")" "$(jstr "$1")"
+  else
+    printf '{"session_id":%s,"hook_event_name":"PreToolUse","cwd":%s,"tool_name":"Read","tool_input":{"file_path":%s}}' "$(jstr "${2:-$GSM_SID}")" "$(jstr "$REPO")" "$(jstr "$1")"
+  fi
+}
+sm_bash() {  # <command> [session_id]
+  printf '{"session_id":%s,"hook_event_name":"PreToolUse","cwd":%s,"tool_name":"Bash","tool_input":{"command":%s}}' "$(jstr "${2:-$GSM_SID}")" "$(jstr "$REPO")" "$(jstr "$1")"
+}
+gsm_sid
+expect 2 $H "$(read_payload "$SMD/_archive/2026-Q3/velha.md")" "(a) Read _archive/ com path absoluto → bloqueia"
+expect 2 $H "$(read_payload "docs/smart-memory/_archive/LEDGER.md")" "(a) Read _archive/ com path relativo → bloqueia"
+expect 2 $H "$(read_payload "./docs/smart-memory/agents/../_archive/x.md")" "(a) Read _archive/ via ../ (normalizado) → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/_archive/2026-Q3/velha.md')" "(a) cat _archive/ → bloqueia"
+expect 2 $H "$(sm_bash "head -n 20 \"$SMD/_archive/2026-Q3/velha.md\"")" "(a) head _archive/ (absoluto, com aspas) → bloqueia"
+expect 2 $H "$(sm_bash "sed -n '1,40p' docs/smart-memory/_archive/LEDGER.md")" "(a) sed -n _archive/ → bloqueia"
+expect 2 $H "$(sm_bash 'bash .claude/skills/team-os/scripts/sm-find.sh x && tail docs/smart-memory/_archive/a.md')" "(a) sm-find não libera _archive/ no mesmo comando → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/*')" "(b) cat docs/smart-memory/* → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/**/*.md')" "(b) cat docs/smart-memory/**/*.md → bloqueia"
+expect 2 $H "$(sm_bash 'head -5 docs/smart-memory/agents/dev/*.md')" "(b) head com glob numa área → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/agents/dev/backend')" "(b) diretório como alvo de leitor → bloqueia"
+expect 2 $H "$(sm_bash "find docs/smart-memory -name '*.md' -exec cat {} \;")" "(b) find -exec cat → bloqueia"
+expect 2 $H "$(sm_bash "find docs/smart-memory -type f | xargs cat")" "(b) find | xargs cat → bloqueia"
+expect 2 $H "$(sm_bash 'grep -r "login" docs/smart-memory')" "(b) grep -r sem -l → bloqueia"
+expect 2 $H "$(sm_bash 'grep -rn TODO docs/smart-memory/agents/')" "(b) grep -rn numa área → bloqueia"
+expect 2 $H "$(sm_bash 'rg login docs/smart-memory')" "(b) rg sem -l → bloqueia"
+expect 0 $H "$(sm_bash 'grep -rl "login" docs/smart-memory')" "(b) grep -rl (só nomes) → passa"
+expect 0 $H "$(sm_bash 'grep -rc login docs/smart-memory/agents')" "(b) grep -rc (contagem) → passa"
+expect 0 $H "$(sm_bash 'rg -l login docs/smart-memory')" "(b) rg -l → passa"
+expect 0 $H "$(sm_bash 'grep -rn "docs/smart-memory" .claude/skills')" "(b) docs/smart-memory só como padrão de busca → passa"
+expect 0 $H "$(sm_bash 'grep -n "status:" docs/smart-memory/stories/active/S1-login.md')" "(b) grep sem -r num arquivo → passa"
+expect 0 $H "$(sm_bash "cat > docs/smart-memory/_inbox/dev-2026.md <<'EOF'
+nota sobre docs/smart-memory/_archive/x e docs/smart-memory/*
+EOF")" "escrever via heredoc (corpo cita _archive/) → passa"
+expect 0 $H "$(sm_bash 'ls docs/smart-memory/agents')" "ls da smart-memory → passa"
+# (c) orçamento L2 — L0 não conta
+gsm_sid
+for f in INDEX.md agents/dev/backend/DIGEST.md stories/active/S1-login.md _inbox/dev-2026.md project/overview.md stories/BACKLOG.md stories/done/LEDGER.md; do
+  expect 0 $H "$(read_payload "docs/smart-memory/$f")" "(c) L0 não conta: $f"
+done
+expect 0 $H "$(read_payload "$SMD/agents/dev/backend/n1.md")" "(c) 1ª nota L2 → passa"
+expect 0 $H "$(read_payload "docs/smart-memory/agents/dev/backend/n2.md")" "(c) 2ª nota L2 → passa"
+expect 0 $H "$(sm_bash 'cat docs/smart-memory/agents/dev/backend/n3.md')" "(c) 3ª nota L2 (cat) → passa"
+expect 0 $H "$(read_payload "./docs/smart-memory/agents/dev/backend/n1.md")" "(c) reler a 1ª (outro formato de path) não conta → passa"
+expect 2 $H "$(read_payload "docs/smart-memory/agents/dev/backend/n4.md")" "(c) 4ª nota distinta → bloqueia (L0 lidos antes não contaram)"
+expect 2 $H "$(sm_bash 'head -40 docs/smart-memory/agents/dev/backend/n5.md')" "(c) 5ª nota via head → bloqueia"
+expect 0 $H "$(read_payload "docs/smart-memory/agents/dev/backend/n2.md")" "(c) reler nota já contada após estouro → passa"
+expect 0 $H "$(sm_bash 'bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" pagamento')" "(c) sm-find.sh → passa e zera o contador"
+expect 0 $H "$(read_payload "docs/smart-memory/agents/dev/backend/n4.md")" "(c) depois do sm-find, a 4ª nota passa"
+gsm_sid
+expect 0 $H "$(read_payload docs/smart-memory/decisions/d1.md "$GSM_SID")" "(c) sessão nova: contador próprio → passa"
+for i in 1 2 3 4 5; do
+  expect 0 $H "$(read_payload "docs/smart-memory/agents/dev/backend/x$i.md" -)" "(c) sem session_id não conta (leitura $i)"
+done
+expect 0 $H "$(read_payload "$REPO/README.md")" "Read fora da smart-memory → passa"
+expect 0 $H "$(sm_bash 'cat README.md && head -3 src/app.ts')" "leitor fora da smart-memory → passa"
+expect 0 $H "$(tool_payload Grep)" "outra ferramenta → passa"
+expect 0 $H 'não é json' "JSON inválido → passa (fail-open)"
+
+# ── 10c. guard-message-size.sh (PreToolUse SendMessage) ──────────────────────
+section "guard-message-size.sh"
+H=guard-message-size.sh
+msg_payload() {  # <mensagem>  (JSON com \uXXXX para não-ASCII)
+  python3 -c 'import json,sys; print(json.dumps({"session_id":"m1","hook_event_name":"PreToolUse","tool_name":"SendMessage","tool_input":{"to":"team-lead","summary":"s","message":sys.argv[1]}}))' "$1"
+}
+msg_payload_utf8() {  # <mensagem>  (JSON com UTF-8 cru)
+  python3 -c 'import json,sys; print(json.dumps({"session_id":"m1","hook_event_name":"PreToolUse","tool_name":"SendMessage","tool_input":{"to":"team-lead","message":sys.argv[1]}}, ensure_ascii=False))' "$1"
+}
+mk_lines() {  # <n> [primeira linha]
+  python3 -c 'import sys; n=int(sys.argv[1]); first=sys.argv[2] if len(sys.argv)>2 else "linha 1"; print("\n".join([first]+["linha %d" % i for i in range(2, n+1)]))' "$@"
+}
+mk_chars() { python3 -c 'import sys; print(sys.argv[2] * int(sys.argv[1]))' "$1" "$2"; }
+expect 0 $H "$(msg_payload "$(mk_lines 20)")" "20 linhas → passa"
+expect 2 $H "$(msg_payload "$(mk_lines 21)")" "21 linhas → bloqueia"
+expect 0 $H "$(msg_payload "$(mk_chars 1500 a)")" "1500 caracteres → passa"
+expect 2 $H "$(msg_payload "$(mk_chars 1501 a)")" "1501 caracteres → bloqueia"
+expect 0 $H "$(msg_payload "$(mk_chars 1500 ç)")" "1500 'ç' (acento = 1 caractere) → passa"
+expect 0 $H "$(msg_payload_utf8 "$(mk_chars 1500 ã)")" "1500 'ã' em UTF-8 cru → passa"
+expect 2 $H "$(msg_payload "$(mk_chars 1501 é)")" "1501 'é' → bloqueia"
+expect 0 $H "$(msg_payload "$(mk_lines 50 '[handoff] S1 pronto')")" "[handoff] com 50 linhas → passa"
+expect 2 $H "$(msg_payload "$(mk_lines 61 '[handoff] S1 pronto')")" "[handoff] com 61 linhas → bloqueia"
+expect 2 $H "$(msg_payload "[handoff] $(mk_chars 4001 x)")" "[handoff] com mais de 4000 caracteres → bloqueia"
+expect 2 $H "$(msg_payload "$(mk_lines 30 'resumo') 
+[handoff] no fim")" "[handoff] fora da 1ª linha não libera → bloqueia"
+expect 0 $H '{"session_id":"m1","tool_name":"SendMessage","tool_input":{"to":"dev","message":{"type":"shutdown_request","reason":"fim"}}}' "JSON de protocolo (message objeto) → passa"
+expect 0 $H '{"session_id":"m1","tool_name":"SendMessage","tool_input":{"to":"dev"}}' "sem message → passa"
+expect 0 $H 'não é json' "JSON inválido → passa (fail-open)"
+TEAM_OS_MSG_MAX_LINES=5 expect 2 $H "$(msg_payload "$(mk_lines 6)")" "TEAM_OS_MSG_MAX_LINES=5: 6 linhas → bloqueia"
+
 # ── 11. Fallback sem python3 funcional (python3 falso que falha) ─────────────
 section "fallback grep (python3 falhando → aviso em stderr + fallback)"
 TESTPATH="$TMP/nopy:$PATH"
@@ -673,6 +775,32 @@ H=task-quality.sh
 expect_stderr_warning $H "$(task_payload TaskCreated "fix" "x")" "python3 falhou → aviso ⚠️ em stderr"
 expect 2 $H "$(task_payload TaskCreated "fix" "x")" "fallback: task_subject curto → bloqueia"
 expect 0 $H "$(task_payload TaskCreated "Corrigir paginação da listagem" "x")" "fallback: task_subject ok → passa"
+
+H=guard-smart-memory-read.sh
+gsm_sid
+expect_stderr_warning $H "$(read_payload docs/smart-memory/_archive/a.md)" "python3 falhou → aviso ⚠️ em stderr"
+expect 2 $H "$(read_payload "$SMD/_archive/2026-Q3/velha.md")" "fallback: Read _archive/ → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/_archive/LEDGER.md')" "fallback: cat _archive/ → bloqueia"
+expect 2 $H "$(sm_bash 'cat docs/smart-memory/*')" "fallback: cat com glob → bloqueia"
+expect 2 $H "$(sm_bash "find docs/smart-memory -name '*.md' -exec cat {} +")" "fallback: find -exec cat → bloqueia"
+expect 2 $H "$(sm_bash 'grep -r login docs/smart-memory')" "fallback: grep -r sem -l → bloqueia"
+expect 0 $H "$(sm_bash 'grep -rl login docs/smart-memory')" "fallback: grep -rl → passa"
+expect 0 $H "$(read_payload docs/smart-memory/INDEX.md)" "fallback: L0 (INDEX) → passa"
+for i in 1 2 3; do expect 0 $H "$(read_payload "docs/smart-memory/agents/dev/backend/f$i.md")" "fallback: nota L2 $i → passa"; done
+expect 2 $H "$(read_payload docs/smart-memory/agents/dev/backend/f4.md)" "fallback: 4ª nota L2 → bloqueia"
+expect 0 $H "$(sm_bash 'bash .claude/skills/team-os/scripts/sm-find.sh x')" "fallback: sm-find zera o contador"
+expect 0 $H "$(read_payload docs/smart-memory/agents/dev/backend/f4.md)" "fallback: 4ª nota após sm-find → passa"
+
+H=guard-message-size.sh
+expect_stderr_warning $H "$(msg_payload "$(mk_lines 3)")" "python3 falhou → aviso ⚠️ em stderr"
+expect 0 $H "$(msg_payload "$(mk_lines 20)")" "fallback: 20 linhas → passa"
+expect 2 $H "$(msg_payload "$(mk_lines 21)")" "fallback: 21 linhas → bloqueia"
+expect 0 $H "$(msg_payload "$(mk_chars 1500 ç)")" "fallback: 1500 'ç' (\\u escapado) → passa"
+expect 0 $H "$(msg_payload_utf8 "$(mk_chars 1500 ã)")" "fallback: 1500 'ã' UTF-8 cru → passa"
+expect 2 $H "$(msg_payload "$(mk_chars 1501 a)")" "fallback: 1501 caracteres → bloqueia"
+expect 0 $H "$(msg_payload "$(mk_lines 50 '[handoff] pronto')")" "fallback: [handoff] 50 linhas → passa"
+expect 2 $H "$(msg_payload "$(mk_lines 61 '[handoff] pronto')")" "fallback: [handoff] 61 linhas → bloqueia"
+expect 0 $H '{"tool_name":"SendMessage","tool_input":{"to":"dev","message":{"type":"shutdown_request"}}}' "fallback: JSON de protocolo → passa"
 TESTPATH="$PATH"
 
 # ── Resumo ───────────────────────────────────────────────────────────────────

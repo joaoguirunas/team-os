@@ -2,7 +2,7 @@
 
 > Extraído do SKILL.md — carregar sob demanda.
 
-Seis hooks de qualidade fazem parte do **settings padrão** de todo projeto team-os (registrados pelo `scripts/ensure-settings.sh`, que o `*install` chama): **TaskCreated** → `task-quality.sh`; **TaskCompleted** → `check-story-progress.sh`, `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh`. `TeammateIdle` é receita **opcional** por projeto. Os scripts vivem em `.claude/hooks/` (distribuídos pelo `*propagate`) e são testados pelo `team-os-creator/scripts/test-hooks.sh`.
+Seis hooks de qualidade fazem parte do **settings padrão** de todo projeto team-os (registrados pelo `scripts/ensure-settings.sh`, que o `*install` chama): **TaskCreated** → `task-quality.sh`; **TaskCompleted** → `check-story-progress.sh`, `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh`. Mais dois de **economia de tokens** (PreToolUse, também padrão): `guard-smart-memory-read.sh` e `guard-message-size.sh` — ver abaixo. `TeammateIdle` é receita **opcional** por projeto. Os scripts vivem em `.claude/hooks/` (distribuídos pelo `*propagate`) e são testados pelo `team-os-creator/scripts/test-hooks.sh`.
 
 ## TaskCreated — gate de qualidade de task (PADRÃO)
 
@@ -43,6 +43,31 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
 ```
 
 > Se algum desses scripts faltar em `.claude/hooks/` do projeto, o `ensure-settings.sh` avisa — rode `/team-os-creator *propagate` no CT (os hooks são distribuídos de lá).
+
+## PreToolUse — economia de tokens como garantia dura (PADRÃO)
+
+**`guard-smart-memory-read.sh`** (matcher `Read|Bash`) — "buscar em vez de ler":
+- **bloqueia** qualquer leitura de `docs/smart-memory/_archive/**` (Read, ou `cat|head|tail|less|more|sed -n|awk|bat` no Bash);
+- **bloqueia** leitura de pasta inteira: glob (`cat docs/smart-memory/*`), diretório como alvo, `find docs/smart-memory -exec cat`, `find … | xargs cat`, `grep -r`/`rg` sem `-l`/`-c`/`-q` numa pasta da smart-memory (`grep -rl` é busca → passa);
+- **orçamento L2:** notas fora do L0 (`INDEX.md`, qualquer `DIGEST.md`, `stories/active/*.md`, `stories/BACKLOG.md`, `stories/done/LEDGER.md`, `_inbox/*`, `project/*.md`) contam por sessão em `${TMPDIR:-/tmp}/team-os-l2-<session_id>.count` (reler não conta). A 4ª nota distinta (`TEAM_OS_L2_BUDGET`, default 3) é bloqueada; um Bash com `sm-find.sh` zera o contador. Sem `session_id` → não conta. Escrever (`cat > nota.md <<EOF`) não é leitura. JSON inválido → passa.
+
+**`guard-message-size.sh`** (matcher `SendMessage`) — mensagem curta:
+- **bloqueia** `message` (string) com mais de `TEAM_OS_MSG_MAX_LINES` (20) linhas ou `TEAM_OS_MSG_MAX_CHARS` (1.500) caracteres Unicode — "resumo primeiro; detalhe vai em arquivo na smart-memory e a mensagem leva o path";
+- **passa** `message` que não é string (JSON de protocolo — shutdown, plan approval) e a mensagem cuja 1ª linha começa com `[handoff]` (resultado final de teammate ao lead) até 60 linhas / 4.000 caracteres (`TEAM_OS_HANDOFF_MAX_LINES`/`_CHARS`). JSON inválido → passa.
+
+Registro (o `ensure-settings.sh` garante — não edite à mão):
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Read|Bash",
+        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-smart-memory-read.sh" }] },
+      { "matcher": "SendMessage",
+        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-message-size.sh" }] }
+    ]
+  }
+}
+```
 
 ## TeammateIdle — OPCIONAL, e CUIDADO com loop
 

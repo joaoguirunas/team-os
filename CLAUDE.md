@@ -34,10 +34,11 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 
 ## Hooks
 
-10 hooks em `.claude/hooks/`, testados por `scripts/test-hooks.sh` (402 casos, no CI). Descrição completa em [README.md §10](./README.md#10-hooks-de-qualidade):
+12 hooks em `.claude/hooks/`, testados por `scripts/test-hooks.sh` (493 casos, no CI). Descrição completa em [README.md §10](./README.md#10-hooks-de-qualidade):
 
 - Guards de git (`PreToolUse`): `block-git-push.sh` (92 agentes) · `guard-push-branch.sh` (2 devops — push só na `main`/`master`; fora dela o bloqueio é **sempre** aplicado, o hook não consegue verificar pedido do usuário, push é manual) · `block-worktree.sh` (settings.json de cada projeto). Ambos os guards de push bloqueiam shell embutido (`sh -c`, `eval`, `xargs`…).
 - Gates de task (`TaskCreated`/`TaskCompleted`, leem `task_subject`/`task_description`): `task-quality.sh` · `check-story-progress.sh` · `check-social-progress.sh` · `check-proposal-progress.sh` · `check-finance-progress.sh` · `check-legal-progress.sh`
+- Economia de tokens (`PreToolUse`, settings de cada projeto): `guard-smart-memory-read.sh` (bloqueia `_archive/`, pasta inteira e a 4ª nota sem `sm-find.sh`) · `guard-message-size.sh` (mensagem entre agentes ≤20 linhas; `[handoff]` até 60)
 - Sessão: `team-os-session-title.sh` (`SessionStart`, instalado em `~/.claude/hooks/` pelo `*install`)
 
 ## Fluxo de trabalho
@@ -46,7 +47,7 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 Editar agente/skill no CT
 → validate-agent.sh            (= *audit; 95/95)
 → validate-agent.sh --skills   (lint das 108 skills)
-→ test-hooks.sh                (402/402)
+→ test-hooks.sh                (493/493)
 → generate-agents-page.py      (regenera docs/agentes.html — obrigatório após mudar agente ou skill)
 → commit no CT (registrar no CHANGELOG.md)
 → /team-os-creator *propagate  (--match-target-squads) → commit por projeto, na sessão de cada destino

@@ -9,6 +9,8 @@
 #   worktree.bgIsolation = "none"
 #   subagentPromptCacheTtl = "1h"
 #   hooks.PreToolUse  → block-worktree.sh (matchers "Agent|Task|EnterWorktree" e "Bash")
+#   hooks.PreToolUse  → guard-smart-memory-read.sh (matcher "Read|Bash": _archive/, pasta inteira, orçamento L2)
+#   hooks.PreToolUse  → guard-message-size.sh (matcher "SendMessage": mensagem curta; [handoff] até 60 linhas)
 #   hooks.TaskCreated → task-quality.sh (rejeita task vaga)
 #   hooks.TaskCompleted → check-story-progress.sh (story só fecha com evidência)
 #
@@ -44,7 +46,7 @@ command -v python3 >/dev/null 2>&1 || { echo "⛔ python3 é necessário para o 
 SETTINGS_FILE="$PROJECT_DIR/.claude/settings.json"
 
 # Avisa (sem bloquear) hooks referenciados que ainda não existem no projeto.
-for h in block-worktree.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh; do
+for h in block-worktree.sh guard-smart-memory-read.sh guard-message-size.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh; do
   if [ ! -f "$PROJECT_DIR/.claude/hooks/$h" ]; then
     echo "⚠ hook ausente no projeto: .claude/hooks/$h — rode /team-os-creator *propagate no CT" >&2
   fi
@@ -146,6 +148,9 @@ def ensure_hook(event, matcher, script_name, match_on_matcher):
 # PreToolUse: o mesmo script em dois matchers distintos → deduplicar POR matcher.
 ensure_hook("PreToolUse", "Agent|Task|EnterWorktree", "block-worktree.sh", match_on_matcher=True)
 ensure_hook("PreToolUse", "Bash", "block-worktree.sh", match_on_matcher=True)
+# Economia de tokens como garantia dura (buscar em vez de ler; mensagem curta).
+ensure_hook("PreToolUse", "Read|Bash", "guard-smart-memory-read.sh", match_on_matcher=False)
+ensure_hook("PreToolUse", "SendMessage", "guard-message-size.sh", match_on_matcher=False)
 # Eventos de task: basta o script estar registrado no evento (qualquer matcher).
 ensure_hook("TaskCreated", "", "task-quality.sh", match_on_matcher=False)
 ensure_hook("TaskCompleted", "", "check-story-progress.sh", match_on_matcher=False)

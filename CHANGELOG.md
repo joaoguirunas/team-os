@@ -2,7 +2,20 @@
 
 Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
-## [Unreleased] — 2026-09-25 · Auditoria completa aplicada
+## [Unreleased] — 2026-09-26 · Economia de tokens
+
+### Adicionado
+- **Compactação automática**: no início de cada `/team-os`, se a memória estiver pesada ou tiver notas arquiváveis, a fase mecânica do compact roda sozinha (só `mv`, nunca apaga). Opt-out: `TEAM_OS_AUTO_COMPACT=0`. A fase semântica continua no `*compact`.
+- **Teto de DIGEST por script**: `weigh-memory.sh` marca todo `DIGEST.md` acima de 60 linhas (`DIGEST_MAX_LINES`) como HEAVY e o archivist tem o enxugamento como item obrigatório.
+- **Hook `guard-smart-memory-read.sh`**: bloqueia leitura de `_archive/`, de pasta inteira e a 4ª nota fora do L0 sem nova busca (`sm-find.sh` zera o contador).
+- **Hook `guard-message-size.sh`**: mensagens entre agentes com teto de 20 linhas / 1.500 caracteres; `[handoff]` até 60 linhas.
+- **Placar da sessão**: `weigh-memory.sh --save-start` no início e `--report` no fim de rodada, no `*status` e no `*compact` ("Memória: 1.240 → 1.180 linhas (−60) · …").
+- `compact-memory.sh --mechanical-only` e saída `COMPACT_MOVED=<n>`; 91 casos novos em `test-hooks.sh` (493 no total).
+
+### Alterado
+- Bloco Native Teams Protocol (regras 1 e 4) cita os dois hooks novos e remove a brecha "grep de frontmatter"; reaplicado nos 95 agentes e 9 templates via `migrate-ntp.sh`.
+
+## [2.2.0] — 2026-09-25 · Auditoria completa aplicada
 
 ### Corrigido
 - **Hooks de task (`task-quality`, `check-*-progress`) estavam inertes**: liam `title`/`subject` em vez dos campos reais `task_subject`/`task_description` do Claude Code. Corrigidos e cobertos por `scripts/test-hooks.sh`.

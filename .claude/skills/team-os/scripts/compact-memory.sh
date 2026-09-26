@@ -4,8 +4,9 @@
 # Dependency-free (bash 3.2 compatível — sem mapfile). Roda nos projetos.
 #
 # Usage:
-#   compact-memory.sh [--target <dir>] [--dry-run]
-#       Ação padrão: (a) arquiva TODAS as stories em stories/done/ → _archive/<Q>/stories-done/
+#   compact-memory.sh [--target <dir>] [--dry-run] [--mechanical-only]
+#       Ação padrão (= fase MECÂNICA; `--mechanical-only` é alias explícito, usado pela
+#       compactação automática da Fase 2-F do /team-os): (a) arquiva TODAS as stories em stories/done/ → _archive/<Q>/stories-done/
 #       e atualiza stories/done/LEDGER.md (uma linha por story); (b) arquiva toda nota com
 #       frontmatter `status: resolved|superseded` → _archive/<Q>/resolved/ + _archive/LEDGER.md;
 #       (c) arquiva toda nota com frontmatter `expires: YYYY-MM-DD` vencido (TTL) →
@@ -26,6 +27,16 @@
 #
 #   --dry-run   mostra o que faria, sem mover nada.
 #
+# Saída machine-readable (sempre, em todos os modos, como última linha COMPACT_*):
+#   COMPACT_MOVED=<n>            arquivos efetivamente movidos para _archive/ (0 em --dry-run)
+#   COMPACT_WOULD_MOVE=<n>       só em --dry-run: quantos moveria
+#   COMPACT_MOVED_STORIES=<n> · COMPACT_MOVED_RESOLVED=<n> · COMPACT_MOVED_EXPIRED=<n>
+#                                (modo padrão; em --dry-run contam o que MOVERIA)
+#   COMPACT_INBOX_PENDING=<n> · COMPACT_ORPHAN_LINKS=<n>
+#
+# A fase SEMÂNTICA (consolidar _inbox/, enxugar DIGEST, promover a reference) é do archivist,
+# só no `/team-os *compact` — este script nunca reescreve conteúdo, só move.
+#
 # Segurança: nunca toca em stories/active, in-review, backlog, project/, decisions/, INDEX.md.
 # O que for para _archive/ some do working set (agentes não leem _archive/ por convenção).
 
@@ -39,6 +50,7 @@ while [ $# -gt 0 ]; do
       fi
       TARGET="$2"; shift 2 ;;
     --dry-run)      DRY=1; shift ;;
+    --mechanical-only) shift ;;   # alias explícito do modo padrão (só mv, sem semântica)
     --archive-file)
       if [ $# -lt 2 ] || [ -z "$2" ]; then
         echo "ERRO: --archive-file requer um valor (path relativo à smart-memory)" >&2
@@ -161,6 +173,21 @@ EOF
   echo "COMPACT_INBOX_PENDING=$n"
 }
 
+# Contadores do modo padrão + linha final machine-readable
+CNT_STORIES=0; CNT_RES=0; CNT_EXP=0
+emit_moved() { # $1=total (opcional; default = soma dos contadores)
+  local total="${1:-$((CNT_STORIES + CNT_RES + CNT_EXP))}"
+  echo "COMPACT_MOVED_STORIES=$CNT_STORIES"
+  echo "COMPACT_MOVED_RESOLVED=$CNT_RES"
+  echo "COMPACT_MOVED_EXPIRED=$CNT_EXP"
+  if [ "$DRY" -eq 1 ]; then
+    echo "COMPACT_WOULD_MOVE=$total"
+    echo "COMPACT_MOVED=0"
+  else
+    echo "COMPACT_MOVED=$total"
+  fi
+}
+
 # ── Modo: arquivar UM arquivo específico ──────────────────────────────────────
 if [ -n "$ARCHIVE_FILE" ]; then
   # Guardas de path: relativo à smart-memory, sem `..`
@@ -189,6 +216,8 @@ if [ -n "$ARCHIVE_FILE" ]; then
   if [ "$DRY" -eq 1 ]; then
     echo "DRY-RUN: moveria '$ARCHIVE_FILE' ($LINES linhas) → _archive/$QDIR/misc/"
     report_orphans
+    echo "COMPACT_WOULD_MOVE=1"
+    echo "COMPACT_MOVED=0"
     exit 0
   fi
   mkdir -p "$DEST_DIR"
@@ -201,6 +230,7 @@ if [ -n "$ARCHIVE_FILE" ]; then
     "$DATE" "$ARCHIVE_FILE" "$TITLE" "$LINES" "$QDIR" "$(basename "$DEST")" >> "$LEDGER"
   echo "DONE: '$ARCHIVE_FILE' → _archive/$QDIR/misc/ · registrado em _archive/LEDGER.md"
   report_orphans
+  echo "COMPACT_MOVED=1"
   exit 0
 fi
 
@@ -221,6 +251,8 @@ if [ -n "$CLEAR_INBOX" ]; then
   TITLE="$(md_title "$SRC")"
   if [ "$DRY" -eq 1 ]; then
     echo "DRY-RUN: moveria '_inbox/$REL' ($LINES linhas) → _archive/$QDIR/inbox/"
+    echo "COMPACT_WOULD_MOVE=1"
+    echo "COMPACT_MOVED=0"
     exit 0
   fi
   DEST_DIR="$SM/_archive/$QDIR/inbox"
@@ -234,6 +266,7 @@ if [ -n "$CLEAR_INBOX" ]; then
     "$DATE" "$REL" "$TITLE" "$LINES" "$QDIR" "$(basename "$DEST")" >> "$LEDGER"
   echo "DONE: '_inbox/$REL' → _archive/$QDIR/inbox/ · registrado em _archive/LEDGER.md"
   report_orphans
+  echo "COMPACT_MOVED=1"
   exit 0
 fi
 
@@ -299,7 +332,9 @@ EOF
   if [ "$DRY" -eq 1 ]; then
     echo "RESOLVED: $moved_res nota(s) resolved/superseded a arquivar"
     echo "EXPIRED: $moved_exp nota(s) com TTL vencido a arquivar"
+    CNT_RES=$moved_res; CNT_EXP=$moved_exp
   else
+    CNT_RES=$moved_res; CNT_EXP=$moved_exp
     [ "$moved_res" -gt 0 ] && echo "DONE: $moved_res nota(s) resolved/superseded → _archive/$QDIR/resolved/"
     [ "$moved_exp" -gt 0 ] && echo "DONE: $moved_exp nota(s) expirada(s) por TTL → _archive/$QDIR/expired/"
   fi
@@ -325,6 +360,7 @@ if [ "$COUNT" -eq 0 ]; then
   archive_cold
   report_inbox
   report_orphans
+  emit_moved
   exit 0
 fi
 
@@ -336,9 +372,11 @@ if [ "$DRY" -eq 1 ]; then
   echo "         e registraria cada uma em stories/done/LEDGER.md"
   find "$DONE_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'LEDGER.md' 2>/dev/null \
     | sed "s#$DONE_DIR/#  - #"
+  CNT_STORIES=$COUNT
   archive_cold
   report_inbox
   report_orphans
+  emit_moved
   exit 0
 fi
 
@@ -385,6 +423,7 @@ EOF
 # atualiza o campo updated do ledger (best-effort)
 sed -i.bak "s/^updated:.*/updated: $DATE/" "$LEDGER" 2>/dev/null && rm -f "$LEDGER.bak"
 
+CNT_STORIES=$MOVED
 echo "DONE: $MOVED story(ies) arquivada(s) → _archive/$QDIR/stories-done/"
 echo "  index: stories/done/LEDGER.md ($MOVED linha(s) adicionada(s))"
 
@@ -395,4 +434,5 @@ archive_cold
 report_inbox
 report_orphans
 
-echo "  working set aliviado — agentes não leem _archive/ por convenção."
+echo "  working set aliviado — agentes não leem _archive/ (o hook guard-smart-memory-read.sh bloqueia)."
+emit_moved

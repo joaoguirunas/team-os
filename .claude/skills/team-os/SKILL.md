@@ -99,7 +99,7 @@ O time é **persistente**. Você dispacha, e o time **fica de pé** para você v
 
 **Proibido por conta própria:** enviar shutdown a teammates · declarar o objetivo "concluído" e parar · encerrar o time porque a rodada acabou.
 
-**Ao terminar uma rodada:** (1) sintetize o que ficou pronto; (2) mantenha os teammates **vivos e ociosos**; (3) **pergunte**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde; (4) shutdown só com pedido explícito.
+**Ao terminar uma rodada:** (1) sintetize o que ficou pronto + a linha `WEIGH_REPORT` do placar (`weigh-memory.sh --report`); (2) mantenha os teammates **vivos e ociosos**; (3) **pergunte**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde; (4) shutdown só com pedido explícito.
 
 **Pergunta NÃO é comando de shutdown.** Shutdown é terminal e irreversível (só re-spawnar do zero). *"encerrou os agentes?"*, *"dá pra fechar?"*, *"ainda estão de pé?"* são **perguntas** — responda, **não desligue nada**. Só execute com imperativo inequívoco (*"encerre os agentes"*, *"pode fechar o time"*, *"desliga todos"*); na dúvida, pergunte de volta (*"Quer que eu encerre de fato, ou só está verificando? (irreversível)"*) e aguarde o "sim".
 
@@ -139,7 +139,7 @@ Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
 2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`/`brand-`/`finance-`/`legal-`/`seo-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe (contexto geral). As **stories ativas** são extraídas **diretamente de `docs/smart-memory/stories/active/*.md`** (frontmatter `summary`/`status` de cada arquivo) — não do INDEX.
-4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/weigh-memory.sh" --quiet` e capturar o bloco `WEIGH_*`. O script emite:
+4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/weigh-memory.sh" --quiet --save-start` e capturar o bloco `WEIGH_*` (o `--save-start` grava a baseline do **placar** da sessão). O script emite:
    - `WEIGH_DASHBOARD` — **só o valor** (sem prefixo de rótulo; o rótulo `smart-memory :` é do painel da Fase 1)
    - `WEIGH_BOOTSTRAP_<AREA>` — custo estimado de leitura inicial (L0) por área, em tokens, mais o pior caso (`WEIGH_BOOTSTRAP_MAX`) e o budget (default **2000 tokens**)
    - `WEIGH_STATUS` — se `HEAVY`, o painel sinaliza a compactação. Ver "Smart-Memory Compaction".
@@ -168,7 +168,7 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Linha `smart-memory` = rótulo do painel + valor de `WEIGH_DASHBOARD` (o script emite só o valor). Linha `bootstrap` = `WEIGH_BOOTSTRAP_MAX` (área mais cara no L0) vs budget (2000 tokens); estourou → `[⚠]` (DIGEST gordo; o script já devolve `WEIGH_STATUS=HEAVY`). HEAVY **só sinaliza** — a compactação roda apenas quando o usuário pedir `/team-os *compact`.
+Linha `smart-memory` = rótulo do painel + valor de `WEIGH_DASHBOARD` (o script emite só o valor). Linha `bootstrap` = `WEIGH_BOOTSTRAP_MAX` (área mais cara no L0) vs budget (2000 tokens); estourou → `[⚠]` (DIGEST gordo; o script já devolve `WEIGH_STATUS=HEAVY`). HEAVY dispara só a compactação **mecânica** automática (Fase 2-F); a semântica roda apenas quando o usuário pedir `/team-os *compact`.
 
 Linhas condicionais (antes da pergunta): `[⚠] CLAUDE.md sem a seção "Smart-Memory Protocol" — vou injetar o bloco canônico na Fase 2-E` (check 6; **não** no CT); `[!] Sessão anterior detectada: {N} tasks ({N} pendentes, {N} em progresso) — continuar ou novo objetivo?` (se há tasks); `[⚠] Múltiplas squads instaladas ({lista}) — projeto de categoria {X} deveria ter só a squad correspondente; rode /team-os-creator → Atualizar para podar` (prefixos distintos em `.claude/agents/` **e** o projeto NÃO é o CT — no CT múltiplas squads convivem por design, **suprima**); `[i] Projeto é o CT — Fases 2-D/E puladas` (`IS_CT=1`).
 
@@ -190,7 +190,7 @@ Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível,
 ```bash
 bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/ensure-settings.sh"          # --dry-run mostra o merge sem gravar
 ```
-O script garante no `.claude/settings.json` do projeto (criando o arquivo se não existir, preservando todo o resto): `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"`, `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks), `"subagentPromptCacheTtl": "1h"` e os hooks padrão — **PreToolUse** do `block-worktree.sh` (matchers `Agent|Task|EnterWorktree` e `Bash` — bloqueia `isolation: worktree`, EnterWorktree e `git worktree add`), **TaskCreated** (`task-quality.sh` — rejeita task vaga) e **TaskCompleted** com os 5 gates (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh` — publicação, proposta, dinheiro e saída jurídica só com PASS + confirmação do usuário). Só adiciona o que falta — nunca duplica nem remove chaves existentes, e valida o JSON final. Rodá-lo é exceção legítima da Lead Discipline (bootstrap de orquestração).
+O script garante no `.claude/settings.json` do projeto (criando o arquivo se não existir, preservando todo o resto): `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"`, `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks), `"subagentPromptCacheTtl": "1h"` e os hooks padrão — **PreToolUse** do `block-worktree.sh` (matchers `Agent|Task|EnterWorktree` e `Bash` — bloqueia `isolation: worktree`, EnterWorktree e `git worktree add`), `guard-smart-memory-read.sh` (`Read|Bash`) e `guard-message-size.sh` (`SendMessage`), **TaskCreated** (`task-quality.sh` — rejeita task vaga) e **TaskCompleted** com os 5 gates (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh` — publicação, proposta, dinheiro e saída jurídica só com PASS + confirmação do usuário). Só adiciona o que falta — nunca duplica nem remove chaves existentes, e valida o JSON final. Rodá-lo é exceção legítima da Lead Discipline (bootstrap de orquestração).
 Se o script avisar hook ausente em `.claude/hooks/`, rodar `/team-os-creator *propagate` no CT (os hooks são distribuídos de lá).
 
 **D) Smart-memory ausente ou incompleta → DISCOVERY/REPAIR obrigatório antes de spawnar** (⛔ **pular no CT**: com `IS_CT=1` não rode discovery/repair — o CT é o repositório fonte dos agentes, não um projeto com smart-memory; diga *"Projeto é o CT — Fases 2-D/E puladas"* e siga para a Fase 3):
@@ -206,6 +206,8 @@ O que o `discovery.sh` cria e como deriva as áreas `agents/<squad>/<área>/` �
 
 **E) Protocolo no CLAUDE.md (passo OBRIGATÓRIO — verificado na Fase 0, corrigido aqui; ⛔ pular no CT, `IS_CT=1`):**
 Se o `CLAUDE.md` do projeto não contém a seção `## Smart-Memory Protocol`, injetar o conteúdo de `reference/claude-md-block.md` **verbatim** (criar o `CLAUDE.md` se não existir). Se a seção já existe, **não duplicar** — não faça nada. Esse bloco é o contrato mínimo que qualquer sessão/agente do projeto lê: fonte de verdade em `docs/smart-memory/`, leitura em camadas L0/L1/L2 com `sm-find.sh`, escrita via `_inbox/`, fatos atômicos datados com `supersedes`, TTL via `expires:` e proibição de worktrees/branches novas.
+
+**F) Compactação automática (mecânica, sem confirmação):** se `WEIGH_STATUS=HEAVY` **ou** `WEIGH_ARCHIVABLE>0`, rodar `compact-memory.sh --mechanical-only` (só `mv` de stories done, notas `resolved`/`superseded` e TTL vencido — nada é reescrito nem apagado), ler `COMPACT_MOVED=<n>`, re-pesar (`--quiet`) e mostrar no painel `compactado: N arquivados`. A fase semântica (archivist, DIGEST acima do teto) continua só no `*compact`. Opt-out: `TEAM_OS_AUTO_COMPACT=0`. No CT (sem smart-memory) nada acontece. Detalhe → `reference/compact-flow.md`.
 
 ### Fase 3 — Objetivo (SEMPRE — nunca pular)
 
@@ -321,7 +323,7 @@ Use `team-os/reference/obsidian-patterns.md` para o padrão de frontmatter/wikil
 
 ## Leitura em camadas (L0 → L1 → L2)
 
-Regra de ouro: **summary-first** — ninguém abre nota inteira sem o `summary` do frontmatter confirmar relevância (é o que o `*memory` verifica e o bloco do CLAUDE.md impõe a todo agente). **L0** (sempre, e só isto): `INDEX.md` + `DIGEST.md` da sua área (`agents/<squad>/<área>/DIGEST.md`, path na linha `**Área na smart-memory:**` do agente) + `stories/active/*.md`. O DIGEST tem "Core (permanente)" e "Contexto recente (expira ~14 dias)"; todo fato é atômico e datado, fato novo **substitui** o antigo. **L1**: `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" "<termo>"` — busca pelos `summary` e devolve `path / kind / status / summary` sem abrir nota. **L2**: nota inteira só com summary confirmando — **máx 3 notas por tarefa**. ⛔ Nunca ler pastas inteiras, `_archive/` ou notas "para ver se tem algo útil". O custo do L0 por área é o `WEIGH_BOOTSTRAP_<AREA>` do `weigh-memory.sh` (budget 2000 tokens) — linha `bootstrap` do painel.
+Regra de ouro: **summary-first** — ninguém abre nota inteira sem o `summary` do frontmatter confirmar relevância (é o que o `*memory` verifica e o bloco do CLAUDE.md impõe a todo agente). **L0** (sempre, e só isto): `INDEX.md` + `DIGEST.md` da sua área (`agents/<squad>/<área>/DIGEST.md`, path na linha `**Área na smart-memory:**` do agente) + `stories/active/*.md`. O DIGEST tem "Core (permanente)" e "Contexto recente (expira ~14 dias)"; todo fato é atômico e datado, fato novo **substitui** o antigo. **L1**: `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" "<termo>"` — busca pelos `summary` e devolve `path / kind / status / summary` sem abrir nota. **L2**: nota inteira só com summary confirmando — **máx 3 notas por tarefa**. ⛔ Nunca ler pastas inteiras, `_archive/` ou notas "para ver se tem algo útil" — o hook `guard-smart-memory-read.sh` bloqueia `_archive/`, pasta inteira e a 4ª nota L2 sem nova busca (o `sm-find.sh` zera o contador). O custo do L0 por área é o `WEIGH_BOOTSTRAP_<AREA>` do `weigh-memory.sh` (budget 2000 tokens) — linha `bootstrap` do painel.
 
 ---
 
@@ -342,12 +344,13 @@ O `weigh-memory.sh` roda na **Fase 0** de todo `/team-os` e classifica a smart-m
 | `FAT_FILE_LINES` | 1.500 linhas num único arquivo | **informativo** — aparece no dashboard, não dispara HEAVY sozinho |
 | `resolved`/`superseded` não-arquivados | ≥ 1 | **informativo** — idem (o `*compact` arquiva quando rodar) |
 | `WEIGH_BOOTSTRAP_MAX` acima do budget | `BOOTSTRAP_BUDGET_TOKENS` = 2.000 tokens | **HEAVY** — a pior área custa mais que o budget no L0 (DIGEST gordo); a linha `bootstrap` do painel marca `[⚠]` |
+| `DIGEST.md` acima do teto | `DIGEST_MAX_LINES` = 60 linhas | **HEAVY** — `WEIGH_DIGEST_OVER`/`_LIST`; o archivist enxuga cada um para ~40 no `*compact` |
 
-Qualquer limiar **HEAVY** cruzado (linhas, done **ou** bootstrap > budget — é assim que o `weigh-memory.sh` decide) → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. Os sinais informativos (`resolved`/`expired`/fat) entram no `WEIGH_DASHBOARD` como "arquiváveis" mas não mudam o status sozinhos. O bootstrap **só sinaliza**; a compactação roda no `*compact`. O script emite `WEIGH_DASHBOARD` **sem** o prefixo `smart-memory :` (o rótulo é do painel).
+Qualquer limiar **HEAVY** cruzado (linhas, done, bootstrap > budget **ou** DIGEST > teto) → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. Os sinais informativos (`resolved`/`expired`/fat) entram no `WEIGH_DASHBOARD` como "arquiváveis" mas não mudam o status sozinhos. HEAVY ou arquivável dispara a compactação mecânica automática (2-F); DIGEST gordo e bootstrap só se resolvem no `*compact`. O script emite `WEIGH_DASHBOARD` **sem** o prefixo `smart-memory :` (o rótulo é do painel).
 
 ### `*compact` — resumo
 
-`/team-os *compact` = plano completo + **UMA** confirmação + execução integral; `--auto` aplica sem confirmar. Três frentes: (1) **mecânica** — `compact-memory.sh` arquiva `stories/done/*`, notas `resolved`/`superseded` e **TTL vencido** (`expires:`); **só faz `mv`, nunca `rm`**; nunca toca em stories ativas, `project/`, `decisions/`, INDEXes, DIGESTs, `kind: reference` (o `--archive-file` valida o alvo e recusa paths protegidos); reporta wikilinks órfãos e o `_inbox/` pendente; (2) **consolidação do `_inbox/`** — o teammate **archivist** (opus) lê todo o inbox de uma vez, funde/deduplica e aplica `supersedes` nos DIGESTs; depois `--clear-inbox`; (3) **semântica** — o archivist infere frontmatter (`kind`/`status`/`summary`/`expires`), atualiza DIGESTs (Core vs Contexto recente, decay ~14 dias) e propõe o plano quente/frio. Julgamento semântico é do archivist, nunca do lead; o lead só consolida o plano e dispara os scripts. Órfãos corrigidos e re-pesagem ao final. Passos, prompt do archivist e comandos → `reference/compact-flow.md`.
+`/team-os *compact` = plano completo + **UMA** confirmação + execução integral; `--auto` aplica sem confirmar. Três frentes: (1) **mecânica** — `compact-memory.sh` arquiva `stories/done/*`, notas `resolved`/`superseded` e **TTL vencido** (`expires:`); **só faz `mv`, nunca `rm`**; nunca toca em stories ativas, `project/`, `decisions/`, INDEXes, DIGESTs, `kind: reference` (o `--archive-file` valida o alvo e recusa paths protegidos); reporta wikilinks órfãos e o `_inbox/` pendente; (2) **consolidação do `_inbox/`** — o teammate **archivist** (opus) lê todo o inbox de uma vez, funde/deduplica e aplica `supersedes` nos DIGESTs; depois `--clear-inbox`; (3) **semântica** — o archivist infere frontmatter (`kind`/`status`/`summary`/`expires`), atualiza DIGESTs (Core vs Contexto recente, decay ~14 dias) e propõe o plano quente/frio. Julgamento semântico é do archivist, nunca do lead; o lead só consolida o plano e dispara os scripts. Órfãos corrigidos, re-pesagem e placar (`--report`) ao final. Passos, prompt do archivist e comandos → `reference/compact-flow.md`.
 
 ### Estrutura criada
 
@@ -412,7 +415,7 @@ Regras duras do ciclo:
 
 ### Mensagens enxutas (SendMessage)
 
-SendMessage é canal de **coordenação, não de conteúdo**: **≤15 linhas por mensagem**. Diff, relatório, log ou análise longa vão em **arquivo** (smart-memory ou story) — a mensagem leva só o path.
+SendMessage é canal de **coordenação, não de conteúdo**: **≤15 linhas por mensagem** (o hook `guard-message-size.sh` bloqueia >20 linhas ou >1.500 caracteres; 1ª linha `[handoff]` = resultado final ao lead, até 60 linhas). Diff, relatório, log ou análise longa vão em **arquivo** (smart-memory ou story) — a mensagem leva só o path.
 
 Contrato de report do teammate ao concluir (exija no spawn prompt):
 ```
@@ -424,13 +427,13 @@ Detalhe: <path do relatório/artefato completo>
 
 ## Otimização de tokens
 
-Custo é linear no nº de agentes ativos. As 8 alavancas — spawn prompt cirúrgico, plan mode antes de implementar, ownership exclusivo, self-claim (5-6 tasks/agente), Haiku para pesquisa, "leader's model" para `inherit`, paralelo só com independência real, smart-memory enxuta (L0/L1/L2 + `*compact`) → ler `reference/otimizacao-de-tokens.md` quando precisar.
+Custo é linear no nº de agentes ativos. As 8 alavancas — spawn prompt cirúrgico, plan mode antes de implementar, ownership exclusivo, self-claim (5-6 tasks/agente), Haiku para pesquisa, "leader's model" para `inherit`, paralelo só com independência real, smart-memory enxuta (L0/L1/L2 + `*compact`, com hooks e compactação automática) → ler `reference/otimizacao-de-tokens.md` quando precisar. **Placar:** `weigh-memory.sh --report` compara com a baseline da Fase 0 (linhas, bootstrap, notas arquivadas).
 
 ---
 
 ## Hooks de time
 
-`TaskCreated` (`task-quality.sh` — rejeita task vaga) e `TaskCompleted` (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh` e `check-legal-progress.sh` — publicação, envio de proposta, execução financeira e saída jurídica só com PASS + confirmação do usuário) fazem parte do **settings padrão** (garantidos pelo `ensure-settings.sh`/`*install`). `TeammateIdle` é receita **opcional** — CUIDADO: `exit 2` incondicional gera loop infinito (idle é o estado desejado). Detalhes e exemplos → ver `reference/hooks-de-time.md`.
+`TaskCreated` (`task-quality.sh` — rejeita task vaga) e `TaskCompleted` (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh` e `check-legal-progress.sh` — publicação, envio de proposta, execução financeira e saída jurídica só com PASS + confirmação do usuário) fazem parte do **settings padrão** (garantidos pelo `ensure-settings.sh`/`*install`), junto com os PreToolUse de economia `guard-smart-memory-read.sh` e `guard-message-size.sh`. `TeammateIdle` é receita **opcional** — CUIDADO: `exit 2` incondicional gera loop infinito (idle é o estado desejado). Detalhes e exemplos → ver `reference/hooks-de-time.md`.
 
 ---
 
@@ -452,10 +455,10 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 /team-os *compact --auto → idem, sem confirmação (mostra o plano e aplica)
 /team-os *tasks         → só mostrar task list atual
 /team-os *spawn {desc}  → Gate 0 + proposta de time para {desc}
-/team-os *status        → dashboard de status do time atual
+/team-os *status        → dashboard de status do time atual + placar (--report)
 ```
 
-> Subcomandos são **atalhos** para a fase correspondente (*env = Gate 0 + 2-A/B/C · *memory = 2-D/E + Discovery/Repair · *tasks = scan item 5 · *spawn = Gate 0 + Fases 4-5 · *status = painel + task list). **Nenhum subcomando que spawna pula o Gate 0** (escape hatch: ferramentas de teammate já disponíveis = gate satisfeito).
+> Subcomandos são **atalhos** para a fase correspondente (*env = Gate 0 + 2-A/B/C · *memory = 2-D/E + Discovery/Repair · *tasks = scan item 5 · *spawn = Gate 0 + Fases 4-5 · *status = painel + task list + `WEIGH_REPORT`). **Nenhum subcomando que spawna pula o Gate 0** (escape hatch: ferramentas de teammate já disponíveis = gate satisfeito).
 
 **Dimensionamento:** a regra canônica é a da **Fase 4c** — 1 workstream independente = 1 agente; comece com 3-5; escale sem teto fixo conforme a independência real do trabalho; research adversarial = 3-5 pesquisadores. ("5-6 tasks por agente" é só o **throughput esperado** do self-claim, nunca regra de dimensionamento.)
 
