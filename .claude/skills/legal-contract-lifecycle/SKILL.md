@@ -1,8 +1,8 @@
 ---
 name: legal-contract-lifecycle
-description: Método do ciclo de vida de contratos e conflitos depois do PASS — registro único de contratos com `#id`, vigência, renovação, aviso prévio, obrigações e alertas D-30/D-15/D-7, fluxo de assinatura com versão final travada por hash, ordem de signatários, ferramenta e evidência, envio à contraparte só pelo humano com PASS e confirmação explícita, convenção de arquivamento, renovação, aditivo e distrato, notificação extrajudicial preparada, dossiê para o advogado externo e ledger de casos. Use ao registrar um contrato, preparar assinatura ou envio, arquivar, renovar, aditar, distratar, notificar uma contraparte ou montar o dossiê de um conflito.
+description: "Método do ciclo de vida de contratos e conflitos depois do PASS — registro único com `#id`, vigência, renovação e alertas, assinatura com versão travada, envio à contraparte só com PASS e confirmação, arquivamento, aditivo e distrato, notificação extrajudicial e dossiê para o advogado. Use ao registrar contrato, preparar assinatura ou envio, renovar, aditar, distratar ou notificar."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Legal Contract Lifecycle — do PASS à assinatura, o humano executa

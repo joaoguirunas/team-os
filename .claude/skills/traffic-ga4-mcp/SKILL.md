@@ -1,11 +1,13 @@
 ---
 name: traffic-ga4-mcp
-description: Uso do MCP oficial do Google Analytics (googleanalytics/google-analytics-mcp) — tools de report GA4, validação realtime de tracking pré-launch, funis, links com Google Ads e dicionário de dimensões/métricas para tráfego pago. Use ao consultar dados GA4, validar conversões e UTMs de campanha, montar relatórios de canal/campanha ou investigar discrepância entre plataforma de ads e GA4.
+description: "Uso do MCP oficial do Google Analytics (googleanalytics/google-analytics-mcp) — tools de report GA4, validação realtime de tracking pré-launch, funis, links com Google Ads e dicionário de dimensões/métricas para tráfego pago. Use ao consultar dados GA4, validar conversões e UTMs de campanha, montar relatórios de canal/campanha ou investigar discrepância entre plataforma de ads e GA4."
 version: "1.0"
 updated: "2026-09-04"
 ---
 
 # Google Analytics MCP (oficial)
+
+**Quando usar esta vs. `seo-google`:** esta consulta o GA4 via MCP oficial com foco em tráfego pago (conversões, UTMs, canais, links com Google Ads). Para Search Console, PageSpeed, CrUX, Indexing API e tráfego orgânico, use `seo-google`.
 
 Skill de preparação para o **MCP oficial do GA4** ([googleanalytics/google-analytics-mcp](https://github.com/googleanalytics/google-analytics-mcp)), mantido pelo Google (experimental, read-only, Admin API + Data API). Usada por **traffic-bi** (fonte de validação de conversão), **traffic-qa** (smoke-test de tracking pré/pós-launch), **traffic-analyst** (comportamento e canais) e **traffic-strategist** (dados para planejamento).
 

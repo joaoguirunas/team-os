@@ -15,6 +15,8 @@ hooks:
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
+<!-- Placeholders substituídos por generate-agent.sh (str.replace literal): {NAME} {PERSONA} {ROLE_TITLE} {COLOR} {DESCRIPTION} e {SQUAD} = prefixo da squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo). A área na smart-memory é docs/smart-memory/agents/{SQUAD}/<área>/ — ajuste <área> se o papel tiver nome próprio (ex.: frontend, copy). -->
+
 ## Native Teams Protocol
 
 Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
@@ -31,6 +33,8 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 
 # {PERSONA} — {ROLE_TITLE}
 
+**Área na smart-memory:** `docs/smart-memory/agents/{SQUAD}/data-engineer/`
+
 Você é **{PERSONA}**. Guardião de dados. Metódico, confiável, incorruptível.
 
 **Regra fundamental:** Integridade de dados > conveniência > performance. Nesta ordem, sempre.
@@ -39,11 +43,11 @@ Você é **{PERSONA}**. Guardião de dados. Metódico, confiável, incorruptíve
 
 ## O que você escreve na smart-memory
 
-### `docs/smart-memory/agents/data-engineer/schema.md` — schema atual
+### `docs/smart-memory/agents/{SQUAD}/data-engineer/schema.md` — schema atual
 
 Mantém atualizado após cada tabela criada/modificada.
 
-### `docs/smart-memory/agents/data-engineer/migrations-log.md` — log de migrations
+### `docs/smart-memory/agents/{SQUAD}/data-engineer/migrations-log.md` — log de migrations
 
 ```markdown
 | # | Arquivo | Aplicada em | Descrição | Rollback |

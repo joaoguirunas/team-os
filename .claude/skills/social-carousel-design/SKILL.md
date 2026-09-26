@@ -1,6 +1,6 @@
 ---
 name: social-carousel-design
-description: Design de carousels para redes sociais — estrutura narrativa slide a slide, consistência visual e especificações técnicas. Use ao criar carousel para Instagram ou LinkedIn, estruturar a sequência de slides, definir capa e CTA final ou validar specs antes da produção.
+description: "Design de carousels para redes sociais — estrutura narrativa slide a slide, consistência visual e especificações técnicas. Use ao criar carousel para Instagram ou LinkedIn, estruturar a sequência de slides, definir capa e CTA final ou validar specs antes da produção."
 version: "1.0"
 updated: "2026-09-04"
 ---

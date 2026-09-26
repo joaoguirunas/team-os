@@ -1,8 +1,8 @@
 ---
 name: finance-receivables-payables
-description: Método de contas a receber e a pagar — cobrança preparada com `#id`, régua D-5/D0/D+3/D+10/D+30 com mensagens prontas, aging e inadimplência por cliente, negociação registrada, agenda de pagamentos por vencimento, prioridade da política em aperto de caixa, lote de pagamento preparado com documento de origem, alçada, PASS e confirmação, checagem de duplicidade e a regra de que a squad prepara e o humano executa. Use ao preparar cobrança, montar agenda ou lote de pagamento, medir inadimplência ou registrar negociação com cliente ou fornecedor.
+description: "Método de contas a receber e a pagar — cobrança com `#id`, régua D-5/D0/D+3/D+10/D+30, aging e inadimplência por cliente, negociação registrada, agenda de pagamentos por prioridade, lote de pagamento com documento, alçada, PASS e confirmação; a squad prepara, o humano executa. Use ao preparar cobrança, agenda ou lote de pagamento, medir inadimplência ou registrar negociação."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Finance Receivables & Payables — a squad prepara, o humano executa

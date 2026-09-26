@@ -1,6 +1,6 @@
 ---
 name: dev-defuddle
-description: Extrair markdown limpo de páginas web usando Defuddle CLI — remove ruído (nav, ads, sidebars) para obter conteúdo técnico puro. Para uso do Analyst e UX em research.
+description: "Extrair markdown limpo de páginas web usando Defuddle CLI — remove ruído (nav, ads, sidebars) para obter conteúdo técnico puro. Para uso do Analyst e UX em research."
 version: "1.1"
 updated: "2026-04-21"
 ---

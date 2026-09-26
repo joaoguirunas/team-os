@@ -1,8 +1,8 @@
 ---
 name: brand-visual-system
-description: Método da identidade visual — direções com moodboard e racional por traço, sistema de cor com papéis e contraste medido, tipografia com hierarquia e fallbacks, grid e espaçamento, iconografia e formas, fotografia e imagem, movimento, hierarquia de logos conforme a arquitetura, proibições, aplicações-chave e a estrutura do brandbook, com Claude Design como ferramenta padrão. Use ao propor direções visuais, construir o sistema visual ou especificar o brandbook a partir da plataforma aprovada.
+description: "Método da identidade visual — direções com moodboard e racional, sistema de cor com papéis e contraste medido, tipografia com hierarquia, grid, iconografia, fotografia, movimento, hierarquia de logos, proibições, aplicações-chave e estrutura do brandbook, com Claude Design como ferramenta padrão. Use ao propor direções visuais, construir o sistema visual ou especificar o brandbook."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Visual System — a plataforma que se vê

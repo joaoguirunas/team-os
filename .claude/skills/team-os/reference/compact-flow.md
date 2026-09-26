@@ -13,7 +13,7 @@ O fluxo tem uma fase mecânica (script), uma de **consolidação** (archivist + 
 
 **Passo 1 — Mecânico (script, sempre primeiro):**
 ```bash
-bash .claude/skills/team-os/scripts/compact-memory.sh --dry-run   # colhe o plano mecânico
+bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/compact-memory.sh" --dry-run   # colhe o plano mecânico
 ```
 O script arquiva automaticamente: `stories/done/*`, **toda nota com `status: resolved` ou `superseded`** e — novo no v3 — **toda nota com `expires: YYYY-MM-DD` vencido (TTL)** → `_archive/<Q>/expired/`, registrada no LEDGER como "(expired)". Nunca toca em `project/`, `decisions/`, stories ativas, `_inbox/`, DIGESTs e INDEXes. O dry-run também reporta o inbox pendente (`COMPACT_INBOX_PENDING=<n>` + lista `INBOX:`). Gordos de `WEIGH_FAT_LIST` entram no plano como candidatos via `--archive-file`.
 
@@ -24,7 +24,7 @@ Durante as sessões, os agentes anotam barato em `docs/smart-memory/_inbox/` —
 2. **Funde, deduplica e supersede** contra os DIGESTs das áreas: cada informação vira fato atômico datado no DIGEST certo (Core ou Contexto recente), substituindo fato antigo quando for o caso; o que merecer nota própria vira nota com frontmatter v3 (`kind`/`status`/`summary`, `expires` se tiver prazo).
 3. **Zera o inbox**: para cada nota consolidada,
    ```bash
-   bash .claude/skills/team-os/scripts/compact-memory.sh --clear-inbox <arquivo>
+   bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/compact-memory.sh" --clear-inbox <arquivo>
    ```
    (move para `_archive/<Q>/inbox/` + linha no LEDGER — nada é deletado).
 
@@ -37,7 +37,7 @@ Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de 
  Missão em UMA passada:
  1. Consolide o _inbox/ (se houver): funda/deduplique/supersede contra os
     DIGESTs e zere via --clear-inbox (passo 2 do compact-flow).
- 2. Para cada área (agents/*, decisions/), cluster por tópico e detecte:
+ 2. Para cada área (agents/<squad>/<área>/, decisions/), cluster por tópico e detecte:
     cadeias supersedidas (sufixos -r2/-r3/-v2, investigation-round*, audit→fix
     já corrigido), investigações fechadas, planos executados, notas com prazo
     natural sem `expires:` (adicione o TTL).
@@ -45,7 +45,7 @@ Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de 
     nas notas que não têm.
  4. Escreva/atualize o DIGEST.md de cada área (template team-os/templates/digest.md,
     formato v3): fatos atômicos datados em Core/Contexto recente + Apontadores.
-    Máx ~40 linhas, bullets ≤200 chars, fato novo substitui o antigo.
+    ~40 linhas (máx 60), bullets ≤200 chars, fato novo substitui o antigo.
  5. Produza o PLANO DE COMPACTAÇÃO: tabela [arquivo | veredicto quente/frio | razão].
     NÃO mova nada ainda. Reporte ao lead via SendMessage."
 ```
@@ -54,9 +54,9 @@ Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de 
 
 **Passo 5 — Execução integral, sem mais perguntas:**
 ```bash
-bash .claude/skills/team-os/scripts/compact-memory.sh                     # done + resolved/superseded + TTL vencido
-bash .claude/skills/team-os/scripts/compact-memory.sh --archive-file <p>  # cada frio do plano semântico
-bash .claude/skills/team-os/scripts/compact-memory.sh --clear-inbox <f>   # cada inbox consolidado (se restou)
+bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/compact-memory.sh"                     # done + resolved/superseded + TTL vencido
+bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/compact-memory.sh" --archive-file <p>  # cada frio do plano semântico
+bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/compact-memory.sh" --clear-inbox <f>   # cada inbox consolidado (se restou)
 ```
 
 **Passo 6 — Relatório de órfãos + re-pesagem:** todo modo do `compact-memory.sh` que move arquivo varre o working set por wikilinks `[[...]]` que apontavam para o que saiu e reporta `COMPACT_ORPHAN_LINKS=<n>` com a lista (`ORPHAN_LINK: [[nota]] ainda referenciado em: ...`). O lead (ou o archivist) corrige cada órfão — aponta para o LEDGER ou remove a referência. Ao final: re-pesar (`weigh-memory.sh`) e reportar antes/depois em linhas **e em bootstrap tokens** (`WEIGH_BOOTSTRAP_MAX`).

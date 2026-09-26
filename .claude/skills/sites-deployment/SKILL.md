@@ -1,6 +1,6 @@
 ---
 name: sites-deployment
-description: Deploy de sites Next.js ou Astro — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release.
+description: "Deploy de sites Next.js ou Astro — Vercel, Netlify e Cloudflare Pages, CI/CD, variáveis de ambiente e processo de release."
 version: "1.1"
 updated: "2026-09-20"
 ---

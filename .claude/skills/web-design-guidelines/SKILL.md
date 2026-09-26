@@ -1,12 +1,15 @@
 ---
 name: web-design-guidelines
-description: Review de código UI contra as Vercel Web Interface Guidelines — carrega as guidelines (remoto ou cache local) e reporta violações em formato file:line. Use ao "revisar minha UI", "audit design", "review UX" ou checar o site contra as guidelines da Vercel. Para acessibilidade/WCAG, use a skill accessibility.
+description: "Review de código UI contra as Vercel Web Interface Guidelines — carrega as guidelines (remoto ou cache local) e reporta violações em formato file:line. Use ao \"revisar minha UI\", \"audit design\", \"review UX\" ou checar o site contra as guidelines da Vercel. Para acessibilidade/WCAG, use a skill accessibility."
 version: "1.0"
-updated: "2026-09-04"
-argument-hint: <file-or-pattern>
+updated: "2026-09-25"
+user-invocable: true
+argument-hint: "<file-or-pattern>"
 ---
 
 # Web Interface Guidelines
+
+**Quando usar esta vs. `ui-ux-pro-max`:** esta *revisa* código UI existente contra as guidelines da Vercel e reporta violações. Para escolher estilo, cor, tipografia e regras de UX antes ou durante a construção, use `ui-ux-pro-max`.
 
 Review files for compliance with Web Interface Guidelines.
 

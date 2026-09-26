@@ -1,8 +1,8 @@
 ---
 name: legal-contract-drafting
-description: Método de redação e revisão de contratos, aditivos, distratos, termos e NDAs a partir de modelo da biblioteca e postura aprovada — anatomia do contrato em 15 blocos (qualificação, considerandos, definições, objeto, obrigações, preço e pagamento, prazo e rescisão, confidencialidade, propriedade intelectual, dados pessoais, responsabilidade e limitação, multas, foro e lei, disposições gerais, anexos), linguagem clara, matriz de desvios com origem de cada cláusula, revisão de minuta da contraparte com quatro marcas, versionamento com changelog e checklist de coerência. Use ao redigir, revisar ou versionar qualquer minuta que uma contraparte vá ler ou assinar.
+description: "Método de redação e revisão de contratos, aditivos, distratos, termos e NDAs a partir de modelo da biblioteca e postura aprovada — anatomia em 15 blocos, linguagem clara, matriz de desvios, revisão de minuta da contraparte e versionamento com changelog. Use ao redigir, revisar ou versionar qualquer minuta que uma contraparte vá ler ou assinar."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Legal Contract Drafting — nenhuma cláusula sem origem

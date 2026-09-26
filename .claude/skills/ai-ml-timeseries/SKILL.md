@@ -1,8 +1,8 @@
 ---
 name: ai-ml-timeseries
-description: "Time series forecasting — LightGBM, Transformers, temporal validation, feature engineering, and production deployment. Use when building TS models."
+description: "Previsão de séries temporais — LightGBM, Transformers, validação temporal, feature engineering e deploy em produção. Use ao construir modelos de séries temporais (time series, forecasting)."
 version: "1.0"
-updated: "2026-09-04"
+updated: "2026-09-25"
 ---
 
 # Time Series Forecasting — Modern Patterns & Production Best Practices

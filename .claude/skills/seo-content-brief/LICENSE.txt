@@ -2,3 +2,5 @@ MIT License - see repository root LICENSE file for complete terms.
 
 Copyright (c) 2026 puneetindersingh
 https://github.com/AgriciDaniel/claude-seo
+
+No pack team-os, o texto integral da MIT e a lista de avisos de terceiros estão em THIRD_PARTY_NOTICES.md e LICENSE na raiz do repositório.

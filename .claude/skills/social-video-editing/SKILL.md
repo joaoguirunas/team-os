@@ -1,6 +1,6 @@
 ---
 name: social-video-editing
-description: Edição de vídeo para redes sociais com ffmpeg — cortes, legendas, música, transições e exportação por plataforma. Use ao editar Reels, TikToks ou Shorts, cortar e montar clipes, adicionar legendas e trilha sonora, ou exportar vídeo nas specs corretas de cada rede.
+description: "Edição de vídeo para redes sociais com ffmpeg — cortes, legendas, música, transições e exportação por plataforma. Use ao editar Reels, TikToks ou Shorts, cortar e montar clipes, adicionar legendas e trilha sonora, ou exportar vídeo nas specs corretas de cada rede."
 version: "1.0"
 updated: "2026-09-04"
 ---

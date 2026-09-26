@@ -1,6 +1,6 @@
 ---
 name: traffic-google-ads-mcp
-description: Uso do MCP oficial do Google Ads (googleads/google-ads-mcp) — tools, GAQL cookbook, workflow de descoberta de contas, limites read-only e handoff para mutations. Use ao consultar dados de conta/campanha Google Ads via MCP, escrever queries GAQL, auditar performance, budget pacing, search terms ou preparar relatórios com dados reais da API.
+description: "Uso do MCP oficial do Google Ads (googleads/google-ads-mcp) — tools, GAQL cookbook, workflow de descoberta de contas, limites read-only e handoff para mutations. Use ao consultar dados de conta/campanha Google Ads via MCP, escrever queries GAQL, auditar performance, budget pacing, search terms ou preparar relatórios com dados reais da API."
 version: "1.0"
 updated: "2026-09-04"
 ---

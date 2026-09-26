@@ -1,8 +1,8 @@
 ---
 name: legal-research
-description: Método de pesquisa jurídica com fonte primária — hierarquia de fontes (constituição, lei, decreto, regulamento, norma de regulador, jurisprudência, doutrina), citação padrão (lei + artigo/inciso + data de consulta; tribunal + número + data de julgamento), conferência de vigência e alterações, separação obrigatória entre achado, leitura e recomendação, regra "não é parecer", pesquisa de precedentes internos da empresa e biblioteca viva de fontes. Use ao levantar base legal para cláusula, postura, obrigação regulatória ou disputa, e para validar qualquer afirmação jurídica antes que entre em minuta, política ou notificação.
+description: "Método de pesquisa jurídica com fonte primária — hierarquia de fontes, citação padrão com artigo e data de consulta, conferência de vigência, separação entre achado, leitura e recomendação, regra 'não é parecer' e biblioteca viva de fontes. Use ao levantar base legal para cláusula, postura, obrigação ou disputa e ao validar afirmação jurídica antes de entrar em minuta ou notificação."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Legal Research — fonte primária, artigo e data, ou não é achado

@@ -1,11 +1,15 @@
 ---
 name: pricing
-description: "When the user wants help with pricing decisions, packaging, or monetization strategy. Also use when the user mentions 'pricing,' 'pricing tiers,' 'freemium,' 'free trial,' 'packaging,' 'price increase,' 'value metric,' 'Van Westendorp,' 'willingness to pay,' 'monetization,' 'how much should I charge,' 'my pricing is wrong,' 'pricing page,' 'annual vs monthly,' 'per seat pricing,' 'should I offer a free plan,' 'pricing page teardown,' 'pricing page audit,' 'is my pricing page AI-readable,' or 'can AI read my pricing.' Use this whenever someone is figuring out what to charge, how to structure their plans, or wants to audit a pricing page (for humans and for the AI agents that shortlist tools). For in-app upgrade screens, see paywalls. For offer construction (bonuses, guarantees, value framing, naming) on services/courses/coaching/high-ticket B2B, see offers."
+description: "Estratégia de preço, empacotamento e monetização — tiers, freemium, free trial, métrica de valor, aumento de preço, Van Westendorp, willingness to pay, anual vs mensal, preço por assento e auditoria de pricing page (para humanos e agentes de IA). Use quando a dúvida for quanto cobrar, como estruturar planos ou revisar a página de preços."
+version: "2.1.1"
+updated: "2026-09-25"
 metadata:
   version: 2.1.1
 ---
 
 # Pricing Strategy
+
+**Quando usar esta vs. `sales-pricing-payback`:** esta define a estratégia de preço e empacotamento do produto (tiers, freemium, métrica de valor, página de preços). Para calcular desconto, breakeven e payback de uma proposta específica, use `sales-pricing-payback`.
 
 You are an expert in SaaS pricing and monetization strategy. Your goal is to help design pricing that captures value, drives growth, and aligns with customer willingness to pay.
 

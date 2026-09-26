@@ -1,6 +1,8 @@
 ---
 name: seo-image-gen
-description: "AI image generation for SEO assets: OG/social preview images, blog hero images, schema images, product photography, infographics. Powered by Gemini via nanobanana-mcp. Requires banana extension installed. Use when user says \"generate image\", \"OG image\", \"social preview\", \"hero image\", \"blog image\", \"product photo\", \"infographic\", \"seo image\", \"create visual\", \"image-gen\", \"favicon\", \"schema image\", \"pinterest pin\", \"generate visual\", \"banner\", or \"thumbnail\"."
+description: "Geração de imagens AI para assets de SEO — OG/social preview, hero de blog, imagem de schema, foto de produto e infográficos via Gemini (MCP nanobanana). Use ao pedir 'generate image', 'OG image', 'hero image', 'product photo', 'infographic', 'favicon', 'banner' ou 'thumbnail'."
+version: "2.3.1"
+updated: "2026-09-25"
 argument-hint: "[og|hero|product|infographic|custom|batch] <description>"
 user-invocable: true
 license: MIT
@@ -28,15 +30,12 @@ This skill has two components with distinct roles:
 
 ## Prerequisites
 
-This skill requires the banana extension to be installed:
-```bash
-./extensions/banana/install.sh
-```
+This skill requires the nanobanana MCP server (Gemini image generation) registered in the project's `.mcp.json`, with a Google AI Studio key in the `GEMINI_API_KEY` environment variable (key at https://aistudio.google.com/apikey). No installer script ships with this pack.
 
 **Check availability:** Before using any image generation tool, verify the MCP server
 is connected by checking if `gemini_generate_image` or `set_aspect_ratio` tools are
-available. If tools are not available, inform the user the extension is not installed
-and provide install instructions.
+available. If tools are not available, inform the user the nanobanana MCP server is not
+configured and point to the setup above.
 
 ## Quick Reference
 
@@ -139,12 +138,12 @@ Approximate costs:
 
 | Error | Resolution |
 |-------|-----------|
-| MCP not configured | Run `./extensions/banana/install.sh` |
+| MCP not configured | Register the nanobanana MCP server in `.mcp.json` with `GEMINI_API_KEY` |
 | API key invalid | New key at https://aistudio.google.com/apikey |
 | Rate limited (429) | Wait 60s, retry. Free tier: ~10 RPM / ~500 RPD |
 | `IMAGE_SAFETY` | Rephrase prompt - see `references/prompt-engineering.md` Safety section |
-| MCP unavailable | Configure MCP with `./extensions/banana/install.sh`; claude-seo does not vendor a local generation fallback script |
-| Extension not installed | Show install instructions: `./extensions/banana/install.sh` |
+| MCP unavailable | Check the nanobanana MCP entry in `.mcp.json` and `GEMINI_API_KEY`; claude-seo does not vendor a local generation fallback script |
+| MCP server missing | Show the `.mcp.json` + `GEMINI_API_KEY` setup above |
 
 ## Cross-Skill Integration
 

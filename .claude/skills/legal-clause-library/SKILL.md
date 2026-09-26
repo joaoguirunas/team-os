@@ -1,8 +1,8 @@
 ---
 name: legal-clause-library
-description: Método da biblioteca de modelos e cláusulas — organização por relação (cliente, fornecedor, parceiro, sócio, colaborador/PJ, NDA, licença/SaaS, termos de uso), numeração `M{N}.{c}` com versionamento, anatomia de cada cláusula (versão padrão, variantes negociáveis com piso e teto, lista de proibidas, base legal), processo de aprovação por PRUDENTIA antes de entrar na biblioteca, índice vivo e regras de uso na minuta. Use ao criar, aprovar, versionar ou consultar um modelo ou cláusula antes de redigir qualquer minuta.
+description: "Método da biblioteca de modelos e cláusulas — organização por relação (cliente, fornecedor, parceiro, sócio, PJ, NDA, SaaS, termos de uso), numeração `M{N}.{c}`, anatomia de cada cláusula (padrão, variantes com piso e teto, proibidas, base legal), aprovação por PRUDENTIA e índice vivo. Use ao criar, aprovar, versionar ou consultar modelo ou cláusula antes de redigir uma minuta."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Legal Clause Library — modelo antes de variante, variante antes de improviso

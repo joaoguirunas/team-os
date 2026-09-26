@@ -13,7 +13,7 @@
 Times de IA superam uma sessão única quando o trabalho tem partes independentes. O team-os transforma isso em algo pronto pra usar:
 
 - **Paralelismo real** — várias sessões trabalham ao mesmo tempo, cada uma com seu próprio context window. Research, review e features divididas por módulo terminam em uma fração do tempo de uma sessão sequencial.
-- **Especialização com autoridade clara** — 56 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
+- **Especialização com autoridade clara** — 95 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
 - **Coordenação autônoma** — comunicação peer-to-peer + TaskList compartilhada + self-claim. Os teammates se organizam sozinhos; o lead orquestra em vez de microgerenciar.
 - **Memória que persiste** — smart-memory em formato Obsidian acumula arquitetura, decisões, stories e QA entre sessões. O time não recomeça do zero.
 - **Qualidade embutida** — hooks (`block-git-push`, gates de task), QA com veredicto formal PASS/CONCERNS/FAIL/WAIVED e plan mode obrigatório em mudanças de risco (schema, auth, CI/CD).
@@ -27,7 +27,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 
 - ⭐ [the team-os Method](#-the-team-os-method) — a metodologia
 1. [Conceitos fundamentais](#1-conceitos-fundamentais)
-2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup)
+2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup) — [Requisitos de máquina](#requisitos-de-máquina) · [MCPs por squad](#mcps-por-squad)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
 5. [Os 95 agentes e suas skills](#5-os-95-agentes-e-suas-skills)
@@ -39,6 +39,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 11. [Estrutura do repositório](#11-estrutura-do-repositório)
 12. [Troubleshooting](#12-troubleshooting)
 13. [Manutenção do CT](#13-manutenção-do-ct)
+- [Licença](#licença)
 
 ---
 
@@ -119,6 +120,48 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 3. A skill `/team-os` faz esse check e corrige o `settings.json` automaticamente — basta carregá-la.
 
+4. Agent Teams é experimental e exige plano com suporte ao recurso — ver [limitações oficiais](https://code.claude.com/docs/en/agent-teams#limitations).
+
+### Requisitos de máquina
+
+Os scripts do pack são **bash 3.2-safe** (rodam no bash padrão do macOS e no ubuntu do CI) e não dependem de `jq`.
+
+| Ferramenta | Obrigatória? | Quem usa |
+|---|---|---|
+| `bash` 3.2+ | Sim | todos os hooks e scripts (`.claude/hooks/`, `team-os/scripts/`, `team-os-creator/scripts/`) |
+| `git` | Sim | hooks de push, `scan-ct-projects.sh`, `test-hooks.sh` |
+| `python3` | Sim (≥ 3.10 para a skill `seo`) | hooks (tokenização via `shlex`, com fallback em grep), `team-os-creator` (`generate-agents-page.py`), `deep-research`, `ui-ux-pro-max`, `seo` |
+| `node` | Opcional | `seo/hooks/run-python-hook.js` (hooks internos da skill `seo`) |
+| `gh` (GitHub CLI) | Opcional | agentes `*-devops` (PRs, releases) e a skill `seo-flow` |
+| Chromium via Playwright | Opcional | skill `seo` (renderização headless) — baixado pelo `setup` dela |
+| `jq` | **Não** | nenhum script exige (`discovery.sh` e `team-os-session-title.sh` fazem o parse sem ele) |
+
+**Setup da skill `seo`** (uma vez por máquina, por projeto — ver a seção "Instalação" em `.claude/skills/seo/SKILL.md`): `"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" setup` (ou `/seo setup`) cria um venv isolado em `.claude/skills/seo/.venv/`, instala o `requirements.txt` e baixa o Chromium; `/seo doctor` diagnostica. Se o `python3` da máquina for < 3.10, aponte outro com a variável `CLAUDE_SEO_PYTHON` — em `.claude/settings.local.json` (gitignored) ou no `~/.claude/settings.json`, **nunca** no `settings.json` versionado do projeto. `.venv/` e `ms-playwright/` são runtime local: ignorados pelo git e nunca copiados pelo `*install`.
+
+### MCPs por squad
+
+Alguns agentes declaram servidores MCP em `tools:` (fonte da verdade e check do `*audit`: `.claude/skills/team-os-creator/reference/mcp-servers.md`). Servidor ausente na máquina **não quebra o agente** — o Claude Code ignora tools `mcp__*` não conectadas.
+
+| Squad | Agente | Servidor (forma curta em `tools:`) |
+|---|---|---|
+| Social | `social-content` | `mcp__apify` (scraping/research) |
+| Social | `social-design` | `mcp__stitch` (Google Stitch, design generativo) |
+| Social | `social-photo` | `mcp__freepik` (imagens AI) |
+| Social | `social-publisher` | `mcp__meta` (publicação Instagram/Facebook + insights) |
+| Social | `social-video` | `mcp__heygen` (avatar/vídeo AI) |
+| Dev / Sites / PM | `dev-data-engineer`, `dev-bi`, `sites-data`, `pm-data` | `mcp__supabase` (via skill `data-supabase-patterns`) |
+| Traffic | `traffic-google`, `traffic-automation`, `traffic-bi`, `traffic-analyst`, `traffic-qa` | `mcp__google-ads`, `mcp__ga4` / `mcp__analytics-mcp` (via skills `traffic-google-ads-mcp`, `traffic-ga4-mcp`) |
+
+Os agentes citam o **nível do servidor** (`mcp__<server>`, sem `__<tool>`), o que libera todas as ferramentas daquele servidor — nomes de tool mudam entre versões, o nome do servidor não. O prefixo depende de **como** o servidor foi instalado; são três formas:
+
+| Origem | Prefixo da tool | Exemplo |
+|---|---|---|
+| `claude mcp add <nome>` / `.mcp.json` | `mcp__<nome>__<tool>` | `mcp__stitch__generate_screen_from_text` |
+| Plugin (`/plugin install`) | `mcp__plugin_<plugin>_<server>__<tool>` | `mcp__plugin_heygen_heygen__create_video` |
+| Conector claude.ai | `mcp__claude_ai_<server>__<tool>` | `mcp__claude_ai_Hey_Gen__create_video_from_avatar` |
+
+Credenciais (token, key, project-ref) nunca vão no agente nem na smart-memory — ficam no `.mcp.json`/env da máquina.
+
 ---
 
 ## 3. Skill principal: `/team-os`
@@ -134,7 +177,7 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 2. **Dashboard de abertura** — mostra status do ambiente e pergunta o **objetivo da sessão**.
 3. **Correções automáticas** — injeta `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` se faltar, sugere `teammateMode`, oferece bootstrap da smart-memory.
 4. **Análise do objetivo** — classifica o trabalho (research / implementação / review / mixed) e mapeia o paralelismo real.
-5. **Dimensionamento** — `tasks independentes ÷ 5 = nº de agentes`; research adversarial = 3-5 sempre.
+5. **Dimensionamento** — **1 workstream independente = 1 agente**, sem teto fixo: comece com 3-5 e escale conforme a independência real do trabalho (ownership de arquivos disjunto); research adversarial = 3-5 pesquisadores.
 6. **Proposta de time** — agentes, ownership exclusivo de paths, plan mode onde há risco, skills por agente, modelo sugerido.
 7. **Orquestração** — cria as tasks no TaskList com dependências e orienta o spawn.
 
@@ -159,44 +202,55 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 ## 4. Skill principal: `/team-os-creator`
 
-**Factory de agentes.** Existe **somente no CT**. Gera arquivos `.claude/agents/*.md` completos (Native Teams Protocol + smart-memory) a partir de **8 archetypes** e presets de squad, e mantém os agentes alinhados.
+**Factory de agentes.** Existe **somente no CT**. Gera arquivos `.claude/agents/*.md` completos (Native Teams Protocol + smart-memory) a partir de **9 archetypes** e 10 presets de squad, e mantém os agentes alinhados.
 
 ### Comandos
 ```
-/team-os-creator                → menu principal (scan + sugestões)
-/team-os-creator *analyze       → detecta archetype/stack, sem criar
-/team-os-creator *squad <preset>→ cria uma squad inteira (dev/sites/social/traffic/pm/sales/brand/finance/legal)
-/team-os-creator *create <role> → cria UM agente interativamente
-/team-os-creator *migrate       → migra agentes do padrão antigo p/ Native Teams Protocol
-/team-os-creator *bootstrap     → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md
-/team-os-creator *skills <ag>   → enriquece um agente com skills relevantes
-/team-os-creator *audit         → valida compliance de todos os agentes
-/team-os-creator *propagate     → propaga agentes atualizados p/ outros projetos
-/team-os-creator *install       → instala squads + skills + smart-memory num projeto destino
-/team-os-creator *organize      → árvore negócio → projeto → squads + proposta de organização (só propõe)
+/team-os-creator                       → Command Center: escaneia as pastas irmãs, status por projeto, ações Criar / Atualizar / Instalar
+/team-os-creator *analyze              → detecta archetype/stack, sem criar
+/team-os-creator *squad <preset>       → cria uma squad inteira (dev/sites/social/traffic/pm/sales/brand/finance/legal/seo/custom)
+/team-os-creator *create <role>        → cria UM agente interativamente
+/team-os-creator *migrate              → reinjeta o bloco NTP canônico em todos os agentes (scripts/migrate-ntp.sh; --dry-run mostra o diff)
+/team-os-creator *bootstrap            → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md do projeto atual
+/team-os-creator *skills <ag>          → enriquece um agente com skills relevantes
+/team-os-creator *pressure-test <ag>   → testa o agente contra cenários adversariais (obrigatório para agente novo antes do *propagate)
+/team-os-creator *audit                → valida compliance dos agentes (validate-agent.sh) E das skills (validate-agent.sh --skills)
+/team-os-creator *propagate            → propaga agentes/skills atualizados para os destinos (sempre --match-target-squads)
+/team-os-creator *install              → instala squads + skills (incl. team-os) + settings.json + hooks num projeto destino
+/team-os-creator *organize             → árvore negócio → projeto → squads → salas + proposta de organização (só propõe)
 ```
 
-### Os 8 archetypes
-| Archetype | Quando usar | Model | isolation |
-|---|---|---|---|
-| `architect` | Design arquitetural, ADRs, stories | `opus` | — |
-| `implementer` | Escreve código (front/back/fullstack) | `inherit` | — |
-| `hardening` | Resiliência, retry, edge cases (após features) | `inherit` | — |
-| `reviewer` | QA com veredicto formal, read-only | `opus` | — |
-| `researcher` | Pesquisa técnica, libs, CVEs | `inherit` | — |
-| `data` | Schema, migrations, queries, RLS | `inherit` | — |
-| `devops` | Git, push, PRs, CI/CD, releases | `inherit` | — |
-| `ux` | UX research, component specs, a11y | `inherit` | — |
+**Como o `*install` funciona** (`scripts/install-to-project.sh`):
+- **Squads por categoria** — `--squads <lista>` explícito para projeto novo (`--squads all` é abortado); `--match-target-squads` (modo `*propagate`) deriva as squads do que **já existe** no destino e nunca re-adiciona squad podada.
+- **Skills derivadas dos agentes** — a lista instalada é a união de: skills citadas no body dos agentes instalados, `team-os` (sempre), `--extra-skills`, skills com prefixo da squad e as já presentes no destino. `--dry-run` imprime a origem de cada uma (`SKILL_ORIGIN=…`). Lixo (`.venv`, `ms-playwright`, `__pycache__`, `.DS_Store`…) nunca é copiado.
+- **Backup + settings** — se o destino já tinha `.claude/`, tudo é copiado antes para `.claude.bak-<timestamp>/`; o `settings.json` é garantido pelo `team-os/scripts/ensure-settings.sh` (merge idempotente, nunca sobrescreve valores existentes).
+- **Hooks** — o pacote padrão (`block-worktree`, `block-git-push`, `guard-push-branch`, `task-quality` e os 5 `check-*-progress`) é **sempre** instalado; `--include-hooks` é praticamente no-op.
+- **Sala de Controle** — `--squads none --extra-skills sala-de-controle|maestri-os` copia só a skill de Sala (+ `CLAUDE.md` mínimo), sem agentes, hooks, settings ou `team-os`.
+- **Raiz dos projetos destino** (`scripts/scan-ct-projects.sh`): argumento, env `CT_ROOT`, arquivo `.team-os-root` na raiz do CT (gitignored) ou o diretório pai do git root.
 
-> Não existe archetype de lead/orquestrador — a main session já é o lead nativo (regra absoluta da skill).
+### Os 9 archetypes
+| Archetype | Quando usar | Model | Effort |
+|---|---|---|---|
+| `architect` | Design arquitetural, ADRs, stories | `opus` | `high` |
+| `strategist` | Tese/postura/política e gate de aprovação — decide, nunca produz a peça | `opus` | `high` |
+| `reviewer` | QA com veredicto formal, read-only em código | `opus` | `high` |
+| `implementer` | Escreve código (front/back/fullstack) | `inherit` | omitido |
+| `hardening` | Resiliência, retry, edge cases (após features) | `inherit` | `high` |
+| `researcher` | Pesquisa técnica, libs, CVEs | `inherit` | `medium` |
+| `data` | Schema, migrations, queries, RLS | `inherit` | `high` |
+| `devops` | Git, push, PRs, CI/CD, releases | `inherit` | omitido |
+| `ux` | UX research, component specs, a11y | `inherit` | `medium` |
+
+> Não existe archetype de lead/orquestrador — a main session já é o lead nativo (regra absoluta da skill). Nenhum archetype usa `isolation` (worktrees são bloqueados pelo `block-worktree.sh`). Defaults completos em `.claude/skills/team-os-creator/reference/archetypes.md`; templates em `templates/`.
 
 ### Regras absolutas da factory
 - Nunca cria agente sem `memory: project`.
 - Sempre injeta o bloco **Native Teams Protocol** (nunca o antigo "Contrato com team-os").
 - Sempre valida com `validate-agent.sh` após criar.
 - Idempotente — se o agente existe, oferece atualizar / pular / renomear / cancelar.
-- `*install` sempre faz bootstrap da smart-memory no destino.
-- `team-os` e `team-os-creator` nunca vão para projetos destino.
+- `*install` entrega a **infra, não a smart-memory**: copia agentes + skills (incluindo `team-os`) + `settings.json` + hooks. A smart-memory é construída no destino pelo próprio `/team-os` na 1ª sessão (Discovery Engine); `*bootstrap` continua disponível para criação manual.
+- `team-os` **é distribuída** a todos os projetos (obrigatória no destino); só o `team-os-creator` fica no CT.
+- Skills de Sala de Controle (`sala-de-controle`, `maestri-os`) são opt-in: só via `*install --squads none --extra-skills`; onde já estão instaladas, o `*propagate` as mantém atualizadas.
 
 ---
 
@@ -207,7 +261,7 @@ Spawne pelo nome do arquivo, ex.:
 
 A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponíveis por papel** — as skills de apoio que fazem sentido para cada agente acionar via `/nome-skill` conforme a necessidade. Ela **não** reflete linha a linha o que o body de cada agente lista (vários agentes citam só um subconjunto, ou nenhuma, no próprio arquivo); serve como guia de qual skill ativar para qual tipo de trabalho. O `/team-os` pode incluí-las no spawn prompt.
 
-> **Nota sobre veredictos QA:** as squads de código (`dev`/`sites`/`traffic`) usam PASS/CONCERNS/FAIL/WAIVED; as squads em contexto PT-BR usam taxonomia própria deliberada — `pm-qa`: APROVADO/PENDÊNCIAS/REPROVADO; `social-strategist`: APROVADO/COM RESSALVAS/REJEITADO (a squad social não tem QA dedicado — a VERA acumula validação editorial + veredicto, exceção deliberada da squad de 6).
+> **Nota sobre veredictos QA:** todas as squads com QA dedicado (`dev`, `sites`, `traffic`, `sales`, `brand`, `finance`, `legal`, `seo`) usam PASS/CONCERNS/FAIL/WAIVED. Duas exceções deliberadas em contexto PT-BR — `pm-qa`: APROVADO/PENDÊNCIAS/REPROVADO; `social-strategist`: APROVADO/COM RESSALVAS/REJEITADO (a squad social não tem QA dedicado — a VERA acumula validação editorial + veredicto).
 
 ### Dev — Fullstack SaaS (12)
 
@@ -309,14 +363,10 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `brand-strategist` | POLARIS | Plataforma de marca, postura do reposicionamento, **gate da plataforma e escolha de direção** (exclusivo) | `/brand-platform`, `/brand-research`, `/pricing`, `/verify-before-done` |
 | `brand-architect` | ORION | Arquitetura de marca (marca-mãe, sub-marcas, marca pessoal, nomes), roadmap de migração, **stories** (exclusivo) | `/brand-platform`, `/dev-technical-writing`, `/brand-rollout`, `/verify-before-done` |
 | `brand-voice` | LYRA | Guia de voz, framework de mensagens, manifesto, tagline, glossário, nomes dentro do sistema — ≥2 opções de direção | `/brand-verbal-identity`, `/sites-copy`, `/brand-platform`, `/verify-before-done` |
-| `brand-designer` | AURORA | Direções visuais com opções, sistema de cor/tipo/grid/imagem, brandbook — via Claude Design | `/brand-visual-system`, `/design`, `/ui-ux-pro-max`, `/web-design-guidelines`, `/social-key-visual`, `/verify-before-done` |
+| `brand-designer` | AURORA | Direções visuais com opções, sistema de cor/tipo/grid/imagem, brandbook — via Claude Design | `/brand-visual-system`, `/ui-ux-pro-max`, `/web-design-guidelines`, `/social-key-visual`, `/verify-before-done` (plugin `design:*` opcional) |
 | `brand-insights` | VEGA | **Fonte única dos números da marca**: scorecard, baseline antes, leitura depois, ficha com `#id` | `/brand-tracking`, `/data-analytics-engineering`, `/social-analytics`, `/verify-before-done` |
 | `brand-rollout` | ALTAIR | Plano interno → externo, inventário e desligamentos, checklist por canal, kit de handoff — só com PASS + baseline + confirmação | `/brand-rollout`, `/brand-verbal-identity`, `/brand-visual-system`, `/verify-before-done` |
 | `brand-qa` | RIGEL | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre cada deliverable — 10 pontos (exclusivo); auditoria de consistência pós-virada | `/brand-verbal-identity`, `/brand-visual-system`, `/brand-platform`, `/verify-before-done` |
-
----
-
-## 6. Catálogo de skills de apoio
 
 ### Finance — Gestão financeira (8, personas fluviais)
 
@@ -370,6 +420,12 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `seo-drift` | WADJET | Baseline e comparação — detecção de regressão pós-deploy | `/seo-drift`, `/seo-technical` |
 | `seo-qa` | MAAT | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre auditoria/relatório (exclusivo) | `/seo-audit`, `/seo-technical`, `/seo-content` |
 
+---
+
+## 6. Catálogo de skills de apoio
+
+### Catálogo por área
+
 108 skills, todas diretórios reais e versionados (repositório self-contained).
 
 **Dev (9):** `dev-api-design`, `dev-database-patterns`, `dev-defuddle`, `dev-error-handling`, `dev-git-workflow`, `dev-security-patterns`, `dev-technical-writing`, `dev-testing-strategy`, `dev-typescript-patterns`
@@ -402,7 +458,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 >
 > **Novas 2026-09 (squads Finance e Legal):** autorais do CT, com templates Obsidian — `finance-cash-flow` (plano de caixa 13 semanas, forecast, runway), `finance-bookkeeping` (plano de contas, conciliação, fechamento com `#id`), `finance-receivables-payables` (régua de cobrança, aging, lote de pagamento preparado), `finance-tax-compliance` (calendário fiscal, apuração preparatória, pacote para o contador; `reference/brasil.md` sem alíquotas cravadas), `finance-reporting` (relatório mensal, dicionário de indicadores); `legal-research` (fonte primária, achado ≠ parecer; `reference/fontes-brasil.md`), `legal-contract-drafting` (anatomia em 15 blocos, matriz de desvios, revisão da contraparte), `legal-clause-library` (modelos `M{N}.{c}`, variantes com piso/teto), `legal-compliance-lgpd` (mapa de dados, bases legais, incidentes), `legal-contract-lifecycle` (registro, assinatura travada por hash, notificação, dossiê).
 >
-> **Nova 2026-09-25 (Sala de Controle):** `sala-de-controle` — autoral do CT, o lugar único de comando para as sessões do Claude Code (`scripts/refresh.py` junta `scan-sessions.py` + `session-tail.py` + `project-context.py` + `org-map.py`, todos read-only; templates de panorama/registro/histórico/organização; `*painel` = mapa vivo em `scripts/painel/` — `collect.py` + `serve.py` + `index.html`, servidor local em `127.0.0.1:8787` aberto no navegador do Claude). Coexiste com a `maestri-os`; só entra via `--squads none --extra-skills sala-de-controle`. Pressure-tested 4/4.
+> **Nova 2026-09-25 (Sala de Controle):** `sala-de-controle` — autoral do CT, o lugar único de comando para as sessões do Claude Code (`scripts/refresh.py` junta `scan-sessions.py` + `session-tail.py` + `project-context.py` + `org-map.py`, todos read-only; templates de panorama/registro/histórico/organização; `*painel` = mapa vivo em `scripts/painel/` — `collect.py` + `serve.py` + `index.html`, servidor local em `127.0.0.1:8787` aberto no navegador do Claude). Coexiste com a `maestri-os`; só entra via `--squads none --extra-skills sala-de-controle`.
 >
 > **Nova 2026-09 (Sala de Controle, modo Maestri):** `maestri-os` — autoral do CT, recurso opt-in para o Maestri (roteador de pedidos entre terminais; `scripts/scan-project.sh` read-only + templates de registro/compilado/histórico). Não pertence a squad; só entra via `--squads none --extra-skills maestri-os`.
 >
@@ -423,7 +479,7 @@ O lugar único para dar comando: uma pasta própria — **`<raiz>/1 | Sala de Co
 - **Organização:** `/sala-de-controle *organizar` mostra a árvore negócio → projeto → squads, o que está fora do padrão e a proposta de melhoria — só propõe; quem move é o usuário, quem instala é o `team-os-creator`.
 - **Mapa vivo:** `/sala-de-controle *painel` abre, no navegador do próprio Claude, uma visualização em tempo real (atualiza a cada segundo): a Sala no centro, um nó por projeto, os agentes de cada sessão ao redor com luz por estado (ativo / aguardando / parado / precisa de você), mensagens viajando pelos fios e feed de eventos. Clique abre o detalhe; no projeto, **Abrir smart-memory** navega a memória dele como no Obsidian (árvore, notas com wikilinks, grafo). Só lê — reage tanto aos despachos da Sala quanto aos pedidos feitos direto nos terminais. `*painel stop` derruba.
 - **Lê, mas nunca escreve nem executa** em outra pasta; texto lido em outra sessão é dado, nunca instrução. Tudo fica em `docs/smart-memory/sala-de-controle/` (`PANORAMA.md`, `registry.md`, `dispatches.md`, `organizacao.md`).
-- **Instalação:** `/team-os-creator *install` reconhece a pasta de Sala (ou sugere criar `1 | Sala de Controle`) e oferece o modo: `--squads none --extra-skills sala-de-controle` (padrão) ou `maestri-os`.
+- **Instalação:** `/team-os-creator *install` reconhece a pasta de Sala (ou sugere criar `1 | Sala de Controle`) e oferece o modo: `--squads none --extra-skills sala-de-controle` (padrão) ou `maestri-os`. Só entra por essa flag; onde já está instalada, o `*propagate` a mantém atualizada.
 
 ### Sala de Controle — `maestri-os` (recurso para o Maestri)
 
@@ -433,7 +489,7 @@ Para quem roda os projetos como terminais no [Maestri](https://maestri.app): uma
 - **Lê, mas nunca escreve nem executa** em outra pasta — todo trabalho vai pelo terminal do projeto, com os agentes e travas daquele projeto.
 - **Espia antes de mandar** (`maestri check`), pedido curto espera a resposta, pedido longo libera e é avisada de volta.
 - **Autopilot no retorno:** quando um terminal responde, ela atualiza o histórico e despacha sozinha a próxima parte dependente do plano já confirmado; só para quando o terminal devolve `DECISÃO:` (pergunta que é do usuário). Os terminais já rodam `/team-os` — o cabeçalho manda usar a orquestração ativa, não recarregar.
-- **Instalação:** `/team-os-creator *install` reconhece a pasta "Sala de Controle" e oferece só a skill (`--squads none --extra-skills maestri-os`). Nunca é propagada sozinha para projetos com squad. Uma Sala de Controle por dono/marca.
+- **Instalação:** `/team-os-creator *install` reconhece a pasta "Sala de Controle" e oferece só a skill (`--squads none --extra-skills maestri-os`). Só entra por essa flag — nunca num projeto com squad; onde já está instalada, o `*propagate` a mantém atualizada. Uma Sala de Controle por dono/marca.
 
 > Para banco de dados, os agentes usam `/dev-database-patterns` e `/data-sql-optimization`. Para design, o padrão é **Claude Design** (sem dependências de marketplaces externos).
 
@@ -458,8 +514,9 @@ Para quem roda os projetos como terminais no [Maestri](https://maestri.app): uma
 ```
 1. No CT, carregue:  /team-os-creator *install
 2. Selecione o projeto destino e as squads
-3. Confirme o preview
-→ copia agentes (exceto team-os-creator), cria docs/smart-memory/ e configura settings.json
+3. Confirme o preview (use --dry-run para inspecionar a origem de cada skill)
+→ copia agentes da(s) squad(s) + skills que eles citam (incl. team-os) + hooks, faz backup de um .claude/ prévio
+  em .claude.bak-<ts>/ e garante o settings.json (ensure-settings.sh). A smart-memory nasce na 1ª sessão de /team-os.
 ```
 
 ### C. Criar ou atualizar um agente
@@ -495,36 +552,47 @@ Editar agente no CT → /team-os-creator *audit → /team-os-creator *propagate 
 
 O campo `model` do arquivo do agente **prevalece** sobre o "Default teammate model" do `/config` quando o agente roda como teammate. Por isso o CT adota o **Híbrido**:
 
-| Modelo | Agentes | Por quê |
+Contagem real (`grep -h '^model:' .claude/agents/*.md | sort | uniq -c`): **23 `opus` / 72 `inherit`**.
+
+| Modelo | Agentes (23 / 72) | Por quê |
 |---|---|---|
-| `opus` (fixo) | os 8 canônicos: `dev-architect`, `sites-architect`, `dev-qa`, `sites-qa`, `pm-qa`, `traffic-qa`, `traffic-strategist`, `social-strategist` | Raciocínio crítico e veredictos — não vale economizar |
-| `inherit` | os 41 demais (incluindo `pm-planner` e `pm-coach`) | Seguem o `/model` do lead → controle central de custo |
+| `opus` (fixo) | **architects/planners (8):** `dev-architect`, `sites-architect`, `brand-architect`, `legal-architect`, `seo-architect`, `finance-planner`, `pm-planner`, `sales-planner` · **QA (9):** `dev-qa`, `sites-qa`, `pm-qa`, `traffic-qa`, `sales-qa`, `brand-qa`, `finance-qa`, `legal-qa`, `seo-qa` · **strategists (6):** `traffic-strategist`, `social-strategist`, `sales-strategist`, `brand-strategist`, `finance-strategist`, `legal-strategist` | Raciocínio crítico e veredictos — não vale economizar |
+| `inherit` | os 72 demais | Seguem o `/model` do lead → controle central de custo |
 
 Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {nome} usando modelo haiku para…"`.
 
-**Política de `effort` (validada pelo `*audit`):**
+**Política de `effort` (canônica em `.claude/skills/team-os-creator/reference/archetypes.md`, validada pelo `*audit`):**
 
-| Effort | Papéis |
+| Effort | Papéis (contagem real) |
 |---|---|
-| `high` | architects, QAs, strategists, hardening (`*-dev-delta`), data engineers (`dev-data-engineer`, `sites-data`, `pm-data`), `pm-planner`, `pm-coach` |
-| `medium` | analysts, UX, BI/insights (`dev-bi`, `traffic-bi`, `dev-data-performance`) |
-| omitido | implementers (`*-dev-alpha/beta/gamma`) e devops — seguem o default do modelo |
+| `high` (34) | architects/planners, QAs e strategists (os 23 `opus`), hardening (`dev-dev-delta`, `sites-dev-delta`), data (`dev-data-engineer`, `sites-data`, `pm-data`) e as "fontes únicas de números" (`brand-insights`, `finance-controller`, `legal-compliance`, `sales-finance`, `seo-google`, `traffic-bi`) |
+| `medium` (30) | analysts (`*-analyst`), UX (`dev-ux`, `sites-ux`), designers (`brand-designer`, `sales-designer`, `social-design`, `social-photo`, `traffic-designer`), BI/insights/coaching (`dev-bi`, `dev-data-performance`, `pm-coach`) e os especialistas da squad SEO (`seo-technical`, `seo-content`, `seo-schema`, `seo-sitemap`, `seo-performance`, `seo-geo`, `seo-sxo`, `seo-cluster`, `seo-local`, `seo-backlinks`, `seo-ecommerce`, `seo-drift`) |
+| omitido (31) | implementers (`*-dev-alpha/beta/gamma`), devops (`dev-devops`, `sites-devops`) e os papéis operacionais das squads de negócio (`brand-voice`, `brand-rollout`, `finance-billing`, `finance-tax`, `finance-reporter`, `legal-drafter`, `legal-disputes`, `legal-ops`, `pm-client`, `pm-demand`, `pm-engineer`, `pm-ops`, `pm-reporter`, `sales-copywriter`, `sales-closer`, `social-content`, `social-publisher`, `social-video`, `traffic-automation`, `traffic-copywriter`, `traffic-google`, `traffic-meta`, `traffic-tiktok`) — seguem o default do modelo |
 
 ---
 
 ## 10. Hooks de qualidade
 
-Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
+10 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**402 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
 
-- **`block-git-push.sh`** — `PreToolUse` em **70 agentes: todo agente com Bash exceto os devops, em TODAS as squads**. Bloqueia `git push` (inclusive `git -C`, `--git-dir`, aliases e comandos multilinha), `gh pr create/merge` e `gh api` de escrita em PRs — garantia dura, exclusiva do DevOps.
-- **`block-worktree.sh`** — `PreToolUse` registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — garantia dura de que todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings (desliga worktree automático de background tasks). Instalado sempre pelo `*install`.
-- **`guard-push-branch.sh`** — `PreToolUse` nos 2 devops: push permitido só na `main`/`master`; fora dela exige pedido explícito do usuário na sessão.
-- **`task-quality.sh`** — hook `TaskCreated` (registrado no settings pelo `ensure-settings.sh`/`*install`): rejeita task vaga — título curto/genérico ou sem descrição.
-- **`check-story-progress.sh`** — hook `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story.
-- **`check-social-progress.sh`** — hook `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist).
-- **`check-proposal-progress.sh`** — hook `TaskCompleted`: task de emissão/envio de proposta ou deck (squad Sales) só fecha com veredicto **PASS** do `sales-qa` **e** confirmação explícita do usuário registradas na descrição.
-- **`check-finance-progress.sh`** — hook `TaskCompleted`: task de **execução financeira** (pagar, transferir, PIX, boleto, nota, guia, cobrança enviada, relatório enviado — squad Finance) só fecha com **PASS** do `finance-qa` **e** confirmação explícita do usuário. Task de preparação (preparar lote, conciliar, calcular) não dispara.
-- **`check-legal-progress.sh`** — hook `TaskCompleted`: task de **saída jurídica** (enviar minuta/notificação, assinar, protocolar, publicar termos — squad Legal) só fecha com **PASS** do `legal-qa` **e** confirmação explícita do usuário. Task de preparação (redigir, revisar, registrar) não dispara.
+**Guards de git (`PreToolUse` em `Bash`)** — além de `git push` direto, os dois cobrem flags globais (`git -C`, `--git-dir`, `-c alias.x=push`), wrappers (`env`, `sudo`, `\git`, `/usr/bin/git`), comandos multilinha e encadeados, `git send-pack`, `gh pr create/merge`, `gh release create`, `gh api` de escrita em PRs, e **bloqueiam shell embutido** (`sh -c`, `bash -c`, `eval`, `xargs`, `find -exec`, `python3 -c`/`node -e` com git) e variáveis no lugar do comando — expansão indireta não é permitida para operações git.
+
+- **`block-git-push.sh`** — em **92 agentes: todo agente com Bash exceto os devops, em TODAS as squads** (inclusive as sem devops — lá push é sempre do usuário/lead). Garantia dura: push é autoridade exclusiva do DevOps.
+- **`guard-push-branch.sh`** — nos 2 devops (`dev-devops`, `sites-devops`): push permitido só quando a branch do repositório alvo **e** toda ref de destino são `main`/`master`; detached HEAD ou branch indeterminável bloqueiam. Fora da `main` **o bloqueio é sempre aplicado** — um hook não consegue verificar "pedido explícito do usuário" (só vê o comando e o cwd), e não existe override por env ou texto no comando. Nesse caso o agente pede ao usuário que faça o push manualmente (ou volte para a `main`).
+- **`block-worktree.sh`** — registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings. Instalado sempre pelo `*install`.
+
+**Gates de task (`TaskCreated` / `TaskCompleted`)** — leem os campos reais do payload (`task_subject`, `task_description`, `cwd`):
+
+- **`task-quality.sh`** — `TaskCreated`: rejeita task vaga — título curto/genérico ou sem descrição.
+- **`check-story-progress.sh`** — `TaskCompleted`: task que referencia story só fecha com `## QA Results` ou `status: done|in-review` na story (em `docs/smart-memory/stories/{active,in-review,done}/`).
+- **`check-social-progress.sh`** — `TaskCompleted`: task de publicação social só fecha com aprovação registrada (VERA/strategist).
+- **`check-proposal-progress.sh`** — `TaskCompleted`: task de emissão/envio de proposta ou deck (squad Sales) só fecha com veredicto **PASS** do `sales-qa` **e** confirmação explícita do usuário registradas na descrição.
+- **`check-finance-progress.sh`** — `TaskCompleted`: task de **execução financeira** (pagar, transferir, PIX, boleto, nota, guia, cobrança enviada, relatório enviado — squad Finance) só fecha com **PASS** do `finance-qa` **e** confirmação explícita do usuário. Task de preparação (preparar lote, conciliar, calcular) não dispara.
+- **`check-legal-progress.sh`** — `TaskCompleted`: task de **saída jurídica** (enviar minuta/notificação, assinar, protocolar, publicar termos — squad Legal) só fecha com **PASS** do `legal-qa` **e** confirmação explícita do usuário. Task de preparação (redigir, revisar, registrar) não dispara.
+
+**Sessão**
+
+- **`team-os-session-title.sh`** — `SessionStart`: nomeia a sessão por "projeto · branch", preservando o padrão `<PASTA> | <Título>`. Instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`.
 
 `TeammateIdle` fica como receita opcional (ver `team-os/reference/hooks-de-time.md` — hook incondicional cria loop infinito). Settings padrão também garantem `subagentPromptCacheTtl: "1h"`.
 
@@ -534,42 +602,57 @@ Referenciados no frontmatter dos agentes e em `.claude/hooks/`:
 
 ```
 .claude/
-├── agents/              ← 80 definições de agentes (fonte da verdade)
-├── hooks/               ← hooks de qualidade
-│   ├── block-git-push.sh
-│   ├── block-worktree.sh          ← anti-worktree: bloqueia isolation: worktree, EnterWorktree e git worktree add (registrado no settings.json de cada projeto)
-│   ├── guard-push-branch.sh       ← devops: push só na main/master
+├── agents/              ← 95 definições de agentes (fonte da verdade)
+├── hooks/               ← 10 hooks de qualidade (ver §10)
+│   ├── block-git-push.sh          ← PreToolUse: bloqueia push em todo agente com Bash exceto devops
+│   ├── block-worktree.sh          ← PreToolUse (settings.json): bloqueia isolation: worktree, EnterWorktree, git worktree add e criação de branch
+│   ├── guard-push-branch.sh       ← PreToolUse (devops): push só na main/master; fora dela bloqueio sempre aplicado
 │   ├── task-quality.sh            ← TaskCreated: rejeita task vaga
-│   ├── check-story-progress.sh
-│   ├── check-social-progress.sh
+│   ├── check-story-progress.sh    ← TaskCompleted: story só fecha com evidência de QA
+│   ├── check-social-progress.sh   ← TaskCompleted: publicação só com aprovação registrada
 │   ├── check-proposal-progress.sh ← TaskCompleted: envio de proposta só com PASS + confirmação do usuário
 │   ├── check-finance-progress.sh  ← TaskCompleted: execução financeira só com PASS + confirmação do usuário
 │   ├── check-legal-progress.sh    ← TaskCompleted: saída jurídica só com PASS + confirmação do usuário
-│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch"; preserva o padrão "<PASTA> | <Título>" (instalado globalmente em ~/.claude/hooks/ pelo *install)
+│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado em ~/.claude/hooks/ pelo *install)
 └── skills/              ← 108 skills (diretórios reais)
     ├── sala-de-controle/        ← Sala de Controle (opt-in, sessões do Claude Code): SKILL.md + scripts/{refresh,scan-sessions,session-tail,project-context,org-map}.py + scripts/painel/{collect.py,serve.py,index.html} (mapa vivo, `*painel`) + templates/{panorama,registry,dispatches,organizacao}.md
     ├── maestri-os/              ← Sala de Controle (opt-in, recurso Maestri): SKILL.md + scripts/scan-project.sh + templates/{registry,overview,dispatches}.md
+    ├── seo/                     ← orquestradora da squad SEO + runtime Python (scripts/, schema/, data/, pdf/, hooks/); .venv/ e ms-playwright/ são runtime local (gitignored)
     ├── team-os/                 ← orquestração (distribuída aos projetos)
-    │   ├── templates/story.md           ← template canônico de story
-    │   ├── reference/obsidian-patterns.md
+    │   ├── templates/                   ← story.md (template canônico de story) · digest.md
+    │   ├── reference/                   ← estrutura-smart-memory · obsidian-patterns · compact-flow · settings-canonico · hooks-de-time · session-naming · spawn-prompts · proposta-de-time · skills-por-agente · controle-do-time · otimizacao-de-tokens · arquitetura-de-referencia · claude-md-block · troubleshooting
     │   └── scripts/
-    │       ├── discovery.sh             ← Smart-Memory Discovery Engine (self-contained)
+    │       ├── discovery.sh             ← Smart-Memory Discovery Engine (cria agents/<squad>/<área>/ lendo a linha "Área na smart-memory" dos agentes; --repair completa/migra)
+    │       ├── ensure-settings.sh       ← merge idempotente do settings.json do projeto (env, bgIsolation, hooks)
     │       ├── weigh-memory.sh          ← pesa a smart-memory no bootstrap (sinaliza se pesada)
-    │       └── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
+    │       ├── compact-memory.sh        ← *compact: arquiva o frio → _archive/ + LEDGER
+    │       └── sm-find.sh               ← busca L1 pelos `summary` das notas
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
-        ├── templates/           ← 9 templates de archetype + pressure-scenarios/ (13 cenários)
-        ├── reference/           ← archetypes, smart-memory, catálogo de skills, pressure-testing
-        ├── scripts/             ← validate-agent.sh · scan-ct-projects.sh · dashboard.sh · diff · install (--squads none --extra-skills p/ Sala de Controle) · generate-agents-page.py
-        └── presets/             ← 9 presets de squad (dev, sites, social, traffic, pm, sales, brand, finance, legal)
+        ├── templates/           ← 9 templates de archetype + agents-page.html.tpl + pressure-scenarios/ (13 cenários)
+        ├── reference/           ← archetypes · native-teams-protocol · smart-memory-integration · mcp-servers · skills-catalog-quality · pressure-testing
+        ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · install-suggested-skills.sh · search-skills.sh · preflight.sh · generate-agents-page.py
+        └── presets/             ← 10 presets de squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo)
 
-.github/workflows/audit.yml  ← CI: valida agentes + 0 symlinks quebrados a cada push
+.github/workflows/audit.yml  ← CI: validate-agent.sh (+ --skills) · test-hooks.sh · sintaxe dos scripts · 0 symlinks quebrados · contagens do README/CLAUDE.md · zero caminho de máquina · docs/agentes.html atualizado
+docs/agentes.html            ← página oficial dos agentes (gerada — ver §13)
+LICENSE · THIRD_PARTY_NOTICES.md · CHANGELOG.md · CONTRIBUTING.md
+```
 
-docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
-├── INDEX.md             ← MOC raiz (todos leem ao iniciar)
-├── project/   architecture/   decisions/
-├── stories/ (backlog/active/in-review/done)
-├── research/   modules/   qa/
-└── _archive/   ← conteúdo frio compactado (fora do working set; não lido no bootstrap)
+O CT **não** versiona `docs/smart-memory/` — ela nasce em cada **projeto destino** na 1ª sessão de `/team-os` (Discovery Engine), com esta convenção (detalhes em `team-os/reference/estrutura-smart-memory.md`):
+
+```
+docs/smart-memory/                       ← no projeto destino (Obsidian)
+├── INDEX.md                             ← MOC raiz (todos leem ao iniciar)
+├── _inbox/                              ← notas rápidas da sessão, consolidadas no *compact
+├── project/                             ← overview · tech-stack · conventions · architecture · modules
+├── decisions/                           ← ADRs pontuais
+├── stories/
+│   ├── BACKLOG.md                       ← índice master
+│   └── {backlog,active,in-review,done}/ ← <id>-<slug>.md (formato do <id> livre por squad: 1.2, P3, F1…)
+├── agents/<squad>/<área>/               ← UMA área por agente instalado, cada uma com DIGEST.md
+│                                           (path na linha "**Área na smart-memory:**" de cada agente;
+│                                            ex.: agents/dev/qa/, agents/pm/planner/, agents/seo/google/)
+└── _archive/                            ← conteúdo frio compactado (fora do working set; não lido no bootstrap)
 ```
 
 > **Smart-memory v2 — "estado, não histórico".** A base é um *cache quente*, não um baú: guarda estado atual e decisões, não narrativa. Três mecanismos mantêm-na enxuta:
@@ -596,20 +679,26 @@ docs/smart-memory/       ← base de conhecimento por projeto (Obsidian)
 ## 13. Manutenção do CT
 
 ```
-1. Editar agente/skill AQUI (nunca no destino)
-2. /team-os-creator *audit       → 56/56 conforme
-3. /team-os-creator *propagate   → leva aos projetos destino
-4. commit por projeto
+1. Editar agente/skill AQUI (nunca no destino) — agentes via /team-os-creator (*create, *squad, *migrate)
+2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 95/95 agentes conformes (= *audit)
+3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 108 skills
+4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 402/402 casos dos hooks
+5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
+6. commit no CT (Conventional Commits em português; registrar no CHANGELOG.md)
+7. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
+8. commit por projeto, dentro da sessão de cada destino
 ```
 
-**Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar.
+**Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5 e ainda confere: contagens "95 agentes"/"108 skills" no README e no CLAUDE.md, zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills**. Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills** (o CI falha se estiver desatualizada). Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 
-## Requisitos
+## Licença
 
-- Claude Code com `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` em `~/.claude/settings.json`
-- Plano com suporte a Agent Teams
-- Agent Teams é experimental — ver [limitações oficiais](https://code.claude.com/docs/en/agent-teams#limitations)
+O pack **team-os** é distribuído sob a licença **MIT** — ver [LICENSE](./LICENSE) (© 2026 João Guirunas).
+
+Algumas skills em `.claude/skills/` foram importadas de projetos de terceiros e adaptadas (descrição traduzida, frontmatter padronizado, caminhos ajustados); os direitos e a licença originais permanecem com os autores, listados em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). Toda skill importada nova entra nesse arquivo antes de ser redistribuída.
+
+Mudanças relevantes ficam registradas em [CHANGELOG.md](./CHANGELOG.md) (Keep a Changelog + Conventional Commits); como contribuir está em [CONTRIBUTING.md](./CONTRIBUTING.md).

@@ -1,8 +1,8 @@
 ---
 name: brand-platform
-description: Método da plataforma de marca e da arquitetura de marca — público prioritário, território, propósito/promessa/valores/personalidade, declaração de posicionamento e onliness, provas (reasons to believe), postura do reposicionamento (o que muda, preserva, recusa), gate de 7 pontos, e os modelos de arquitetura (branded house, house of brands, endossada, híbrida) com sistema de nomes. Use ao escrever ou aprovar uma plataforma de marca, escolher direção de identidade ou organizar um portfólio de marcas.
+description: "Método da plataforma de marca e da arquitetura de marca — público prioritário, território, propósito/promessa/valores/personalidade, posicionamento e onliness, provas, postura, gate de 7 pontos e modelos de arquitetura (branded house, house of brands, endossada, híbrida). Use ao escrever ou aprovar uma plataforma de marca, escolher direção de identidade ou organizar um portfólio."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Platform — o norte antes da forma

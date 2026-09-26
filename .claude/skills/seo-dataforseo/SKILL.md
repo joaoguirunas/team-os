@@ -1,12 +1,8 @@
 ---
 name: seo-dataforseo
-description: >
-  Live SEO data via DataForSEO MCP server: SERP analysis, keyword research
-  (volume, difficulty, intent, trends), backlink profiles, on-page analysis,
-  competitor and content analysis, business listings, AI visibility (LLM
-  mention tracking), and domain analytics. Requires DataForSEO extension
-  installed. Use when user says "dataforseo", "live SERP", "keyword volume",
-  "backlink data", "AI visibility check", or "real search data".
+description: "Dados de SEO ao vivo via MCP DataForSEO — SERP, keyword research (volume, dificuldade, intenção, tendências), backlinks, on-page, concorrentes, listagens locais, visibilidade em IA (menções em LLMs) e analytics de domínio. Exige o MCP configurado. Use ao pedir 'dataforseo', 'live SERP', 'keyword volume', 'backlink data' ou 'real search data'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[command] [query]"
 license: MIT
@@ -26,15 +22,12 @@ across 9 API modules with 79+ MCP tools.
 
 ## Prerequisites
 
-This skill requires the DataForSEO extension to be installed:
-```bash
-./extensions/dataforseo/install.sh
-```
+This skill requires the DataForSEO MCP server registered in the project's `.mcp.json` (or via `claude mcp add dataforseo -e DATAFORSEO_USERNAME=<login> -e DATAFORSEO_PASSWORD=<password> -- npx -y dataforseo-mcp-server`). The bundled scripts (`dataforseo_merchant.py`, cost tracking) read the same `DATAFORSEO_USERNAME` and `DATAFORSEO_PASSWORD` environment variables. No installer script ships with this pack.
 
 **Check availability:** Before using any DataForSEO tool, verify the MCP server
 is connected by checking if `serp_organic_live_advanced` or any DataForSEO tool
-is available. If tools are not available, inform the user the extension is not
-installed and provide install instructions.
+is available. If tools are not available, inform the user the DataForSEO MCP server is not
+configured and point to the setup above.
 
 ## API Credit Awareness
 
@@ -385,7 +378,7 @@ When DataForSEO MCP tools are available, other claude-seo skills can leverage li
 
 ## Error Handling
 
-- **MCP server not connected**: Report that DataForSEO extension is not installed or MCP server is unreachable. Suggest running `./extensions/dataforseo/install.sh`
+- **MCP server not connected**: Report that the DataForSEO MCP server is not configured or unreachable. Suggest checking `.mcp.json` and the `DATAFORSEO_USERNAME` / `DATAFORSEO_PASSWORD` environment variables
 - **API authentication failed**: Report invalid credentials. Suggest checking DataForSEO API login/password in MCP config
 - **Rate limit exceeded**: Report the limit hit and suggest waiting before retrying
 - **No results returned**: Report "no data found" for the query rather than guessing. Suggest broadening the query or checking location/language codes

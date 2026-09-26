@@ -1,6 +1,6 @@
 ---
 name: tiktok-marketing
-description: Estratégia de marketing no TikTok — orgânico e ads. Pilares de conteúdo, hooks nos 3 primeiros segundos, trending sounds, hashtags, cadência, specs de Spark Ads/In-Feed e métricas de watch time. Use ao planejar conteúdo TikTok, criar campanhas TikTok Ads ou otimizar performance orgânica.
+description: "Estratégia de marketing no TikTok — orgânico e ads. Pilares de conteúdo, hooks nos 3 primeiros segundos, trending sounds, hashtags, cadência, specs de Spark Ads/In-Feed e métricas de watch time. Use ao planejar conteúdo TikTok, criar campanhas TikTok Ads ou otimizar performance orgânica."
 version: "2.0"
 updated: "2026-09-04"
 ---

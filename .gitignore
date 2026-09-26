@@ -45,3 +45,10 @@ skills-lock.json
 .codex/
 .gemini/
 .opencode/
+
+# Raiz dos projetos destino (por máquina) — usado por scan-ct-projects.sh/dashboard.sh
+.team-os-root
+
+# Python
+__pycache__/
+*.pyc

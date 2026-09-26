@@ -1,8 +1,8 @@
 ---
 name: data-sql-optimization
-description: "SQL optimization for OLTP systems: EXPLAIN analysis, indexing, schema design, migrations, HA, and security across major SQL platforms."
+description: "Otimização de SQL para sistemas OLTP — análise de EXPLAIN, indexação, schema design, migrations, alta disponibilidade (HA) e segurança nas principais plataformas SQL. Use ao investigar query lenta ou desenhar um banco relacional."
 version: "1.0"
-updated: "2026-09-04"
+updated: "2026-09-25"
 ---
 
 # SQL Optimization — Comprehensive Reference

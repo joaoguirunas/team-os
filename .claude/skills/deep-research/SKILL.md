@@ -1,11 +1,15 @@
 ---
 name: deep-research
-description: Use when the user needs multi-source research with citation tracking, evidence persistence, and structured report generation. Triggers on "deep research", "comprehensive analysis", "research report", "compare X vs Y", "analyze trends", or "state of the art". Not for simple lookups, debugging, or questions answerable with 1-2 searches.
+description: "Pesquisa multi-fonte com rastreio de citações, persistência de evidências e relatório estruturado. Use quando o usuário pedir 'deep research', 'análise abrangente', 'relatório de pesquisa', 'compare X vs Y', 'tendências' ou 'estado da arte'. Não use para consultas simples, debugging ou perguntas respondidas com 1–2 buscas."
 version: "1.0"
-updated: "2026-09-04"
+updated: "2026-09-25"
+user-invocable: true
+argument-hint: "<tema ou pergunta de pesquisa>"
 ---
 
 # Deep Research
+
+**Quando usar esta vs. `brand-research`:** esta é pesquisa multi-fonte genérica com rastreio de citações e relatório estruturado sobre qualquer tema. Para auditar uma marca, mapear concorrentes e territórios de posicionamento, use `brand-research`.
 
 ## Workflow nativo vs esta skill
 

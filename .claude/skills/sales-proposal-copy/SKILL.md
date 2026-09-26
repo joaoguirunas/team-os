@@ -1,6 +1,6 @@
 ---
 name: sales-proposal-copy
-description: Régua editorial e método de redação para propostas comerciais, decks e follow-ups — voz declarativa, arco em três aberturas, dependência do cliente escrita como compromisso conjunto, objeção respondida pelo enquadramento (nunca enunciada), número só com origem na ficha, proibições verificáveis por grep. Use ao escrever ou revisar qualquer texto que um cliente vá ler em contexto de proposta.
+description: "Régua editorial e método de redação para propostas, decks e follow-ups — voz declarativa, arco em três aberturas, dependência do cliente como compromisso conjunto, objeção respondida pelo enquadramento (nunca enunciada), número só com origem na ficha, proibições verificáveis por grep. Use ao escrever ou revisar qualquer texto que um cliente vá ler em contexto de proposta."
 version: "1.0"
 updated: "2026-09-07"
 ---

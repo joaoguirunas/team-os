@@ -1,6 +1,6 @@
 ---
 name: sites-copy
-description: Copy completa para websites — estratégia de conteúdo, frameworks de copywriting (AIDA, PAS, BAB, 4Ps, StoryBrand) e revisão editorial. Use ao planejar mensagens de um site, escrever headlines/hero/CTAs, estruturar conteúdo de páginas ou revisar copy antes de entregar.
+description: "Copy completa para websites — estratégia de conteúdo, frameworks de copywriting (AIDA, PAS, BAB, 4Ps, StoryBrand) e revisão editorial. Use ao planejar mensagens de um site, escrever headlines/hero/CTAs, estruturar conteúdo de páginas ou revisar copy antes de entregar."
 version: "1.0"
 updated: "2026-09-04"
 ---

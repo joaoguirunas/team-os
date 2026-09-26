@@ -1,6 +1,6 @@
 ---
 name: social-stitch-workflow
-description: Workflow de design com Google Stitch MCP — setup de projeto, design system, geração de screens e variantes, exportação para redes sociais. Use ao criar Key Visuals, templates de posts ou variações de design via Stitch.
+description: "Workflow de design com Google Stitch MCP — setup de projeto, design system, geração de screens e variantes, exportação para redes sociais. Use ao criar Key Visuals, templates de posts ou variações de design via Stitch."
 version: "1.0"
 updated: "2026-09-04"
 ---

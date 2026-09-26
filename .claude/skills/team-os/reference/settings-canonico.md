@@ -1,49 +1,55 @@
 # Settings.json canônico
 
-> Extraído do SKILL.md — carregar sob demanda.
+> Extraído do SKILL.md — carregar sob demanda. O `.claude/settings.json` do projeto é **garantido pelo `scripts/ensure-settings.sh`** (Fase 2-C; o `*install` também o chama) — nunca edite à mão. O script só adiciona o que falta, nunca sobrescreve valor existente (divergência vira aviso) e valida o JSON final.
 
-Configuração completa recomendada para Agent Teams:
+## `.claude/settings.json` (por projeto — o que o `ensure-settings.sh` garante)
 
-**`~/.claude/settings.json`** (global — afeta todos os projetos):
 ```json
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "teammateMode": "auto",
-  "model": "sonnet"
-}
-```
-
-**`.claude/settings.json`** (por projeto — hooks de qualidade):
-```json
-{
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "worktree": { "bgIsolation": "none" },
+  "subagentPromptCacheTtl": "1h",
   "hooks": {
-    "TeammateIdle": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Verifique se há tasks pendentes antes de encerrar.'"
-          }
-        ]
-      }
+    "PreToolUse": [
+      { "matcher": "Agent|Task|EnterWorktree",
+        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] },
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh" }] }
+    ],
+    "TaskCreated": [
+      { "matcher": "",
+        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-quality.sh" }] }
     ],
     "TaskCompleted": [
-      {
-        "matcher": "",
+      { "matcher": "",
         "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Task marcada como concluída. Validar entregável antes de prosseguir.'"
-          }
-        ]
-      }
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh" },
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-social-progress.sh" },
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-proposal-progress.sh" },
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-finance-progress.sh" },
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-legal-progress.sh" }
+        ] }
     ]
   }
 }
 ```
+
+- `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"` — só vale para sessões iniciadas depois (Gate 0 checa o runtime).
+- `worktree.bgIsolation = "none"` + `block-worktree.sh` em dois matchers — trava anti-worktree (regra dura).
+- `subagentPromptCacheTtl = "1h"` — cache de prompt dos teammates.
+- Hooks de time: `TaskCreated` (task vaga) e os 5 gates de `TaskCompleted` — ver `reference/hooks-de-time.md`. `TeammateIdle` **não** é instalado por padrão.
+- Os scripts referenciados precisam existir em `.claude/hooks/` do projeto — o `ensure-settings.sh` avisa se faltarem (`/team-os-creator *propagate` no CT os distribui).
+
+## `~/.claude/settings.json` (global — sugerido, não gerenciado pelo script)
+
+```json
+{
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "teammateMode": "auto"
+}
+```
+
+O `*install` também instala o hook global `SessionStart` (`~/.claude/hooks/team-os-session-title.sh`) — ver `reference/session-naming.md`. Não fixe `model` no settings global por causa do team-os: a política de modelos é **por agente** (`model:` no arquivo — Híbrido).
 
 **`teammateMode` — opções:**
 | Valor | Comportamento |

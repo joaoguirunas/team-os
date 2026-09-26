@@ -3,6 +3,12 @@
 # TaskCreated hook — quality gate de criação de tasks (Agent Teams).
 # Exit 2 NEGA a criação da task (feedback via stderr); exit 0 permite.
 #
+# Payload real do evento (doc oficial de hooks): stdin JSON com
+#   task_id, task_subject, task_description (opcional), teammate_name, team_name
+#   + campos comuns (session_id, cwd, hook_event_name, ...).
+# Chaves primárias: task_subject (título) e task_description (descrição).
+# Fallback (payloads antigos/aninhados): title|subject|name e description|body|content|details|prompt.
+#
 # Rejeita task com título vago:
 #   • menos de 12 caracteres, OU
 #   • só palavras genéricas (todo, fix, work, task, ajuste, coisa), OU
@@ -45,7 +51,8 @@ def pick(d, keys):
             return v.strip()
     return ""
 
-# A task pode vir no topo do payload, em tool_input ou num objeto "task"
+# A task vem no topo do payload (task_subject/task_description); payloads antigos
+# podem trazê-la em tool_input ou num objeto "task".
 candidates = [data]
 for key in ("task", "tool_input", "input"):
     v = data.get(key)
@@ -57,8 +64,8 @@ for key in ("task", "tool_input", "input"):
 
 title = desc = ""
 for c in candidates:
-    title = title or pick(c, ("title", "subject", "name"))
-    desc = desc or pick(c, ("description", "body", "content", "details", "prompt"))
+    title = title or pick(c, ("task_subject", "title", "subject", "name"))
+    desc = desc or pick(c, ("task_description", "description", "body", "content", "details", "prompt"))
 
 if not title:
     # Formato de payload desconhecido → nao bloquear
@@ -75,17 +82,18 @@ elif not desc:
     print("BLOCK:task sem descricao nenhuma")
 else:
     print("OK")
-' 2>/dev/null)
+' 2>&1)
   case "$VERDICT" in
     BLOCK:*) reject "${VERDICT#BLOCK:}" ;;
-    *) exit 0 ;;
+    OK) exit 0 ;;
+    *) echo "⚠️ task-quality.sh: python3 falhou (${VERDICT:-sem saída}) — usando fallback grep." >&2 ;;
   esac
 fi
 
 # ── Fallback sem python3: checagem mínima do título via grep/sed ─────────────
 TITLE=$(printf '%s' "$INPUT" \
-  | grep -oE '"(title|subject)"[[:space:]]*:[[:space:]]*"([^"\\]|\\.)*"' \
-  | head -1 | sed -E 's/^"(title|subject)"[[:space:]]*:[[:space:]]*"//; s/"$//')
+  | grep -oE '"(task_subject|title|subject)"[[:space:]]*:[[:space:]]*"([^"\\]|\\.)*"' \
+  | head -1 | sed -E 's/^"(task_subject|title|subject)"[[:space:]]*:[[:space:]]*"//; s/"$//')
 if [ -n "$TITLE" ] && [ "${#TITLE}" -lt 12 ]; then
   reject "título muito curto (menos de 12 caracteres): \"$TITLE\" (fallback sem python3)"
 fi

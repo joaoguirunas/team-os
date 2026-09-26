@@ -1,6 +1,6 @@
 ---
 name: traffic-analytics-tracking
-description: Implementação e auditoria de analytics — GA4, Google Tag Manager, tracking plans, convenções de eventos, UTMs, atribuição multi-touch e validação de dados. Use ao configurar ou auditar GA4/GTM, definir plano de eventos, padronizar UTMs, medir campanhas, investigar discrepância de atribuição ou validar conversion tracking antes de campanha subir.
+description: "Implementação e auditoria de analytics — GA4, Google Tag Manager, tracking plans, convenções de eventos, UTMs, atribuição multi-touch e validação de dados. Use ao configurar ou auditar GA4/GTM, definir plano de eventos, padronizar UTMs, medir campanhas, investigar discrepância de atribuição ou validar conversion tracking antes de campanha subir."
 version: "1.0"
 updated: "2026-08-26"
 ---

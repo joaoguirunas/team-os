@@ -1,6 +1,6 @@
 ---
 name: social-heygen-avatar
-description: Geração de vídeo com avatar AI via HeyGen — talking-head, image-to-video, dublagem multilíngue e seleção de voz. Use ao criar vídeo com apresentador virtual, transformar imagem em vídeo, dublar conteúdo para outros idiomas ou escolher avatar e voz para campanha.
+description: "Geração de vídeo com avatar AI via HeyGen — talking-head, image-to-video, dublagem multilíngue e seleção de voz. Use ao criar vídeo com apresentador virtual, transformar imagem em vídeo, dublar conteúdo para outros idiomas ou escolher avatar e voz para campanha."
 version: "1.0"
 updated: "2026-09-04"
 ---

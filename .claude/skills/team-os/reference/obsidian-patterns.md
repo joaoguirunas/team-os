@@ -91,7 +91,7 @@ Regra: o `_inbox/` **não é leitura de bootstrap** — ninguém precisa lê-lo 
 
 A leitura de memória tem 3 níveis — pare no mais raso que resolver:
 
-- **L0 — DIGEST da área** (`agents/<área>/DIGEST.md`): única leitura obrigatória do bootstrap,
+- **L0 — DIGEST da área** (`agents/<squad>/<área>/DIGEST.md`): única leitura obrigatória do bootstrap,
   além do INDEX e das stories ativas. Orçamento: `weigh-memory.sh` mede esse custo por área
   (`WEIGH_BOOTSTRAP_*`, budget default 2000 tokens).
 - **L1 — `sm-find.sh <termos>`**: busca por metadados (kind/status/summary/tags/H1/filename).
@@ -138,7 +138,7 @@ agent: {architect}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 tags: [architecture, {domínio}]
-related: ["[[../agents/research/{tema}]]"]
+related: ["[[../agents/<squad>/research/{tema}]]"]
 ---
 ```
 

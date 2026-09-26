@@ -1,12 +1,8 @@
 ---
 name: seo-google
-description: >
-  Google SEO APIs: Search Console (Search Analytics, URL Inspection, Sitemaps),
-  PageSpeed Insights v5, CrUX field data with 25-week history, Indexing API v3,
-  and GA4 organic traffic. Provides real Google field data for Core Web Vitals,
-  indexation status, search performance, and organic traffic trends. Use when
-  user says "search console", "GSC", "PageSpeed", "CrUX", "field data",
-  "indexing API", "GA4 organic", "URL inspection", or "real CWV data".
+description: "APIs Google de SEO — Search Console (Search Analytics, URL Inspection, Sitemaps), PageSpeed Insights v5, CrUX com 25 semanas de histórico, Indexing API v3 e tráfego orgânico do GA4; dados de campo reais de Core Web Vitals e indexação. Use ao pedir 'search console', 'GSC', 'PageSpeed', 'CrUX', 'field data', 'indexing API' ou 'GA4 organic'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[command] [url|property]"
 license: MIT
@@ -17,6 +13,8 @@ metadata:
 ---
 
 # Google SEO APIs
+
+**Quando usar esta vs. `traffic-ga4-mcp`:** esta cobre as APIs Google de SEO (Search Console, PageSpeed, CrUX, Indexing, GA4 orgânico). Para relatórios GA4 de campanhas pagas, validação de UTMs e conversões de ads, use `traffic-ga4-mcp`.
 
 Direct access to Google's own SEO data. Bridges the gap between crawl-based
 analysis (existing claude-seo skills) and Google's real-time field data: actual

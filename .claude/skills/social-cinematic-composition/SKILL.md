@@ -1,6 +1,6 @@
 ---
 name: social-cinematic-composition
-description: Composição cinematográfica para fotos e vídeos sociais — regras de enquadramento, color grading e linguagem visual. Use ao dirigir ou avaliar imagens e vídeos, definir enquadramentos e composição, aplicar color grading ou elevar a qualidade estética de conteúdo visual.
+description: "Composição cinematográfica para fotos e vídeos sociais — regras de enquadramento, color grading e linguagem visual. Use ao dirigir ou avaliar imagens e vídeos, definir enquadramentos e composição, aplicar color grading ou elevar a qualidade estética de conteúdo visual."
 version: "1.0"
 updated: "2026-09-04"
 ---

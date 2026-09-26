@@ -1,8 +1,8 @@
 ---
 name: brand-tracking
-description: Método de medição de marca — scorecard com funil (awareness, consideração, preferência, recomendação), atributos de percepção da plataforma, share of voice, sentimento, consistência de aplicação e métricas de negócio que a marca deve mover; definição operacional, fonte, cadência e limitações de cada métrica; instrumentos (survey de atributos, roteiro de menções); linha de base travada antes da virada e leitura do depois com o mesmo método; ficha de números com id. Use ao definir o que medir num reposicionamento, fixar o antes, ler o depois ou validar qualquer número de marca.
+description: "Método de medição de marca — scorecard com funil (awareness, consideração, preferência, recomendação), atributos de percepção, share of voice, sentimento, consistência e métricas de negócio; definição, fonte e cadência por métrica; linha de base antes e leitura depois; ficha de números com id. Use ao definir o que medir, fixar o antes, ler o depois ou validar um número de marca."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Tracking — o antes, o depois, e nenhum número sem dono

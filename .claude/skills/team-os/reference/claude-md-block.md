@@ -9,7 +9,7 @@
 Este projeto mantém sua base de conhecimento em `docs/smart-memory/` (formato Obsidian). Ela é a **fonte de verdade** de contexto do projeto — toda sessão, agente ou teammate a lê e a alimenta. Contrato mínimo:
 
 **Leitura em camadas (summary-first — obrigatório):**
-1. **L0** — ao iniciar: ler `docs/smart-memory/INDEX.md` + o `DIGEST.md` da sua área (`agents/<área>/DIGEST.md`) + as stories ativas (`stories/active/*.md`). Nada além disso no bootstrap.
+1. **L0** — ao iniciar: ler `docs/smart-memory/INDEX.md` + o `DIGEST.md` da sua área (`agents/<squad>/<área>/DIGEST.md` — o path está na linha `**Área na smart-memory:**` do seu arquivo de agente) + as stories ativas (`stories/active/*.md`; stories vivem em `stories/{backlog,active,in-review,done}/<id>-<slug>.md`, índice em `stories/BACKLOG.md`). Nada além disso no bootstrap.
 2. **L1** — para achar contexto além do L0: buscar pelos summaries com
    `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" "<termo>"`
    (saída: `path / kind / status / summary`) — nunca abrir arquivos para "procurar".

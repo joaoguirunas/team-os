@@ -1,8 +1,8 @@
 ---
 name: data-lake-platform
-description: "Data lake and lakehouse patterns: ingestion, CDC, Iceberg/Delta/Hudi, Trino/DuckDB, orchestration, and governance. Self-hosted and cloud."
+description: "Padrões de data lake e lakehouse — ingestão, CDC, Iceberg/Delta/Hudi, Trino/DuckDB, orquestração e governança, self-hosted ou em nuvem. Use ao desenhar ou operar uma plataforma de dados."
 version: "1.0"
-updated: "2026-09-04"
+updated: "2026-09-25"
 ---
 
 # Data Lake Platform

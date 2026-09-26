@@ -1,6 +1,6 @@
 ---
 name: social-analytics
-description: Análise de métricas de redes sociais — KPIs por objetivo, benchmarks por plataforma, templates de relatório e otimização baseada em dados. Use ao analisar performance de campanhas sociais, montar relatório de métricas, comparar resultados com benchmarks ou decidir ajustes de conteúdo com base em dados.
+description: "Análise de métricas de redes sociais — KPIs por objetivo, benchmarks por plataforma, templates de relatório e otimização baseada em dados. Use ao analisar performance de campanhas sociais, montar relatório de métricas, comparar resultados com benchmarks ou decidir ajustes de conteúdo com base em dados."
 version: "1.0"
 updated: "2026-09-04"
 ---

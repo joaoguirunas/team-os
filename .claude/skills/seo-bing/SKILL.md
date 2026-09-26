@@ -1,9 +1,13 @@
 ---
 name: seo-bing
-description: Bing Webmaster Tools + IndexNow extension. Microsoft Copilot citations are fed by the Bing index; this skill makes Bing visibility, link data, and IndexNow URL submission first-class.
+description: "Bing Webmaster Tools + IndexNow — visibilidade no Bing (que alimenta as citações do Microsoft Copilot), dados de links e submissão de URLs via IndexNow. Use para indexação fora do Google (Bing, Yandex, Naver) ou citação no Copilot."
+version: "2.3.1"
+updated: "2026-09-25"
+user-invocable: true
+argument-hint: "[links|compare|submit|submit-batch|verify-indexnow] <url>"
 metadata:
   version: "2.3.1"
-compatibility: "Requires BING_WEBMASTER_API_KEY and (optionally) INDEXNOW_KEY in ~/.claude/settings.json env. Run extensions/bing-webmaster/install.sh to configure."
+compatibility: "Exige BING_WEBMASTER_API_KEY e, opcionalmente, INDEXNOW_KEY e INDEXNOW_KEY_LOCATION como variáveis de ambiente (ex.: bloco env do ~/.claude/settings.json)."
 ---
 
 # seo-bing
@@ -15,8 +19,7 @@ specifically for **Amazon/Bing/Naver/Seznam.cz/Yandex/Yep indexing** and
 
 ## Prerequisites
 
-- Run `extensions/bing-webmaster/install.sh` or `install.ps1`.
-- A Bing Webmaster Tools API key.
+- A Bing Webmaster Tools API key exported as `BING_WEBMASTER_API_KEY` (environment variable, e.g. in the `env` block of `~/.claude/settings.json`). The scripts read it directly; there is no installer script in this pack.
 - Optional: an IndexNow host key (32+ chars) published at the URL
   declared as `INDEXNOW_KEY_LOCATION`.
 

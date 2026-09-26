@@ -1,6 +1,6 @@
 ---
 name: dev-git-workflow
-description: Git workflow para projetos de software complexo — branch strategy, conventional commits, PR templates, merge flows e regras de autoridade.
+description: "Git workflow para projetos de software complexo — branch strategy, conventional commits, PR templates, merge flows e regras de autoridade."
 version: "1.1"
 updated: "2026-04-21"
 ---

@@ -1,6 +1,6 @@
 ---
 name: data-supabase-patterns
-description: Melhores práticas de Postgres e Supabase — indexação, RLS performática, connection pooling, schema design, locking e diagnóstico com EXPLAIN. Use ao escrever queries SQL, criar migrations, desenhar schema, implementar políticas RLS, otimizar queries lentas ou investigar timeouts e problemas de conexão em projetos Supabase/Postgres.
+description: "Melhores práticas de Postgres e Supabase — indexação, RLS performática, connection pooling, schema design, locking e diagnóstico com EXPLAIN. Use ao escrever queries SQL, criar migrations, desenhar schema, implementar políticas RLS, otimizar queries lentas ou investigar timeouts e problemas de conexão em projetos Supabase/Postgres."
 version: "1.0"
 updated: "2026-09-04"
 ---

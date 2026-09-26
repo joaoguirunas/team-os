@@ -1,10 +1,13 @@
 ---
 name: startup-financial-modeling
-description: Build comprehensive 3-5 year financial models with revenue projections, cost structures, cash flow analysis, and scenario planning for early-stage startups. Use this skill when creating financial projections, calculating burn rate or runway, modeling fundraising scenarios, or preparing investor-ready financials for a seed or Series A raise.
-version: 1.0.0
+description: "Modelo financeiro de 3–5 anos para startups early-stage — projeção de receita, estrutura de custos, fluxo de caixa e cenários. Use ao criar projeções, calcular burn rate ou runway, modelar rodadas de captação ou preparar financials para investidor (seed, Series A)."
+version: "1.0.0"
+updated: "2026-09-25"
 ---
 
 # Startup Financial Modeling
+
+**Quando usar esta vs. `finance-cash-flow`:** esta monta o modelo financeiro de 3–5 anos para captação (receita, custos, cenários, runway para investidor). Para o plano de caixa operacional de 13 semanas sobre o fechamento real da empresa, use `finance-cash-flow`.
 
 Build comprehensive 3-5 year financial models with revenue projections, cost structures, cash flow analysis, and scenario planning for early-stage startups.
 

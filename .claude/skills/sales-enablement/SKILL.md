@@ -1,6 +1,8 @@
 ---
 name: sales-enablement
-description: "When the user wants to create sales collateral, pitch decks, one-pagers, objection handling docs, or demo scripts. Also use when the user mentions 'sales deck,' 'pitch deck,' 'one-pager,' 'leave-behind,' 'objection handling,' 'deal-specific ROI analysis,' 'demo script,' 'talk track,' 'sales playbook,' 'proposal template,' 'buyer persona card,' 'help my sales team,' 'sales materials,' or 'what should I give my sales reps.' Use this for any document or asset that helps a sales team close deals. For competitor comparison pages and battle cards, see competitors. For marketing website copy, see copywriting. For cold outreach emails, see cold-email. For the offer being sold (bonuses, guarantees, pricing structure), see offers."
+description: "Materiais para o time de vendas — sales deck, pitch deck, one-pager, leave-behind, doc de objeções, análise de ROI por deal, demo script, talk track, playbook, template de proposta e buyer persona. Use ao criar qualquer documento ou asset que ajude vendedores a fechar negócios."
+version: "2.0.1"
+updated: "2026-09-25"
 metadata:
   version: 2.0.1
 ---
@@ -336,16 +338,6 @@ If context is missing, ask:
 3. What sales stage is it for? (prospecting, discovery, demo, negotiation, close)
 4. Who is the target persona? (title, seniority, department)
 5. What are the top 3 objections you hear most?
-
----
-
-## Tool Integrations
-
-For partner sales enablement, see the [tools registry](../../tools/REGISTRY.md):
-
-| Tool | What It Does | Guide |
-|------|-------------|-------|
-| **Introw** | Partner engagement tracking, deal registration, mutual action plans | [introw.md](../../tools/integrations/introw.md) |
 
 ---
 

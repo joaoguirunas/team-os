@@ -1,8 +1,8 @@
 ---
 name: finance-reporting
-description: Método do relatório financeiro — estrutura do relatório mensal para sócios (resumo, alertas, receita, custos, margem, caixa e runway, inadimplência, realizado vs plano, obrigações, decisões pedidas), dicionário de indicadores com definição operacional, fórmula, `#id`, cadência e meta da política, regra do `#id` do fechamento FECHADO em todo número, régua de linguagem sem "aproximadamente" e sem alerta suavizado, variações para investidor e banco e o ciclo de PASS, confirmação e envio pelo usuário. Use ao escrever ou revisar o relatório mensal, definir ou alterar um indicador, ou preparar relatório para investidor ou banco.
+description: "Método do relatório financeiro — relatório mensal para sócios (resumo, alertas, receita, custos, margem, caixa, runway, inadimplência, realizado vs plano), dicionário de indicadores com fórmula e `#id`, todo número com `#id` do fechamento FECHADO, sem 'aproximadamente'. Use ao escrever ou revisar o relatório mensal, definir indicador ou preparar relatório para investidor ou banco."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Finance Reporting — cada número com `#id`, cada alerta no tamanho real

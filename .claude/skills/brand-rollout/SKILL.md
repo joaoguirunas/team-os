@@ -1,8 +1,8 @@
 ---
 name: brand-rollout
-description: Método de implantação de um reposicionamento — pré-condições (voz e visual com PASS, baseline travada, ordem de migração, confirmação do usuário), inventário de ativos com destino (mantém, migra, aposenta), fases interno → transição → externo, ordem por canal e visibilidade, checklist de aplicação por canal, kit de handoff (o brand.md que cada projeto recebe), ledger da virada com evidência e desligamentos datados. Use ao planejar ou conduzir a virada de uma marca nos canais e ao preparar o material que as squads de site, social, tráfego e propostas vão seguir.
+description: "Método de implantação de um reposicionamento — pré-condições (voz e visual com PASS, baseline travada, confirmação do usuário), inventário de ativos (mantém, migra, aposenta), fases interno → transição → externo, checklist por canal, kit de handoff e ledger da virada. Use ao planejar ou conduzir a virada de uma marca nos canais e preparar o material das outras squads."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Rollout — a virada, na ordem certa, sem executar no canal

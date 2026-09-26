@@ -1,11 +1,13 @@
 ---
 name: brand-research
-description: Método de pesquisa para reposicionamento de marca — auditoria da marca como ela é hoje (promessa por canal, ativos, coerência, percepção externa com citação), mapa de concorrentes e territórios de posicionamento, síntese de públicos na linguagem deles, benchmarks com fonte primária e a regra do que é achado vs. o que é recomendação. Use antes de qualquer decisão de posicionamento, ao auditar uma marca, mapear concorrentes ou levantar como o público fala da categoria.
+description: "Método de pesquisa para reposicionamento — auditoria da marca como ela é hoje (promessa por canal, ativos, coerência, percepção externa com citação), mapa de concorrentes e territórios, síntese de públicos na linguagem deles, benchmarks com fonte primária e a regra achado vs. recomendação. Use antes de qualquer decisão de posicionamento, ao auditar uma marca ou mapear concorrentes."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Research — a marca como ela é, antes da marca como vai ser
+
+**Quando usar esta vs. `deep-research`:** esta é o método de pesquisa de marca (auditoria, concorrentes, públicos, benchmarks) que alimenta o reposicionamento. Para pesquisa profunda sobre qualquer outro tema com rastreio de citações, use `deep-research`.
 
 Reposicionar sem diagnóstico é trocar um problema que você não conhece por outro que você inventou. A pesquisa de marca responde a quatro perguntas, **com fonte**: o que a marca promete hoje em cada canal (e onde se contradiz), como é percebida por quem está fora, quem ocupa os territórios vizinhos, e como o público fala da categoria com as próprias palavras. Quem pesquisa entrega achados; quem decide o território é outro.
 

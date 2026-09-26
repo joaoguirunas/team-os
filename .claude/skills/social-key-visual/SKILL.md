@@ -1,6 +1,6 @@
 ---
 name: social-key-visual
-description: Criação de Key Visuals para campanhas sociais — identidade visual, paleta, tipografia e elemento central de campanha. Use ao criar o visual principal de uma campanha, definir paleta e tipografia, ou garantir consistência visual entre todas as peças derivadas.
+description: "Criação de Key Visuals para campanhas sociais — identidade visual, paleta, tipografia e elemento central de campanha. Use ao criar o visual principal de uma campanha, definir paleta e tipografia, ou garantir consistência visual entre todas as peças derivadas."
 version: "1.0"
 updated: "2026-09-04"
 ---

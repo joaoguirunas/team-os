@@ -1,8 +1,8 @@
 ---
 name: sales-discovery-intake
-description: Transformar reunião, transcrição, resumo ou troca de e-mails com um cliente em ficha de intake estruturada — dores priorizadas na linguagem do cliente, stack e processo atual, sinais de compra, objeções e sensibilidades, decisor e ponto focal, números declarados e pendências com a pergunta pronta. Use antes de planejar qualquer proposta comercial, ao receber material de reunião ou quando faltar dado do cliente.
+description: "Transformar reunião, transcrição, resumo ou e-mails com um cliente em ficha de intake — dores priorizadas na linguagem do cliente, stack e processo atual, sinais de compra, objeções, decisor e ponto focal, números declarados e pendências com a pergunta pronta. Use antes de planejar qualquer proposta, ao receber material de reunião ou quando faltar dado do cliente."
 version: "1.0"
-updated: "2026-09-07"
+updated: "2026-09-25"
 ---
 
 # Sales Discovery Intake — da reunião à ficha

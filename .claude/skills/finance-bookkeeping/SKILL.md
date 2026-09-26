@@ -1,8 +1,8 @@
 ---
 name: finance-bookkeeping
-description: Método da escrituração gerencial — plano de contas com grupos, contas e regras de classificação, categorização de lançamentos só com documento, conciliação bancária item a item entre extrato e lançamentos, tratamento de diferenças com hipótese, estorno documentado em vez de exclusão, DRE gerencial, fechamento mensal com `#id` por número e o checklist que decide se o mês está ABERTO ou FECHADO. Use ao classificar lançamentos, conciliar uma conta, montar ou revisar o plano de contas, produzir a DRE ou fechar o mês.
+description: "Método da escrituração gerencial — plano de contas com regras de classificação, categorização só com documento, conciliação bancária item a item, tratamento de diferenças, estorno documentado, DRE, fechamento mensal com `#id` por número e checklist ABERTO/FECHADO. Use ao classificar lançamentos, conciliar uma conta, revisar o plano de contas, produzir a DRE ou fechar o mês."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Finance Bookkeeping — nenhum número sem conciliação, nenhum ajuste sem motivo

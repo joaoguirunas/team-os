@@ -1,6 +1,6 @@
 ---
 name: sites-scroll-motion
-description: Scroll cinematográfico, parallax, animações avançadas e cenas 3D para websites — do CSS puro ao Three.js WebGPU. Use ao implementar efeitos de scroll, parallax, animações scroll-triggered ou cenas 3D em sites que pedem experiência imersiva, em Next.js ou Astro.
+description: "Scroll cinematográfico, parallax, animações avançadas e cenas 3D para websites — do CSS puro ao Three.js WebGPU. Use ao implementar efeitos de scroll, parallax, animações scroll-triggered ou cenas 3D em sites que pedem experiência imersiva, em Next.js ou Astro."
 version: "1.1"
 updated: "2026-09-20"
 ---

@@ -1,11 +1,13 @@
 ---
 name: social-freepik-generation
-description: Geração de imagens AI via Freepik para conteúdo social — prompts eficazes, estilos fotográficos e especificações por formato. Use ao gerar fotos e imagens AI para posts, capas ou campanhas, escrever prompts de imagem ou escolher estilo fotográfico por formato de peça.
+description: "Geração de imagens AI via Freepik para conteúdo social — prompts eficazes, estilos fotográficos e especificações por formato. Use ao gerar fotos e imagens AI para posts, capas ou campanhas, escrever prompts de imagem ou escolher estilo fotográfico por formato de peça."
 version: "1.0"
 updated: "2026-09-04"
 ---
 
 # Social Freepik Generation — Geração de Imagens AI
+
+**Quando usar esta vs. `seo-images`:** esta *gera* imagens AI via Freepik para conteúdo social. Para auditar e otimizar imagens de um site (alt text, peso, WebP/AVIF, CLS), use `seo-images`.
 
 > Skill injetada no agente IRIS (social-photo).
 

@@ -1,6 +1,6 @@
 ---
 name: nextjs-react-best-practices
-description: Melhores práticas de performance para React e Next.js (App Router) — eliminar waterfalls, reduzir bundle, otimizar Server Components, data fetching, re-renders e Core Web Vitals. Use ao escrever ou revisar componentes React, páginas Next.js, data fetching (server ou client), ou ao investigar bundle size, hydration e lentidão de render.
+description: "Melhores práticas de performance para React e Next.js (App Router) — eliminar waterfalls, reduzir bundle, otimizar Server Components, data fetching, re-renders e Core Web Vitals. Use ao escrever ou revisar componentes React, páginas Next.js, data fetching (server ou client), ou ao investigar bundle size, hydration e lentidão de render."
 version: "1.0"
 updated: "2026-08-26"
 ---

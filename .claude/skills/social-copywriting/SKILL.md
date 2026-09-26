@@ -1,6 +1,6 @@
 ---
 name: social-copywriting
-description: Copywriting para redes sociais — legendas, hooks, CTAs e estrutura de copy por plataforma. Use ao escrever legendas de posts, criar hooks de abertura, definir CTAs ou adaptar tom e formato da copy para Instagram, TikTok, LinkedIn e outras plataformas.
+description: "Copywriting para redes sociais — legendas, hooks, CTAs e estrutura de copy por plataforma. Use ao escrever legendas de posts, criar hooks de abertura, definir CTAs ou adaptar tom e formato da copy para Instagram, TikTok, LinkedIn e outras plataformas."
 version: "1.0"
 updated: "2026-09-04"
 ---

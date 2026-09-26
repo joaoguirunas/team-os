@@ -1,6 +1,6 @@
 ---
 name: testing-playwright-e2e
-description: Melhores práticas de testes E2E com Playwright — locators resilientes, auto-waiting, isolamento de testes, fixtures, autenticação, mocking de rede, prevenção de flakiness e CI. Use ao escrever, revisar ou debugar testes Playwright, ao investigar testes flaky, ao configurar playwright.config, ou ao montar suíte E2E para webapps.
+description: "Melhores práticas de testes E2E com Playwright — locators resilientes, auto-waiting, isolamento de testes, fixtures, autenticação, mocking de rede, prevenção de flakiness e CI. Use ao escrever, revisar ou debugar testes Playwright, ao investigar testes flaky, ao configurar playwright.config, ou ao montar suíte E2E para webapps."
 version: "1.0"
 updated: "2026-08-26"
 ---

@@ -1,6 +1,6 @@
 ---
 name: dev-typescript-patterns
-description: Padrões idiomáticos de TypeScript para software complexo — types vs interfaces, generics, discriminated unions, utility types, patterns de domínio.
+description: "Padrões idiomáticos de TypeScript para software complexo — types vs interfaces, generics, discriminated unions, utility types, patterns de domínio."
 version: "1.1"
 updated: "2026-04-21"
 ---

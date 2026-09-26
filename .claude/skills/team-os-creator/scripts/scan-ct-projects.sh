@@ -2,9 +2,15 @@
 # scan-ct-projects.sh — mapeia projetos no root do Centro de Treinamento
 # e reporta, por projeto: team-os instalada, contagem de agentes, smart-memory e DRIFT vs CT.
 # Usage: scan-ct-projects.sh [CT_ROOT]
+# Raiz dos projetos, em ordem de precedência:
+#   1. argumento [CT_ROOT]
+#   2. env CT_ROOT
+#   3. arquivo .team-os-root na raiz do CT (1 linha com o caminho; `~` é expandido;
+#      gitignored — cada máquina tem o seu, nunca versionar)
+#   4. fallback: a pasta pai do git root do CT
 # Output: CT_ROOT, depois uma linha por projeto encontrado.
 
-CT_ROOT="${1:-}"
+CT_ROOT="${1:-${CT_ROOT:-}}"
 
 # Git root do projeto atual = fonte da verdade (CT)
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -25,6 +31,12 @@ hash_dir() {
     | awk '{print $1}'
 }
 
+# .team-os-root na raiz do CT (por máquina, gitignored)
+if [ -z "$CT_ROOT" ] && [ -n "$GIT_ROOT" ] && [ -f "$GIT_ROOT/.team-os-root" ]; then
+  CT_ROOT="$(sed -n '1p' "$GIT_ROOT/.team-os-root" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  case "$CT_ROOT" in "~"|"~/"*) CT_ROOT="$HOME${CT_ROOT#\~}" ;; esac
+  [ -d "$CT_ROOT" ] || { echo "ERRO: .team-os-root aponta para pasta inexistente: $CT_ROOT" >&2; exit 1; }
+fi
 # Auto-detecta root: sobe um nível acima do git root do projeto atual
 if [ -z "$CT_ROOT" ]; then
   if [ -n "$GIT_ROOT" ]; then
@@ -54,7 +66,7 @@ echo "CT_ROOT=$CT_ROOT"
 echo "---"
 
 # Candidatos: as pastas irmãs do CT. Uma pasta SEM .claude/ e SEM .git próprios que CONTÉM
-# subpastas com .claude/ é um CONTÊINER (ex.: "Scalify" com "Comercial", "Site", "Marketing"…):
+# subpastas com .claude/ é um CONTÊINER (ex.: "<Negócio>" com "Comercial", "Site", "Marketing"…):
 # seus filhos diretos entram como projetos "Contêiner/Filho" — inclusive os vazios, para
 # aparecerem como "não instalado" no dashboard. Sala de Controle nunca é contêiner.
 CANDIDATES="$(mktemp "${TMPDIR:-/tmp}/scan-ct.XXXXXX")" || exit 1

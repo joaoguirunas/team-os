@@ -35,6 +35,10 @@ if [ -f "$OUTPUT" ]; then
   exit 2
 fi
 
+# Squad = prefixo do nome (ex.: "finance-billing" → "finance") — usado em {SQUAD}
+# (linha "Área na smart-memory" e paths docs/smart-memory/agents/<squad>/<área>/)
+SQUAD="${NAME%%-*}"
+
 # Se persona vazia, usa role_title como fallback
 DISPLAY_NAME="${PERSONA:-$ROLE_TITLE}"
 
@@ -43,7 +47,7 @@ DISPLAY_NAME="${PERSONA:-$ROLE_TITLE}"
 # significado especial no replacement do sed. str.replace é literal.)
 TPL="$TEMPLATE" OUT="$OUTPUT" \
 V_NAME="$NAME" V_PERSONA="$DISPLAY_NAME" V_ROLE_TITLE="$ROLE_TITLE" \
-V_COLOR="$COLOR" V_DESCRIPTION="$DESCRIPTION" \
+V_COLOR="$COLOR" V_DESCRIPTION="$DESCRIPTION" V_SQUAD="$SQUAD" \
 python3 - <<'PYEOF'
 import os
 
@@ -56,6 +60,7 @@ for placeholder, env in (
     ("{ROLE_TITLE}", "V_ROLE_TITLE"),
     ("{COLOR}", "V_COLOR"),
     ("{DESCRIPTION}", "V_DESCRIPTION"),
+    ("{SQUAD}", "V_SQUAD"),
 ):
     text = text.replace(placeholder, os.environ.get(env, ""))
 

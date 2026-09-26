@@ -1,6 +1,6 @@
 ---
 name: dev-api-design
-description: Design de APIs para software complexo — REST, tRPC, contratos, versionamento e error responses padronizadas.
+description: "Design de APIs para software complexo — REST, tRPC, contratos, versionamento e error responses padronizadas."
 version: "1.1"
 updated: "2026-04-21"
 ---

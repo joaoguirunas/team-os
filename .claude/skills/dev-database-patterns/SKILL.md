@@ -1,6 +1,6 @@
 ---
 name: dev-database-patterns
-description: Padrões de banco de dados para software complexo — migrations seguras, indexing strategy, N+1 detection, soft deletes, connection pooling.
+description: "Padrões de banco de dados para software complexo — migrations seguras, indexing strategy, N+1 detection, soft deletes, connection pooling."
 version: "1.1"
 updated: "2026-04-21"
 ---

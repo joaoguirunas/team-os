@@ -1,12 +1,14 @@
 ---
 name: ui-ux-pro-max
-description: UI/UX design intelligence para web, mobile e desktop — banco pesquisável de estilos, paletas, pares de fonte, tipos de produto, regras de UX, presets de movimento e guias por stack. Use ao desenhar, construir, revisar ou corrigir UI/UX (landing page, dashboard, SaaS, app) ou ao escolher estilo, cor e tipografia.
+description: "UI/UX design intelligence para web, mobile e desktop — banco pesquisável de estilos, paletas, pares de fonte, tipos de produto, regras de UX, presets de movimento e guias por stack. Use ao desenhar, construir, revisar ou corrigir UI/UX (landing page, dashboard, SaaS, app) ou ao escolher estilo, cor e tipografia."
 version: "2.13.0"
 updated: "2026-09-20"
 source: "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill"
 ---
 
 # UI/UX Pro Max - Design Intelligence
+
+**Quando usar esta vs. `web-design-guidelines`:** esta ajuda a *decidir e construir* (estilo, paleta, tipografia, regras de UX por tipo de produto). Para *revisar* código UI já escrito contra as Vercel Web Interface Guidelines e listar violações file:line, use `web-design-guidelines`.
 
 Searchable local UI/UX guidance: 79 searchable styles (50 active), 192 product palettes and exact reasoning profiles, 74 font pairings, 119 UX guidelines, 105 curated icons, 17 GSAP presets, 25 chart types, and 22 technology stacks.
 

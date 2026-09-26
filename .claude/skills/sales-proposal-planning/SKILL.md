@@ -1,8 +1,8 @@
 ---
 name: sales-proposal-planning
-description: Método do planejamento interno de uma proposta comercial ou apresentação — as 9 seções (sumário, diagnóstico, enquadramento, roadmap com marcos e critério de aceite, estrutura comercial, economia interna, governança, riscos/objeções/pendências só interno, estrutura página a página do PDF), a regra do que vai e do que não vai ao cliente e o ciclo de aprovação antes da produção. Use ao planejar qualquer proposta, piloto, parceria, permuta ou captação, antes de escrever texto ou montar PDF.
+description: "Método do planejamento interno de uma proposta ou apresentação — 9 seções (sumário, diagnóstico, enquadramento, roadmap com critério de aceite, estrutura comercial, economia interna, governança, riscos e pendências internos, estrutura do PDF), o que vai ao cliente e o ciclo de aprovação. Use ao planejar proposta, piloto, parceria, permuta ou captação, antes de escrever texto ou montar PDF."
 version: "1.0"
-updated: "2026-09-07"
+updated: "2026-09-25"
 ---
 
 # Sales Proposal Planning — a planta antes da proposta

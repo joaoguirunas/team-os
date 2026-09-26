@@ -1,12 +1,11 @@
-<title>Agentes do Centro de Treinamento</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,ital,wght@9..144,0,300..700;9..144,1,300..700&display=swap" rel="stylesheet">
+<title>Agentes do team-os</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--void:#050507;--ink2:#131318;--bone:#f1f1f3;--dim:#c5c5ca;--mute:#84848c;
  --hl:rgba(255,255,255,.07);--hls:rgba(255,255,255,.16);--em:#ff3a0e;
- --dsp:'Fraunces',Georgia,serif;--sans:'Inter Tight',system-ui,sans-serif;
- --mn:'JetBrains Mono',ui-monospace,monospace}
+ --dsp:Georgia,'Iowan Old Style','Palatino Linotype','Times New Roman',serif;
+ --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+ --mn:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
 html{scroll-behavior:smooth}
 html,body{background:var(--void);color:var(--dim);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
@@ -126,7 +125,7 @@ h2{font-family:var(--dsp);font-weight:300;font-size:30px;letter-spacing:-.028em;
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.face{transition:none}}
 </style>
 <main>
-  <div class="kicker">CT · Centro de Treinamento · team-os · by João Guirunas</div>
+  <div class="kicker">team-os · agentes · by João Guirunas</div>
   <h1>{{N_AGENTS}} agentes que trabalham<br>como <em>uma equipe</em></h1>
   <p class="lede">Agentes nativos do Claude Code Agent Teams, organizados em {{N_SQUADS}} squads. Cada um com persona própria, autoridades exclusivas, smart-memory compartilhada e o Native Teams Protocol. Clique num agente para ver o perfil completo (bio, matriz de autoridade, regras absolutas) ou numa skill para ver o que ela cobre. Fonte da verdade: <code>.claude/agents/</code> deste repositório.</p>
   <div class="stats">

@@ -1,11 +1,13 @@
 ---
 name: finance-cash-flow
-description: Método do plano de caixa de 13 semanas rolling — saldo inicial conciliado, entradas por origem (contrato, ledger, histórico), saídas fixas e variáveis com data, saldo final contra o mínimo da política, gap com data e tamanho, forecast com cenários base/conservador/estresse, reserva em meses de custo fixo, runway e burn, premissas datadas com origem e a regra de atualização semanal. Use ao montar, atualizar ou aprovar um plano de caixa, forecast ou cenário, e ao calcular runway, burn ou reserva.
+description: "Método do plano de caixa de 13 semanas rolling — saldo inicial conciliado, entradas por origem, saídas fixas e variáveis, saldo contra o mínimo da política, gap com data e tamanho, cenários base/conservador/estresse, reserva, runway e burn, premissas datadas. Use ao montar, atualizar ou aprovar plano de caixa, forecast ou cenário, e ao calcular runway, burn ou reserva."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Finance Cash Flow — o caixa das próximas 13 semanas, sem surpresa escondida
+
+**Quando usar esta vs. `startup-financial-modeling`:** esta é o plano de caixa operacional de 13 semanas sobre números conciliados. Para projeções de 3–5 anos, cenários de captação e financials para investidor, use `startup-financial-modeling`.
 
 Empresa não quebra por falta de lucro; quebra por falta de caixa numa quarta-feira específica. Este método existe para que a semana em que o dinheiro falta apareça no plano **com data e tamanho** semanas antes, para que toda entrada projetada tenha origem verificável e para que ninguém planeje sobre número que ainda não foi conciliado.
 

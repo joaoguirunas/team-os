@@ -1,6 +1,6 @@
 ---
 name: social-meta-publishing
-description: Publicação via Meta MCP — Instagram e Facebook. Workflow de upload, agendamento, verificação e registro com dupla confirmação obrigatória. Use ao publicar ou agendar conteúdo aprovado em Instagram/Facebook e ao registrar publicações de campanha.
+description: "Publicação via Meta MCP — Instagram e Facebook. Workflow de upload, agendamento, verificação e registro com dupla confirmação obrigatória. Use ao publicar ou agendar conteúdo aprovado em Instagram/Facebook e ao registrar publicações de campanha."
 version: "1.0"
 updated: "2026-09-04"
 ---

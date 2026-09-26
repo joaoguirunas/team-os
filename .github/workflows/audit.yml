@@ -7,13 +7,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  audit-agents:
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Validar compliance dos agentes (Native Teams Protocol)
         run: bash .claude/skills/team-os-creator/scripts/validate-agent.sh
+
+      - name: Lint das skills (frontmatter, descrição, versão)
+        run: bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills
+
+      - name: Testar hooks com payloads reais do Claude Code
+        run: bash .claude/skills/team-os-creator/scripts/test-hooks.sh
+
+      - name: Hooks executáveis e sintaxe bash
+        run: |
+          fail=0
+          for f in .claude/hooks/*.sh; do
+            [ -x "$f" ] || { echo "❌ sem bit de execução: $f"; fail=1; }
+            bash -n "$f" || { echo "❌ erro de sintaxe: $f"; fail=1; }
+          done
+          for f in .claude/skills/team-os/scripts/*.sh .claude/skills/team-os-creator/scripts/*.sh; do
+            bash -n "$f" || { echo "❌ erro de sintaxe: $f"; fail=1; }
+          done
+          exit $fail
 
       - name: Garantir zero symlinks quebrados em skills
         run: |
@@ -32,3 +50,31 @@ jobs:
             exit 1
           fi
           echo "✅ Sem resíduo do padrão antigo."
+
+      - name: Contagens do README batem com os arquivos
+        run: |
+          agents=$(ls .claude/agents/*.md | wc -l | tr -d ' ')
+          skills=$(ls -d .claude/skills/*/ | wc -l | tr -d ' ')
+          hooks=$(ls .claude/hooks/*.sh | wc -l | tr -d ' ')
+          echo "agentes=$agents skills=$skills hooks=$hooks"
+          fail=0
+          grep -q "$agents agentes" README.md || { echo "❌ README não cita '$agents agentes'"; fail=1; }
+          grep -q "$skills skills" README.md   || { echo "❌ README não cita '$skills skills'"; fail=1; }
+          grep -q "$agents agentes" CLAUDE.md || { echo "❌ CLAUDE.md não cita '$agents agentes'"; fail=1; }
+          exit $fail
+
+      - name: Nada específico de máquina versionado
+        run: |
+          if grep -rnE '/Users/[a-z]+|/Volumes/|/opt/homebrew' --include='*.md' --include='*.json' --include='*.sh' --include='*.py' --include='*.yaml' . \
+               --exclude-dir=.git --exclude-dir=.venv --exclude-dir=ms-playwright \
+               --exclude-dir=sala-de-controle --exclude-dir=maestri-os \
+               | grep -v 'settings.local.json' | grep -v 'CHANGELOG.md'; then
+            # TODO: remover a exclusão de sala-de-controle/maestri-os quando os templates
+            # dessas skills trocarem os exemplos de pasta real por <raiz>/<Negócio>/<Projeto>
+            echo "❌ Caminho de máquina encontrado (veja acima)."
+            exit 1
+          fi
+          echo "✅ Sem caminhos de máquina."
+
+      - name: docs/agentes.html está atualizado
+        run: python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py --check

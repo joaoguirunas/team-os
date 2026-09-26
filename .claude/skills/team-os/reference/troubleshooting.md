@@ -14,3 +14,10 @@
 | Tmux sessions órfãs | Session não encerrou limpo | `tmux ls` → `tmux kill-session -t {nome}` |
 | Agente em loop de erros | Sem recovery automático | Entrar na sessão (Enter no panel) e dar instrução direta ou spawnar replacement |
 | Lead promovido antes da hora | Lead declarou "concluído" cedo | `"Continue — há tasks incompletas"` |
+
+## Garantia dura anti-worktree
+
+| Problema | Causa | Solução |
+|---|---|---|
+| Agentes criando branches extras | Lead usou `isolation: worktree` ao spawnar — proibido | NUNCA usar isolation: worktree. Agentes escrevem direto na branch ativa. Resolve conflito de arquivo com ownership disjunto (paths exclusivos por agente). |
+| Worktrees aparecendo mesmo sem spawn manual | Background tasks com isolamento automático, ou settings sem a trava | Garantir no `.claude/settings.json` do projeto: `"worktree": { "bgIsolation": "none" }` + hook `block-worktree.sh` registrado em PreToolUse (Fase 2-C). Limpar zumbis: `git worktree list` → `git worktree remove` + delete da branch (devops). |

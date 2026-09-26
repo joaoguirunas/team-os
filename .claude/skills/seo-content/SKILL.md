@@ -1,11 +1,8 @@
 ---
 name: seo-content
-description: >
-  Content quality and E-E-A-T analysis with AI citation readiness assessment,
-  plus last-mile draft cleanup (AI-typical phrasing and invisible Unicode
-  watermark characters). Use when user says "content quality", "E-E-A-T",
-  "content analysis", "readability check", "thin content", "content audit",
-  "humanize", "AI phrasing", "remove watermarks", or "invisible characters".
+description: "Qualidade de conteúdo e E-E-A-T com avaliação de prontidão para citação por IA, mais limpeza final de rascunho (frases típicas de IA e caracteres Unicode invisíveis). Use ao pedir 'content quality', 'E-E-A-T', 'readability', 'thin content', 'content audit', 'humanize', 'AI phrasing' ou 'remove watermarks'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url]"
 license: MIT

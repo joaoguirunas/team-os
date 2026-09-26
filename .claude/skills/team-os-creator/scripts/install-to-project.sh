@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
-# Skills são SEMPRE sincronizadas (incluindo team-os obrigatória): copiadas se ausentes,
-# ATUALIZADAS se o conteúdo difere da fonte. Skills extras no destino são preservadas.
-# team-os-creator nunca vai para o destino. Sem opção "agentes apenas".
+# Skills instaladas = união de: citadas no body dos agentes instalados (`/skill` ou skill `x`),
+# team-os (sempre), --extra-skills, prefixo da squad ({dev,sites,…,seo}-*), e as já presentes
+# no destino (mantidas atualizadas). Copiadas se ausentes, ATUALIZADAS se o conteúdo difere.
+# Skills extras no destino são preservadas. team-os-creator nunca vai para o destino.
+# --dry-run imprime a origem de cada skill (SKILL_ORIGIN=<skill>|<origem>).
+# Antes de qualquer escrita, um .claude/ prévio do destino é copiado para
+# .claude.bak-<timestamp>/ (só fora do dry-run). settings.json é garantido pelo
+# ensure-settings.sh da team-os (merge idempotente, nunca sobrescreve valores).
 # Usage: install-to-project.sh --source <path> --target <path> [options]
 #
 # Options:
@@ -149,24 +154,49 @@ do_cp() {
   cp "$1" "$2"
 }
 
-do_cp_r() {
+# Lixo que NUNCA viaja para o destino: artefatos macOS, runtime local da skill seo
+# (.venv, Chromium do Playwright, estado por máquina) e bytecode Python.
+# Mesma lista no cp recursivo, no rsync e no diff — senão o hash do scan (que os
+# ignora) gera drift eterno.
+SYNC_EXCLUDES=".DS_Store Icon? .venv ms-playwright runtime-state.json __pycache__ *.pyc"
+rsync_excludes() { local x; for x in $SYNC_EXCLUDES; do printf -- "--exclude=%s\n" "$x"; done; }
+diff_excludes()  { local x; for x in $SYNC_EXCLUDES; do printf -- "-x\n%s\n" "$x"; done; }
+
+# Cópia recursiva sem lixo (substitui cp -r): rsync sem --delete
+do_cp_r() { # $1=src $2=dst
   [ $DRY_RUN -eq 1 ] && return
-  cp -r "$1" "$2"
+  mkdir -p "$2"
+  # shellcheck disable=SC2046
+  rsync -a $(rsync_excludes) "${1%/}/" "${2%/}/"
 }
 
-# Sync de diretório de skill: rsync com --delete e exclusão de lixo macOS
-# (.DS_Store, Icon\r). Elimina lixo propagado e drift falso — o hash do scan
-# ignora esses arquivos, então cp -R os copiando gerava divergência eterna.
+# Sync de diretório de skill: rsync com --delete e exclusão de lixo (SYNC_EXCLUDES).
+# Elimina lixo propagado e drift falso — o hash do scan ignora esses arquivos,
+# então cp -R os copiando gerava divergência eterna.
 do_sync_dir() { # $1=src (SEM barra final exigida) $2=dst
   [ $DRY_RUN -eq 1 ] && return
   mkdir -p "$2"
-  rsync -a --delete --exclude '.DS_Store' --exclude 'Icon?' "${1%/}/" "$2/"
+  # shellcheck disable=SC2046
+  rsync -a --delete $(rsync_excludes) "${1%/}/" "$2/"
 }
 
-# Diferença de conteúdo ignorando lixo macOS (mesmo critério do sync)
+# Diferença de conteúdo ignorando o mesmo lixo (mesmo critério do sync)
 dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
-  ! diff -rq -x '.DS_Store' -x 'Icon?' "${1%/}" "${2%/}" >/dev/null 2>&1
+  # shellcheck disable=SC2046
+  ! diff -rq $(diff_excludes) "${1%/}" "${2%/}" >/dev/null 2>&1
 }
+
+# ── Backup do .claude/ prévio (antes de QUALQUER escrita no destino) ─────────
+# Só quando não é dry-run e já existe .claude/ no destino. cp -R, nunca mv.
+if [ $DRY_RUN -eq 0 ] && [ -d "$TARGET/.claude" ]; then
+  BACKUP_DIR="$TARGET/.claude.bak-$(date +%Y%m%d-%H%M%S)"
+  if cp -R "$TARGET/.claude" "$BACKUP_DIR" 2>/dev/null; then
+    echo "BACKUP=$BACKUP_DIR"
+  else
+    echo "BACKUP_FAILED=$BACKUP_DIR|não foi possível copiar .claude/ — abortando sem escrever" >&2
+    exit 1
+  fi
+fi
 
 # .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?)
 ensure_gitignore() {
@@ -190,6 +220,7 @@ agents_copied=0
 agents_skipped=0
 agents_updated=0
 agents_list=""
+INSTALLED_AGENT_FILES=""   # todos os agentes que FICAM no destino (novos, atualizados ou idênticos)
 
 for agent_file in "$SOURCE/.claude/agents/"*.md; do
   [ -f "$agent_file" ] || continue
@@ -203,6 +234,9 @@ for agent_file in "$SOURCE/.claude/agents/"*.md; do
     done
     [ $match -eq 0 ] && { agents_skipped=$((agents_skipped + 1)); continue; }
   fi
+  [ $CONTROL_ROOM -eq 1 ] && { agents_skipped=$((agents_skipped + 1)); continue; }
+  INSTALLED_AGENT_FILES="$INSTALLED_AGENT_FILES
+$agent_file"
 
   target_file="$TARGET/.claude/agents/$agent_name.md"
 
@@ -230,9 +264,36 @@ echo "AGENTS_UPDATED=$agents_updated"
 echo "AGENTS_SKIPPED=$agents_skipped"
 echo "AGENTS_LIST=${agents_list# }"
 
-# ── Skills — sempre copiadas (incluindo team-os obrigatória) ─────────────────
+# ── Skills — lista = união de 4 origens ──────────────────────────────────────
+#   (i)   citadas no body dos agentes instalados (`/nome-da-skill` ou skill `nome`)
+#   (ii)  team-os (sempre, salvo Sala de Controle)
+#   (iii) --extra-skills (opt-in)
+#   (iv)  prefixo da squad instalada ({dev,sites,…,seo}-*)
+#   (+)   já presente no destino → mantida atualizada (propagate), nunca removida
+# Nunca: team-os-creator · sala-de-controle/maestri-os (só via --extra-skills ou já presente).
+# No dry-run cada skill sai com a origem: SKILL_ORIGIN=<skill>|<origem>.
 
 do_mkdir "$TARGET/.claude/skills"
+
+# (i) skills citadas nos bodies dos agentes instalados → "skill|agente1 agente2"
+CITED_MAP=""
+if [ -n "$INSTALLED_AGENT_FILES" ]; then
+  CITED_MAP="$(printf '%s\n' "$INSTALLED_AGENT_FILES" | while IFS= read -r af; do
+    [ -f "$af" ] || continue
+    an=$(basename "$af" .md)
+    # body = depois do 2º '---'; tokens /x-y (precedidos de espaço, crase ou parêntese) e skill `x`
+    body="$(awk '/^---$/{c++; next} c>=2' "$af")"
+    {
+      printf '%s\n' "$body" | grep -oE '(^|[[:space:]`(])/[a-z][a-z0-9-]+' | sed 's|^[^/]*/||'
+      printf '%s\n' "$body" | grep -oE 'skill `[a-z][a-z0-9-]+`' | sed 's/^skill `//; s/`$//'
+    } | sort -u | while IFS= read -r sk; do
+      [ -n "$sk" ] || continue
+      [ -f "$SOURCE/.claude/skills/$sk/SKILL.md" ] || continue
+      echo "$sk|$an"
+    done
+  done | sort -u | awk -F'|' '{ a[$1] = (a[$1] == "" ? $2 : a[$1] " " $2) } END { for (k in a) print k "|" a[k] }')"
+fi
+cited_by() { printf '%s\n' "$CITED_MAP" | grep -m1 "^$1|" | cut -d'|' -f2; }
 
 skills_copied=0
 skills_updated=0
@@ -253,33 +314,42 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     [ "$es" = "$skill_name" ] && { extra=1; break; }
   done
 
+  origin=""
   if is_cr_skill "$skill_name"; then
-    # Sala de Controle: NUNCA entra sozinha (cairia na regra "geral → sempre incluir" e vazaria
-    # para todos os projetos). Só por --extra-skills, ou se já existe no destino (update via propagate).
-    match=0
-    { [ $extra -eq 1 ] || [ -d "$TARGET/.claude/skills/$skill_name" ]; } && match=1
-    [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+    # Sala de Controle: NUNCA entra sozinha. Só por --extra-skills, ou se já existe no destino
+    # (update via propagate).
+    [ $extra -eq 1 ] && origin="extra"
+    [ -z "$origin" ] && [ -d "$TARGET/.claude/skills/$skill_name" ] && origin="já instalada no destino"
   elif [ $CONTROL_ROOM -eq 1 ]; then
     # Modo Sala de Controle: nenhuma skill geral, nem team-os — só opt-in
-    [ $extra -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
-  elif [ "$SQUADS" != "all" ]; then
-    # Filtra por squad. Skill com prefixo de squad ({dev,sites,social,traffic,pm,sales,brand,finance,legal,seo}-*)
-    # só entra se a squad está na lista; QUALQUER outra skill (geral, com ou sem hífen:
-    # accessibility, deep-research, data-*, ai-ml-*) é sempre incluída.
-    skill_prefix="${skill_name%%-*}"
-    case "$skill_prefix" in
-      dev|sites|social|traffic|pm|sales|brand|finance|legal|seo)
-        match=0
-        for squad in $(echo "$SQUADS" | tr ',' ' '); do
-          [ "$skill_prefix" = "$squad" ] && { match=1; break; }
-        done ;;
-      *) match=1 ;;   # skill geral (não-squad) → sempre incluir
-    esac
-    # team-os é sempre incluída; team-os-creator fica só no projeto de origem
-    [[ "$skill_name" == "team-os" ]] && match=1
-    [ $extra -eq 1 ] && match=1
-    [ $match -eq 0 ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+    [ $extra -eq 1 ] && origin="extra"
+  else
+    # (ii) team-os sempre
+    [ "$skill_name" = "team-os" ] && origin="obrigatória (team-os)"
+    # (iii) extra
+    [ -z "$origin" ] && [ $extra -eq 1 ] && origin="extra"
+    # (iv) prefixo da squad instalada
+    if [ -z "$origin" ] && [ "$SQUADS" != "all" ]; then
+      skill_prefix="${skill_name%%-*}"
+      case "$skill_prefix" in
+        dev|sites|social|traffic|pm|sales|brand|finance|legal|seo)
+          for squad in $(echo "$SQUADS" | tr ',' ' '); do
+            [ "$skill_prefix" = "$squad" ] && { origin="prefixo da squad $squad"; break; }
+          done ;;
+      esac
+    elif [ -z "$origin" ] && [ "$SQUADS" = "all" ]; then
+      origin="todas as squads"
+    fi
+    # (i) citada por agente instalado
+    if [ -z "$origin" ]; then
+      cb="$(cited_by "$skill_name")"
+      [ -n "$cb" ] && origin="citada por $cb"
+    fi
+    # (+) já presente no destino → mantém atualizada (nunca deixamos skill instalada envelhecer)
+    [ -z "$origin" ] && [ -d "$TARGET/.claude/skills/$skill_name" ] && origin="já instalada no destino"
   fi
+  [ -z "$origin" ] && { skills_skipped=$((skills_skipped + 1)); continue; }
+  [ $DRY_RUN -eq 1 ] && echo "SKILL_ORIGIN=$skill_name|$origin"
 
   target_skill="$TARGET/.claude/skills/$skill_name"
   [ "$skill_name" = "team-os" ] && team_os_handled=1
@@ -414,101 +484,29 @@ done
 # ── .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?) ──────────────
 ensure_gitignore
 
-# ── Settings.json ────────────────────────────────────────────────────────────
-
-# Garantir CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + trava anti-worktree no destino
+# ── Settings.json — delegado ao ensure-settings.sh da team-os (fonte única) ──
+# Cria o arquivo se não existe e SÓ ADICIONA o que falta num existente (nunca
+# sobrescreve valor, valida o JSON final). No dry-run mostra o merge sem gravar.
+ENSURE_SETTINGS="$SOURCE/.claude/skills/team-os/scripts/ensure-settings.sh"
 TARGET_SETTINGS="$TARGET/.claude/settings.json"
-if [ ! -f "$TARGET_SETTINGS" ]; then
-  if [ $DRY_RUN -eq 0 ]; then
-    cat > "$TARGET_SETTINGS" <<'EOF'
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "subagentPromptCacheTtl": "1h",
-  "worktree": {
-    "bgIsolation": "none"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Agent|Task|EnterWorktree",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-worktree.sh"
-          }
-        ]
-      }
-    ],
-    "TaskCreated": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-quality.sh"
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-social-progress.sh"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-proposal-progress.sh"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-finance-progress.sh"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-legal-progress.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
-  fi
-  echo "SETTINGS_CREATED=1"
-else
-  # Verificar peças obrigatórias; avisar sem sobrescrever settings existente
-  if ! grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "$TARGET_SETTINGS" 2>/dev/null; then
-    echo "SETTINGS_WARNING=settings.json existe mas não tem CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS — adicione manualmente"
+if [ -f "$ENSURE_SETTINGS" ]; then
+  [ -f "$TARGET_SETTINGS" ] && settings_existed=1 || settings_existed=0
+  if [ $DRY_RUN -eq 1 ]; then
+    # Só as linhas de mudança/aviso (o merge completo é ruído no dry-run)
+    es_out="$(bash "$ENSURE_SETTINGS" --project-dir "$TARGET" --dry-run 2>&1 | grep -E '^(\[dry-run\]|✓|⚠|  [+~])' || true)"
+    [ -n "$es_out" ] && printf '%s\n' "$es_out" | sed 's/^/ENSURE_SETTINGS: /'
+    echo "SETTINGS_ENSURED=dry-run"
   else
-    echo "SETTINGS_OK=1"
+    if es_out="$(bash "$ENSURE_SETTINGS" --project-dir "$TARGET" 2>&1)"; then
+      printf '%s\n' "$es_out" | grep -E '^(✓|⚠|  [+~]|mudanças)' | sed 's/^/ENSURE_SETTINGS: /'
+      if [ $settings_existed -eq 0 ]; then echo "SETTINGS_CREATED=1"; else echo "SETTINGS_ENSURED=1"; fi
+    else
+      printf '%s\n' "$es_out" | sed 's/^/ENSURE_SETTINGS: /' >&2
+      echo "SETTINGS_ERROR=1|ensure-settings.sh falhou (JSON inválido no destino ou python3 ausente) — corrija e rode: bash \"$ENSURE_SETTINGS\" --project-dir \"$TARGET\""
+    fi
   fi
-  if ! grep -q "bgIsolation" "$TARGET_SETTINGS" 2>/dev/null; then
-    echo "SETTINGS_WORKTREE_TODO=1|adicione \"worktree\": { \"bgIsolation\": \"none\" } ao settings.json do destino"
-  fi
-  if ! grep -q "block-worktree" "$TARGET_SETTINGS" 2>/dev/null; then
-    echo "SETTINGS_WORKTREE_HOOK_TODO=1|registre o hook block-worktree.sh em PreToolUse (matchers: Agent|Task|EnterWorktree e Bash) no settings.json do destino"
-  fi
-  if ! grep -q "task-quality" "$TARGET_SETTINGS" 2>/dev/null || ! grep -q "subagentPromptCacheTtl" "$TARGET_SETTINGS" 2>/dev/null; then
-    echo "SETTINGS_TASKHOOKS_TODO=1|adicione \"subagentPromptCacheTtl\": \"1h\" e registre os hooks TaskCreated → task-quality.sh e TaskCompleted → check-story-progress.sh + check-social-progress.sh + check-proposal-progress.sh + check-finance-progress.sh + check-legal-progress.sh (matcher \"\") no settings.json do destino"
-  fi
+else
+  echo "SETTINGS_ERROR=1|ensure-settings.sh não encontrado em $ENSURE_SETTINGS — settings.json do destino não foi tocado"
 fi
 
 # ── Hooks ────────────────────────────────────────────────────────────────────

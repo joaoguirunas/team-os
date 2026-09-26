@@ -1,8 +1,8 @@
 ---
 name: finance-tax-compliance
-description: Método genérico de obrigações fiscais — calendário de obrigações (o quê, quando, órgão, base, responsável, status), apuração preparatória por tributo cruzando base `#id` do fechamento com regra citada por fonte (lei, artigo, órgão, data de consulta), conferência documental de notas, remuneração de sócios com regra e custo, pacote mensal para o contador e o checklist fiscal; a squad prepara e organiza, o contador valida e o usuário recolhe. Use ao montar o calendário fiscal, preparar a apuração de um tributo, conferir notas, comparar pró-labore e distribuição ou organizar o que vai ao contador.
+description: "Método de obrigações fiscais — calendário (o quê, quando, órgão, base, responsável), apuração preparatória por tributo com base `#id` e fonte citada, conferência de notas, remuneração de sócios, pacote mensal para o contador e checklist fiscal; a squad prepara, o contador valida, o usuário recolhe. Use ao montar o calendário fiscal, preparar apuração ou conferir notas."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Finance Tax & Compliance — sem fonte não há alíquota, sem contador não há guia

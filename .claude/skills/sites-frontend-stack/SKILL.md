@@ -1,6 +1,6 @@
 ---
 name: sites-frontend-stack
-description: Stack frontend para websites — Next.js App Router OU Astro (Content Collections, ilhas), Tailwind v4 (@theme), shadcn/ui e Motion. Use ao iniciar projeto de site em qualquer uma das duas stacks, criar componentes/seções, definir tokens de design ou implementar animações.
+description: "Stack frontend para websites — Next.js App Router OU Astro (Content Collections, ilhas), Tailwind v4 (@theme), shadcn/ui e Motion. Use ao iniciar projeto de site em qualquer uma das duas stacks, criar componentes/seções, definir tokens de design ou implementar animações."
 version: "1.0"
 updated: "2026-09-20"
 ---

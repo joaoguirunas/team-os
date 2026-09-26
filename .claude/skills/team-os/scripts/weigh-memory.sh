@@ -166,13 +166,16 @@ BOOTSTRAP_MAX=0
 BOOTSTRAP_MAX_AREA="-"
 BOOTSTRAP_BLOCK=""
 if [ -d "$SM/agents" ]; then
-  for d in "$SM/agents"/*/; do
+  # Layout canônico: agents/<squad>/<área>/DIGEST.md (2 níveis). Pastas de 1 nível com
+  # DIGEST.md (layout antigo agents/<área>/, ou arquivo de squad inteira) também contam.
+  for d in "$SM/agents"/*/ "$SM/agents"/*/*/; do
     [ -d "$d" ] || continue
-    area="$(basename "$d")"
+    [ -f "${d}DIGEST.md" ] || continue
+    area="${d#$SM/agents/}"; area="${area%/}"
     dw="$(wc_words "${d}DIGEST.md")"
     w=$((BASE_WORDS + ACTIVE_WORDS + dw))
     t=$(( w * 133 / 100 ))
-    key="$(echo "$area" | tr 'a-z-' 'A-Z_' | tr -cd 'A-Z0-9_')"
+    key="$(echo "$area" | tr 'a-z/-' 'A-Z__' | tr -cd 'A-Z0-9_')"
     BOOTSTRAP_BLOCK="${BOOTSTRAP_BLOCK}WEIGH_BOOTSTRAP_${key}=${t}
 "
     if [ "$t" -gt "$BOOTSTRAP_MAX" ]; then

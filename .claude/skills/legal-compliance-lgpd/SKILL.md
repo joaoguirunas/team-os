@@ -1,8 +1,8 @@
 ---
 name: legal-compliance-lgpd
-description: Método de conformidade em proteção de dados pessoais — mapa de dados (dado, finalidade, base legal, retenção, acesso, operador), o que cada base legal exige e por que "legítimo interesse" não é padrão, requisitos de política de privacidade e termos de uso, registro e revogação de consentimento, fluxo de atendimento a direitos do titular com prazo, registro de incidente em até 24 horas com avaliação e comunicação, cláusula e checklist de fornecedores/operadores e calendário de obrigações regulatórias com `#id`. Use ao mapear dados, definir base legal, preparar política ou termos, atender titular, registrar incidente ou cadastrar obrigação regulatória.
+description: "Método de conformidade em proteção de dados pessoais — mapa de dados, exigências de cada base legal, política de privacidade e termos de uso, consentimento e revogação, direitos do titular com prazo, incidente registrado em até 24 horas, operadores e calendário regulatório com `#id`. Use ao mapear dados, definir base legal, preparar política ou termos, atender titular ou registrar incidente."
 version: "1.0"
-updated: "2026-09-20"
+updated: "2026-09-25"
 ---
 
 # Legal Compliance LGPD — nenhum dado sem base legal, nenhum prazo fora do registro

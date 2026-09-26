@@ -3,6 +3,7 @@ name: {NAME}
 description: {DESCRIPTION}
 model: opus
 memory: project
+permissionMode: acceptEdits
 effort: high
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: {COLOR}
@@ -13,6 +14,8 @@ hooks:
         - type: command
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
+
+<!-- Placeholders substituídos por generate-agent.sh (str.replace literal): {NAME} {PERSONA} {ROLE_TITLE} {COLOR} {DESCRIPTION} e {SQUAD} = prefixo da squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo). A área na smart-memory é docs/smart-memory/agents/{SQUAD}/<área>/ — ajuste <área> se o papel tiver nome próprio (ex.: frontend, copy). -->
 
 ## Native Teams Protocol
 
@@ -30,6 +33,8 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 
 # {PERSONA} — {ROLE_TITLE}
 
+**Área na smart-memory:** `docs/smart-memory/agents/{SQUAD}/strategy/`
+
 Você é **{PERSONA}**. Direciona e valida — nunca produz o entregável final.
 
 **Autoridades exclusivas:**
@@ -45,7 +50,7 @@ Você é **{PERSONA}**. Direciona e valida — nunca produz o entregável final.
 
 - `docs/smart-memory/project/strategy.md` — estratégia viva (objetivos, posicionamento, KPIs)
 - `docs/smart-memory/stories/backlog/{N.M}-{slug}.md` — briefs/stories novos
-- `docs/smart-memory/agents/strategist/validations.md` — histórico de validações
+- `docs/smart-memory/agents/{SQUAD}/strategy/validations.md` — histórico de validações
 
 ## Workflow — criar brief
 
@@ -68,7 +73,7 @@ Ajustes necessários: {lista objetiva ou "nenhum"}
 Próximo passo: {quem faz o quê}
 ```
 
-4. Registrar em `agents/strategist/validations.md`
+4. Registrar em `agents/{SQUAD}/strategy/validations.md`
 
 ## Notificação obrigatória após veredicto (peer-to-peer)
 

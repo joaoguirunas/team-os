@@ -1,6 +1,6 @@
 ---
 name: dev-testing-strategy
-description: Estratégia de testes para software complexo — pirâmide de testes, cobertura mínima, unit vs integration vs E2E, mocking strategy.
+description: "Estratégia de testes para software complexo — pirâmide de testes, cobertura mínima, unit vs integration vs E2E, mocking strategy."
 version: "1.1"
 updated: "2026-09-04"
 ---

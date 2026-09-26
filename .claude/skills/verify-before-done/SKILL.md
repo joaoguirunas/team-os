@@ -1,6 +1,6 @@
 ---
 name: verify-before-done
-description: Verificação obrigatória antes de declarar qualquer trabalho como concluído — evidência antes de afirmação. Use SEMPRE antes de dizer que algo "está pronto", "funciona", "passa nos testes", "está corrigido" ou antes de commit/marcar story como done. Gatilhos - concluir tarefa, fechar story, reportar sucesso, emitir veredicto de QA, dar bug como resolvido.
+description: "Verificação obrigatória antes de declarar qualquer trabalho como concluído — evidência antes de afirmação. Use SEMPRE antes de dizer que algo \"está pronto\", \"funciona\", \"passa nos testes\", \"está corrigido\" ou antes de commit/marcar story como done. Gatilhos - concluir tarefa, fechar story, reportar sucesso, emitir veredicto de QA, dar bug como resolvido."
 version: "1.0"
 updated: "2026-08-26"
 ---

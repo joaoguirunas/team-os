@@ -1,8 +1,8 @@
 ---
 name: sales-deck-production
-description: Produção do artefato final de propostas e apresentações — HTML com print CSS (uma seção por página, quebras controladas, fontes embutidas) exportado para PDF em navegador headless, componentes de página (capa, índice, aberturas, tabela de investimento, compromisso conjunto, contracapa), variante deck, e checagem obrigatória do PDF gerado (contagem de páginas, overflow, fontes, peso). Use ao montar, exportar, corrigir ou auditar o PDF/deck de qualquer proposta.
+description: "Produção do artefato final de propostas e apresentações — HTML com print CSS (uma seção por página, quebras controladas, fontes embutidas) exportado para PDF em navegador headless, componentes de página, variante deck e checagem obrigatória do PDF (páginas, overflow, fontes, peso). Use ao montar, exportar, corrigir ou auditar o PDF/deck de qualquer proposta."
 version: "1.0"
-updated: "2026-09-07"
+updated: "2026-09-25"
 ---
 
 # Sales Deck Production — HTML → PDF que abre, cabe e imprime

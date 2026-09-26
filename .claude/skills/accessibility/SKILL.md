@@ -1,6 +1,6 @@
 ---
 name: accessibility
-description: Auditar e melhorar acessibilidade web seguindo WCAG 2.2 — inclui padrões específicos para Next.js/Tailwind. Use ao "melhorar acessibilidade", fazer "a11y audit", garantir "WCAG compliance", suporte a screen reader, navegação por teclado ou "tornar acessível".
+description: "Auditar e melhorar acessibilidade web seguindo WCAG 2.2 — inclui padrões específicos para Next.js/Tailwind. Use ao \"melhorar acessibilidade\", fazer \"a11y audit\", garantir \"WCAG compliance\", suporte a screen reader, navegação por teclado ou \"tornar acessível\"."
 version: "1.2"
 updated: "2026-09-04"
 license: MIT

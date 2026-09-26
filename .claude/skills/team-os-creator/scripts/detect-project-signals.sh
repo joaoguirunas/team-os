@@ -22,6 +22,7 @@ HAS_PROPOSALS=0
 HAS_BRANDING=0
 HAS_FINANCE=0
 HAS_LEGAL=0
+HAS_SEO=0
 HAS_PACKAGE=0
 [ -f "package.json" ] && HAS_PACKAGE=1
 
@@ -131,6 +132,20 @@ elif [ "${LEGAL_HITS:-0}" -ge 2 ] && [ "${PROPOSAL_CORE_HITS:-0}" -lt 1 ] && [ $
   HAS_LEGAL=1
 fi
 
+# SEO signals — sitemap.xml, robots.txt, next-sitemap, "seo" no package.json, pasta seo/,
+# ou o nome da pasta diz "seo". Squad seo audita e recomenda; não implementa (a squad sites
+# implementa) — por isso, num site com código, `seo` é ADD-ON (`--squads sites,seo`), e só
+# vira archetype principal num workspace sem código ou nomeado como SEO.
+SEO_HITS=0
+find . -maxdepth 3 -iname "sitemap*.xml" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -1 | grep -q . && SEO_HITS=$((SEO_HITS + 1))
+find . -maxdepth 3 -iname "robots.txt" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -1 | grep -q . && SEO_HITS=$((SEO_HITS + 1))
+[ -f "package.json" ] && grep -q '"next-sitemap"' package.json 2>/dev/null && SEO_HITS=$((SEO_HITS + 1))
+[ -f "package.json" ] && grep -qi 'seo' package.json 2>/dev/null && SEO_HITS=$((SEO_HITS + 1))
+find . -maxdepth 2 -type d -iname "seo" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.claude/*" 2>/dev/null | head -1 | grep -q . && SEO_HITS=$((SEO_HITS + 2))
+SEO_NAME=0
+case "$BASENAME_LC" in *seo*|*"busca organica"*|*"organic search"*) SEO_NAME=1; SEO_HITS=$((SEO_HITS + 2)) ;; esac
+[ "${SEO_HITS:-0}" -ge 2 ] && HAS_SEO=1
+
 # Sala de Controle (recurso Maestri): pasta cujo nome diz "sala de controle"/"control room",
 # ou que já tem a skill maestri-os. Sem código, sem squad — só a skill opt-in.
 DIRNAME_LC=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')
@@ -155,6 +170,9 @@ elif [ $HAS_BRANDING -eq 1 ]; then
   ARCHETYPE="branding"
 elif [ $HAS_PROPOSALS -eq 1 ]; then
   ARCHETYPE="proposals"
+elif [ $HAS_SEO -eq 1 ] && { [ $SEO_NAME -eq 1 ] || { [ $HAS_FRONTEND -eq 0 ] && [ $HAS_BACKEND -eq 0 ]; }; }; then
+  # workspace de SEO (sem código, ou nomeado como SEO) → squad seo é a principal
+  ARCHETYPE="seo"
 elif [ $HAS_FRONTEND -eq 1 ] && [ $HAS_BACKEND -eq 1 ] && [ $HAS_DATABASE -eq 1 ]; then
   ARCHETYPE="fullstack-saas"
 elif [ $HAS_ML -eq 1 ]; then
@@ -199,17 +217,25 @@ case "$ARCHETYPE" in
     SUGGESTED_PRESET="finance" ;;
   legal)
     SUGGESTED_PRESET="legal" ;;
+  seo)
+    SUGGESTED_PRESET="seo" ;;
   mobile-app)
     # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
     SUGGESTED_PRESET="dev"
     WARNING="mobile-app detectado: não há preset mobile — usando preset dev (revise a squad manualmente)"
     ;;
 esac
+# Site com código e sinais de SEO → sugere a squad seo como add-on (audita; sites implementa)
+SUGGESTED_SQUAD_ADDON=""
+if [ $HAS_SEO -eq 1 ] && [ "$ARCHETYPE" != "seo" ]; then
+  case "$ARCHETYPE" in website|content-site|fullstack-saas|frontend-app) SUGGESTED_SQUAD_ADDON="seo" ;; esac
+fi
 [ -n "$WARNING" ] && echo "⚠️  $WARNING" >&2
 
 echo "PROJECT_ARCHETYPE=$ARCHETYPE"
 echo "SUGGESTED_PRESET=$SUGGESTED_PRESET"
 [ -n "$SUGGESTED_EXTRA_SKILLS" ] && echo "SUGGESTED_EXTRA_SKILLS=$SUGGESTED_EXTRA_SKILLS"
+[ -n "$SUGGESTED_SQUAD_ADDON" ] && echo "SUGGESTED_SQUAD_ADDON=$SUGGESTED_SQUAD_ADDON"
 [ -n "${CONTROL_ROOM_OPTIONS:-}" ] && echo "CONTROL_ROOM_OPTIONS=$CONTROL_ROOM_OPTIONS"
 [ -n "$WARNING" ] && echo "WARNING=$WARNING"
 echo "LANGUAGE=$LANGUAGE"
@@ -221,3 +247,4 @@ echo "HAS_MOBILE=$HAS_MOBILE"
 echo "HAS_CI=$HAS_CI"
 echo "HAS_ML=$HAS_ML"
 echo "HAS_CONTENT=$HAS_CONTENT"
+echo "HAS_SEO=$HAS_SEO"

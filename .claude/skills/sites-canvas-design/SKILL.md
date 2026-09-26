@@ -1,6 +1,6 @@
 ---
 name: sites-canvas-design
-description: Design de componentes visuais complexos com Canvas HTML5 e SVG — gráficos, partículas, ilustrações e backgrounds custom. Use ao criar visual que CSS não resolve — animação de partículas, gráficos dinâmicos, ícones SVG otimizados ou backgrounds avançados (grid, mesh, noise).
+description: "Design de componentes visuais complexos com Canvas HTML5 e SVG — gráficos, partículas, ilustrações e backgrounds custom. Use ao criar visual que CSS não resolve — animação de partículas, gráficos dinâmicos, ícones SVG otimizados ou backgrounds avançados (grid, mesh, noise)."
 version: "1.0"
 updated: "2026-09-04"
 ---

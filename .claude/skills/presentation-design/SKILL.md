@@ -1,6 +1,8 @@
 ---
 name: presentation-design
-description: "Design and evaluate presentations that communicate effectively. Use when designing a presentation, creating slides, getting presentation feedback, structuring a talk, or reviewing slides. Keywords: presentation, slides, talk, PowerPoint, Keynote, reveal.js."
+description: "Desenhar e avaliar apresentações que comunicam bem. Use ao desenhar uma apresentação, criar slides, pedir feedback, estruturar uma palestra ou revisar slides (presentation, slides, talk, PowerPoint, Keynote, reveal.js)."
+version: "1.0"
+updated: "2026-09-25"
 license: MIT
 metadata:
   author: jwynia

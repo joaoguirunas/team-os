@@ -1,11 +1,13 @@
 ---
 name: sales-pricing-payback
-description: Economia de propostas comerciais — preço vs. equivalente de tabela, desconto efetivo e seu custo, breakeven da implantação, payback do cliente (contas de receita recuperada e de horas economizadas), comparativo de alternativas, equilíbrio de permuta, escada de participação e régua de valuation com sensibilidade. Use para calcular, validar ou defender qualquer número que apareça em proposta, deck, follow-up ou planilha de negociação.
+description: "Economia de propostas comerciais — preço vs. equivalente de tabela, desconto efetivo e seu custo, breakeven da implantação, payback do cliente (receita recuperada, horas economizadas), comparativo de alternativas, permuta, escada de participação e valuation com sensibilidade. Use para calcular, validar ou defender qualquer número de proposta, deck, follow-up ou planilha de negociação."
 version: "1.0"
-updated: "2026-09-07"
+updated: "2026-09-25"
 ---
 
 # Sales Pricing & Payback — todo número com dono
+
+**Quando usar esta vs. `pricing`:** esta calcula os números de *uma proposta* (desconto, breakeven, payback do cliente, permuta). Para definir a *estratégia* de preço e empacotamento do produto (tiers, freemium, métrica de valor, página de preços), use `pricing`.
 
 Sem a conta, preço é preço. Com a conta, é investimento. Esta skill dá as fórmulas padrão para que **cada número de uma proposta saia com fórmula, fonte/hipótese e status** — e para que quem decide preço decida sabendo o que custa.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""generate-agents-page.py — gera docs/agentes.html (página oficial dos agentes do CT).
+"""generate-agents-page.py — gera docs/agentes.html (página oficial dos agentes do team-os).
 
 Card inteiro clicável abre modal de PERFIL COMPLETO por agente (bio, matriz de autoridade,
 regras absolutas, skills) e modal de skill enriquecido (versão, seções), com navegação
@@ -15,7 +15,9 @@ Fontes de dados (tudo do repositório, nada manual na página):
   - fotos (opcional): docs/fotos-agentes/<nome>.png no próprio CT, ou --photos <dir> → comprimidas e embutidas
     como data URI (agente sem foto fica com o monograma).
 
-Uso:  python3 generate-agents-page.py [--photos <dir>] [--out <path>]
+Uso:  python3 generate-agents-page.py [--photos <dir>] [--out <path>] [--check]
+  --check   não escreve: exit 0 se docs/agentes.html já está igual ao que seria gerado,
+            exit 1 se está desatualizado (ou ausente) — para uso no CI/pre-commit.
 Rode a partir de qualquer lugar — o script resolve a raiz do CT sozinho.
 """
 import os, re, sys, json, base64, subprocess, tempfile, html
@@ -27,6 +29,7 @@ OUT = os.path.join(ROOT, "docs", "agentes.html")
 args = sys.argv[1:]
 if "--photos" in args: PHOTOS = args[args.index("--photos") + 1]
 if "--out" in args: OUT = args[args.index("--out") + 1]
+CHECK = "--check" in args
 
 SQUADS = [
     ("dev", "Dev", "Fullstack SaaS — da arquitetura ao deploy"),
@@ -375,6 +378,13 @@ def build():
                .replace("{{N_SQUADS}}", str(len(SQUADS)))
                .replace("{{N_SKILLS}}", str(len(skills) - 1))  # -1: team-os-creator é interna
                .replace("{{N_OPUS}}", str(opus_n)))
+    if CHECK:
+        current = open(OUT).read() if os.path.exists(OUT) else None
+        if current == page:
+            print(f"OK — {OUT} está em dia ({len(agents)} agentes · {len(skills)} skills)")
+            sys.exit(0)
+        print(f"DESATUALIZADO — {OUT} difere do que seria gerado; rode: python3 {os.path.relpath(__file__, ROOT)}", file=sys.stderr)
+        sys.exit(1)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     open(OUT, "w").write(page)
     print(f"OK → {OUT} ({len(page)//1024} KB · {len(agents)} agentes · {len(photos)} fotos · {len(skills)} skills)")

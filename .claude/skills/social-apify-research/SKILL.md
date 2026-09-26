@@ -1,6 +1,6 @@
 ---
 name: social-apify-research
-description: Research de tendências e concorrentes via Apify MCP — scraping de Instagram, TikTok, hashtags e análise de engagement. Use ao pesquisar tendências de conteúdo, analisar perfis concorrentes, levantar hashtags ou coletar dados de engagement antes de planejar campanhas sociais.
+description: "Research de tendências e concorrentes via Apify MCP — scraping de Instagram, TikTok, hashtags e análise de engagement. Use ao pesquisar tendências de conteúdo, analisar perfis concorrentes, levantar hashtags ou coletar dados de engagement antes de planejar campanhas sociais."
 version: "1.0"
 updated: "2026-09-04"
 ---

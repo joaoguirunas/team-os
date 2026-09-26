@@ -1,11 +1,13 @@
 ---
 name: sites-seo-technical
-description: SEO técnico para websites — Next.js ou Astro: meta tags, schema.org, sitemap, robots.txt e Core Web Vitals. Use ao implementar ou auditar SEO on-page, configurar metadata e dados estruturados, gerar sitemap e robots ou otimizar Core Web Vitals para ranking, em qualquer uma das duas stacks.
+description: "SEO técnico para websites — Next.js ou Astro: meta tags, schema.org, sitemap, robots.txt e Core Web Vitals. Use ao implementar ou auditar SEO on-page, configurar metadata e dados estruturados, gerar sitemap e robots ou otimizar Core Web Vitals para ranking, em qualquer uma das duas stacks."
 version: "1.1"
 updated: "2026-09-20"
 ---
 
 # Sites SEO Técnico — Next.js e Astro
+
+**Quando usar esta vs. `seo-technical`:** esta é para *implementar* SEO on-page no código (metadata, schema, sitemap, robots, CWV) em Next.js/Astro. Para *auditar* um site publicado em 9 categorias e gerar achados, use `seo-technical`.
 
 ## 1. Metadata
 

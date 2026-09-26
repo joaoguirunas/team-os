@@ -2,7 +2,7 @@
 
 > Extraído do SKILL.md — carregar sob demanda.
 
-Dois hooks de qualidade fazem parte do **settings padrão** de todo projeto team-os (registrados pelo `scripts/ensure-settings.sh` e pelo `*install`); o terceiro (`TeammateIdle`) é receita **opcional** por projeto.
+Seis hooks de qualidade fazem parte do **settings padrão** de todo projeto team-os (registrados pelo `scripts/ensure-settings.sh`, que o `*install` chama): **TaskCreated** → `task-quality.sh`; **TaskCompleted** → `check-story-progress.sh`, `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh`. `TeammateIdle` é receita **opcional** por projeto. Os scripts vivem em `.claude/hooks/` (distribuídos pelo `*propagate`) e são testados pelo `team-os-creator/scripts/test-hooks.sh`.
 
 ## TaskCreated — gate de qualidade de task (PADRÃO)
 
@@ -22,7 +22,7 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
 
 ## TaskCompleted — gate de evidência (PADRÃO)
 
-`check-story-progress.sh` roda quando uma task é marcada como concluída e valida o progresso da story: **story só fecha com evidência** (commits/artefatos reais, ACs checados). Complementa a doutrina "Não confie no relato" do Lead OS — o hook barra o fechamento sem evidência antes mesmo de o lead verificar.
+`check-story-progress.sh` roda quando uma task é marcada como concluída e valida o progresso da story: **story só fecha com evidência** (`## QA Results` ou `status: done|in-review` na story). Complementa a doutrina "Não confie no relato" do Lead OS — o hook barra o fechamento sem evidência antes mesmo de o lead verificar. Os outros quatro gates do mesmo evento — `check-social-progress.sh` (publicação social só com aprovação VERA/strategist), `check-proposal-progress.sh` (proposta só com PASS do `sales-qa` + confirmação do usuário), `check-finance-progress.sh` (execução financeira só com PASS do `finance-qa` + confirmação) e `check-legal-progress.sh` (saída jurídica só com PASS do `legal-qa` + confirmação) — seguem o mesmo padrão: **a squad prepara, o humano executa**.
 
 Registro (o `ensure-settings.sh` garante — não edite à mão):
 ```json
@@ -30,7 +30,13 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
   "hooks": {
     "TaskCompleted": [{
       "matcher": "",
-      "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh" }]
+      "hooks": [
+        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh" },
+        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-social-progress.sh" },
+        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-proposal-progress.sh" },
+        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-finance-progress.sh" },
+        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-legal-progress.sh" }
+      ]
     }]
   }
 }
@@ -76,7 +82,9 @@ Versão **condicional segura** ("mantém trabalhando" sem loop): `exit 2` **apen
 #!/bin/bash
 # idle-nudge.sh — exemplo de TeammateIdle SEM loop infinito.
 # Só devolve exit 2 (bloqueia o idle, com mensagem) se houver task pendente na fila.
-PENDING=$(claude tasks list 2>/dev/null | grep -c 'pending' || true)
+# Como contar tasks pendentes depende do seu projeto (não há CLI oficial para a
+# task list do Agent Teams). Exemplo: um arquivo de fila mantido pelo lead.
+PENDING=$(grep -c '^- \[ \]' "$CLAUDE_PROJECT_DIR/docs/smart-memory/_session/queue.md" 2>/dev/null || echo 0)
 if [ "${PENDING:-0}" -gt 0 ]; then
   echo "Há $PENDING task(s) pendente(s) na fila — faça self-claim da próxima compatível." >&2
   exit 2   # condicional: SÓ quando há trabalho real esperando

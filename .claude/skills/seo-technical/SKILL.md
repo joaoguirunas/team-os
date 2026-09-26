@@ -1,10 +1,8 @@
 ---
 name: seo-technical
-description: >
-  Technical SEO audit across 9 categories: crawlability, indexability, security,
-  URL structure, mobile, Core Web Vitals, structured data, JavaScript rendering,
-  and IndexNow protocol. Use when user says "technical SEO", "crawl issues",
-  "robots.txt", "Core Web Vitals", "site speed", or "security headers".
+description: "Auditoria de SEO técnico em 9 categorias — rastreabilidade, indexação, segurança, estrutura de URL, mobile, Core Web Vitals, dados estruturados, renderização JavaScript e IndexNow. Use ao pedir 'technical SEO', 'crawl issues', 'robots.txt', 'Core Web Vitals', 'site speed' ou 'security headers'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url]"
 license: MIT
@@ -15,6 +13,8 @@ metadata:
 ---
 
 # Technical SEO Audit
+
+**Quando usar esta vs. `sites-seo-technical`:** esta *audita* um site já no ar (rastreabilidade, indexação, headers, CWV) e entrega achados. Para *implementar* as correções no código Next.js/Astro, use `sites-seo-technical`.
 
 ## Categories
 

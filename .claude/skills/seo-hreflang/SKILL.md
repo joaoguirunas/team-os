@@ -1,10 +1,8 @@
 ---
 name: seo-hreflang
-description: >
-  Hreflang and international SEO audit, validation, and generation. Detects
-  common mistakes, validates language/region codes, and generates correct
-  hreflang implementations. Use when user says "hreflang", "i18n SEO",
-  "international SEO", "multi-language", "multi-region", or "language tags".
+description: "Auditoria, validação e geração de hreflang e SEO internacional — detecta erros comuns, valida códigos de idioma/região e gera a implementação correta. Use ao pedir 'hreflang', 'i18n SEO', 'SEO internacional', 'multi-language', 'multi-region' ou 'language tags'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url]"
 license: MIT

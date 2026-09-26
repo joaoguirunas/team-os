@@ -1,6 +1,6 @@
 ---
 name: social-format-specs
-description: Especificações técnicas de formatos para todas as plataformas sociais — dimensões, duração, tamanho de arquivo, codecs e zonas seguras. Use ao exportar ou validar vídeo/foto para Instagram, TikTok, YouTube Shorts, Facebook ou LinkedIn antes de publicar.
+description: "Especificações técnicas de formatos para todas as plataformas sociais — dimensões, duração, tamanho de arquivo, codecs e zonas seguras. Use ao exportar ou validar vídeo/foto para Instagram, TikTok, YouTube Shorts, Facebook ou LinkedIn antes de publicar."
 version: "1.0"
 updated: "2026-09-04"
 ---

@@ -1,6 +1,10 @@
 ---
 name: team-os
-description: Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os
+description: "Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os"
+user-invocable: true
+argument-hint: "[*env | *memory | *compact [--auto] | *tasks | *spawn <objetivo> | *status]"
+version: "3.0"
+updated: "2026-09-25"
 ---
 
 # team-os — Agent Teams Bootstrap
@@ -44,7 +48,7 @@ Quando `/team-os` está ativo, esta sessão é **orquestrador puro**. Antes de q
 
 **Exceções legítimas (só estas duas):** (1) edições triviais de coordenação na smart-memory (ex.: atualizar `INDEX.md`/`BACKLOG.md` ao registrar uma task, manter o ledger da sessão); (2) rodar `scripts/ensure-settings.sh` da própria skill — garantir settings é bootstrap de orquestração, não implementação. Código e entregáveis: **nunca**.
 
-> Se você se pegar implementando, é um bug de comportamento. Pare, reverta o impulso, e spawna o teammate.
+> Se você se pegar implementando, é um bug de comportamento: pare e spawna o teammate.
 
 ---
 
@@ -93,27 +97,15 @@ Sem evidência verificável, a task **não fecha** — volta ao agente com o que
 
 O time é **persistente**. Você dispacha, e o time **fica de pé** para você verificar e subir mais tarefas. Encerrar é decisão **exclusiva do usuário**.
 
-### Proibido (o lead nunca faz por conta própria):
-- Enviar shutdown request a teammates
-- Declarar a sessão/objetivo "concluído" e parar
-- Encerrar o time porque as tasks da rodada terminaram
+**Proibido por conta própria:** enviar shutdown a teammates · declarar o objetivo "concluído" e parar · encerrar o time porque a rodada acabou.
 
-### Ao terminar uma rodada de tasks:
-1. **Sintetize** os resultados dos teammates (o que ficou pronto).
-2. **Mantenha os teammates vivos e ociosos** — disponíveis para a próxima task.
-3. **PERGUNTE ao usuário**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde.
-4. Só faça shutdown quando o usuário pedir explicitamente (ex.: *"peça ao {nome} para encerrar"* ou *"pode fechar o time"*).
+**Ao terminar uma rodada:** (1) sintetize o que ficou pronto; (2) mantenha os teammates **vivos e ociosos**; (3) **pergunte**: *"Rodada concluída. Mais alguma task, ajuste, ou quer que eu mantenha o time de pé?"* — e aguarde; (4) shutdown só com pedido explícito.
 
-### ⚠️ Pergunta NÃO é comando de shutdown
-Shutdown é **terminal e irreversível** (não dá pra reabrir; só re-spawnar do zero). Por isso:
-- *"encerrou os agentes?"*, *"dá pra fechar?"*, *"os agentes ainda estão de pé?"* → são **perguntas**. Responda a pergunta. **NÃO desligue nada.**
-- Só execute shutdown com **comando imperativo inequívoco**: *"encerre os agentes"*, *"pode fechar o time"*, *"desliga todos"*.
-- Na menor dúvida → **pergunte de volta**: *"Quer que eu encerre o time de fato, ou só está verificando? (shutdown é irreversível)"* e aguarde o "sim".
+**Pergunta NÃO é comando de shutdown.** Shutdown é terminal e irreversível (só re-spawnar do zero). *"encerrou os agentes?"*, *"dá pra fechar?"*, *"ainda estão de pé?"* são **perguntas** — responda, **não desligue nada**. Só execute com imperativo inequívoco (*"encerre os agentes"*, *"pode fechar o time"*, *"desliga todos"*); na dúvida, pergunte de volta (*"Quer que eu encerre de fato, ou só está verificando? (irreversível)"*) e aguarde o "sim".
 
-### "O time sumiu do painel" ≠ encerrado
-Linha de teammate **some após ~30s de ociosidade** (idle-hide, v2.1.181+) — mas o agente **continua vivo e endereçável**. Para dar nova task: `SendMessage` para o nome dele que ele reaparece. O time só é realmente desfeito quando **a sessão inteira fecha**.
+**"Sumiu do painel" ≠ encerrado:** a linha some após ~30s ocioso (idle-hide, v2.1.181+), mas o agente continua vivo e endereçável — `SendMessage` pelo nome e ele reaparece. O time só se desfaz quando a sessão inteira fecha.
 
-> Regra de ouro: dispachou ≠ acabou. O lead fica de plantão até o usuário dizer que pode encerrar.
+> Regra de ouro: dispachou ≠ acabou — plantão até o usuário liberar.
 
 ---
 
@@ -145,7 +137,7 @@ echo "AGENT_TEAMS=$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 
 Executar em paralelo, sem output:
 1. (Gate 0 já confirmou o runtime) Ler `teammateMode` em `~/.claude/settings.json`
-2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`/`brand-`/`finance-`/`legal-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
+2. Listar `.claude/agents/` **do projeto atual** → contar os agentes **instalados aqui** e agrupar por squad (prefixo `dev-`/`sites-`/`social-`/`traffic-`/`pm-`/`sales-`/`brand-`/`finance-`/`legal-`/`seo-`). **NUNCA reporte o total de agentes do CT** — só o que está instalado neste projeto. Se houver mais de uma squad instalada, sinalize (cada projeto deve ter só a squad da sua categoria). **Exceção:** se o projeto é o próprio CT — detectado pela existência de `.claude/skills/team-os-creator/` — múltiplas squads são o esperado (é o repositório fonte): **não** mostre o aviso de múltiplas squads.
 3. Verificar `docs/smart-memory/INDEX.md` → ler se existe (contexto geral). As **stories ativas** são extraídas **diretamente de `docs/smart-memory/stories/active/*.md`** (frontmatter `summary`/`status` de cada arquivo) — não do INDEX.
 4. **Pesar a smart-memory** (barato, determinístico) → rodar `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/weigh-memory.sh" --quiet` e capturar o bloco `WEIGH_*`. O script emite:
    - `WEIGH_DASHBOARD` — **só o valor** (sem prefixo de rótulo; o rótulo `smart-memory :` é do painel da Fase 1)
@@ -153,6 +145,7 @@ Executar em paralelo, sem output:
    - `WEIGH_STATUS` — se `HEAVY`, o painel sinaliza a compactação. Ver "Smart-Memory Compaction".
 5. Consultar a task list (via as ferramentas de gerenciamento de tasks) → tasks pendentes, in-progress, completadas
 6. Verificar o `CLAUDE.md` do projeto → contém a seção `## Smart-Memory Protocol`? Se não, o painel mostra o aviso e a Fase 2-E injeta o bloco canônico de `reference/claude-md-block.md`.
+7. **É o CT?** (existe `.claude/skills/team-os-creator/`) → marque `IS_CT=1`: no repositório fonte **não há smart-memory de produto nem bloco no CLAUDE.md** — as Fases 2-D e 2-E são **puladas** (ver Fase 2) e o painel diz isso.
 
 ### Fase 1 — Dashboard de abertura
 
@@ -175,29 +168,9 @@ Após o scan, mostrar SEMPRE este painel antes de qualquer pergunta:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-A linha `smart-memory` é `rótulo do painel + valor de WEIGH_DASHBOARD` — o script emite **só o valor** (nunca reimprima o prefixo `smart-memory :` vindo do script; o rótulo é do painel). A linha `bootstrap` vem de `WEIGH_BOOTSTRAP_MAX`: a área mais cara de ler no L0 e o budget (default 2000 tokens); se o pior caso estoura o budget, marque `[⚠]` — é sinal de DIGEST gordo.
+Linha `smart-memory` = rótulo do painel + valor de `WEIGH_DASHBOARD` (o script emite só o valor). Linha `bootstrap` = `WEIGH_BOOTSTRAP_MAX` (área mais cara no L0) vs budget (2000 tokens); estourou → `[⚠]` (DIGEST gordo; o script já devolve `WEIGH_STATUS=HEAVY`). HEAVY **só sinaliza** — a compactação roda apenas quando o usuário pedir `/team-os *compact`.
 
-Se `WEIGH_STATUS=HEAVY`, use a linha `smart-memory` para sinalizar a compactação (o `WEIGH_DASHBOARD` já vem formatado). **Não compacte automaticamente** — apenas sinalize; a compactação só roda quando o usuário pedir `/team-os *compact` (ver "Smart-Memory Compaction").
-
-Se o `CLAUDE.md` do projeto não contém a seção `## Smart-Memory Protocol` (check 6 da Fase 0), adicionar:
-```
-  [⚠] CLAUDE.md sem a seção "Smart-Memory Protocol" — vou injetar o bloco canônico
-      (reference/claude-md-block.md) na Fase 2-E.
-```
-
-Se tasks existem: adicionar antes da pergunta:
-```
-  [!] Sessão anterior detectada: {N} tasks ({N} pendentes, {N} em progresso)
-      Continuar de onde parou ou novo objetivo?
-```
-
-Se houver **mais de uma squad** instalada (prefixos distintos em `.claude/agents/`) **e o projeto NÃO é o CT** (sem `.claude/skills/team-os-creator/`), adicionar:
-```
-  [⚠] Múltiplas squads instaladas ({lista}). Este projeto é de categoria {X} e
-      deveria ter só a squad correspondente. Rode `/team-os-creator` → Atualizar
-      para podar as squads sobrando.
-```
-No CT (repositório fonte), múltiplas squads convivem por design — **suprima este aviso**.
+Linhas condicionais (antes da pergunta): `[⚠] CLAUDE.md sem a seção "Smart-Memory Protocol" — vou injetar o bloco canônico na Fase 2-E` (check 6; **não** no CT); `[!] Sessão anterior detectada: {N} tasks ({N} pendentes, {N} em progresso) — continuar ou novo objetivo?` (se há tasks); `[⚠] Múltiplas squads instaladas ({lista}) — projeto de categoria {X} deveria ter só a squad correspondente; rode /team-os-creator → Atualizar para podar` (prefixos distintos em `.claude/agents/` **e** o projeto NÃO é o CT — no CT múltiplas squads convivem por design, **suprima**); `[i] Projeto é o CT — Fases 2-D/E puladas` (`IS_CT=1`).
 
 ### Fase 2 — Correções automáticas (em paralelo com a pergunta de objetivo)
 
@@ -217,21 +190,21 @@ Sugerir (não forçar): `"auto"` — split panes quando tmux/iTerm2 disponível,
 ```bash
 bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/ensure-settings.sh"          # --dry-run mostra o merge sem gravar
 ```
-O script garante no `.claude/settings.json` do projeto (criando o arquivo se não existir, preservando todo o resto): `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"`, `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks), `"subagentPromptCacheTtl": "1h"` e os hooks padrão — **PreToolUse** do `block-worktree.sh` (matchers `Agent|Task|EnterWorktree` e `Bash` — bloqueia `isolation: worktree`, EnterWorktree e `git worktree add`), **TaskCreated** (`task-quality.sh` — rejeita task vaga) e **TaskCompleted** (`check-story-progress.sh` — story só fecha com evidência). Só adiciona o que falta — nunca duplica nem remove chaves existentes, e valida o JSON final. Rodá-lo é exceção legítima da Lead Discipline (bootstrap de orquestração).
+O script garante no `.claude/settings.json` do projeto (criando o arquivo se não existir, preservando todo o resto): `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"`, `"worktree": { "bgIsolation": "none" }` (desliga worktree automático de background tasks), `"subagentPromptCacheTtl": "1h"` e os hooks padrão — **PreToolUse** do `block-worktree.sh` (matchers `Agent|Task|EnterWorktree` e `Bash` — bloqueia `isolation: worktree`, EnterWorktree e `git worktree add`), **TaskCreated** (`task-quality.sh` — rejeita task vaga) e **TaskCompleted** com os 5 gates (`check-story-progress.sh` — story só fecha com evidência; `check-social-progress.sh`, `check-proposal-progress.sh`, `check-finance-progress.sh`, `check-legal-progress.sh` — publicação, proposta, dinheiro e saída jurídica só com PASS + confirmação do usuário). Só adiciona o que falta — nunca duplica nem remove chaves existentes, e valida o JSON final. Rodá-lo é exceção legítima da Lead Discipline (bootstrap de orquestração).
 Se o script avisar hook ausente em `.claude/hooks/`, rodar `/team-os-creator *propagate` no CT (os hooks são distribuídos de lá).
 
-**D) Smart-memory ausente ou incompleta → DISCOVERY/REPAIR obrigatório antes de spawnar:**
+**D) Smart-memory ausente ou incompleta → DISCOVERY/REPAIR obrigatório antes de spawnar** (⛔ **pular no CT**: com `IS_CT=1` não rode discovery/repair — o CT é o repositório fonte dos agentes, não um projeto com smart-memory; diga *"Projeto é o CT — Fases 2-D/E puladas"* e siga para a Fase 3):
 - **Ausente** (`docs/smart-memory/INDEX.md` não existe): NÃO comece o trabalho direto. Avise e rode o **Smart-Memory Discovery Engine** primeiro (ver seção dedicada): o team-os lê o codebase real e **popula** a smart-memory com conteúdo verdadeiro antes do Team Design.
   `"Smart-memory não encontrada. Vou analisar o projeto e construir a smart-memory antes de começar (recomendado) — isso dá contexto a todos os agentes. Pode ser?"`
-- **Existe mas incompleta** (faltam áreas da squad instalada, `DIGEST.md` de área, `_inbox/`, subpastas de `stories/`): o **caminho padrão de conserto é `--repair`** — só completa o que falta, **nunca sobrescreve** conteúdo existente:
+- **Existe mas incompleta** (faltam áreas `agents/<squad>/<área>/` da squad instalada, `DIGEST.md` de área, `_inbox/`, subpastas de `stories/`; ou layout antigo `agents/<área>/` sem squad): o **caminho padrão de conserto é `--repair`** — só completa o que falta, **nunca sobrescreve** conteúdo existente, e **migra** (`mv`, logado) `agents/<área>/` → `agents/<squad>/<área>/` quando há uma só squad instalada e `docs/smart-memory/pm/*.md` → `agents/pm/`:
   ```bash
   bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/discovery.sh" --repair
   ```
 - **`--force`** regenera a base do zero, mas faz **backup automático** da base atual antes de tocar em qualquer arquivo — use só com pedido explícito do usuário, nunca como conserto de rotina.
 
-O `discovery.sh` cria as áreas em `agents/` **por squad instalada** (uma área por agente da squad, cada uma com seu `DIGEST.md`), cria o `_inbox/` (notas rápidas de sessão, consolidadas no `*compact`) e gera o `INDEX.md` linkando `[[agents/<área>/DIGEST]]` e `[[stories/active/]]`.
+O que o `discovery.sh` cria e como deriva as áreas `agents/<squad>/<área>/` → seção "Smart-Memory Discovery Engine".
 
-**E) Protocolo no CLAUDE.md (passo OBRIGATÓRIO — verificado na Fase 0, corrigido aqui):**
+**E) Protocolo no CLAUDE.md (passo OBRIGATÓRIO — verificado na Fase 0, corrigido aqui; ⛔ pular no CT, `IS_CT=1`):**
 Se o `CLAUDE.md` do projeto não contém a seção `## Smart-Memory Protocol`, injetar o conteúdo de `reference/claude-md-block.md` **verbatim** (criar o `CLAUDE.md` se não existir). Se a seção já existe, **não duplicar** — não faça nada. Esse bloco é o contrato mínimo que qualquer sessão/agente do projeto lê: fonte de verdade em `docs/smart-memory/`, leitura em camadas L0/L1/L2 com `sm-find.sh`, escrita via `_inbox/`, fatos atômicos datados com `supersedes`, TTL via `expires:` e proibição de worktrees/branches novas.
 
 ### Fase 3 — Objetivo (SEMPRE — nunca pular)
@@ -279,15 +252,7 @@ Mapeie cada tipo de trabalho ao papel correto. **Regras duras de casting:**
 
 A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 teammates** e escale conforme o trabalho genuinamente se beneficiar de mais paralelismo. **Sem teto fixo** — o dimensionamento não é um número mágico, é **independência real** (workstreams com ownership de arquivos disjunto) + budget de tokens: 15 workstreams genuinamente independentes justificam 15 teammates. Três teammates focados frequentemente superam cinco espalhados; não trate "mais agentes" como default nem imponha um limite arbitrário quando o paralelismo real justifica mais.
 
-```
-1 workstream independente  =  1 agente
-
-Workstream independente = bloco de trabalho com OWNERSHIP DE ARQUIVOS DISJUNTO
-(não escreve nos mesmos arquivos que outro) e SEM dependência de dados de outro.
-
-→ Mapeie os workstreams independentes do objetivo. Comece com os 3-5 mais relevantes
-  e adicione mais só quando houver ganho real de paralelismo (não para "cobrir tudo de uma vez").
-```
+**1 workstream independente = 1 agente.** Workstream independente = ownership de arquivos **disjunto** e sem dependência de dados de outro. Mapeie-os, comece pelos 3-5 mais relevantes e adicione só com ganho real de paralelismo.
 
 **Escale conforme o ganho real, com 3 guardrails (da spec oficial — não negociáveis):**
 1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só. **Onde o ownership de arquivo NÃO é disjunto, serialize (task dependencies) — nunca paralelize.**
@@ -307,38 +272,7 @@ Workstream independente = bloco de trabalho com OWNERSHIP DE ARQUIVOS DISJUNTO
 
 ### Fase 5 — Proposta de time
 
-Formato da proposta (ajustar ao contexto real):
-
-```
-🧑‍💻 Time proposto para: "{objetivo resumido}"
-   {N} agentes  ·  {N} tasks  ·  paralelo máximo: {N} simultâneos
-
-─────────────────────────────────────────────────────────────
-① {agente-type}  →  nome: "{nome-curto}"
-   Ownership: {paths exclusivos deste agente}
-   Skills: {/skill-a}, {/skill-b}  (disponíveis via /nome-da-skill)
-   Plan mode: {SIM/NÃO} — {razão se SIM}
-   Missão: "{spawn prompt — específico, com paths, entregável claro}"
-
-② {agente-type}  →  nome: "{nome-curto}"
-   Ownership: {paths exclusivos}
-   ...
-
-③ (após ① completar) {agente-type}  →  nome: "{nome-curto}"
-   ...
-─────────────────────────────────────────────────────────────
-📋 Tasks:
-   ① → [ ] {task 1} (owner: {nome})
-   ① → [ ] {task 2} (owner: {nome})
-   ②∥③ → [ ] {task 3} (self-claim)
-   depende de ① → [ ] {task 4}
-
-📊 Modelo sugerido: Sonnet (padrão) | Haiku para pesquisa pura (mais barato)
-🎚 Effort sugerido: architect/QA → high · implementers → médio (default) · pesquisa rápida → low
-⚡ Paralelismo: {N} agentes simultâneos na fase inicial
-
-[s] Spawnar  [a] Ajustar composição  [+] Mais agentes  [p] Plan mode em todos  [n] Cancelar
-```
+Formato: cabeçalho (`objetivo · N agentes · N tasks · paralelo máximo`), um bloco por agente (`①` tipo → nome curto · **Ownership** = paths exclusivos · **Skills** `/…` · **Plan mode** SIM/NÃO com razão · **Missão** = spawn prompt com paths e entregável), lista de tasks com owner/self-claim/dependências, modelo e effort sugeridos, e as opções `[s] Spawnar [a] Ajustar [+] Mais agentes [p] Plan mode em todos [n] Cancelar`. Template completo → ler `reference/proposta-de-time.md` quando precisar.
 
 **Effort como alavanca (proposta sempre inclui, junto com o modelo):**
 - Sugira effort por papel: **architect/QA → `high`** (o erro custa caro); **implementers → médio (default)**; **pesquisas rápidas → `low`**.
@@ -354,36 +288,14 @@ Após confirmação do usuário:
 2. **Tasks**: criar na task list (via as ferramentas de gerenciamento de tasks) com dependências corretas antes de spawnar
 3. **Spawn imediato**: spawna TODOS os agentes do plano de uma vez (nomes curtos: `archi`, `alpha`, `beta`, `qa`, `ops`). Não execute nenhuma task você mesmo — cada uma é de um teammate.
 4. **Lead fica livre**: após spawnar, seu trabalho é **monitorar, rotear e sintetizar** — nunca pegar trabalho. Se há demanda nova no meio, spawna mais um agente (não faça você).
-5. **Nomear a sessão pela tarefa** (opcional, 1 tecla): o título da sessão já vem do projeto+branch (hook `SessionStart` — ver "Nomeação automática da sessão"). Para fixar TAMBÉM a tarefa atual no nome (útil ao retomar depois), imprima ao usuário um `/rename` pronto pra colar, com um slug curto do objetivo:
-   ```
-   💡 Para identificar esta sessão depois, fixe a tarefa no nome:
-      /rename {projeto}: {slug-curto-do-objetivo}
-   ```
-   (Slash command é input do usuário — a skill não consegue executar `/rename` sozinha; por isso entregamos a linha pronta.)
-6. **Orientar**: lembrar ao usuário os controles do agent panel
-
-```
-Agent panel ativo ↓
-  ↑↓      → navegar entre agentes
-  Enter   → abrir sessão do agente e enviar mensagem diretamente
-  Esc     → interromper turno atual do agente selecionado
-  x       → parar agente selecionado
-  Ctrl+T  → toggle da task list
-
-Agente sumiu do panel? → idle após 30s (não parou) — envie mensagem por nome para reativar
-```
+5. **Nomear a sessão pela tarefa** (opcional): o título já vem de projeto+branch (hook `SessionStart`). Para fixar também a tarefa, imprima um `/rename {projeto}: {slug-curto-do-objetivo}` pronto para colar — slash command é input do usuário, a skill não o executa.
+6. **Orientar**: lembrar ao usuário os controles do agent panel (↑↓ navegar · Enter abrir · Esc interromper · x parar · Ctrl+T task list; agente sumiu = idle, mande mensagem pelo nome) → detalhes em `reference/controle-do-time.md`.
 
 ---
 
-## Settings.json canônico
+## Settings e nomeação da sessão
 
-Configuração global + por projeto (flag AGENT_TEAMS, `teammateMode` e suas opções, mudança de default na v2.1.179, hooks TeammateIdle/TaskCompleted) → ver `reference/settings-canonico.md`.
-
----
-
-## Nomeação automática da sessão (SessionStart hook)
-
-O hook `SessionStart` global (`team-os-session-title.sh`, instalado pelo `*install`) nomeia toda sessão como `{projeto} · {branch}` — único mecanismo com API oficial (a skill não consegue digitar `/rename`; para fixar TAMBÉM a tarefa, use o `/rename` pronto da Fase 6). Mecanismo, convenção e registro → ver `reference/session-naming.md`.
+Settings do projeto = o que o `ensure-settings.sh` garante (Fase 2-C); global = flag + `teammateMode` → `reference/settings-canonico.md`. O hook `SessionStart` global (`team-os-session-title.sh`, instalado pelo `*install`) nomeia toda sessão como `{projeto} · {branch}` — a skill não digita `/rename` (use o pronto da Fase 6) → `reference/session-naming.md`.
 
 ---
 
@@ -396,7 +308,7 @@ Quando `docs/smart-memory/` não existe, o team-os **não cria scaffolding vazio
    ```bash
    bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/discovery.sh"          # ou --dry-run para só inspecionar
    ```
-   Ele detecta stack (linguagens, frameworks, styling/UI, DB/ORM, testes, tooling, pkg manager, monorepo), mapeia os módulos e gera `INDEX.md` (linkando `[[agents/<área>/DIGEST]]` e `[[stories/active/]]`) + `project/{overview,tech-stack,conventions,architecture,modules}.md` + `stories/BACKLOG.md` + a estrutura de pastas `stories/{backlog,active,in-review,done}/`, `decisions/`, `_inbox/` e as áreas de `agents/` **por squad instalada** (lidas de `.claude/agents/`), cada área já com seu `DIGEST.md` (seções "Core (permanente)" e "Contexto recente (expira ~14 dias)"). É self-contained (só depende da skill team-os).
+   Detecta stack e módulos e gera `INDEX.md` (linka `[[agents/<squad>/<área>/DIGEST]]` e `[[stories/active/]]`), `project/*.md`, `stories/BACKLOG.md` + `stories/{backlog,active,in-review,done}/`, `decisions/`, `_inbox/` e as áreas **`agents/<squad>/<área>/`** — lidas da linha `**Área na smart-memory:**` de cada agente em `.claude/agents/` (fallback: tabela por squad) — cada uma com seu `DIGEST.md`. Self-contained (só depende da skill team-os).
    **Modos:** `--repair` completa uma base existente sem sobrescrever nada (caminho padrão de conserto); `--force` regenera do zero com backup automático da base atual.
 2. **Enriquecer os `<!-- TODO -->`** — o script deixa marcados os pontos que o código não revela (domínio/propósito do projeto, responsabilidade de cada módulo). Você (ou um teammate `*-analyst`/`*-architect`) preenche lendo o código e o README.
 3. **Acelerar com paralelismo** — em codebase grande, delegue o enriquecimento a teammates em paralelo (um por área/módulo), cada um gravando sua seção.
@@ -409,16 +321,7 @@ Use `team-os/reference/obsidian-patterns.md` para o padrão de frontmatter/wikil
 
 ## Leitura em camadas (L0 → L1 → L2)
 
-Regra de ouro: **summary-first** — ninguém abre nota inteira sem o `summary` do frontmatter confirmar relevância. É este protocolo que o `*memory` verifica e que o bloco do CLAUDE.md (`reference/claude-md-block.md`) impõe a todo agente:
-
-- **L0 — bootstrap (sempre, e só isto):** `INDEX.md` + `DIGEST.md` da sua área (`agents/<área>/DIGEST.md`) + stories ativas (`stories/active/*.md`). O DIGEST tem duas seções: **"Core (permanente)"** — fatos estáveis do projeto/área — e **"Contexto recente (expira ~14 dias)"** — fatos com decay, revisados/arquivados no `*compact`. Todo fato é **atômico e datado**; fato novo **substitui** a linha antiga (supersedes), nunca acumula.
-- **L1 — busca por summaries:** quando o L0 não responde, use o `sm-find.sh` — busca pelos `summary` do frontmatter e devolve `path / kind / status / summary`, sem abrir nota nenhuma:
-  ```bash
-  bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" "<termo>"
-  ```
-- **L2 — nota inteira:** só quando o `summary` retornado confirma que a nota é necessária — **máximo 3 notas por tarefa**.
-
-⛔ Proibido em qualquer camada: ler pastas inteiras, ler `_archive/`, abrir notas "para ver se tem algo útil". O custo de L0 por área é medido pelo `weigh-memory.sh` (`WEIGH_BOOTSTRAP_<AREA>`, budget default 2000 tokens) e aparece na linha `bootstrap` do painel.
+Regra de ouro: **summary-first** — ninguém abre nota inteira sem o `summary` do frontmatter confirmar relevância (é o que o `*memory` verifica e o bloco do CLAUDE.md impõe a todo agente). **L0** (sempre, e só isto): `INDEX.md` + `DIGEST.md` da sua área (`agents/<squad>/<área>/DIGEST.md`, path na linha `**Área na smart-memory:**` do agente) + `stories/active/*.md`. O DIGEST tem "Core (permanente)" e "Contexto recente (expira ~14 dias)"; todo fato é atômico e datado, fato novo **substitui** o antigo. **L1**: `bash "$CLAUDE_PROJECT_DIR/.claude/skills/team-os/scripts/sm-find.sh" "<termo>"` — busca pelos `summary` e devolve `path / kind / status / summary` sem abrir nota. **L2**: nota inteira só com summary confirmando — **máx 3 notas por tarefa**. ⛔ Nunca ler pastas inteiras, `_archive/` ou notas "para ver se tem algo útil". O custo do L0 por área é o `WEIGH_BOOTSTRAP_<AREA>` do `weigh-memory.sh` (budget 2000 tokens) — linha `bootstrap` do painel.
 
 ---
 
@@ -438,99 +341,17 @@ O `weigh-memory.sh` roda na **Fase 0** de todo `/team-os` e classifica a smart-m
 | `DONE_FILES_WARN` | 30 arquivos em `stories/done/` | **HEAVY** — stories frias acumuladas |
 | `FAT_FILE_LINES` | 1.500 linhas num único arquivo | **informativo** — aparece no dashboard, não dispara HEAVY sozinho |
 | `resolved`/`superseded` não-arquivados | ≥ 1 | **informativo** — idem (o `*compact` arquiva quando rodar) |
-| `WEIGH_BOOTSTRAP_<AREA>` acima do budget | budget 2.000 tokens | linha `bootstrap` do painel marca `[⚠]` (DIGEST gordo) |
+| `WEIGH_BOOTSTRAP_MAX` acima do budget | `BOOTSTRAP_BUDGET_TOKENS` = 2.000 tokens | **HEAVY** — a pior área custa mais que o budget no L0 (DIGEST gordo); a linha `bootstrap` do painel marca `[⚠]` |
 
-Limiar **HEAVY** cruzado → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. Os sinais informativos (`resolved`/fat) entram no `WEIGH_DASHBOARD` mas não mudam o status sozinhos. O bootstrap **só sinaliza**; a compactação roda no `*compact`. O script emite `WEIGH_DASHBOARD` **sem** o prefixo `smart-memory :` (o rótulo é do painel).
+Qualquer limiar **HEAVY** cruzado (linhas, done **ou** bootstrap > budget — é assim que o `weigh-memory.sh` decide) → `WEIGH_STATUS=HEAVY` e a linha do painel vira `⚠ PESADA (…) → /team-os *compact`. Os sinais informativos (`resolved`/`expired`/fat) entram no `WEIGH_DASHBOARD` como "arquiváveis" mas não mudam o status sozinhos. O bootstrap **só sinaliza**; a compactação roda no `*compact`. O script emite `WEIGH_DASHBOARD` **sem** o prefixo `smart-memory :` (o rótulo é do painel).
 
 ### `*compact` — resumo
 
-```
-/team-os *compact          → plano completo + 1 confirmação + execução integral
-/team-os *compact --auto   → sem confirmação: aplica o plano inteiro direto
-```
-
-`*compact` combina três frentes:
-
-1. **Fase mecânica** (`compact-memory.sh`): arquiva `stories/done/*` e notas `resolved`/`superseded` — **só faz `mv`, nunca `rm`**, nunca toca em stories ativas, `project/`, INDEXes, DIGESTs, `kind: reference`. Novidades v3:
-   - **TTL automático** — notas com frontmatter `expires:` vencido são arquivadas junto;
-   - **guardas no `--archive-file`** — o script valida o alvo antes de mover (recusa paths protegidos);
-   - **relatório de wikilinks órfãos** — links `[[...]]` que os movimentos quebram são listados para correção (o archivist corrige nos DIGESTs/INDEX como parte do plano);
-   - **relatório do `_inbox/` pendente** — o que está aguardando consolidação.
-2. **Consolidação do `_inbox/`**: o teammate **archivist** (opus) lê **todo o `_inbox/` de uma vez**, funde/deduplica os fatos e aplica `supersedes` nos `DIGEST.md` das áreas (fato novo substitui a linha antiga; datado). Depois de consolidado, `compact-memory.sh --clear-inbox` esvazia o inbox.
-3. **Fase semântica**: o mesmo archivist infere frontmatter (`kind`/`status`/`summary`/`expires`), escreve/atualiza DIGESTs (Core vs Contexto recente, decay ~14 dias) e propõe o plano quente/frio — julgamento semântico é do archivist, nunca do lead.
-
-O lead consolida tudo num plano único (arquivamentos + TTL + consolidação do inbox + correção de órfãos), pede **UMA confirmação** e executa integral, zero pergunta por arquivo. Passos internos, prompt do archivist e comandos → ver `reference/compact-flow.md`.
+`/team-os *compact` = plano completo + **UMA** confirmação + execução integral; `--auto` aplica sem confirmar. Três frentes: (1) **mecânica** — `compact-memory.sh` arquiva `stories/done/*`, notas `resolved`/`superseded` e **TTL vencido** (`expires:`); **só faz `mv`, nunca `rm`**; nunca toca em stories ativas, `project/`, `decisions/`, INDEXes, DIGESTs, `kind: reference` (o `--archive-file` valida o alvo e recusa paths protegidos); reporta wikilinks órfãos e o `_inbox/` pendente; (2) **consolidação do `_inbox/`** — o teammate **archivist** (opus) lê todo o inbox de uma vez, funde/deduplica e aplica `supersedes` nos DIGESTs; depois `--clear-inbox`; (3) **semântica** — o archivist infere frontmatter (`kind`/`status`/`summary`/`expires`), atualiza DIGESTs (Core vs Contexto recente, decay ~14 dias) e propõe o plano quente/frio. Julgamento semântico é do archivist, nunca do lead; o lead só consolida o plano e dispara os scripts. Órfãos corrigidos e re-pesagem ao final. Passos, prompt do archivist e comandos → `reference/compact-flow.md`.
 
 ### Estrutura criada
 
-```
-docs/smart-memory/
-├── INDEX.md                    ← MOC raiz — linka [[agents/<área>/DIGEST]] e [[stories/active/]]
-├── _inbox/                     ← notas rápidas da sessão (<agente>-<data>.md) — consolidadas
-│                                  nos DIGESTs no *compact (--clear-inbox esvazia depois)
-├── project/
-│   ├── overview.md             ← visão geral do projeto (preencher junto com o usuário)
-│   ├── tech-stack.md           ← stack detectado automaticamente + confirmar
-│   ├── conventions.md          ← padrões de código do projeto
-│   ├── architecture.md         ← visão arquitetural + diagrama Mermaid (dev-architect refina)
-│   └── modules.md              ← mapa de módulos + God Nodes (devs enriquecem)
-├── decisions/                  ← decisões técnicas / ADRs pontuais
-├── stories/
-│   ├── BACKLOG.md              ← lista master de todas as stories
-│   ├── backlog/                ← stories aguardando priorização
-│   ├── active/                 ← stories em andamento (Fase 0 lê daqui direto)
-│   ├── in-review/              ← stories em revisão/QA
-│   └── done/                   ← stories concluídas
-├── agents/                     ← UMA área por agente da squad INSTALADA (o discovery.sh
-│   │                              cria conforme `.claude/agents/` — exemplos abaixo)
-│   ├── research/               ← findings de pesquisa (dev-analyst/researcher escreve)
-│   │   └── DIGEST.md           ← resumo vivo da área (≤150 linhas) — seções "Core (permanente)"
-│   │                              e "Contexto recente (expira ~14 dias)"; fatos atômicos datados
-│   ├── qa/          (+DIGEST)  ← resultados de auditorias e QA (dev-qa escreve)
-│   ├── data-engineer/ (+DIGEST) ← saídas de dados / schema
-│   ├── ux/          (+DIGEST)  ← saídas de UX
-│   └── …            (+DIGEST)  ← demais áreas da squad instalada
-└── _archive/                   ← arquivo morto (conteúdo frio compactado). NÃO é lido no
-    │                              bootstrap nem pelos agentes — só sob pedido explícito.
-    ├── README.md               ← explica a convenção (criado pelo discovery)
-    ├── LEDGER.md               ← índice de arquivos gordos esfriados (criado pelo *compact)
-    └── YYYY-QN/                ← criado sob demanda pelo *compact (stories-done/, resolved/, misc/)
-```
-
-> `_archive/` fica fora do working set: o `weigh-memory.sh` o exclui da contagem de peso e os agentes não o leem (convenção reforçada no Smart-Memory Protocol). Ver "Smart-Memory Compaction".
-
-**`INDEX.md` template:**
-```markdown
----
-title: "Smart-Memory — {Nome do Projeto}"
-type: index
-agent: team-os (discovery)
-created: {data}
-updated: {data}
-tags: [index, smart-memory]
----
-
-# Smart-Memory — {Nome do Projeto}
-
-## Projeto
-- [[project/overview]] — Visão geral
-- [[project/tech-stack]] — Stack tecnológico (detectado)
-- [[project/conventions]] — Padrões de código
-
-## Arquitetura
-- [[project/architecture]] — Visão arquitetural
-
-## Módulos
-- [[project/modules]] — Mapa de módulos + God Nodes
-
-## Stories
-- [[stories/BACKLOG]] — Backlog master
-- [[stories/active/]] — Stories em andamento
-
-## Saídas por agente (DIGESTs — porta de entrada L0)
-- [[agents/research/DIGEST]] · [[agents/qa/DIGEST]] · [[agents/data-engineer/DIGEST]] · [[agents/ux/DIGEST]] · …
-  (uma linha por área — o discovery.sh gera conforme a squad instalada)
-```
+`discovery.sh` cria `INDEX.md` · `_inbox/` · `project/{overview,tech-stack,conventions,architecture,modules}.md` · `decisions/` · `stories/BACKLOG.md` + `stories/{backlog,active,in-review,done}/` (story = `<id>-<slug>.md`, `<id>` livre por squad) · `agents/<squad>/<área>/DIGEST.md` (uma área por agente instalado; nota de squad inteira pode ficar em `agents/<squad>/`) · `_archive/` (fora do working set — o `weigh-memory.sh` o exclui e os agentes não o leem). Árvore completa e template do `INDEX.md` → ler `reference/estrutura-smart-memory.md` quando precisar.
 
 **Injetar no `CLAUDE.md` do projeto** (Fase 2-E — passo obrigatório): se falta a seção `## Smart-Memory Protocol`, injetar o conteúdo de **`reference/claude-md-block.md` verbatim** (criar o `CLAUDE.md` se não existir; **nunca duplicar** se a seção já existe). O bloco canônico vive só nesse arquivo — não copie versões divergentes daqui. Ele cobre: fonte de verdade em `docs/smart-memory/`, leitura L0/L1/L2 com `sm-find.sh` (summary-first, máx 3 notas por tarefa), nunca ler pastas inteiras nem `_archive/`, escrita de sessão via `_inbox/`, fatos atômicos datados com `supersedes`, TTL via `expires:` e proibição de worktrees/branches novas.
 
@@ -546,31 +367,9 @@ tags: [index, smart-memory]
 
 Um spawn prompt ruim desperdiça todo o context window do agente em exploração. Um bom prompt entrega contexto cirúrgico:
 
-**Estrutura ideal:**
-```
-"[Papel e escopo]
- [Paths exatos de ownership — APENAS estes arquivos]
- [Contexto técnico relevante — stack, padrões, constraints]
- [Entregável esperado — o que constitui "done"]
- [Como reportar ao concluir — SendMessage para quem]
- [Skills disponíveis: /nome-skill para ativar]"
-```
+**Estrutura ideal:** papel e escopo → paths exatos de ownership (APENAS estes) → contexto técnico (stack, padrões, constraints) → entregável ("done" = o quê, em qual path) → a quem reportar (`SendMessage`) → skills disponíveis (`/nome-skill`).
 
-**Exemplo ruim:**
-```
-"Revise o código de autenticação e melhore o que precisar."
-```
-
-**Exemplo excelente:**
-```
-"Você é o dev-qa responsável por auditar o módulo de autenticação.
- Seu scope EXCLUSIVO: src/auth/, tests/auth/, docs/smart-memory/agents/qa/
- Stack: Next.js 15, Supabase Auth, JWT em httpOnly cookies.
- Ative /dev-security-patterns e /dev-testing-strategy para referência.
- Entregável: relatório em docs/smart-memory/agents/qa/auth-audit.md com findings,
- severity ratings (CRITICAL/HIGH/MEDIUM/LOW) e recomendações priorizadas.
- Ao concluir: SendMessage para 'archi' com o path do relatório."
-```
+Exemplo ruim vs. excelente (scope exclusivo, stack, skills, entregável com path, a quem reportar) → `reference/spawn-prompts.md`.
 
 ### Plan mode — quando usar
 
@@ -581,20 +380,11 @@ Obrigatório para trabalho de ALTO RISCO:
 - Refatorações grandes (>500 linhas afetadas)
 - Qualquer breaking change em API pública
 
-```
-"Spawn {agente} em plan mode para {tarefa}.
- Só aprovar o plano se incluir: {critério 1}, {critério 2}.
- Rejeitar se: {critério de rejeição}."
-```
+Instrução de spawn em plan mode (critérios de aprovação/rejeição explícitos) → `reference/spawn-prompts.md`.
 
 ### Modelos por tipo de tarefa
 
-| Tarefa | Modelo sugerido | Razão |
-|---|---|---|
-| Arquitetura / ADRs (architect) | Opus (fixo no arquivo) | Máximo raciocínio — decisão errada custa caro |
-| Review / veredicto (reviewer/QA) | Opus (fixo no arquivo) | Veredictos precisam de rigor |
-| Implementação complexa | segue o lead (`inherit`) | Lead escolhe sonnet por padrão |
-| Pesquisa / análise | Haiku (via prompt) ou segue o lead | Mais barato, velocidade |
+Arquitetura/ADRs e review/veredicto → **Opus fixo no arquivo**; implementação → `inherit` (segue o lead); pesquisa → Haiku via prompt ou `inherit`. Tabela → `reference/spawn-prompts.md`.
 
 **Importante — quem vence:** quando você spawna um teammate a partir de uma definição em `.claude/agents/`, o campo `model` do arquivo **prevalece** sobre o "Default teammate model" do `/config`. No padrão CT (Híbrido), `architect`/`reviewer` têm `model: opus` fixo e os demais usam `model: inherit` — só estes seguem o `/model` do lead. Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {nome} usando modelo haiku para pesquisar..."` (o parâmetro por invocação também vence o `inherit`).
 
@@ -602,115 +392,13 @@ Obrigatório para trabalho de ALTO RISCO:
 
 ## Skills por tipo de agente
 
-team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de agente. Elas ficam disponíveis na sessão do agente para ativar via `/nome-skill`:
-
-| Tipo de agente | Skills a mencionar no spawn prompt |
-|---|---|
-| **TODOS os agentes** | `/verify-before-done` — obrigatória antes de declarar qualquer trabalho como done |
-| **dev-architect / sites-architect** | `/dev-api-design`, `/dev-technical-writing` |
-| **dev-analyst / sites-analyst / researcher** | `/deep-research`, `/data-analytics-engineering`, `/dev-defuddle` |
-| **dev-dev-alpha** | `/dev-typescript-patterns`, `/dev-testing-strategy`, `/dev-error-handling`, `/nextjs-react-best-practices` |
-| **dev-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
-| **dev-dev-gamma** | `/dev-typescript-patterns`, `/dev-database-patterns`, `/dev-error-handling` |
-| **dev-dev-delta / sites-dev-delta** | `/dev-security-patterns`, `/dev-testing-strategy`, `/dev-error-handling` |
-| **dev-qa** | `/dev-testing-strategy`, `/dev-security-patterns`, `/testing-playwright-e2e` |
-| **dev-devops / sites-devops** | `/dev-git-workflow` (+ `/sites-deployment` na squad sites) |
-| **dev-data-engineer / sites-data (data engineers)** | `/dev-database-patterns`, `/data-supabase-patterns`, `/data-sql-optimization` |
-| **dev-bi / dev-data-performance** | `/data-analytics-engineering`, `/data-sql-optimization`, `/data-lake-platform` |
-| **sites-dev-alpha** | `/sites-frontend-stack`, `/ui-ux-pro-max`, `/nextjs-react-best-practices`, `/accessibility` |
-| **sites-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
-| **sites-dev-gamma** | `/sites-copy`, `/sites-page-cro`, `/sites-seo-technical`, `/traffic-analytics-tracking` |
-| **sites-ux** | `/sites-ux-interaction`, `/sites-copy`, `/ui-ux-pro-max`, `/accessibility` |
-| **sites-qa** | `/dev-testing-strategy`, `/testing-playwright-e2e`, `/web-design-guidelines`, `/sites-seo-technical`, `/accessibility` |
-| **social-content** | `/social-copywriting`, `/social-editorial-validation`, `/social-format-specs` |
-| **social-design** | `/social-key-visual`, `/social-carousel-design` |
-| **traffic-strategist** | `/traffic-paid-ads-optimization`, `/tiktok-marketing` |
-| **traffic-google** | `/traffic-google-ads-mcp`, `/traffic-paid-ads-optimization` |
-| **traffic-meta / traffic-tiktok** | `/traffic-paid-ads-optimization` (+ `/tiktok-marketing` no tiktok) |
-| **traffic-bi / traffic-analyst** | `/traffic-ga4-mcp`, `/traffic-analytics-tracking`, `/data-analytics-engineering` |
-| **traffic-qa** | `/traffic-analytics-tracking`, `/traffic-ga4-mcp` |
-| **traffic-automation** | `/traffic-google-ads-mcp`, `/traffic-analytics-tracking` |
-| **traffic-copywriter** | `/social-copywriting`, `/tiktok-marketing` |
-| **traffic-designer** | `/social-format-specs`, `/social-key-visual` |
-| **pm-data / pm-analyst** | `/data-supabase-patterns`, `/data-sql-optimization`, `/data-analytics-engineering` |
-| **pm-reporter / pm-coach** | `/dev-technical-writing` |
-| **sales-analyst** | `/sales-discovery-intake`, `/deep-research`, `/dev-defuddle` |
-| **sales-strategist** | `/negotiation`, `/sales-pricing-payback`, `/pricing` |
-| **sales-planner** | `/sales-proposal-planning`, `/sales-discovery-intake`, `/dev-technical-writing` |
-| **sales-finance** | `/sales-pricing-payback`, `/startup-financial-modeling`, `/pricing` |
-| **sales-copywriter** | `/sales-proposal-copy`, `/sales-enablement`, `/sites-copy` |
-| **sales-designer** | `/sales-deck-production`, `/slides`, `/presentation-design`, `/ui-ux-pro-max` |
-| **sales-qa** | `/sales-proposal-copy`, `/sales-deck-production`, `/presentation-design` |
-| **sales-closer** | `/negotiation`, `/sales-enablement`, `/sales-proposal-copy` |
-| **brand-analyst** | `/brand-research`, `/deep-research`, `/dev-defuddle` |
-| **brand-strategist** | `/brand-platform`, `/brand-research`, `/pricing` |
-| **brand-architect** | `/brand-platform`, `/dev-technical-writing`, `/brand-rollout` |
-| **brand-voice** | `/brand-verbal-identity`, `/sites-copy`, `/brand-platform` |
-| **brand-designer** | `/brand-visual-system`, `/design`, `/ui-ux-pro-max`, `/web-design-guidelines`, `/social-key-visual` |
-| **brand-insights** | `/brand-tracking`, `/data-analytics-engineering`, `/social-analytics` |
-| **brand-rollout** | `/brand-rollout`, `/brand-verbal-identity`, `/brand-visual-system` |
-| **brand-qa** | `/brand-verbal-identity`, `/brand-visual-system`, `/brand-platform` |
-| **finance-analyst** | `/finance-bookkeeping`, `/deep-research`, `/dev-defuddle` |
-| **finance-strategist** | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/pricing` |
-| **finance-planner** | `/finance-cash-flow`, `/finance-reporting`, `/startup-financial-modeling`, `/dev-technical-writing` |
-| **finance-controller** | `/finance-bookkeeping`, `/finance-cash-flow`, `/data-analytics-engineering` |
-| **finance-billing** | `/finance-receivables-payables`, `/finance-bookkeeping`, `/negotiation` |
-| **finance-tax** | `/finance-tax-compliance`, `/finance-bookkeeping`, `/deep-research` |
-| **finance-reporter** | `/finance-reporting`, `/finance-cash-flow`, `/dev-technical-writing` |
-| **finance-qa** | `/finance-bookkeeping`, `/finance-receivables-payables`, `/finance-reporting` |
-| **legal-analyst** | `/legal-research`, `/deep-research`, `/dev-defuddle` |
-| **legal-strategist** | `/legal-contract-drafting`, `/legal-research`, `/negotiation` |
-| **legal-architect** | `/legal-clause-library`, `/legal-contract-lifecycle`, `/dev-technical-writing` |
-| **legal-drafter** | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-research` |
-| **legal-compliance** | `/legal-compliance-lgpd`, `/legal-contract-lifecycle`, `/data-analytics-engineering` |
-| **legal-disputes** | `/legal-contract-lifecycle`, `/legal-research`, `/negotiation` |
-| **legal-ops** | `/legal-contract-lifecycle`, `/legal-clause-library`, `/dev-technical-writing` |
-| **legal-qa** | `/legal-contract-drafting`, `/legal-clause-library`, `/legal-compliance-lgpd` |
-
-> Nomes novos após a fusão de skills (não usar os antigos): `/sites-copy` (ex sites-copywriting/copy-editing/content-strategy) e `/sites-frontend-stack` (ex sites-frontend-design/tailwind-design-system/shadcn-ui); `/accessibility` (ex sites-web-accessibility).
+**Regra:** todo spawn prompt inclui `/verify-before-done` (obrigatória antes de declarar done) **e** as skills relevantes ao papel — as que o próprio agente cita no body (`.claude/agents/<nome>.md`) são a fonte da verdade. Tabela consolidada por agente → ler `reference/skills-por-agente.md` quando precisar. Nomes pós-fusão: `/sites-copy`, `/sites-frontend-stack`, `/accessibility` (não usar os antigos).
 
 ---
 
 ## Controle do time durante a sessão
 
-> **Agent panel ≠ Agent view — não confundir:**
-> - **Agent panel** (esta seção) é o painel de **teammates** abaixo do prompt na sua sessão de lead. São os agentes do time que você spawnou; comunicam-se entre si peer-to-peer.
-> - **Agent view** (`claude agents`) é uma tela separada que gerencia **sessões em background** independentes (cada prompt = nova sessão; Space=peek, Enter=attach). Teammates e subagents que uma sessão spawna **NÃO** aparecem como linhas no agent view. Você pode até carregar `/team-os` dentro de uma sessão dispatchada pelo agent view, mas os dois mecanismos são distintos.
-
-> **🎯 Como ter o painel navegável (setas ↑↓) — leia se você usa `claude agents`:**
-> O painel de teammates é da **sessão que rodou o `/team-os`**, não do agent view. No fluxo `claude agents`:
-> 1. Dispache/abra uma sessão e **dê attach nela** (Enter/→ na linha dela). Você precisa estar **dentro** da sessão.
-> 2. Rode `/team-os` aí dentro (com Agent Teams ativo — Gate 0). Os teammates aparecem no painel **dessa sessão**, navegáveis por ↑↓.
-> 3. Se você sair (detach) para o agent view, o painel some — os teammates seguem vivos na sessão; reattach (Enter) para voltar a navegar.
->
-> **Alternativa mais simples para orquestrar ao vivo:** abra `claude` (foreground) direto no projeto e rode `/team-os` — o painel navegável fica logo abaixo do prompt, sem precisar de attach. Use `claude agents` quando quiser tocar várias sessões em background; use `claude` foreground quando quiser pilotar o time de perto.
-
-### Agent panel
-
-Keybindings (verificado na v2.1.18x, 2026-09 — podem mudar em versões futuras):
-```
-In-process mode (padrão):
-  ↑↓      → selecionar agente no panel
-  Enter   → abrir sessão e enviar mensagem diretamente
-  Esc     → interromper turno atual do agente
-  x       → parar agente selecionado
-  Ctrl+T  → toggle da task list
-
-Split-pane mode (tmux/iTerm2):
-  Click   → entrar na sessão do agente
-  (não requer navegação por teclado)
-```
-
-### Gestão de tasks
-
-Tasks têm 3 estados: `pending` → `in_progress` → `completed`
-
-Tasks com dependências ficam bloqueadas até que as dependências sejam completadas — o sistema desbloqueia automaticamente.
-
-**Self-claim:** Após completar uma task, o agente pega automaticamente a próxima task livre compatível com seu perfil. Isso significa que 5-6 tasks por agente mantém o pipeline fluindo sem intervenção do lead.
-
-### Redirecionar um agente
-Entre na sessão (Enter no panel) e dê instrução direta. O agente processa como mensagem prioritária.
+**Agent panel** (teammates da sessão que rodou `/team-os`, abaixo do prompt) ≠ **agent view** (`claude agents`, sessões em background). Keybindings (↑↓ · Enter · Esc · x · Ctrl+T), como ter o painel navegável a partir do `claude agents`, estados de task e self-claim, redirecionar/encerrar/escalar agentes → ler `reference/controle-do-time.md` quando precisar.
 
 ### Fix loop com cap — QA ↔ implementer (máx 3 rodadas)
 
@@ -734,50 +422,9 @@ Evidência: <1 linha — o que prova que está pronto>
 Detalhe: <path do relatório/artefato completo>
 ```
 
-### Encerrar graciosamente
-```
-"Peça ao agente {nome} para encerrar"
-```
-O agente termina o turno atual, confirma o encerramento e sai. Cleanup automático.
-
-### Quando escalar agentes
-Se o trabalho expande além do planejado:
-```
-"Spawn mais um agente {tipo} chamado {nome} para cobrir {escopo adicional}"
-```
-Adicione um agente por vez, conforme cada um acelerar de fato o trabalho paralelo real — não para "cobrir tudo de uma vez".
-
----
-
 ## Otimização de tokens
 
-Cada agente é uma sessão independente com seu próprio context window. Token cost é linear com número de agentes ativos.
-
-### Estratégias de economia
-
-**1. Spawn prompts cirúrgicos**
-Contexto específico → o agente não precisa explorar para entender o escopo. Cada turno de exploração desnecessária custa tokens.
-
-**2. Plan mode antes de implementar**
-Um agente em plan mode consome muito menos tokens que um agente que implementa, descobre que está errado, e reimplementa.
-
-**3. Ownership exclusivo de arquivos**
-Dois agentes no mesmo arquivo = conflito + resolução = tokens desperdiçados. Cada agente tem paths exclusivos.
-
-**4. Self-claim com 5-6 tasks por agente**
-Sem self-claim → o lead intervém em cada conclusão (lead tokens + agente tokens). Com self-claim → o agente continua sozinho.
-
-**5. Haiku para pesquisa**
-Research tasks não precisam de Sonnet. Haiku é 5x mais barato e igualmente eficaz para busca e análise de texto.
-
-**6. Modelo "leader's model" para teammates**
-Configure `/config` → Default teammate model → "Default (leader's model)" para que teammates sigam o modelo escolhido pelo lead. **Atenção:** isso só vale para agentes cujo arquivo NÃO fixa `model` — no padrão CT (Híbrido) são os que usam `model: inherit` (todos exceto architect/reviewer, que ficam em opus). O campo `model` do arquivo do agente sempre vence esse ajuste.
-
-**7. Paralelo inteligente**
-Não spawnar agentes para tasks sequenciais. Só paralelizar quando há independência real de arquivos/dados.
-
-**8. Smart-memory enxuta (leitura em camadas L0/L1/L2 + compactação)**
-Cada agente lê **L0** (INDEX + DIGEST da sua área + stories ativas), busca via **L1** (`sm-find.sh` pelos summaries — path/kind/status/summary) e só abre nota inteira no **L2** com summary confirmando — **máx 3 notas por tarefa**, nunca pastas inteiras. O DIGEST (≤150 linhas, "Core (permanente)" + "Contexto recente" com decay de ~14 dias) é a porta de entrada; o `weigh-memory.sh` mede o custo do L0 por área contra o budget (2000 tokens). Escrita de sessão vai ao `_inbox/`; frontmatter de ciclo de vida (`kind`/`status`/`summary`/`expires`/`supersedes`). O bootstrap pesa a base e sinaliza quando engorda; `/team-os *compact` consolida o inbox e move o frio ao `_archive/` numa tacada só. Ver "Leitura em camadas", "Smart-Memory Compaction" e `reference/obsidian-patterns.md`.
+Custo é linear no nº de agentes ativos. As 8 alavancas — spawn prompt cirúrgico, plan mode antes de implementar, ownership exclusivo, self-claim (5-6 tasks/agente), Haiku para pesquisa, "leader's model" para `inherit`, paralelo só com independência real, smart-memory enxuta (L0/L1/L2 + `*compact`) → ler `reference/otimizacao-de-tokens.md` quando precisar.
 
 ---
 
@@ -789,12 +436,7 @@ Cada agente lê **L0** (INDEX + DIGEST da sua área + stories ativas), busca via
 
 ## Troubleshooting — Limitações conhecidas
 
-**Garantia dura anti-worktree** (regra, sempre presente aqui):
-
-| Problema | Causa | Solução |
-|---|---|---|
-| Agentes criando branches extras | Lead usou `isolation: worktree` ao spawnar — proibido | NUNCA usar isolation: worktree. Agentes escrevem direto na branch ativa. Resolve conflito de arquivo com ownership disjunto (paths exclusivos por agente). |
-| Worktrees aparecendo mesmo sem spawn manual | Background tasks com isolamento automático, ou settings sem a trava | Garantir no `.claude/settings.json` do projeto: `"worktree": { "bgIsolation": "none" }` + hook `block-worktree.sh` registrado em PreToolUse (Fase 2-C). Limpar zumbis: `git worktree list` → `git worktree remove` + delete da branch (devops). |
+**Garantia dura anti-worktree (regra):** agentes criando branches extras = lead usou `isolation: worktree` (proibido — ownership disjunto resolve conflito); worktrees sem spawn manual = falta `"worktree": { "bgIsolation": "none" }` + hook `block-worktree.sh` no settings (Fase 2-C). Zumbis: `git worktree list` → `remove` + delete da branch (devops). Tabela → `reference/troubleshooting.md`.
 
 Demais problemas conhecidos (resume não restaura teammates, task travada, idle-hide do panel, lead implementando/encerrando cedo, permission prompts, tmux órfão, agente em loop) → ver `reference/troubleshooting.md`.
 
@@ -813,53 +455,14 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 /team-os *status        → dashboard de status do time atual
 ```
 
-> Os subcomandos são **atalhos**: executam apenas a fase correspondente do fluxo principal (*env = Gate 0 + Fase 2-A/B/C; *memory = Fase 2-D/E + Discovery/Repair; *tasks = item 5 do scan; *spawn = Gate 0 + Fases 4-5; *status = painel da Fase 1 + task list), sem repetir o bootstrap inteiro. **Nenhum subcomando que spawna pula o Gate 0** — sem runtime confirmado, nada é spawnado (lembrando o escape hatch: ferramentas de teammate já disponíveis na sessão = gate satisfeito, prossiga).
-
-**Settings.json mínimo:**
-```json
-{
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-  "teammateMode": "auto"
-}
-```
+> Subcomandos são **atalhos** para a fase correspondente (*env = Gate 0 + 2-A/B/C · *memory = 2-D/E + Discovery/Repair · *tasks = scan item 5 · *spawn = Gate 0 + Fases 4-5 · *status = painel + task list). **Nenhum subcomando que spawna pula o Gate 0** (escape hatch: ferramentas de teammate já disponíveis = gate satisfeito).
 
 **Dimensionamento:** a regra canônica é a da **Fase 4c** — 1 workstream independente = 1 agente; comece com 3-5; escale sem teto fixo conforme a independência real do trabalho; research adversarial = 3-5 pesquisadores. ("5-6 tasks por agente" é só o **throughput esperado** do self-claim, nunca regra de dimensionamento.)
 
-**Subagent definitions:** Use nomes dos agentes em `.claude/agents/` ao spawnar:
-```
-"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"
-```
-
-**Modelo Haiku:**
-```
-"Spawn um agente dev-analyst chamado 'pesq' usando modelo haiku para..."
-```
+**Spawn:** use os nomes de `.claude/agents/` (*"Spawn um teammate usando o agente dev-architect para…"*); modelo explícito quando diferir do lead (*"… chamado 'pesq' usando modelo haiku para…"*).
 
 ---
 
 ## Arquitetura de referência
 
-```
-Você (team lead — sessão principal — esta skill roda aqui)
-  │
-  ├── Agent Panel (↑↓ para navegar, Enter para abrir)
-  │     ├── archi     [working]  → src/auth/, docs/smart-memory/project/
-  │     ├── alpha     [pending]  → src/frontend/ (aguarda archi)
-  │     ├── qa        [working]  → review paralelo do módulo pago
-  │     └── ops       [idle]     → aguarda todos para deploy
-  │
-  ├── TaskList compartilhada (nativa — Ctrl+T para ver)
-  │     ├── [in-progress]  Mapear módulo auth         → archi
-  │     ├── [pending]      Implementar login page      → alpha (bloqueada)
-  │     ├── [in-progress]  Auditar módulo pagamento    → qa
-  │     ├── [pending]      Deploy staging              → ops (bloqueada)
-  │     └── [pending]      Criar stories de UX         → self-claim livre
-  │
-  └── docs/smart-memory/
-        ├── INDEX.md                ← L0: todos leram ao iniciar
-        ├── _inbox/                 ← notas rápidas da sessão (consolidadas no *compact)
-        ├── stories/active/         ← archi e alpha escrevem
-        ├── agents/qa/              ← qa escreve findings
-        │     └── DIGEST.md         ← porta de entrada da área (Core + Contexto recente)
-        └── _archive/               ← frio (stories-done/, resolved/) — nunca lido no bootstrap
-```
+Lead (esta sessão) → Agent Panel (teammates com ownership disjunto) → TaskList compartilhada (nativa, Ctrl+T) → `docs/smart-memory/` (INDEX + `agents/<squad>/<área>/DIGEST.md` + `stories/active/` + `_inbox/` + `_archive/`). Diagrama completo → ler `reference/arquitetura-de-referencia.md` quando precisar.

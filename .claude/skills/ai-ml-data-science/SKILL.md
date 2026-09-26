@@ -1,8 +1,8 @@
 ---
 name: ai-ml-data-science
-description: "ML and data science workflows — EDA, feature engineering, modelling, evaluation, and production handoff. Use when exploring data or building models."
+description: "Workflows de ML e ciência de dados — EDA, feature engineering, modelagem, avaliação e handoff para produção. Use ao explorar dados ou construir modelos de machine learning."
 version: "1.0"
-updated: "2026-09-04"
+updated: "2026-09-25"
 ---
 
 # Data Science Engineering Suite - Quick Reference

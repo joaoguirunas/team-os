@@ -1,6 +1,8 @@
 ---
 name: seo-backlinks
-description: "Backlink profile analysis: referring domains, anchor text distribution, toxic link detection, competitor gap analysis. Works with free APIs (Moz, Bing Webmaster, Common Crawl) and DataForSEO extension. Use when user says backlinks, link profile, referring domains, anchor text, toxic links, link gap, link building, disavow, or backlink audit."
+description: "Análise do perfil de backlinks — referring domains, distribuição de âncoras, links tóxicos e gap contra concorrentes, com APIs gratuitas (Moz, Bing Webmaster, Common Crawl) e DataForSEO. Use ao pedir backlinks, link profile, referring domains, anchor text, toxic links, link building, disavow ou backlink audit."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "<url>"
 license: MIT
@@ -248,7 +250,7 @@ it passes.
 | Moz rate limit | Free tier: 1 req/10s | Wait 10 seconds, retry. Built into script. |
 | Bing site not verified | Site not verified in Bing | Verify at https://www.bing.com/webmasters |
 | CC download timeout | Large graph file, slow connection | Use `--timeout 180` flag |
-| DataForSEO unavailable | Extension not installed | Run `./extensions/dataforseo/install.sh` |
+| DataForSEO unavailable | MCP server not configured | Configure the DataForSEO MCP server with `DATAFORSEO_USERNAME` / `DATAFORSEO_PASSWORD` (see `seo-dataforseo`) |
 | No backlink data returned | Domain too new or very small | Note: small sites may have <10 backlinks |
 
 **Fallback cascade:**

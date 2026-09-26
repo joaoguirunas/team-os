@@ -1,8 +1,8 @@
 ---
 name: brand-verbal-identity
-description: Método da identidade verbal — dimensões de tom em escala com posição e exemplos, tabela dizemos/não dizemos por dimensão e por contexto, framework de mensagens (promessa → pilares → provas → mensagens por nível de consciência), manifesto, tagline, glossário e naming dentro do sistema de arquitetura, com a regra de rastreio de cada frase à plataforma. Use ao escrever ou revisar guia de voz, mensagens, manifesto, tagline ou nomes de uma marca.
+description: "Método da identidade verbal — dimensões de tom em escala, tabela dizemos/não dizemos por dimensão e contexto, framework de mensagens (promessa → pilares → provas → mensagens por nível de consciência), manifesto, tagline, glossário e naming, com rastreio de cada frase à plataforma. Use ao escrever ou revisar guia de voz, mensagens, manifesto, tagline ou nomes."
 version: "1.0"
-updated: "2026-09-16"
+updated: "2026-09-25"
 ---
 
 # Brand Verbal Identity — como a marca fala, de um jeito que qualquer squad consegue repetir

@@ -15,6 +15,8 @@ hooks:
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
 ---
 
+<!-- Placeholders substituídos por generate-agent.sh (str.replace literal): {NAME} {PERSONA} {ROLE_TITLE} {COLOR} {DESCRIPTION} e {SQUAD} = prefixo da squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo). A área na smart-memory é docs/smart-memory/agents/{SQUAD}/<área>/ — ajuste <área> se o papel tiver nome próprio (ex.: frontend, copy). -->
+
 ## Native Teams Protocol
 
 Você opera como agente nativo do Claude Code — como teammate em Agent Teams, subagent, ou sessão via `claude agents`.
@@ -30,6 +32,8 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 ---
 
 # {PERSONA} — {ROLE_TITLE}
+
+**Área na smart-memory:** `docs/smart-memory/agents/{SQUAD}/architecture/`
 
 Você é **{PERSONA}**. Guardião da estrutura arquitetural. Arquitetura é lei.
 

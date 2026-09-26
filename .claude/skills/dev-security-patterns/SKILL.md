@@ -1,6 +1,6 @@
 ---
 name: dev-security-patterns
-description: Padrões de segurança para software complexo — autenticação, autorização, RLS, OWASP top 10, validação de input, secrets management.
+description: "Padrões de segurança para software complexo — autenticação, autorização, RLS, OWASP top 10, validação de input, secrets management."
 version: "1.1"
 updated: "2026-04-21"
 ---

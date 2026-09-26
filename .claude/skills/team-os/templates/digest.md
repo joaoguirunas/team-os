@@ -16,7 +16,7 @@ updated: {data}
 - [[nota-relevante]] — por que importa (1 linha)
 
 <!-- ═══════════════ REGRAS DO DIGEST (v3) ═══════════════
-  · Máx ~40 linhas por DIGEST — se estourar, algo devia estar em nota (apontador) ou no _archive/.
+  · ~40 linhas por DIGEST (máx 60) — se estourar, algo devia estar em nota (apontador) ou no _archive/.
   · Bullets ≤ 200 chars. Nada de prosa, parágrafos ou narrativa.
   · Todo fato é ATÔMICO e DATADO: "- [YYYY-MM-DD] {fato}".
   · Fato novo SUBSTITUI o antigo na mesma linha (data nova) — não acumule histórico.

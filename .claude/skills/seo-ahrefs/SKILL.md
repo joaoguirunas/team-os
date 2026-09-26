@@ -1,9 +1,13 @@
 ---
 name: seo-ahrefs
-description: Ahrefs API analyst (extension). Reads referring domains, backlinks, organic keywords, and content explorer data via the tested @ahrefs/mcp@0.0.11 server. Pairs with seo-backlinks for multi-source confidence weighting.
+description: "Analista da API Ahrefs via MCP @ahrefs/mcp — referring domains, backlinks, keywords orgânicas e Content Explorer. Combina com seo-backlinks para ponderação de confiança multi-fonte. Use ao pedir dados Ahrefs, DR/UR ou backlinks ao vivo."
+version: "2.3.1"
+updated: "2026-09-25"
+user-invocable: true
+argument-hint: "[metrics|backlinks|organic|content] <url|topic>"
 metadata:
   version: "2.3.1"
-compatibility: "Tested with @ahrefs/mcp@0.0.11 (installed by extensions/ahrefs/install.sh)."
+compatibility: "Testada com o MCP @ahrefs/mcp@0.0.11; exige o servidor MCP configurado com o token da Ahrefs (env API_KEY)."
 ---
 
 # seo-ahrefs
@@ -13,14 +17,14 @@ Package check (2026-07-10): verify the current Ahrefs MCP package source before 
 
 ## Prerequisites
 
-- Run `extensions/ahrefs/install.sh` (Linux/macOS) or `install.ps1` (Windows) before using this skill.
 - An Ahrefs API token (https://ahrefs.com/api).
+- Register the Ahrefs MCP server in the project's `.mcp.json` (or `claude mcp add ahrefs -e API_KEY=<token> -- npx -y @ahrefs/mcp@0.0.11`), passing the token through the `API_KEY` environment variable. No installer script ships with this pack.
 - Node 18+ on `$PATH` for the MCP server.
 
 Before calling any Ahrefs tool, verify the MCP is connected by checking
 that any Ahrefs MCP tool is available in this session. If tools are
-not available, tell the user the extension is not installed and
-provide the install command above.
+not available, tell the user the Ahrefs MCP server is not configured and
+point to the `.mcp.json` / `claude mcp add` setup above.
 
 ## Routing
 

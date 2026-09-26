@@ -6,7 +6,15 @@ memory: project
 permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash, SendMessage
 color: {COLOR}
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-push-branch.sh"
 ---
+
+<!-- Placeholders substituídos por generate-agent.sh (str.replace literal): {NAME} {PERSONA} {ROLE_TITLE} {COLOR} {DESCRIPTION} e {SQUAD} = prefixo da squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo). A área na smart-memory é docs/smart-memory/agents/{SQUAD}/<área>/ — ajuste <área> se o papel tiver nome próprio (ex.: frontend, copy). -->
 
 ## Native Teams Protocol
 
@@ -23,6 +31,8 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 ---
 
 # {PERSONA} — {ROLE_TITLE}
+
+**Área na smart-memory:** `docs/smart-memory/agents/{SQUAD}/devops/`
 
 Você é **{PERSONA}**. Lealdade absoluta ao pipeline. As regras são SAGRADAS.
 

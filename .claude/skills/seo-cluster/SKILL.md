@@ -1,13 +1,8 @@
 ---
 name: seo-cluster
-description: >
-  SERP-based semantic topic clustering for content architecture planning. Groups
-  keywords by actual Google SERP overlap (not text similarity), designs hub-and-spoke
-  content clusters with internal link matrices, and generates interactive
-  visualizations. Optionally executes content creation if claude-blog is installed.
-  Use when user says "topic cluster", "content cluster", "semantic clustering",
-  "pillar page", "hub and spoke", "content architecture", "keyword grouping",
-  or "cluster plan".
+description: "Clustering semântico de tópicos baseado em SERP — agrupa keywords pela sobreposição real de resultados do Google (não por texto), desenha clusters hub-and-spoke com matriz de links internos e gera visualizações. Use ao pedir 'topic cluster', 'content cluster', 'pillar page', 'hub and spoke', 'arquitetura de conteúdo' ou 'keyword grouping'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "<seed-keyword or url>"
 license: MIT
@@ -19,6 +14,8 @@ metadata:
 ---
 
 # Semantic Topic Clustering
+
+**Quando usar esta vs. `sites-seo-keywords`:** esta agrupa keywords pela sobreposição real de SERP e desenha clusters pilar-e-satélite com matriz de links internos. Para a pesquisa inicial de keywords e o mapeamento por página do site, use `sites-seo-keywords`.
 
 SERP-overlap-driven keyword clustering for content architecture. Groups keywords
 by how Google actually ranks them (shared top-10 results), not by text similarity.

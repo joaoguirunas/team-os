@@ -1,6 +1,8 @@
 ---
 name: negotiation
-description: 'Prepare and execute negotiations using tactical empathy, calibrated questions, and the Ackerman method. Use when the user mentions "salary negotiation", "contract terms", "handling objections", "mirroring and labeling", "difficult conversation", "deal terms", "BATNA", "anchoring", "how do I ask for a raise", "get a better deal", or "they wont budge on price". Also trigger when preparing for a vendor negotiation, resolving a pricing dispute, or navigating a high-stakes conversation where both sides need to feel heard. Covers accusation audits, Black Swan discovery, and the "Thats Right" technique. For persuasion in product and marketing, see influence-psychology.'
+description: "Preparar e conduzir negociações com empatia tática, perguntas calibradas e método Ackerman (Chris Voss). Use em negociação salarial, termos de contrato, objeções, conversa difícil, BATNA, ancoragem, pedir aumento, negociar com fornecedor ou disputa de preço. Cobre accusation audit, Black Swans e a técnica 'That's Right'."
+version: "1.5.0"
+updated: "2026-09-25"
 license: MIT
 metadata:
   author: wondelai

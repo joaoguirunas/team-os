@@ -1,11 +1,8 @@
 ---
 name: seo-programmatic
-description: >
-  Programmatic SEO planning and analysis for pages generated at scale from data
-  sources. Covers template engines, URL patterns, internal linking automation,
-  thin content safeguards, and index bloat prevention. Use when user says
-  "programmatic SEO", "pages at scale", "dynamic pages", "template pages",
-  "generated pages", or "data-driven SEO".
+description: "Planejamento e análise de SEO programático para páginas geradas em escala a partir de dados — template engines, padrões de URL, links internos automatizados, salvaguardas contra thin content e prevenção de index bloat. Use ao pedir 'programmatic SEO', 'pages at scale', 'dynamic pages', 'template pages' ou 'data-driven SEO'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url or plan]"
 license: MIT

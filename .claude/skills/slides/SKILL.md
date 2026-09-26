@@ -1,6 +1,9 @@
 ---
 name: slides
-description: Create strategic HTML presentations with Chart.js, design tokens, responsive layouts, copywriting formulas, and contextual slide strategies.
+description: "Criar apresentações HTML estratégicas com Chart.js, design tokens, layouts responsivos, fórmulas de copywriting e estratégias de slide por contexto. Use ao montar deck de marketing, pitch ou slides com dados."
+version: "1.0.0"
+updated: "2026-09-25"
+user-invocable: true
 argument-hint: "[topic] [slide-count]"
 metadata:
   author: claudekit
@@ -23,10 +26,6 @@ Strategic HTML presentation design with data visualization.
 | Subcommand | Description | Reference |
 |------------|-------------|-----------|
 | `create` | Create strategic presentation slides | `references/create.md` |
-
-## Script Paths
-
-Script paths in this skill and its `references/` are relative to the directory that contains this SKILL.md, not to the project: `scripts/<file>` is this skill's own `scripts/` folder, and `../<skill>/scripts/<file>` is a sibling sub-skill installed alongside it. Build the full path from that directory (Claude Code reports it as the skill's base directory when the skill loads) and keep the working directory at the project root — the scripts read and write project files such as `docs/brand-guidelines.md`, `assets/design-tokens.json` or `src/` relative to it.
 
 ## References (Knowledge Base)
 

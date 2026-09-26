@@ -1,6 +1,8 @@
 ---
 name: seo-audit
-description: "Full website SEO audit with parallel subagent delegation. Crawls up to 500 pages, detects business type, delegates to up to 15 specialists (8 always + 7 conditional), generates health score. Use when user says audit, full SEO check, analyze my site, or website health check."
+description: "Auditoria SEO completa de um site com delegação paralela a subagentes — rastreia até 500 páginas, detecta tipo de negócio, aciona até 15 especialistas e gera health score. Use quando o usuário pedir 'audit', 'auditoria SEO completa', 'analise meu site' ou 'saúde do site'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url]"
 license: MIT
@@ -11,6 +13,8 @@ metadata:
 ---
 
 # Full Website SEO Audit
+
+**Quando usar esta vs. `sites-seo-technical`:** esta roda a auditoria completa de um site publicado (até 500 páginas, vários especialistas, health score). Para implementar SEO técnico no código Next.js/Astro, use `sites-seo-technical`.
 
 ## Process
 

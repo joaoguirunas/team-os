@@ -1,6 +1,8 @@
 ---
 name: seo
-description: "Comprehensive SEO analysis for any website or business type. Full site audits, single-page analysis, technical SEO (crawlability, indexability, Core Web Vitals with INP), schema markup, content quality (E-E-A-T), image optimization, sitemap analysis, and GEO for AI Overviews/ChatGPT/Perplexity. Industry detection for SaaS, e-commerce, local, publishers, agencies. Triggers on: SEO, audit, schema, Core Web Vitals, sitemap, E-E-A-T, AI Overviews, GEO, technical SEO, content quality, page speed."
+description: "Análise de SEO completa para qualquer site ou negócio — auditoria full, página única, SEO técnico (crawl, indexação, Core Web Vitals/INP), schema, qualidade de conteúdo (E-E-A-T), imagens, sitemap e GEO para AI Overviews/ChatGPT/Perplexity, com detecção de setor. Gatilhos: SEO, audit, schema, Core Web Vitals, sitemap, E-E-A-T, AI Overviews, GEO, page speed."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[command] [url]"
 license: MIT
@@ -26,8 +28,18 @@ with a bare Python interpreter.
 
 Comprehensive SEO analysis across all industries (SaaS, local services,
 e-commerce, publishers, agencies). Orchestrates 24 sub-skills (21 core + 1 framework
-integration + 2 extension mirrors) and 18 sub-agents. A separate optional Firecrawl
-extension is also installable (see "Optional Extensions" below).
+integration + 2 extension mirrors) and 15 sub-agents (ver "Subagents").
+
+## Instalação
+
+Pré-requisitos e setup do runtime isolado (feito uma vez por máquina, por projeto):
+
+1. **Python 3.10+** disponível como `python3` (ou aponte um interpretador com `CLAUDE_SEO_PYTHON=/caminho/python3`).
+2. Rode `"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" setup` (ou `/seo setup`). O launcher cria um venv isolado, instala `requirements.txt` (BeautifulSoup, Playwright, trafilatura, WeasyPrint, clientes Google etc.) e baixa o **Chromium via Playwright** para a renderização headless. Nada é instalado globalmente.
+3. Confira com `"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" doctor --json` (ou `/seo doctor`).
+4. Chaves opcionais por variável de ambiente (bloco `env` do `~/.claude/settings.json` ou `.mcp.json`): `GOOGLE_APPLICATION_CREDENTIALS`/`GOOGLE_API_KEY` (seo-google), `BING_WEBMASTER_API_KEY`/`INDEXNOW_KEY` (seo-bing), `MOZ_API_KEY`/`KEYWORDSEVERYWHERE_API_KEY` (seo-backlinks), `DATAFORSEO_USERNAME`/`DATAFORSEO_PASSWORD` (seo-dataforseo), `GEMINI_API_KEY` (seo-image-gen), `API_KEY` do MCP Ahrefs (seo-ahrefs).
+
+`.venv/` e `ms-playwright/` dentro desta pasta são runtime local (ignorados pelo git).
 
 ## Quick Reference
 
@@ -56,7 +68,6 @@ extension is also installable (see "Optional Extensions" below).
 | `/seo drift compare <url>` | Compare current state to stored baseline |
 | `/seo drift history <url>` | Show drift history over time |
 | `/seo ecommerce <url>` | E-commerce SEO: product schema, marketplace intelligence |
-| `/seo firecrawl [command] <url>` | Full-site crawling and site mapping (extension) |
 | `/seo dataforseo [command]` | Live SEO data via DataForSEO (extension) |
 | `/seo image-gen [use-case] <description>` | AI image generation for SEO assets (extension) |
 | `/seo flow [stage] [url\|topic]` | FLOW framework: evidence-led prompts for Find, Leverage, Optimize, Win, or Local stages |
@@ -79,12 +90,12 @@ required, suggest `/seo setup` and do not improvise a `pip install`.
 
 When the user invokes `/seo audit`, delegate to subagents in parallel:
 1. Detect business type (SaaS, local, ecommerce, publisher, agency, other)
-2. Spawn subagents: seo-technical, seo-content, seo-schema, seo-sitemap, seo-performance, seo-visual, seo-geo
+2. Spawn subagents: seo-technical, seo-content, seo-schema, seo-sitemap, seo-performance, seo-geo (screenshots/mobile/above-the-fold ficam com seo-performance via `capture_screenshot.py` e `analyze_visual.py`)
 3. If Google API credentials detected (`"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" run google_auth.py --check`), also spawn seo-google agent
 4. If local business detected, also spawn seo-local agent
-5. If local business detected AND DataForSEO MCP available, also spawn seo-maps agent
+5. If local business detected AND DataForSEO MCP available, also run the seo-maps sub-skill (não há agente dedicado; o seo-local a executa)
 6. If backlink APIs detected (`"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" run backlinks_auth.py --check`), also spawn seo-backlinks agent
-7. If Firecrawl MCP available, use `firecrawl_map` to discover all site URLs before analysis
+7. Discover site URLs with `sitemap_discovery.py` before analysis
 8. If content strategy signals detected (blog, pillar pages, topic clusters), also spawn seo-cluster agent
 9. If e-commerce detected, also spawn seo-ecommerce agent
 10. If drift baseline exists for this URL (`"${CLAUDE_PROJECT_DIR}/.claude/skills/seo/scripts/claude-seo" run drift_history.py <url>`), also spawn seo-drift agent
@@ -247,20 +258,17 @@ orchestrate itself, so it is not enumerated below.
 23. **seo-image-gen** -- AI image generation for SEO assets via Gemini (extension mirror)
 24. **seo-flow** -- FLOW framework integration (Find -> Leverage -> Optimize -> Win, 41 AI prompts, CC BY 4.0)
 
-### Optional Extensions
+### Sub-skills que dependem de serviço externo
 
-The following ship in `extensions/` rather than `skills/` and require a separate
-installer to activate (see each extension's `install.sh`/`install.ps1`):
+Estas sub-skills existem no pack, mas só funcionam com o serviço configurado
+(chave via variável de ambiente ou servidor MCP no `.mcp.json`); nenhum
+instalador `extensions/*/install.sh` é distribuído:
 
-All optional extensions are reachable through `/seo` subcommands once
-installed: firecrawl, dataforseo, and image-gen, plus `/seo ahrefs`,
-`/seo bing`, `/seo profound`, `/seo seranking`, and `/seo unlighthouse`.
-Each installs as its own sub-skill, so the model also auto-routes to their
-descriptions without the `/seo` prefix.
-
-- **seo-firecrawl** -- Full-site crawling and site mapping via Firecrawl MCP. Install
-  via `extensions/firecrawl/install.sh` (Unix) or `extensions/firecrawl/install.ps1`
-  (Windows). Once installed, invoke via `/seo firecrawl <command>`.
+- **seo-dataforseo** (`/seo dataforseo`) -- MCP DataForSEO com `DATAFORSEO_USERNAME` / `DATAFORSEO_PASSWORD`
+- **seo-image-gen** (`/seo image-gen`) -- MCP nanobanana com `GEMINI_API_KEY`
+- **seo-ahrefs** (`/seo ahrefs`) -- MCP `@ahrefs/mcp` com `API_KEY`
+- **seo-bing** (`/seo bing`) -- `BING_WEBMASTER_API_KEY` e, opcionalmente, `INDEXNOW_KEY`
+- **seo-google** (`/seo google`) -- `GOOGLE_APPLICATION_CREDENTIALS` / `GOOGLE_API_KEY` (ver a skill)
 
 ## Subagents
 
@@ -269,20 +277,18 @@ For parallel analysis during audits:
 - `seo-content` -- E-E-A-T, readability, thin content
 - `seo-schema` -- Detection, validation, generation
 - `seo-sitemap` -- Structure, coverage, quality gates
-- `seo-performance` -- Core Web Vitals measurement
-- `seo-visual` -- Screenshots, mobile testing, above-fold
+- `seo-performance` -- Core Web Vitals measurement, screenshots, mobile testing, above-fold rendering
 - `seo-geo` -- AI crawler access, llms.txt, citability, brand mention signals
 - `seo-local` -- GBP signals, NAP consistency, reviews, local schema, industry-specific local factors (conditional: spawned when Local Service detected)
-- `seo-maps` -- Geo-grid rank tracking, GBP audit, review intelligence, competitor radius mapping (conditional: spawned when Local Service detected AND DataForSEO MCP available)
+- `seo-local` also runs the `seo-maps` sub-skill (geo-grid, GBP audit, reviews, competitor radius) when Local Service detected AND DataForSEO MCP available -- there is no separate seo-maps agent
 - `seo-google` -- CWV field data, URL indexation status, organic traffic trends (conditional: spawned when Google API credentials detected)
 - `seo-backlinks` -- Backlink profile data: DA/PA, referring domains, anchor text, toxic links (conditional: spawned when Moz/Bing API keys detected or always for CC domain-level metrics)
 - `seo-cluster` -- Semantic clustering analysis (conditional: content strategy detected)
 - `seo-sxo` -- Page-type mismatch, user stories, persona scoring (always in full audits)
 - `seo-drift` -- Baseline comparison (conditional: drift baseline exists for URL)
 - `seo-ecommerce` -- Product schema, marketplace intel (conditional: e-commerce detected)
-- `seo-flow` -- FLOW framework prompts (conditional: spawned for content strategy workflows)
-- `seo-dataforseo` -- Live SERP, keyword, backlink, local SEO data (extension, optional)
-- `seo-image-gen` -- SEO image audit and generation plan (extension, optional)
+
+Sub-skills sem agente próprio (o orquestrador as carrega diretamente): `seo-flow`, `seo-dataforseo`, `seo-image-gen`, `seo-maps`, `seo-ahrefs`, `seo-bing`. Os agentes `seo-architect` e `seo-qa` (roadmap/stories e gate de qualidade) fecham o ciclo depois da auditoria.
 
 ## Error Handling
 

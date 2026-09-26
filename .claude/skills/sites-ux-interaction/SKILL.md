@@ -1,6 +1,6 @@
 ---
 name: sites-ux-interaction
-description: Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em Next.js ou Astro.
+description: "Padrões de UX e interação para websites — header sticky, nav mobile, micro-interações, animações de entrada e scroll-triggered. Use ao implementar navegação, hover states, animações com Motion ou comportamento de scroll em Next.js ou Astro."
 version: "1.1"
 updated: "2026-09-20"
 ---

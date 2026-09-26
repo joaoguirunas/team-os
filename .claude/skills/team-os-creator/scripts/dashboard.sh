@@ -3,6 +3,8 @@
 # Roda o scan e renaderiza o painel de status dos projetos irmãos + as 3 ações.
 # Determinístico: mesma entrada → mesma saída. Usado pela skill ao abrir /team-os-creator.
 # Usage: dashboard.sh [CT_ROOT]
+# Raiz dos projetos: argumento, ou env CT_ROOT, ou arquivo .team-os-root na raiz do CT
+# (gitignored, por máquina), ou o pai do git root — resolvido pelo scan-ct-projects.sh.
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SCAN="$HERE/scan-ct-projects.sh"

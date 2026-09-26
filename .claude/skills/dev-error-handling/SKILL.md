@@ -1,6 +1,6 @@
 ---
 name: dev-error-handling
-description: Padrões de resilência e error handling para software complexo — retry, circuit breaker, timeouts, error boundaries, logging estruturado.
+description: "Padrões de resilência e error handling para software complexo — retry, circuit breaker, timeouts, error boundaries, logging estruturado."
 version: "1.1"
 updated: "2026-04-21"
 ---

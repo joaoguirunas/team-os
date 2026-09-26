@@ -1,12 +1,8 @@
 ---
 name: seo-images
-description: >
-  Image optimization analysis for SEO and performance. Checks alt text, file
-  sizes, formats, responsive images, lazy loading, CLS prevention, image SERP
-  rankings (via DataForSEO), and image file optimization (WebP/AVIF conversion,
-  IPTC/XMP metadata injection). Use when user says "image optimization",
-  "alt text", "image SEO", "image size", "image audit", "optimize images",
-  "image metadata", "image SERP", "convert to webp", or "image file optimize".
+description: "Análise e otimização de imagens para SEO e performance — alt text, peso, formatos, imagens responsivas, lazy loading, prevenção de CLS, ranking em SERP de imagens (DataForSEO) e otimização de arquivo (WebP/AVIF, metadados IPTC/XMP). Use ao pedir 'image optimization', 'alt text', 'image SEO', 'image audit' ou 'convert to webp'."
+version: "2.3.1"
+updated: "2026-09-25"
 user-invocable: true
 argument-hint: "[url]"
 license: MIT
@@ -17,6 +13,8 @@ metadata:
 ---
 
 # Image Optimization Analysis
+
+**Quando usar esta vs. `social-freepik-generation`:** esta *audita e otimiza* imagens já publicadas (alt, peso, formato, lazy loading, metadados). Para *gerar* imagens AI para posts e campanhas, use `social-freepik-generation` (ou `seo-image-gen` para assets de SEO).
 
 ## Checks
 

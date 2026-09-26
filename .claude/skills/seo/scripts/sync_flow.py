@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Sync Flow operational references from GitHub into the seo-flow skill."""
 
 import argparse
