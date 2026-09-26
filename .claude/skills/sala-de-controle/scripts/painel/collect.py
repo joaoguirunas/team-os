@@ -23,8 +23,8 @@ from collections import deque
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 HOME = os.path.expanduser("~")
-AGENT_TTL = 30 * 60      # agente sem atividade há mais de 30 min sai do painel
-AGENT_FADE = 10 * 60     # a partir de 10 min parado começa a desbotar (a página usa)
+AGENT_TTL = 5 * 60       # agente sem atividade há mais de 5 min sai do painel
+AGENT_FADE = 60          # a partir de 1 min parado começa a desbotar (a página usa)
 TEAMS_DIR = os.path.join(HOME, ".claude", "teams")
 PROJ_DIR = os.path.join(HOME, ".claude", "projects")
 
@@ -308,6 +308,27 @@ def collect(root):
         cwd = nfc(s.get("CWD", ""))
         sid = s.get("SESSION_ID", "")
         tr = s.get("TRANSCRIPT", "")
+        # registro pode apontar a pasta errada (app desktop): confia no transcript
+        if (not tr or not os.path.isfile(tr)) and sid:
+            found = glob.glob(os.path.join(PROJ_DIR, "*", sid + ".jsonl"))
+            tr = found[0] if found else tr
+        if tr and os.path.isfile(tr):
+            try:
+                with open(tr, encoding="utf-8", errors="replace") as fh:
+                    for _ in range(40):
+                        line = fh.readline()
+                        if not line:
+                            break
+                        try:
+                            c = json.loads(line).get("cwd")
+                        except Exception:
+                            c = None
+                        if c:
+                            if nfc(c) != cwd:
+                                cwd = nfc(c)
+                            break
+            except Exception:
+                pass
         sdir = tr[:-6] if tr.endswith(".jsonl") else ""
         team_name, cfg = teams.get(sid, (None, None))
         members = (cfg or {}).get("members", [])

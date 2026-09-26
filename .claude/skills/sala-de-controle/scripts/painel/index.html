@@ -27,9 +27,9 @@
   .brand svg{height:26px;width:auto;display:block}
   .brand .w{font-size:13px;font-weight:500;letter-spacing:.02em;line-height:1}
   .brand .w small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;color:var(--bone-mute);margin-top:4px}
-  .brand .live{display:flex;align-items:center;gap:7px;margin-left:16px;color:var(--bone-mute);font-family:var(--mono);font-size:10.5px}
-  .brand .live i{width:6px;height:6px;border-radius:50%;background:var(--bone);animation:breathe 2.4s var(--e) infinite}
-  .brand .live.off i{background:var(--danger);box-shadow:none;animation:none}
+  .live{display:flex;align-items:center;gap:7px;color:var(--bone-mute);font-family:var(--mono);font-size:10.5px}
+  .live i{width:6px;height:6px;border-radius:50%;background:var(--bone);animation:breathe 2.4s var(--e) infinite}
+  .live.off i{background:var(--danger);box-shadow:none;animation:none}
   .stats{right:24px;top:20px;display:flex;gap:24px;pointer-events:none;transition:right .32s var(--e)}
   body.open .stats{right:404px}
   .stat b{display:block;font-family:var(--mono);font-weight:500;font-size:22px;line-height:1;color:var(--bone)}
@@ -126,20 +126,62 @@
   @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @keyframes breathe{0%,100%{transform:scale(.85);opacity:.7}50%{transform:scale(1);opacity:1}}
 </style>
+
+<style id="refine">
+  .top{position:absolute;z-index:2;left:0;top:0;right:0;height:60px;display:flex;align-items:center;gap:0;padding:0 24px;background:linear-gradient(180deg,rgba(9,10,8,.96),rgba(9,10,8,.6) 80%,rgba(9,10,8,0));transition:right .32s var(--e)}
+  .top::after{content:"";position:absolute;left:24px;right:24px;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08) 20%,rgba(255,255,255,.08) 80%,transparent)}
+  body.open .top{right:400px}
+  .brand{display:flex;align-items:center;gap:12px;pointer-events:none;flex:none;padding-right:28px;border-right:1px solid rgba(255,255,255,.08);height:34px}
+  .brand svg{height:22px;width:auto} .brand .w{font-size:13px;font-weight:500;letter-spacing:.01em;line-height:1;white-space:nowrap}
+  .brand .w small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--bone-mute);margin-top:5px}
+  .brand .live{display:flex;align-items:center;gap:7px;color:var(--bone-mute);font-family:var(--mono);font-size:10px;letter-spacing:.06em;white-space:nowrap}
+  .searchwrap{display:flex;align-items:center;gap:8px;margin-left:28px;flex:1;max-width:420px;height:34px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:0 12px}
+  .searchwrap:focus-within{border-color:rgba(61,143,255,.6)}
+  .searchwrap svg{width:13px;height:13px;flex:none;stroke:var(--bone-mute);fill:none;stroke-width:1.75}
+  .search,.searchwrap input{background:none;border:0;padding:0;color:var(--bone);font-family:var(--mono);font-size:11px;width:100%;outline:none;max-width:none;flex:1}
+  .stats{margin-left:auto;display:flex;gap:0;pointer-events:none;flex:none}
+  .stat{padding:0 18px;border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;justify-content:center;height:34px;min-width:88px}
+  .stat:last-child{padding-right:0} .stat b{font-size:18px;line-height:1} .stat span{margin-top:4px;font-size:9px;white-space:nowrap}
+  .stat.az b,.stat.am b{color:var(--az,#3d8fff)}
+  .legend{left:24px;bottom:20px;gap:0;background:rgba(19,20,18,.85);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:0 6px;height:30px;align-items:center}
+  .legend span{padding:0 10px;height:30px;border-right:1px solid rgba(255,255,255,.06);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase} .legend span:last-child{border:0}
+  .hint{bottom:26px;color:#4a4f49;font-size:9px}
+  .feed{width:340px;bottom:20px;gap:0;background:rgba(19,20,18,.85);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 12px}
+  .feed .ev{border-top:1px solid rgba(255,255,255,.06);padding:8px 0} .feed .ev:first-child{border-top:0}
+  .drawer{width:400px;background:#0f100e;border-left:1px solid rgba(255,255,255,.08);box-shadow:-24px 0 48px rgba(0,0,0,.35)}
+  .drawer header{padding:0 24px;height:60px;border-bottom:1px solid rgba(255,255,255,.08);align-items:center;background:rgba(255,255,255,.015)}
+  .drawer header .lamp{margin:0;width:28px;height:28px}
+  .drawer h2{font-size:15px} .drawer h2 small{margin-top:4px;font-size:9.5px;letter-spacing:.14em}
+  .drawer .x{width:28px;height:28px;border:1px solid rgba(255,255,255,.08);border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0}
+  .drawer .body{padding:4px 24px 28px}
+  .sec{padding:18px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+  .sec .kicker{margin-bottom:12px;display:flex;align-items:center;gap:10px} .sec .kicker::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.06)}
+  .now{font-size:13.5px} .row{padding:8px 0;border-top:1px solid rgba(255,255,255,.04)} .row:first-of-type{border-top:0}
+  .row .t{font-size:12.5px} .row .s{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+  .tiles div{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:12px 12px} .tiles b{font-size:20px} .tiles span{letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);font-size:9px}
+  .chips{gap:6px} .chip{font-size:10px;letter-spacing:.04em;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 9px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 14px;font-size:12px}
+  .kv b{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-mute);font-weight:400;padding-top:2px} .kv span{color:var(--bone-dim);font-weight:300}
+  .btn{height:42px;padding:0 14px;border-radius:6px;font-size:12.5px;letter-spacing:.02em} .btn span{font-family:var(--mono);font-size:11px;opacity:.8}
+  .msg{border-top:1px solid rgba(255,255,255,.05)}
+  .tip{background:#0f100e;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 32px rgba(0,0,0,.4);padding:9px 12px}
+</style>
 </head>
 <body>
 <canvas id="c"></canvas>
 
-<div class="ui brand">
+<div class="top">
+<div class="brand">
   <svg viewBox="0 0 84.54 136"><polygon fill="#3d8fff" points="69.84,0.00 0.00,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>
   <div class="w">Sala de Controle<small>SERVICE AS A SYSTEM</small></div>
-  <div class="live" id="live"><i></i><span id="clock">—</span></div>
 </div>
-<div class="ui stats">
+<div class="live" id="live" style="margin-left:24px"><i></i><span id="clock">—</span></div>
+<div class="stats">
   <div class="stat"><b id="sSess">0</b><span class="kicker">sessões</span></div>
   <div class="stat"><b id="sAg">0</b><span class="kicker">agentes</span></div>
   <div class="stat az"><b id="sWork">0</b><span class="kicker">ativos</span></div>
   <div class="stat am"><b id="sWait">0</b><span class="kicker">precisam de você</span></div>
+</div>
 </div>
 <div class="ui legend"><span><i class="f"></i> ativo</span><span><i class="d"></i> aguardando</span><span><i></i> parado</span><span><i class="a"></i> precisa de você</span></div>
 <div class="ui hint">arraste · role para zoom · clique para abrir · duplo clique no fundo recentra</div>
@@ -247,7 +289,7 @@ function frame(now){
   // anel orbital em volta do hub
   ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;ctx.setLineDash([2,6]);const ringR=links.length?links.find(l=>l.a===hub)?.len||0:0;if(ringR){ctx.beginPath();ctx.arc(hub.x,hub.y,ringR,0,6.283);ctx.stroke();}ctx.setLineDash([]);
   // fios
-  links.forEach(l=>{const on=l.b.kind==='lead'?stateOfLead(l.b)!=='off':l.b.kind==='session'?stateOfSession(l.b.sess)!=='idle':l.b.ag.state!=='idle';if(l.b.kind==='agent'){const ag=l.b.ag.age==null?0:l.b.ag.age;ctx.globalAlpha=l.b.ag.state==='active'?1:Math.max(0.18,1-Math.max(0,ag-600)/1200);}ctx.strokeStyle=on?'rgba(255,255,255,0.18)':'rgba(255,255,255,0.07)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(l.a.x,l.a.y);ctx.lineTo(l.b.x,l.b.y);ctx.stroke();
+  links.forEach(l=>{const on=l.b.kind==='lead'?stateOfLead(l.b)!=='off':l.b.kind==='session'?stateOfSession(l.b.sess)!=='idle':l.b.ag.state!=='idle';if(l.b.kind==='agent'){const ag=l.b.ag.age==null?0:l.b.ag.age;ctx.globalAlpha=l.b.ag.state==='active'?1:Math.max(0.15,1-Math.max(0,ag-60)/240);}ctx.strokeStyle=on?'rgba(255,255,255,0.18)':'rgba(255,255,255,0.07)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(l.a.x,l.a.y);ctx.lineTo(l.b.x,l.b.y);ctx.stroke();
     if(on){ctx.strokeStyle='rgba(91,107,255,0.35)';ctx.setLineDash([1.5,14]);ctx.lineDashOffset=-(T*28)%16;ctx.beginPath();ctx.moveTo(l.a.x,l.a.y);ctx.lineTo(l.b.x,l.b.y);ctx.stroke();ctx.setLineDash([]);}ctx.globalAlpha=1;});
   // partículas
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.t+=p.speed*dt/16;const col=p.kind==='approval'?COL.amber:p.kind==='done'?COL.ok:p.kind==='dispatch'?COL.az:COL.bone;
@@ -284,7 +326,7 @@ function frame(now){
     text((SN.sess.status||'').toUpperCase(),lx,ly+11,7.5,'#8F948D',400,al,'mono');}
   // agentes
   for(const A of nodes.values()){if(A.kind!=='agent')continue;A.glow=Math.max(0,A.glow-dt/700);A.pulse=Math.max(0,A.pulse-dt/900);const s=A.ag.state,col=colorOf(s),isSel=sel===A||hov===A;
-    const age=A.ag.age==null?0:A.ag.age;const fade=s==='active'?1:Math.max(0.18,1-Math.max(0,age-600)/1200);ctx.globalAlpha=fade;
+    const age=A.ag.age==null?0:A.ag.age;const fade=s==='active'?1:Math.max(0.15,1-Math.max(0,age-60)/240);ctx.globalAlpha=fade;
     if(s==='active'){const br=1+0.04*Math.sin(T*2.6+A.phase);circ(A.x,A.y,A.r*br,COL.bone,null,0,A.glow?COL.bone:null,18);ctx.strokeStyle=COL.bone;ctx.globalAlpha=0.5;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(A.x,A.y,A.r+5,T*2+A.phase,T*2+A.phase+4.6);ctx.stroke();ctx.globalAlpha=1;}
     else if(s==='approval'){ctx.globalAlpha=0.45+0.3*Math.sin(T*3);circ(A.x,A.y,A.r+6,'#3d8fff40');ctx.globalAlpha=1;circ(A.x,A.y,A.r+A.pulse*2,COL.amber,null,0,COL.amber,18);}
     else if(s==='waiting'){circ(A.x,A.y,A.r,'#131412',COL.dim,1.5);ctx.setLineDash([2,3]);ctx.strokeStyle=COL.dim;ctx.lineWidth=1;ctx.beginPath();ctx.arc(A.x,A.y,A.r+5,0,6.283);ctx.stroke();ctx.setLineDash([]);}
