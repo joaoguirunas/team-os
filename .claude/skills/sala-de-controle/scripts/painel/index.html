@@ -330,8 +330,9 @@ function closeDrawer(){if(document.body.classList.contains('open'))view.x+=190;d
 dClose.onclick=closeDrawer;
 document.getElementById('dBody').addEventListener('click',e=>{const v=e.target.closest('[data-vault]');if(v){if(!v.disabled&&v.dataset.vault)openVault(v.dataset.vault);return;}const a=e.target.closest('[data-agent]');if(a){openAgent(a.dataset.sid,a.dataset.agent);return;}const l=e.target.closest('[data-lead]');if(l)openLead(l.dataset.lead);});
 function turnsHtml(turns){return (turns&&turns.length?turns.slice(-4):[]).map(t=>`<div class="msg"><b>${esc(t.who)}</b><span class="s">${esc((t.ts||'').slice(11,16))}</span><br>${esc(t.text)}</div>`).join('')||'<div class="msg">—</div>';}
-function renderDrawer(n){
-  const lamp=document.getElementById('dLamp'),name=document.getElementById('dName'),sub=document.getElementById('dSub'),body=document.getElementById('dBody');
+function renderDrawer(n){const real=document.getElementById('dBody'),tmp=document.createElement('div');_render(n,tmp);if(tmp.innerHTML!==real.innerHTML)real.innerHTML=tmp.innerHTML;}
+function _render(n,body){
+  const lamp=document.getElementById('dLamp'),name=document.getElementById('dName'),sub=document.getElementById('dSub');
   if(n.kind==='hub'){lamp.className='lamp hub';lamp.innerHTML='<svg viewBox="0 0 84.54 136" height="26"><polygon fill="#3d8fff" points="69.84,0.00 0.00,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>';name.textContent='Sala de Controle';const s=n.sess;sub.textContent=s?esc(s.name)+' · '+(s.status||''):'sem sessão aberta';
     const salaProj=S.projects.find(p=>p.kind==='sala');
     body.innerHTML=`<div class="sec"><div class="kicker">Agora</div><div class="now">${s?(s.tool?`<code>${esc(s.tool[0])}</code> ${esc(s.tool[1])}`:(s.turns.length?esc(s.turns[s.turns.length-1].text):'em silêncio')):'Abra uma sessão na pasta 1 | Sala de Controle e rode /sala-de-controle.'}</div></div>
