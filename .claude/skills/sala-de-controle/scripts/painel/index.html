@@ -82,6 +82,9 @@
 
   .vault{inset:0;background:var(--void);z-index:10;display:grid;grid-template-columns:270px 1fr 300px;grid-template-rows:56px 1fr;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .32s var(--e),visibility 0s linear .32s}
   body.vault-open .vault{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .32s var(--e),visibility 0s}
+  /* barra do leitor fica no grid — anula o .top absoluto do mapa (senão árvore/nota/grafo sobem para a linha de 56px, atrás da barra) */
+  .vault .top,body.open .vault .top{position:relative;inset:auto;height:auto;right:auto;z-index:auto} .vault .top::after{display:none}
+  .vault>*{min-height:0}
   .vault .top{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--hair);background:var(--ink)}
   .vault .top .back{background:none;border:1px solid var(--hair-strong);color:var(--bone);border-radius:6px;padding:7px 12px;font-family:var(--sans);font-size:12px;cursor:pointer}
   .vault .top .back:hover{border-color:var(--bone-mute)}

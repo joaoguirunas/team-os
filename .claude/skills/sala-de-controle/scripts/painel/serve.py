@@ -119,10 +119,19 @@ def parse_fm(text):
     m = FM_RE.match(text)
     fm = {}
     if m:
+        key = None  # chave com bloco YAML (`summary: >` / `|`) aguardando as linhas indentadas
         for line in m.group(1).splitlines():
+            if key and line.startswith((" ", "\t")):
+                fm[key] = (fm[key] + " " + line.strip()).strip()
+                continue
+            key = None
             if ":" in line and not line.startswith(" "):
                 k, v = line.split(":", 1)
-                fm[k.strip()] = v.strip().strip('"')
+                k, v = k.strip(), v.strip()
+                if re.fullmatch(r"[>|][+-]?", v):
+                    fm[k], key = "", k
+                else:
+                    fm[k] = v.strip('"')
         text = text[m.end():]
     return fm, text
 

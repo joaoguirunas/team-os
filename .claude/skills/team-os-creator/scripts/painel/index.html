@@ -55,6 +55,9 @@
   .lamp.sq{border-color:var(--bone)} .lamp.sk{background:var(--az);border-color:var(--az)} .lamp.hub{border:0}
   .reader{inset:0;background:var(--void);z-index:10;display:grid;grid-template-columns:280px 1fr 300px;grid-template-rows:56px 1fr;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .32s var(--e),visibility 0s linear .32s}
   body.reader-open .reader{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .32s var(--e),visibility 0s}
+  /* barra do leitor fica no grid — anula o .top absoluto do mapa (senão árvore/nota/grafo sobem para a linha de 56px, atrás da barra) */
+  .reader .top,body.open .reader .top{position:relative;inset:auto;height:auto;right:auto;z-index:auto} .reader .top::after{display:none}
+  .reader>*{min-height:0}
   .reader .top{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--hair);background:var(--ink)}
   .reader .top .back{background:none;border:1px solid var(--hair-strong);color:var(--bone);border-radius:6px;padding:7px 12px;font-family:var(--sans);font-size:12px;cursor:pointer} .reader .top .back:hover{border-color:var(--bone-mute)}
   .reader .top h3{margin:0;font-size:14px;font-weight:500} .reader .top h3 small{font-family:var(--mono);font-size:10.5px;color:var(--bone-mute);margin-left:12px;letter-spacing:.06em}
