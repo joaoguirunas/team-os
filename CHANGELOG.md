@@ -2,6 +2,12 @@
 
 Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [Não lançado]
+
+### Corrigido
+- **Sala de Controle lê a smart-memory no layout atual**: `project-context.py` passa a ler os DIGESTs em `agents/<squad>/<área>/DIGEST.md` (convenção desde a 2.2.0) — antes só enxergava o layout antigo `agents/<área>/` e projetos já migrados apareciam sem "Contexto recente". O layout antigo continua sendo lido até o `/team-os --repair` migrar cada projeto.
+- `project-context.py` entende `summary: >` / `|` (bloco YAML em várias linhas) — o resumo do projeto saía como `>`.
+
 ## [2.3.0] — 2026-09-26 · Economia de tokens e painéis ao vivo
 
 ### Adicionado

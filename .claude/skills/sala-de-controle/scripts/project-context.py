@@ -5,7 +5,7 @@ Lê, em ordem de importância, SÓ estes pontos (nunca código, nunca pasta inte
   1. _session/ledger-<data>.md mais recente  — a etapa real (DONE / in-progress / BLOCKED / Rulings)
   2. stories/active, stories/in-review, stories/BACKLOG.md
   3. _inbox/*.md dos últimos N dias           — o que os agentes registraram
-  4. agents/<área>/DIGEST.md → "Contexto recente"
+  4. agents/<squad>/<área>/DIGEST.md → "Contexto recente" (lê também o layout antigo agents/<área>/)
   5. decisions/ (3 mais recentes)
   6. INDEX.md + project/overview.md           — o que o projeto é
   + .claude/agents/*.md (nomes → squads)
@@ -53,10 +53,19 @@ def frontmatter(txt):
     m = re.match(r"^---\n(.*?)\n---\n?", txt, re.S)
     fm = {}
     if m:
+        key = None  # chave com bloco YAML (`summary: >` / `|`) aguardando as linhas indentadas
         for line in m.group(1).splitlines():
+            if key and line.startswith((" ", "\t")):
+                fm[key] = (fm[key] + " " + line.strip()).strip()
+                continue
+            key = None
             if ":" in line and not line.startswith(" "):
                 k, v = line.split(":", 1)
-                fm[k.strip()] = v.strip().strip('"').strip("'")
+                k, v = k.strip(), v.strip()
+                if re.fullmatch(r"[>|][+-]?", v):
+                    fm[k], key = "", k
+                else:
+                    fm[k] = v.strip('"').strip("'")
     return fm, (txt[m.end():] if m else txt)
 
 
@@ -164,13 +173,22 @@ if os.path.isdir(SM):
         latest_touch = max(latest_touch, os.path.getmtime(p))
         if len(lists["INBOX"]) >= 10:
             break
-    # 4. DIGEST → Contexto recente
+    # 4. DIGEST → Contexto recente — agents/<squad>/<área>/DIGEST.md (convenção atual)
+    #    e agents/<área>/DIGEST.md (layout antigo, até o /team-os --repair migrar o projeto)
     agd = os.path.join(SM, "agents")
+    digests = []
     if os.path.isdir(agd):
-        for area in sorted(os.listdir(agd)):
-            dg = os.path.join(agd, area, "DIGEST.md")
-            if not os.path.isfile(dg):
+        for d1 in sorted(os.listdir(agd)):
+            p1 = os.path.join(agd, d1)
+            if not os.path.isdir(p1) or d1.startswith((".", "_")):
                 continue
+            if os.path.isfile(os.path.join(p1, "DIGEST.md")):
+                digests.append((d1, os.path.join(p1, "DIGEST.md")))
+            for d2 in sorted(os.listdir(p1)):
+                dg2 = os.path.join(p1, d2, "DIGEST.md")
+                if not d2.startswith((".", "_")) and os.path.isfile(dg2):
+                    digests.append((f"{d1}/{d2}", dg2))
+        for area, dg in digests:
             txt = read(dg)
             m = re.search(r"^##+\s*Contexto recente.*?$(.*?)(?=^##\s|\Z)", txt, re.S | re.M | re.I)
             if not m:
