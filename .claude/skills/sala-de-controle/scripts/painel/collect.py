@@ -20,6 +20,9 @@ Usage: collect.py [--root <raiz>] [--json]
 import glob, json, os, re, subprocess, sys, time, unicodedata
 from collections import deque
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tokens  # noqa: E402  contador de tokens (thread de fundo, leitura incremental)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 HOME = os.path.expanduser("~")
@@ -341,6 +344,7 @@ def collect(root):
                 "state": s.get("STATE", ""), "updated": s.get("UPDATED", ""), "is_self": s.get("IS_SELF") == "1",
                 "is_sala": is_sala, "team": team_name, "agents": agents,
                 "turns": main.get("turns", []), "tool": main.get("last_tool"), "last_epoch": main.get("last_epoch", 0),
+                "tokens": tokens.summary(tr) if tr and os.path.isfile(tr) else None,
                 "project": cwd if cwd in projects else ""}
         # projeto pai por prefixo (sessão aberta numa subpasta)
         if not sess["project"]:
@@ -364,7 +368,9 @@ def collect(root):
               "agents": sum(len(s["agents"]) for s in out_sessions),
               "active": sum(1 for s in out_sessions for a in s["agents"] if a["state"] == "active"),
               "approval": sum(1 for s in out_sessions for a in s["agents"] if a["state"] == "approval")
-              + sum(1 for s in out_sessions if s.get("state") == "blocked")}
+              + sum(1 for s in out_sessions if s.get("state") == "blocked"),
+              "tokens": sum((s.get("tokens") or {}).get("total", 0) for s in out_sessions),
+              "tokens_rate": sum((s.get("tokens") or {}).get("rate", 0) for s in out_sessions)}
     return {"root": nfc(root), "self": nfc(self_name), "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "took_ms": int((time.time() - t0) * 1000), "projects": list(projects.values()),
             "sessions": out_sessions, "events": events[:60], "edges": edges, "counts": counts}

@@ -183,6 +183,7 @@
   <div class="stat"><b id="sSess">0</b><span class="kicker">sessões</span></div>
   <div class="stat"><b id="sAg">0</b><span class="kicker">agentes</span></div>
   <div class="stat az"><b id="sWork">0</b><span class="kicker">ativos</span></div>
+  <div class="stat" title="tokens processados pelas sessões abertas (líder + agentes)"><b id="sTok">0</b><span class="kicker" id="sTokK">tokens</span></div>
   <div class="stat am"><b id="sWait">0</b><span class="kicker">precisam de você</span></div>
 </div>
 </div>
@@ -273,6 +274,11 @@ let fitted=false;
 cv.addEventListener('wheel',e=>{e.preventDefault();userMoved=true;const k=Math.min(2.4,Math.max(0.4,view.k*(e.deltaY<0?1.08:0.925)));const p=toWorld(e.clientX,e.clientY);view.k=k;view.x=e.clientX-p.x*k;view.y=e.clientY-p.y*k;},{passive:false});
 
 /* ===================== DESENHO ===================== */
+/* ===== tokens ===== */
+const fmtTok=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(n>=1e8?0:1)+'M':n>=1e3?Math.round(n/1e3)+'k':String(Math.round(n||0));
+const TK_COL={ok:'#8F948D',warn:'#e5b94a',high:'#e5604a'};
+const TK_WORD={ok:'contexto saudável',warn:'contexto grande — vale compactar',high:'contexto enorme — compacte ou abra sessão nova'};
+const CTX_MAX=1e6;
 const COL={bone:'#F2F3F0',dim:'#C4C8C1',mute:'#8F948D',az:'#3d8fff',azg:'#5b6bff',amber:'#3d8fff',ok:'#3fbf7a',off:'#585C57'};
 function stateOfSession(s){if(s.state==='blocked'||s.agents.some(a=>a.state==='approval'))return 'approval';if(s.status==='busy'||s.agents.some(a=>a.state==='active'))return 'active';return 'idle';}
 function stateOfLead(L){if(!L.sess.length)return 'off';const ags=L.sess.flatMap(s=>s.agents);if(ags.some(a=>a.state==='approval')||L.sess.some(s=>s.state==='blocked'))return 'approval';if(ags.some(a=>a.state==='active')||L.sess.some(s=>s.status==='busy'))return 'active';return 'idle';}
@@ -326,7 +332,11 @@ function frame(now){
     const dx=SN.x-SN.lead.x,dy=SN.y-SN.lead.y,d=Math.hypot(dx,dy)||1;const vert=Math.abs(dx)<10;
     const lx=vert?SN.x:SN.x+dx/d*16,ly=vert?SN.y+(dy>0?SN.r+15:-(SN.r+8)):SN.y+dy/d*16+4,al=vert?'center':dx>0?'left':'right';
     text(shortName(SN.sess.name).slice(0,30),lx,ly,10,st==='idle'?COL.dim:COL.bone,500,al);
-    text((SN.sess.status||'').toUpperCase(),lx,ly+11,7.5,'#8F948D',400,al,'mono');}
+    text((SN.sess.status||'').toUpperCase(),lx,ly+11,7.5,'#8F948D',400,al,'mono');
+    const tk=SN.sess.tokens;
+    if(tk&&tk.ready&&tk.total>0){SN.tokShow=(SN.tokShow==null?tk.total:SN.tokShow+(tk.total-SN.tokShow)*0.12);const tc=TK_COL[tk.level]||TK_COL.ok,bw=46,bx=al==='center'?lx-bw/2:al==='left'?lx:lx-bw,by=ly+17;
+      text(fmtTok(SN.tokShow)+' tok'+(tk.rate>0?' ▲':''),lx,ly+25,7.5,tc,500,al,'mono');
+      ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(bx,by+10,bw,2);ctx.fillStyle=tc;ctx.fillRect(bx,by+10,Math.max(2,bw*Math.min(1,tk.ctx/CTX_MAX)),2);}}
   // agentes
   for(const A of nodes.values()){if(A.kind!=='agent')continue;A.glow=Math.max(0,A.glow-dt/700);A.pulse=Math.max(0,A.pulse-dt/900);const s=A.ag.state,col=colorOf(s),isSel=sel===A||hov===A;
     const age=A.ag.age==null?0:A.ag.age;const fade=s==='active'?1:Math.max(0.15,1-Math.max(0,age-60)/240);ctx.globalAlpha=fade;
@@ -344,7 +354,7 @@ function frame(now){
   if(hov&&!drag){tip.style.display='block';tip.style.left=(mouse.x+14)+'px';tip.style.top=(mouse.y+14)+'px';
     if(hov.kind==='hub')tip.innerHTML=`<b>Sala de Controle</b><small>${hub.sess?esc(hub.sess.name)+' · '+hub.sess.status:'sem sessão aberta'}</small>`;
     else if(hov.kind==='lead')tip.innerHTML=`<b>${esc(hov.proj.name)}</b><small>${hov.sess.length?hov.sess.map(s=>esc(s.name)).join(' · '):'sem sessão aberta'}</small>`;
-    else if(hov.kind==='session')tip.innerHTML=`<b>${esc(hov.sess.name)}</b><small>${esc(hov.sess.status||'')} · ${hov.sess.agents.length} agentes${hov.sess.tool?' · '+esc(hov.sess.tool[0]):''}</small>`;
+    else if(hov.kind==='session')tip.innerHTML=`<b>${esc(hov.sess.name)}</b><small>${esc(hov.sess.status||'')} · ${hov.sess.agents.length} agentes${hov.sess.tool?' · '+esc(hov.sess.tool[0]):''}${hov.sess.tokens&&hov.sess.tokens.ready?' · '+fmtTok(hov.sess.tokens.total)+' tokens · contexto '+fmtTok(hov.sess.tokens.ctx):''}</small>`;
     else tip.innerHTML=`<b>${esc(hov.ag.name)} <span style="color:var(--bone-mute);font-weight:300">· ${esc(hov.ag.type)}</span></b><small>${esc(hov.ag.now||'—')}</small>`;}
   else tip.style.display='none';
   requestAnimationFrame(frame);
@@ -380,7 +390,14 @@ let es=null,lastSeq=0;
 function connect(){es=new EventSource('/events?since='+lastSeq);
   es.addEventListener('state',ev=>{const d=JSON.parse(ev.data);S=d.state;document.getElementById('live').classList.remove('off');rebuild();updateStats();if(!fitted){fitted=true;setTimeout(fitAll,700);setTimeout(()=>{if(!userMoved)fitAll();},2200);}(d.events||[]).forEach(e=>{lastSeq=Math.max(lastSeq,e.seq||0);handleEvent(e);});});
   es.onerror=()=>{document.getElementById('live').classList.add('off');};}
-function updateStats(){const c=S.counts||{};sSess.textContent=c.sessions||0;sAg.textContent=c.agents||0;sWork.textContent=c.active||0;sWait.textContent=c.approval||0;clock.textContent=(S.generated||'').slice(11,19)+' · '+(S.took_ms||0)+' ms';}
+function tokensHtml(t){if(!t||!t.ready)return '';const c=TK_COL[t.level]||TK_COL.ok,pct=Math.min(100,Math.round(t.ctx/CTX_MAX*100)),mx=Math.max(1,...(t.agents||[]).map(a=>a.total),(t.lead||{}).total||0);
+  const row=(n,v,sub)=>`<div class="row"><span class="t"><b>${esc(n)}</b>${sub?'<br>'+esc(sub):''}</span><span class="s" style="min-width:96px;text-align:right">${fmtTok(v)}<i style="display:block;height:2px;margin-top:4px;background:rgba(255,255,255,.12)"><i style="display:block;height:2px;width:${Math.max(2,Math.round(v/mx*100))}%;background:${c}"></i></i></span></div>`;
+  return `<div class="sec"><div class="kicker">Consumo de tokens</div>
+    <div class="kv"><span>Total</span><b>${fmtTok(t.total)}</b><span>Novos</span><b>${fmtTok(t.new)} <small style="color:#8F948D">(escritos/enviados)</small></b><span>Relidos</span><b>${fmtTok(t.reread)} <small style="color:#8F948D">(histórico a cada turno)</small></b><span>Ritmo</span><b>${t.rate?fmtTok(t.rate)+'/min':'parado'}</b><span>Contexto</span><b style="color:${c}">${fmtTok(t.ctx)} · ${pct}%</b></div>
+    <div style="height:3px;margin:10px 0 6px;background:rgba(255,255,255,.10)"><div style="height:3px;width:${Math.max(1,pct)}%;background:${c}"></div></div>
+    <div class="kicker" style="color:${c}">${TK_WORD[t.level]||''}</div>
+    <div style="margin-top:10px">${t.lead?row('Sessão (líder)',t.lead.total,'contexto '+fmtTok(t.lead.ctx)):''}${(t.agents||[]).map(a=>row(a.name,a.total,a.rate?fmtTok(a.rate)+'/min':'')).join('')}${t.agents_n>(t.agents||[]).length?`<div class="kicker" style="margin-top:6px">+ ${t.agents_n-t.agents.length} agentes menores</div>`:''}</div></div>`;}
+function updateStats(){const c=S.counts||{};sSess.textContent=c.sessions||0;sAg.textContent=c.agents||0;sWork.textContent=c.active||0;sWait.textContent=c.approval||0;sTok.textContent=fmtTok(c.tokens||0);sTokK.textContent=c.tokens_rate?'tokens · '+fmtTok(c.tokens_rate)+'/min':'tokens';clock.textContent=(S.generated||'').slice(11,19)+' · '+(S.took_ms||0)+' ms';}
 
 /* ===================== DRAWER ===================== */
 const stateWord={active:'ativo',approval:'precisa de você',waiting:'aguardando',idle:'parado'};
@@ -405,6 +422,7 @@ function _render(n,body){
       <div class="sec"><button class="btn" ${p.smart_memory?'':'disabled'} data-vault="${esc(p.path)}">${p.smart_memory?'Abrir smart-memory':'Sem smart-memory ainda'} <span>→</span></button></div>`;return;}
   if(n.kind==='session'){const s=n.sess,st=stateOfSession(s);lamp.className=lampCls(st);lamp.innerHTML='';name.textContent=s.name;sub.textContent=[n.proj.name,s.status,s.state].filter(Boolean).join(' · ');
     body.innerHTML=`<div class="sec"><div class="kicker">Agora</div><div class="now">${s.tool?`<code>${esc(s.tool[0])}</code> ${esc(s.tool[1])}`:(s.turns.length?esc(s.turns[s.turns.length-1].text):'em silêncio')}</div>${s.updated?`<div class="kicker" style="margin-top:8px">atualizada ${esc(s.updated)}${s.short?' · id '+esc(s.short):''}</div>`:''}</div>
+      ${tokensHtml(s.tokens)}
       <div class="sec"><div class="kicker">Últimas falas</div>${turnsHtml(s.turns)}</div>
       <div class="sec"><div class="kicker">Agentes</div>${s.agents.map(a=>`<div class="row click" data-agent="${esc(a.name)}" data-sid="${esc(s.id)}"><span class="n" style="${a.state==='active'?'background:#f1f1f3':a.state==='approval'?'background:#3d8fff;box-shadow:0 0 0 3px #3d8fff33':a.state==='waiting'?'border:1.5px dashed #c5c5ca':'border:1.5px solid #3a3a42'}"></span><span class="t"><b>${esc(a.name)}</b> · ${esc(a.type)}</span><span class="s">${stateWord[a.state]}</span></div>`).join('')||'<div class="row"><span class="t">nenhum agente em execução</span></div>'}</div>
       <div class="sec"><div class="kicker">Projeto</div><div class="row click" data-lead="${esc(n.lead.id)}"><span class="n" style="border:1.5px solid #84848c"></span><span class="t"><b>${esc(n.proj.name)}</b><br>${esc(n.proj.stage||'')}</span><span class="s">→</span></div></div>
