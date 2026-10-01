@@ -574,7 +574,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 ## 10. Hooks de qualidade
 
-12 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**493 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
+13 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**493 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
 
 **Guards de git (`PreToolUse` em `Bash`)** — além de `git push` direto, os dois cobrem flags globais (`git -C`, `--git-dir`, `-c alias.x=push`), wrappers (`env`, `sudo`, `\git`, `/usr/bin/git`), comandos multilinha e encadeados, `git send-pack`, `gh pr create/merge`, `gh release create`, `gh api` de escrita em PRs, e **bloqueiam shell embutido** (`sh -c`, `bash -c`, `eval`, `xargs`, `find -exec`, `python3 -c`/`node -e` com git) e variáveis no lugar do comando — expansão indireta não é permitida para operações git.
 
@@ -595,6 +595,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 - **`guard-smart-memory-read.sh`** — matcher `Read|Bash`. Bloqueia leitura de `docs/smart-memory/_archive/`, leitura de pasta inteira da smart-memory (`cat docs/smart-memory/*`, `grep -r` sem `-l`, `find -exec cat`) e a 4ª nota fora do L0 sem nova busca: o `sm-find.sh` zera o contador. Orçamento ajustável por `TEAM_OS_L2_BUDGET` (padrão 3).
 - **`guard-message-size.sh`** — matcher `SendMessage`. Bloqueia mensagem entre agentes acima de 20 linhas ou 1.500 caracteres: resumo primeiro, detalhe em arquivo, a mensagem leva o path. Mensagem que começa com `[handoff]` (resultado final ao lead) vai até 60 linhas. Mensagens de protocolo (shutdown, plan approval) passam.
+- **`context-watch.sh`** — evento `UserPromptSubmit`. Lê o tamanho do contexto da sessão (última resposta do transcript) e, passando de 200 mil tokens (`TEAM_OS_CTX_WARN`) ou 400 mil (`TEAM_OS_CTX_HIGH`), injeta um aviso curto para o Claude propor registrar o estado no ledger e rodar `/compact` ou abrir sessão nova. Anti-spam (só avisa ao subir de nível ou crescer 100 mil), nunca bloqueia, fail-open. `TEAM_OS_CTX_WATCH=0` desliga.
 
 **Sessão**
 
@@ -609,7 +610,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 ```
 .claude/
 ├── agents/              ← 95 definições de agentes (fonte da verdade)
-├── hooks/               ← 12 hooks de qualidade (ver §10)
+├── hooks/               ← 13 hooks de qualidade (ver §10)
 │   ├── block-git-push.sh          ← PreToolUse: bloqueia push em todo agente com Bash exceto devops
 │   ├── block-worktree.sh          ← PreToolUse (settings.json): bloqueia isolation: worktree, EnterWorktree, git worktree add e criação de branch
 │   ├── guard-push-branch.sh       ← PreToolUse (devops): push só na main/master; fora dela bloqueio sempre aplicado
@@ -688,7 +689,7 @@ docs/smart-memory/                       ← no projeto destino (Obsidian)
 1. Editar agente/skill AQUI (nunca no destino) — agentes via /team-os-creator (*create, *squad, *migrate)
 2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 95/95 agentes conformes (= *audit)
 3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 108 skills
-4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 493/493 casos dos hooks
+4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 505/505 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
 6. commit no CT (Conventional Commits em português; registrar no CHANGELOG.md)
 7. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)

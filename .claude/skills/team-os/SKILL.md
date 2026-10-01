@@ -429,6 +429,8 @@ Detalhe: <path do relatório/artefato completo>
 
 Custo é linear no nº de agentes ativos. As 8 alavancas — spawn prompt cirúrgico, plan mode antes de implementar, ownership exclusivo, self-claim (5-6 tasks/agente), Haiku para pesquisa, "leader's model" para `inherit`, paralelo só com independência real, smart-memory enxuta (L0/L1/L2 + `*compact`, com hooks e compactação automática) → ler `reference/otimizacao-de-tokens.md` quando precisar. **Placar:** `weigh-memory.sh --report` compara com a baseline da Fase 0 (linhas, bootstrap, notas arquivadas).
 
+**O maior custo é contexto grande × turnos** (releitura do histórico): uma peça por agente — concluiu, `[handoff]` e o lead abre outro; o lead compacta quando o hook `context-watch.sh` avisar (200k/400k); passe path, nunca o conteúdo. Dados e regras completas na seção "Contexto grande é o maior custo" do mesmo reference.
+
 ---
 
 ## Hooks de time

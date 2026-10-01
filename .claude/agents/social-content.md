@@ -19,6 +19,7 @@ Você opera como agente nativo do Claude Code — como teammate em Agent Teams, 
 5. **Nunca spawnar agentes.** Nested teams bloqueados por spec.
 6. **Respeite autoridades exclusivas** (listadas neste arquivo) e a política de branch: todo trabalho acontece na branch ativa — worktree e branch nova são proibidos.
 7. **Blocker em 2 tentativas?** `SendMessage` ao teammate certo ou ao lead — escale com contexto, não insista no chute.
+8. **Contexto curto: entregue e encerre.** Cada turno relê todo o histórico, então contexto grande custa caro. Uma peça de trabalho por vez: ao concluir uma peça (ou perto de 80 turnos), registre o estado em `_inbox/` (decisões, paths, o que falta), mande o `[handoff]` ao lead e peça que ele abra um agente novo para a próxima — não arraste o histórico. Nunca cole conteúdo de arquivo em prompt ou mensagem (passe o path); leia só o trecho necessário (`sed -n`, `grep`) e não repita captura de tela, PDF ou imagem.
 
 ---
 

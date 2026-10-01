@@ -59,3 +59,19 @@ O `--report` re-pesa e imprime:
 | `WEIGH_REPORT=…` | linha pronta para o painel: `Memória: 1.240 → 1.180 linhas (−60) · bootstrap pior área 1.900 → 1.400 tokens · 12 notas arquivadas` |
 
 Sem baseline (sessão não passou pela Fase 0, `TMPDIR` limpo) → `WEIGH_REPORT=sem baseline desta sessão`. Sem smart-memory (CT) → `WEIGH_REPORT=sem smart-memory neste projeto`. A baseline é por projeto (hash do path) e sobrevive entre rodadas da mesma sessão; um novo `/team-os` a regrava.
+
+## Contexto grande é o maior custo (medido em 29/09–01/10)
+
+Em 50 sessões, ~97% dos tokens eram **releitura do histórico** (cache), não texto novo. O que pesa é o **tamanho do contexto × nº de turnos**:
+
+- Sessões grandes rodaram com **460–560 mil tokens de contexto** em média (pico ~950 mil); 87% dos turnos acima de 200 mil.
+- Os **agentes somaram 2–3× o líder**: cada um rodou 200–300 turnos com 300–450 mil de contexto, e 54% do consumo deles aconteceu acima de 400 mil.
+
+Regras que seguem disso:
+
+1. **Uma peça por agente.** Terminou a peça (ou ~80 turnos)? O agente registra o estado em `_inbox/`, manda `[handoff]` e o lead abre um agente novo para a próxima. Não reutilize o mesmo agente para 4–5 peças em sequência (NTP regra 8).
+2. **Lead compacta cedo.** O hook `context-watch.sh` avisa em 200 mil e 400 mil. Ao avisar: grave o ledger, rode `/compact` (ou feche a rodada e abra sessão nova). `TEAM_OS_CTX_WARN` / `TEAM_OS_CTX_HIGH` ajustam os limites; `TEAM_OS_CTX_WATCH=0` desliga.
+3. **Passe o path, não o conteúdo.** Spawn prompt e `SendMessage` levam o caminho do arquivo e o que fazer com ele — nunca o texto colado.
+4. **Leia o trecho, não o arquivo.** `sed -n`, `grep -n`, `head`; capturas de tela, PDFs e imagens só quando o texto não responde (cada uma fica no contexto para sempre).
+5. **Acompanhe no painel.** `/sala-de-controle *painel` mostra por sessão o consumo (líder + agentes), o ritmo por minuto e a barra de contexto (amarelo >200 mil, vermelho >400 mil).
+

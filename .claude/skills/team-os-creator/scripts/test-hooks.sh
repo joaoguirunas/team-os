@@ -803,6 +803,27 @@ expect 2 $H "$(msg_payload "$(mk_lines 61 '[handoff] pronto')")" "fallback: [han
 expect 0 $H '{"tool_name":"SendMessage","tool_input":{"to":"dev","message":{"type":"shutdown_request"}}}' "fallback: JSON de protocolo → passa"
 TESTPATH="$PATH"
 
+# ── 10d. context-watch.sh (UserPromptSubmit — aviso de contexto grande, nunca bloqueia) ──
+section "context-watch.sh"
+H=context-watch.sh
+mk_transcript() {  # <arquivo> <contexto em tokens>  — duas linhas do mesmo message.id (usage repetido, como no real)
+  python3 -c 'import json,sys; ctx=int(sys.argv[2]); u={"input_tokens":5,"cache_creation_input_tokens":1000,"cache_read_input_tokens":ctx-1005,"output_tokens":50}
+open(sys.argv[1],"w").write("\n".join(json.dumps({"type":"assistant","message":{"id":"m%d"%i,"usage":u,"content":[]}}) for i in (1,1,2))+"\n")' "$1" "$2"
+}
+cw_payload() { python3 -c 'import json,sys; print(json.dumps({"session_id":sys.argv[1],"transcript_path":sys.argv[2],"hook_event_name":"UserPromptSubmit","prompt":"segue"}))' "$1" "$2"; }
+mkdir -p "$TMP/tmpd"; rm -f "$TMP"/tmpd/team-os-context-watch-* 2>/dev/null
+mk_transcript "$TMP/cw-100k.jsonl" 100000; mk_transcript "$TMP/cw-250k.jsonl" 250000; mk_transcript "$TMP/cw-450k.jsonl" 450000
+expect 0 $H "$(cw_payload cwA "$TMP/cw-100k.jsonl")" "100k → exit 0"
+expect_out_empty $H "$(cw_payload cwB "$TMP/cw-100k.jsonl")" "100k → silêncio"
+expect_out_contains $H "$(cw_payload cwC "$TMP/cw-250k.jsonl")" "Contexto grande (250k" "250k → 1º aviso com o tamanho"
+expect_out_empty $H "$(cw_payload cwC "$TMP/cw-250k.jsonl")" "250k de novo (mesma sessão) → anti-spam, silêncio"
+expect_out_contains $H "$(cw_payload cwC "$TMP/cw-450k.jsonl")" "CONTEXTO ENORME (450k" "sobe para 450k → aviso forte"
+expect_out_contains $H "$(cw_payload cwD "$TMP/cw-450k.jsonl")" "hookEventName" "saída é o JSON de hook (UserPromptSubmit)"
+expect 0 $H "$(cw_payload cwE "$TMP/cw-450k.jsonl")" "aviso nunca bloqueia (exit 0)"
+expect_out_empty $H "$(cw_payload cwF "$TMP/nao-existe.jsonl")" "transcript inexistente → fail-open"
+expect_out_empty $H 'isto nao e json' "JSON inválido → fail-open"
+TEAM_OS_CTX_WATCH=0 expect_out_empty $H "$(cw_payload cwG "$TMP/cw-450k.jsonl")" "TEAM_OS_CTX_WATCH=0 → desligado"
+
 # ── Resumo ───────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"

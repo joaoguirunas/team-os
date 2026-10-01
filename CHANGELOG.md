@@ -4,6 +4,12 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+### Adicionado
+- **Contador de tokens no painel da Sala** (`/sala-de-controle *painel`): micro-indicador em cada sessão (tokens que sobem + barra de contexto, amarelo >200k e vermelho >400k), detalhe no painel lateral (novos x relidos, ritmo por minuto, consumo por agente) e total no topo. `tokens.py` lê os transcripts de forma incremental, em thread de fundo, deduplicando por resposta (o `usage` se repete por bloco).
+- **Hook `context-watch.sh`** (`UserPromptSubmit`): avisa quando o contexto da sessão passa de 200k e de 400k tokens e propõe registrar o ledger e `/compact` (ou sessão nova). Anti-spam, nunca bloqueia, fail-open; `TEAM_OS_CTX_WARN` / `TEAM_OS_CTX_HIGH` / `TEAM_OS_CTX_WATCH=0`. Registrado pelo `ensure-settings.sh`; 12 casos novos em `test-hooks.sh` (505).
+- **NTP regra 8 — "Contexto curto: entregue e encerre"**: uma peça por agente; ao concluir (ou perto de 80 turnos) registra o estado no `_inbox/`, manda `[handoff]` e pede ao lead um agente novo; passa path em vez de colar conteúdo. Reaplicada nos 95 agentes e 9 modelos via `migrate-ntp.sh`.
+- `team-os`: seção "Contexto grande é o maior custo" em `reference/otimizacao-de-tokens.md` (dados medidos: ~97% dos tokens são releitura de histórico; agentes somam 2–3× o líder).
+
 ### Corrigido
 - **Sala de Controle lê a smart-memory no layout atual**: `project-context.py` passa a ler os DIGESTs em `agents/<squad>/<área>/DIGEST.md` (convenção desde a 2.2.0) — antes só enxergava o layout antigo `agents/<área>/` e projetos já migrados apareciam sem "Contexto recente". O layout antigo continua sendo lido até o `/team-os --repair` migrar cada projeto.
 - `project-context.py` entende `summary: >` / `|` (bloco YAML em várias linhas) — o resumo do projeto saía como `>`.
