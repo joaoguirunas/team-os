@@ -812,6 +812,7 @@ open(sys.argv[1],"w").write("\n".join(json.dumps({"type":"assistant","message":{
 }
 cw_payload() { python3 -c 'import json,sys; print(json.dumps({"session_id":sys.argv[1],"transcript_path":sys.argv[2],"hook_event_name":"UserPromptSubmit","prompt":"segue"}))' "$1" "$2"; }
 mkdir -p "$TMP/tmpd"; rm -f "$TMP"/tmpd/team-os-context-watch-* 2>/dev/null
+OLD_TMPDIR="${TMPDIR:-}"; export TMPDIR="$TMP/tmpd"   # estado do anti-spam isolado: o teste não depende de execuções anteriores
 mk_transcript "$TMP/cw-100k.jsonl" 100000; mk_transcript "$TMP/cw-250k.jsonl" 250000; mk_transcript "$TMP/cw-450k.jsonl" 450000
 expect 0 $H "$(cw_payload cwA "$TMP/cw-100k.jsonl")" "100k → exit 0"
 expect_out_empty $H "$(cw_payload cwB "$TMP/cw-100k.jsonl")" "100k → silêncio"
@@ -823,6 +824,7 @@ expect 0 $H "$(cw_payload cwE "$TMP/cw-450k.jsonl")" "aviso nunca bloqueia (exit
 expect_out_empty $H "$(cw_payload cwF "$TMP/nao-existe.jsonl")" "transcript inexistente → fail-open"
 expect_out_empty $H 'isto nao e json' "JSON inválido → fail-open"
 TEAM_OS_CTX_WATCH=0 expect_out_empty $H "$(cw_payload cwG "$TMP/cw-450k.jsonl")" "TEAM_OS_CTX_WATCH=0 → desligado"
+if [ -n "$OLD_TMPDIR" ]; then export TMPDIR="$OLD_TMPDIR"; else unset TMPDIR; fi
 
 # ── Resumo ───────────────────────────────────────────────────────────────────
 echo ""
