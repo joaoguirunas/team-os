@@ -175,7 +175,7 @@ O autopilot **nunca**: muda o destino confirmado, inventa sub-pedido fora do pla
 
 ## `*painel` — mapa vivo (visualização em tempo real)
 
-Uma página local que mostra, ao vivo, a Sala no centro, um nó por projeto (o líder da sessão) e os agentes de cada sessão ao redor — luz e anel por estado, mensagens viajando pelos fios, feed dos últimos eventos. Clique num agente/projeto/Sala abre o detalhe; no projeto, **Abrir smart-memory** navega a `docs/smart-memory/` dele como no Obsidian (árvore, nota com wikilinks, grafo de ligações). **Só lê** — nada de comando, nada de escrita. Reage tanto ao que a Sala despacha quanto ao que o usuário pede direto nos terminais dos projetos.
+Uma página local que mostra, ao vivo, a Sala no centro, um nó por projeto (o líder da sessão) e os agentes de cada sessão ao redor — luz e anel por estado, mensagens viajando pelos fios, feed dos últimos eventos. Clique num agente/projeto/Sala abre o detalhe; cada sessão traz um **contador de tokens** (líder + agentes; barra de contexto amarela >200k e vermelha >400k — hora de compactar ou abrir sessão nova); no projeto, **Abrir smart-memory** navega a `docs/smart-memory/` dele como no Obsidian (árvore recolhível, nota com wikilinks e propriedades, grafo com física ao vivo: arraste os nós, zoom, filtros, painel de forças, modo Foco/Tudo). **Só lê** — nada de comando, nada de escrita. Reage tanto ao que a Sala despacha quanto ao que o usuário pede direto nos terminais dos projetos.
 
 ```bash
 python3 .claude/skills/sala-de-controle/scripts/painel/serve.py --bg          # sobe (ou reaproveita) em http://127.0.0.1:8787
