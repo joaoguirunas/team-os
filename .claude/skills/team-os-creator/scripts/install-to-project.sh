@@ -23,7 +23,8 @@
 #                                       check-story-progress.sh, check-social-progress.sh,
 #                                       check-proposal-progress.sh, check-finance-progress.sh,
 #                                       check-legal-progress.sh, guard-push-branch.sh,
-#                                       guard-smart-memory-read.sh e guard-message-size.sh são
+#                                       guard-smart-memory-read.sh, guard-message-size.sh e
+#                                       context-watch.sh são
 #                                       SEMPRE instalados)
 #   --dry-run                           simula sem copiar nada
 
@@ -475,7 +476,7 @@ fi
 # dura. Registrados no settings.json gerado (ensure-settings.sh) — não são mais opcionais.
 quality_hooks_installed=""
 quality_hooks_missing=""
-for qh in task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh; do
+for qh in task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh context-watch.sh; do
   if [ -f "$SOURCE/.claude/hooks/$qh" ]; then
     do_mkdir "$TARGET/.claude/hooks"
     do_cp "$SOURCE/.claude/hooks/$qh" "$TARGET/.claude/hooks/$qh"
@@ -530,7 +531,7 @@ if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
     hook_name=$(basename "$hook_file")
 
     case "$hook_name" in
-      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|check-proposal-progress.sh|check-finance-progress.sh|check-legal-progress.sh|guard-push-branch.sh|guard-smart-memory-read.sh|guard-message-size.sh)
+      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|check-proposal-progress.sh|check-finance-progress.sh|check-legal-progress.sh|guard-push-branch.sh|guard-smart-memory-read.sh|guard-message-size.sh|context-watch.sh)
         continue ;;
     esac
 
