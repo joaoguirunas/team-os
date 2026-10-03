@@ -199,7 +199,7 @@ O que ele lê (tudo read-only, mesma regra do resto da Sala): `~/.claude/session
 python3 .claude/skills/sala-de-controle/scripts/org-map.py --tree
 ```
 
-Padrão que o pack entende: `<raiz>/<Negócio>/<Negócio> | <Projeto>`, uma única `1 | Sala de Controle` na raiz, CT em `0 | Centro de Treinamento`. O script aponta: projeto solto na raiz, nome fora do padrão `<Negócio> | …`, nível extra de pasta, projeto sem squad, squad sem smart-memory, sem `team-os`, Sala vazia/duplicada/fora da raiz/com agentes, negócio vazio.
+Padrão que o pack entende: `<raiz>/<Negócio>/<Negócio> | <Projeto>`, uma única `1 | Sala de Controle` na raiz, CT em `0 | Centro de Treinamento`. Pastas na raiz com prefixo numérico (`<N> | …`) são de sistema — não pedem negócio; `_arquivo/` é ignorada. O script aponta: cópia do `team-os-creator` fora do CT, projeto solto na raiz, nome fora do padrão `<Negócio> | …`, nível extra de pasta, projeto sem squad, squad sem smart-memory, sem `team-os`, Sala vazia/duplicada/fora da raiz/com agentes, negócio vazio.
 
 Entregue ao usuário:
 1. **A árvore atual** (negócio → projeto → squads · smart-memory).
