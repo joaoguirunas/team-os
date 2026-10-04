@@ -5,8 +5,8 @@
 # no destino (mantidas atualizadas). Copiadas se ausentes, ATUALIZADAS se o conteúdo difere.
 # Skills extras no destino são preservadas. team-os-creator nunca vai para o destino.
 # --dry-run imprime a origem de cada skill (SKILL_ORIGIN=<skill>|<origem>).
-# Antes de qualquer escrita, um .claude/ prévio do destino é copiado para
-# .claude.bak-<timestamp>/ (só fora do dry-run). settings.json é garantido pelo
+# No *install, antes de qualquer escrita, um .claude/ prévio do destino é copiado para
+# .claude.bak-<timestamp>/ (só fora do dry-run; o *propagate não faz backup; guarda 3, o resto vai à Lixeira). settings.json é garantido pelo
 # ensure-settings.sh da team-os (merge idempotente, nunca sobrescreve valores).
 # Usage: install-to-project.sh --source <path> --target <path> [options]
 #
@@ -189,11 +189,21 @@ dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
 }
 
 # ── Backup do .claude/ prévio (antes de QUALQUER escrita no destino) ─────────
-# Só quando não é dry-run e já existe .claude/ no destino. cp -R, nunca mv.
-if [ $DRY_RUN -eq 0 ] && [ -d "$TARGET/.claude" ]; then
+# Só no *install (1ª instalação num .claude/ existente): o *propagate (--match-target-squads) NÃO faz
+# backup — tudo que ele grava vem do CT (versionado), então desfazer = rodar o propagate de novo, e
+# cada cópia custava centenas de MB por projeto. Só fora do dry-run; cp -R, nunca mv.
+# Guarda no máximo BACKUP_KEEP (default 3) cópias; as mais antigas vão para a Lixeira (~/.Trash), não são apagadas.
+if [ $DRY_RUN -eq 0 ] && [ $MATCH_TARGET -eq 0 ] && [ -d "$TARGET/.claude" ]; then
   BACKUP_DIR="$TARGET/.claude.bak-$(date +%Y%m%d-%H%M%S)"
   if cp -R "$TARGET/.claude" "$BACKUP_DIR" 2>/dev/null; then
     echo "BACKUP=$BACKUP_DIR"
+    KEEP=${BACKUP_KEEP:-3}; case "$KEEP" in ''|*[!0-9]*) KEEP=3 ;; esac
+    TRASHED=0
+    for old_bak in $(ls -1d "$TARGET"/.claude.bak-* 2>/dev/null | sort -r | tail -n +$((KEEP + 1)) | tr ' ' '\001'); do
+      old_bak=$(printf '%s' "$old_bak" | tr '\001' ' ')
+      mkdir -p "$HOME/.Trash" && mv "$old_bak" "$HOME/.Trash/$(basename "$TARGET").$(basename "$old_bak")" 2>/dev/null && TRASHED=$((TRASHED + 1))
+    done
+    [ $TRASHED -gt 0 ] && echo "BACKUP_TRASHED=$TRASHED|cópias antigas de .claude.bak-* movidas para a Lixeira (guardadas: $KEEP)"
   else
     echo "BACKUP_FAILED=$BACKUP_DIR|não foi possível copiar .claude/ — abortando sem escrever" >&2
     exit 1

@@ -11,6 +11,9 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 - **NTP regra 8 — "Contexto curto: entregue e encerre"**: uma peça por agente; ao concluir (ou perto de 80 turnos) registra o estado no `_inbox/`, manda `[handoff]` e pede ao lead um agente novo; passa path em vez de colar conteúdo. Reaplicada nos 95 agentes e 9 modelos via `migrate-ntp.sh`.
 - `team-os`: seção "Contexto grande é o maior custo" em `reference/otimizacao-de-tokens.md` (dados medidos: ~97% dos tokens são releitura de histórico; agentes somam 2–3× o líder).
 
+### Alterado
+- **Backups `.claude.bak-*` só no `*install`**: o `*propagate` deixa de copiar o `.claude/` do destino a cada rodada (as cópias somavam 3,9 GB e uma pasta chegou a 18). O `*install` guarda as 3 mais recentes (`BACKUP_KEEP`) e manda as antigas para a Lixeira.
+
 ### Corrigido
 - `install-to-project.sh` passa a copiar o `context-watch.sh` (a lista de hooks do instalador é fixa): sem isso o `ensure-settings.sh` registrava o hook nos settings do projeto e o arquivo não existia.
 - **Sala de Controle lê a smart-memory no layout atual**: `project-context.py` passa a ler os DIGESTs em `agents/<squad>/<área>/DIGEST.md` (convenção desde a 2.2.0) — antes só enxergava o layout antigo `agents/<área>/` e projetos já migrados apareciam sem "Contexto recente". O layout antigo continua sendo lido até o `/team-os --repair` migrar cada projeto.
