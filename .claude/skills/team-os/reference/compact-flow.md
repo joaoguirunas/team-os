@@ -44,7 +44,26 @@ Durante as sessões, os agentes anotam barato em `docs/smart-memory/_inbox/` —
    (move para `_archive/<Q>/inbox/` + linha no LEDGER — nada é deletado).
 
 **Passo 3 — Semântico (archivist, quando o peso é largura):**
-Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de memória antiga, pré-v2) **ou há DIGEST acima do teto**, o mecânico não basta. Spawne **um teammate archivist** (archetype `analyst`/`researcher` da squad) com esta missão (substitua `{DIGEST_OVER_LIST}` pelo valor de `WEIGH_DIGEST_OVER_LIST`, um por linha):
+Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de memória antiga, pré-v2) **ou há DIGEST acima do teto**, o mecânico não basta. **O archivist NÃO é um agente instalado e NÃO é teammate** — é um subagent **built-in** (`general-purpose`) com missão fixa, então funciona em qualquer projeto, com qualquer squad (ou nenhuma). **Nunca** improvise com um agente da squad (`<squad>-analyst`, `-researcher`…) nem peça ao usuário para instalar um archivist: isso gasta o contexto de um agente com outra função e foi o erro que gerou este fluxo. Disparar o subagent é coordenação do lead (permitido pela Lead Discipline); o **julgamento** continua sendo dele.
+
+```
+Agent({
+  description: "Archivist — compactar a smart-memory",
+  subagent_type: "general-purpose",   // built-in: existe sempre
+  model: "sonnet",                    // curadoria de texto: Sonnet basta e custa bem menos que Opus
+  prompt: <a missão abaixo, com {DIGEST_OVER_LIST} preenchido>
+})
+```
+
+**Trava de escopo (barata, antes e depois):** o archivist só pode escrever em `docs/smart-memory/`. Se o projeto é git, o lead tira a foto do que já estava modificado fora dela e compara quando ele devolver:
+
+```bash
+git status --porcelain=v1 -- . ':(exclude)docs/smart-memory' > "${TMPDIR:-/tmp}/compact-outside.before"   # antes de disparar
+git status --porcelain=v1 -- . ':(exclude)docs/smart-memory' | diff "${TMPDIR:-/tmp}/compact-outside.before" -   # depois: diff vazio = ok
+```
+Diff não vazio → o archivist escreveu fora do escopo: mostre ao usuário a lista e **não** desfaça sozinho.
+
+Missão do archivist (substitua `{DIGEST_OVER_LIST}` pelo valor de `WEIGH_DIGEST_OVER_LIST`, um por linha):
 
 ```
 "Você é o archivist. Escopo EXCLUSIVO: docs/smart-memory/ (leitura) e
@@ -74,7 +93,7 @@ Se o peso vem de muitos arquivos sem metadata de ciclo de vida (caso típico de 
  _archive/ nunca é lido."
 ```
 
-**Passo 4 — Confirmação única:** o lead consolida mecânico + consolidação + semântico numa tabela só e apresenta: `N arquivos → _archive (X resolved · Y expired · Z inbox) · M fatos → DIGESTs · K ficam quentes`. Usuário dá **um** "sim" (ou já rodou com `--auto`).
+**Passo 4 — Confirmação única:** o lead consolida mecânico + consolidação + semântico numa tabela só e apresenta, **em linguagem simples e sem falar de mecânica de agente** (nada de "vou spawnar…" ou "vou usar o archetype…"): `N arquivos → _archive (X resolved · Y expired · Z inbox) · M fatos → DIGESTs · K ficam quentes`. Usuário dá **um** "sim" (ou já rodou com `--auto`).
 
 **Passo 5 — Execução integral, sem mais perguntas:**
 ```bash

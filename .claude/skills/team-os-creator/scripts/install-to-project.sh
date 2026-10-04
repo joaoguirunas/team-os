@@ -189,11 +189,11 @@ dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
 }
 
 # ── Backup do .claude/ prévio (antes de QUALQUER escrita no destino) ─────────
-# Só no *install (1ª instalação num .claude/ existente): o *propagate (--match-target-squads) NÃO faz
+# Só no *install (1ª instalação num .claude/ existente) e NUNCA na Sala de Controle (só tem uma cópia da skill, o CT é a fonte): o *propagate (--match-target-squads) NÃO faz
 # backup — tudo que ele grava vem do CT (versionado), então desfazer = rodar o propagate de novo, e
 # cada cópia custava centenas de MB por projeto. Só fora do dry-run; cp -R, nunca mv.
 # Guarda no máximo BACKUP_KEEP (default 3) cópias; as mais antigas vão para a Lixeira (~/.Trash), não são apagadas.
-if [ $DRY_RUN -eq 0 ] && [ $MATCH_TARGET -eq 0 ] && [ -d "$TARGET/.claude" ]; then
+if [ $DRY_RUN -eq 0 ] && [ $MATCH_TARGET -eq 0 ] && [ $CONTROL_ROOM -eq 0 ] && [ -d "$TARGET/.claude" ]; then
   BACKUP_DIR="$TARGET/.claude.bak-$(date +%Y%m%d-%H%M%S)"
   if cp -R "$TARGET/.claude" "$BACKUP_DIR" 2>/dev/null; then
     echo "BACKUP=$BACKUP_DIR"
