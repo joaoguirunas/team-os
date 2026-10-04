@@ -26,6 +26,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 ## Índice
 
 - ⭐ [the team-os Method](#-the-team-os-method) — a metodologia
+- [Instalar e atualizar](#instalar-e-atualizar) — baixar, instalar, `*update`, onde ficam os meus agentes
 1. [Conceitos fundamentais](#1-conceitos-fundamentais)
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup) — [Requisitos de máquina](#requisitos-de-máquina) · [MCPs por squad](#mcps-por-squad)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
@@ -85,6 +86,69 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 - **Smart-memory é o cérebro compartilhado.** Todo agente lê ao iniciar e grava ao concluir. O time nunca recomeça do zero.
 - **Autoridade clara, sem sobreposição.** Quem cria story, quem dá veredicto, quem faz push — cada papel tem fronteira explícita.
 - **Uma fonte da verdade.** Tudo nasce no CT e é propagado; nunca se edita agente direto no projeto.
+
+---
+
+## Instalar e atualizar
+
+Esta seção é para quem **usa** o pack. (Quem mantém o pack oficial tem outro ciclo: [MAINTAINERS.md](./MAINTAINERS.md).)
+
+### Como baixar
+
+A forma oficial é o `git clone`:
+
+```bash
+git clone https://github.com/joaoguirunas/team-os.git
+```
+
+Isso cria a pasta `team-os/` — é o seu **Centro de Treinamento** (o "CT"). É dentro dela que você abre o Claude Code e roda `/team-os-creator`. (Sem git, também dá: baixe o `.zip` do GitHub e descompacte. O `*update` funciona igual nos dois casos.)
+
+### Como instalar num projeto
+
+Abra o Claude Code **dentro da pasta do CT** e rode:
+
+```
+/team-os-creator *install
+```
+
+Ele pergunta qual é o projeto e quais squads você quer, mostra o que vai copiar e só faz depois do seu OK. O projeto recebe os agentes, as skills que eles usam (incluindo a `team-os`) e os hooks de qualidade. Depois, dentro do projeto, rode `/team-os` para começar uma sessão. Mais detalhes no [tutorial B](#b-instalar-squads-num-projeto-novo).
+
+### Como atualizar o pack (`*update`)
+
+A cada versão nova, o pack ganha agentes, skills e correções. Para trazer isso para a sua pasta **sem perder nada que é seu**, abra o Claude Code na pasta do CT e rode:
+
+```
+/team-os-creator *update
+```
+
+Passo a passo:
+
+1. **Ele só olha primeiro.** Compara a sua versão com a mais nova publicada e mostra, em poucas linhas, o que mudou e quantos arquivos serão atualizados. Nada é alterado nessa etapa.
+2. **Você confirma uma vez.** Sem o seu "pode atualizar", nada acontece.
+3. **Ele baixa a versão nova, confere cada arquivo** (se algum não bater com o que foi publicado, ele para e não altera nada) e só então troca os arquivos, um a um.
+4. **Guarda uma cópia de segurança** só dos arquivos que trocou, em `.team-os/backups/` (as 3 últimas ficam; as mais antigas vão para a Lixeira).
+5. **Se você tiver editado algum arquivo do pack**, veja abaixo.
+6. **Confere tudo no final** (o mesmo `*audit`) e escreve um relatório em `.team-os/update-report.md`.
+7. **Oferece levar a versão nova para os seus projetos** (`*propagate`), mostrando antes o que mudaria em cada um.
+
+**O que o `*update` nunca toca:**
+
+- os agentes que **você** criou (`origin: custom`) e as skills que você criou;
+- seus presets em `.claude/skills/team-os-creator/presets/custom/`;
+- a smart-memory dos projetos (`docs/smart-memory/`), seus arquivos de configuração local (`.claude/settings.local.json`) e o arquivo `.team-os-root`;
+- qualquer arquivo seu que não faça parte do pack.
+
+O `*update` também **não mexe no seu git**: não roda `git pull`, não faz commit e não envia nada. O que fazer com o git da sua pasta é decisão sua (se quiser guardar o resultado num repositório seu, você mesmo faz o commit).
+
+**E se eu editei um arquivo do pack?** Ele nunca sobrescreve o seu. Se a versão nova mexeu no mesmo arquivo, o seu continua como está e a versão nova é gravada ao lado, com o nome `<arquivo>.new`. Aí o Claude pergunta, um arquivo por vez, o que você prefere: **manter o meu** (a versão nova é descartada), **usar o novo** (o seu fica guardado em `.team-os/backups/`) ou **ver a diferença** antes de decidir. Se você quiser decidir depois, tudo bem: as pendências continuam anotadas.
+
+**Como desfazer:** peça ao Claude, na pasta do CT, para desfazer a última atualização do pack (por baixo, é `bash .claude/skills/team-os-creator/scripts/update-pack.sh --undo`). Os arquivos trocados voltam ao que eram e os que a atualização tinha acrescentado vão para a Lixeira.
+
+> ⚠️ **Versões anteriores à 2.4.0 não têm `*update`.** Se a sua pasta está numa delas (confira o arquivo `VERSION`; se ele não existir, é uma versão anterior), atualize **uma única vez** com `git pull` dentro da pasta do CT (ou baixando o pack de novo). Dali em diante, use sempre `*update`. Cuidado: o `git pull` pode reclamar se você editou arquivos do pack — nesse caso, guarde uma cópia do que você mudou antes de puxar.
+
+### Onde ficam os meus agentes
+
+Os agentes que você cria com `/team-os-creator *create` (ou `*squad`) nascem como **agentes próprios**: o arquivo em `.claude/agents/` leva `origin: custom` no cabeçalho e o registro fica em `.claude/skills/team-os-creator/presets/custom/custom.yaml`. Você escolhe o nome livremente. Essa pasta e esses agentes são seus: o `*update` nunca os apaga nem os sobrescreve (ele só renova neles o bloco do Native Teams Protocol, que precisa ser igual ao da versão nova). O `*audit` confere os seus agentes com as mesmas regras dos do pack e os conta à parte ("95 do pack + N próprios"). Para levá-los a um projeto, use o `*install`/`*propagate` com a opção `--custom <nomes|all>`.
 
 ---
 
@@ -215,6 +279,7 @@ Credenciais (token, key, project-ref) nunca vão no agente nem na smart-memory �
 /team-os-creator *skills <ag>          → enriquece um agente com skills relevantes
 /team-os-creator *pressure-test <ag>   → testa o agente contra cenários adversariais (obrigatório para agente novo antes do *propagate)
 /team-os-creator *audit                → valida compliance dos agentes (validate-agent.sh) E das skills (validate-agent.sh --skills)
+/team-os-creator *update               → atualiza o pack para a versão mais nova sem perder o que você criou ou editou (ver [Instalar e atualizar](#instalar-e-atualizar))
 /team-os-creator *propagate            → propaga agentes/skills atualizados para os destinos (sempre --match-target-squads)
 /team-os-creator *install              → instala squads + skills (incl. team-os) + settings.json + hooks num projeto destino
 /team-os-creator *organize             → árvore negócio → projeto → squads → salas + proposta de organização (só propõe)
@@ -529,8 +594,9 @@ Depois, **sempre**: `/team-os-creator *audit`.
 
 ### D. Propagar mudanças do CT para os destinos
 ```
-Editar agente no CT → /team-os-creator *audit → /team-os-creator *propagate → commit por projeto
+Editar agente no CT → /team-os-creator *audit → /team-os-creator *propagate
 ```
+O `*propagate` só atualiza os arquivos de cada projeto e **nunca sobrescreve o que você editou lá**: a versão do CT fica ao lado (`<arquivo>.new`) e você escolhe, um por um. Ele não faz commit; se quiser guardar o resultado no git do projeto, o commit é seu.
 
 ---
 
@@ -637,12 +703,13 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
     └── team-os-creator/         ← factory de agentes (exclusiva do CT)
         ├── templates/           ← 9 templates de archetype + agents-page.html.tpl + pressure-scenarios/ (13 cenários)
         ├── reference/           ← archetypes · native-teams-protocol · smart-memory-integration · mcp-servers · skills-catalog-quality · pressure-testing
-        ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · install-suggested-skills.sh · search-skills.sh · preflight.sh · generate-agents-page.py · painel/ (`*painel`: mapa vivo do CT)
+        ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · install-suggested-skills.sh · search-skills.sh · preflight.sh · generate-agents-page.py · update-pack.sh/.py (`*update`) · pack-manifest.sh · trash.sh · release.sh (só mantenedor) · test-update.sh · test-propagate.sh · painel/ (`*painel`: mapa vivo do CT)
         └── presets/             ← 10 presets de squad (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo)
 
-.github/workflows/audit.yml  ← CI: validate-agent.sh (+ --skills) · test-hooks.sh · sintaxe dos scripts · 0 symlinks quebrados · contagens do README/CLAUDE.md · zero caminho de máquina · docs/agentes.html atualizado
+.github/workflows/audit.yml  ← CI: validate-agent.sh (+ --skills) · test-hooks.sh · test-update.sh · test-propagate.sh · manifest do pack em dia · sintaxe dos scripts · 0 symlinks quebrados · contagens do README/CLAUDE.md (pelo manifest) · zero caminho de máquina · docs/agentes.html atualizado
 docs/agentes.html            ← página oficial dos agentes (gerada — ver §13)
-LICENSE · THIRD_PARTY_NOTICES.md · CHANGELOG.md · CONTRIBUTING.md
+LICENSE · THIRD_PARTY_NOTICES.md · CHANGELOG.md · CONTRIBUTING.md · MAINTAINERS.md
+VERSION · pack-manifest.json  ← versão do pack e lista (com sha256) dos arquivos que são do pack; base do `*update`
 ```
 
 O CT **não** versiona `docs/smart-memory/` — ela nasce em cada **projeto destino** na 1ª sessão de `/team-os` (Discovery Engine), com esta convenção (detalhes em `team-os/reference/estrutura-smart-memory.md`):
@@ -685,18 +752,20 @@ docs/smart-memory/                       ← no projeto destino (Obsidian)
 
 ## 13. Manutenção do CT
 
+O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados aos projetos com `*propagate` — nunca editados direto num projeto destino. Antes de propagar, a auditoria precisa estar verde:
+
 ```
-1. Editar agente/skill AQUI (nunca no destino) — agentes via /team-os-creator (*create, *squad, *migrate)
-2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 95/95 agentes conformes (= *audit)
+1. Editar agente/skill AQUI — agentes via /team-os-creator (*create, *squad, *migrate)
+2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 95/95 agentes do pack conformes (= *audit)
 3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 108 skills
 4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 505/505 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
-6. (só o mantenedor — arquivo `.team-os-maintainer` na raiz, ignorado pelo git) commit no CT (Conventional Commits em português; registrar no CHANGELOG.md). Quem só usa o pack não commita aqui: pule para o 7
-7. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
-8. commit por projeto, dentro da sessão de cada destino
+6. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
 ```
 
-**Regra de ouro:** o CT é a fonte da verdade. Auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5 e ainda confere: contagens "95 agentes"/"108 skills" no README e no CLAUDE.md, zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
+**Quem mantém o pack oficial** (e só quem tem o arquivo `.team-os-maintainer` na raiz) segue um ciclo maior — manifest, CHANGELOG, commit, release e push manual. Ele está descrito em **[MAINTAINERS.md](./MAINTAINERS.md)**. Quem só usa o pack não precisa dele: para receber as versões novas, use o `*update` ([Instalar e atualizar](#instalar-e-atualizar)).
+
+**Regra de ouro:** auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5, roda `test-update.sh` e `test-propagate.sh`, confere o `pack-manifest.json` e ainda checa: contagens "95 agentes"/"108 skills" no README e no CLAUDE.md (contadas pelo manifest — agentes e skills próprios de cada usuário não entram), zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
 
 **Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 95 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills** (o CI falha se estiver desatualizada). Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 

@@ -27,7 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 DEFAULT_UPSTREAM = "https://github.com/joaoguirunas/team-os"
 DOCS = {"README.md", "CHANGELOG.md", "CLAUDE.md", "CONTRIBUTING.md", "LICENSE",
-        "THIRD_PARTY_NOTICES.md", "VERSION"}
+        "THIRD_PARTY_NOTICES.md", "MAINTAINERS.md", "VERSION"}
 CUSTOM_PRESETS = ".claude/skills/team-os-creator/presets/custom/"
 SCRIPTS_REL = ".claude/skills/team-os-creator/scripts"
 NTP_REL = ".claude/skills/team-os-creator/reference/native-teams-protocol.md"

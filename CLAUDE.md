@@ -1,13 +1,15 @@
 # team-os — by João Guirunas
 
-Repositório fonte do pack **team-os**: 95 agentes e 108 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Pack **team-os**: 95 agentes e 108 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
 > 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 95 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos, hooks e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
 ## O que é este projeto
 
 O CT é a **fonte da verdade** — qualquer alteração em agentes ou skills é feita aqui e propagada para os projetos destino via `/team-os-creator *propagate`. Nunca editar agentes diretamente nos projetos destino; a partir do CT só se roda `*install`/`*propagate` (nunca git ou arquivos de produto num destino).
-→ Detalhes em [README.md §13 — Manutenção do CT](./README.md#13-manutenção-do-ct).
+
+Quem baixou o pack (`git clone`) cria os **próprios** agentes com `/team-os-creator *create` (nascem com `origin: custom`, em `presets/custom/`) e recebe as versões novas com `/team-os-creator *update`, que **nunca sobrescreve** o que o usuário criou ou editou (a versão nova fica ao lado, em `<arquivo>.new`, e o usuário escolhe).
+→ [README.md — Instalar e atualizar](./README.md#instalar-e-atualizar) · [README.md §13 — Manutenção do CT](./README.md#13-manutenção-do-ct).
 
 ## As skills principais
 
@@ -26,7 +28,7 @@ Todo agente do CT segue o **Native Teams Protocol** (detalhado em [README.md §1
 - `block-git-push.sh` em **todo agente com Bash exceto os devops** (todas as squads); sem `isolation: worktree` — agentes escrevem direto na branch ativa
 - Política de modelos **Híbrida**: `opus` fixo em architects/planners, QA e strategists (23); `inherit` nos demais (72). Effort por archetype em `.claude/skills/team-os-creator/reference/archetypes.md` (omitido em implementer/devops) → [README.md §9](./README.md#9-política-de-modelos-híbrido)
 
-**Commit/push/CHANGELOG no CT são só do mantenedor** (quem tem o arquivo `.team-os-maintainer` na raiz — ignorado pelo git, só na máquina do criador). Quem apenas usa o pack **não recebe proposta de commit nem de push**: o ciclo dele termina no `*audit`/`*propagate`.
+**Commit, push e CHANGELOG no CT são só do mantenedor** (quem tem o arquivo `.team-os-maintainer` na raiz — ignorado pelo git, só na máquina do criador). Quem apenas usa o pack **não recebe proposta de commit nem de push**: o ciclo dele termina no `*audit`/`*propagate`. O ciclo do mantenedor (manifest, release, push manual) está em [MAINTAINERS.md](./MAINTAINERS.md).
 
 Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualmente sem rodar `*audit` depois.
 
@@ -47,25 +49,25 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 
 ```
 Editar agente/skill no CT
-→ validate-agent.sh            (= *audit; 95/95)
+→ validate-agent.sh            (= *audit; 95/95 do pack)
 → validate-agent.sh --skills   (lint das 108 skills)
 → test-hooks.sh                (505/505)
 → generate-agents-page.py      (regenera docs/agentes.html — obrigatório após mudar agente ou skill)
-→ (só o mantenedor) commit no CT, registrando no CHANGELOG.md
-→ /team-os-creator *propagate  (--match-target-squads) → commit por projeto, na sessão de cada destino (o usuário de cada projeto)
+→ /team-os-creator *propagate  (--match-target-squads)
 ```
 
-Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere as contagens "95 agentes"/"108 skills" no README e aqui, zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia.
+Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere o manifest do pack, as contagens "95 agentes"/"108 skills" no README e aqui (contadas só no pack), zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia. Mantenedor: ciclo completo em [MAINTAINERS.md](./MAINTAINERS.md).
 
 ## Comandos rápidos
 
 ```
 /team-os                    → orquestrar sessão com Agent Teams
 /team-os-creator *audit     → validar todos os agentes e skills
+/team-os-creator *update    → atualizar o pack sem perder o que é seu
 /team-os-creator *propagate → propagar para projetos destino
 /team-os-creator *install   → instalar squads em projeto novo
 /team-os-creator *painel    → mapa vivo do CT (squads, agentes, skills) em 127.0.0.1:8788
 /sala-de-controle *painel   → mapa vivo das sessões e agentes (só na pasta da Sala) em 127.0.0.1:8787
 ```
 
-> Para qualquer dúvida de uso, agentes, skills ou fluxo: **[README.md](./README.md)** é a referência completa. Licença MIT — [LICENSE](./LICENSE); terceiros em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md); contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md).
+> Para qualquer dúvida de uso, agentes, skills ou fluxo: **[README.md](./README.md)** é a referência completa. Licença MIT — [LICENSE](./LICENSE); terceiros em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md); contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); mantenedor em [MAINTAINERS.md](./MAINTAINERS.md).

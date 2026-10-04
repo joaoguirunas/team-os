@@ -20,7 +20,7 @@
 #                                       ms-playwright, runtime-state.json, __pycache__,
 #                                       *.pyc, .DS_Store, Icon?, *.new)
 #   .claude/hooks/*.sh
-#   README.md CHANGELOG.md CLAUDE.md CONTRIBUTING.md LICENSE THIRD_PARTY_NOTICES.md VERSION
+#   README.md CHANGELOG.md CLAUDE.md CONTRIBUTING.md MAINTAINERS.md LICENSE THIRD_PARTY_NOTICES.md VERSION
 # sha256 via python3 hashlib (igual no macOS e no Linux). Bash 3.2-safe.
 
 set -u
@@ -51,7 +51,7 @@ mode = os.environ["PM_MODE"]
 upstream_arg = os.environ.get("PM_UPSTREAM", "")
 DEFAULT_UPSTREAM = "https://github.com/joaoguirunas/team-os"
 DOCS = ["README.md", "CHANGELOG.md", "CLAUDE.md", "CONTRIBUTING.md", "LICENSE",
-        "THIRD_PARTY_NOTICES.md", "VERSION"]
+        "THIRD_PARTY_NOTICES.md", "MAINTAINERS.md", "VERSION"]
 JUNK_DIRS = {".venv", "ms-playwright", "__pycache__", "node_modules"}
 CUSTOM_PRESETS = ".claude/skills/team-os-creator/presets/custom/"
 out = os.path.join(root, "pack-manifest.json")

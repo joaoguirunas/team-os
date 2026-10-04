@@ -21,6 +21,15 @@ jobs:
       - name: Testar hooks com payloads reais do Claude Code
         run: bash .claude/skills/team-os-creator/scripts/test-hooks.sh
 
+      - name: Instalar rsync (usado pelos testes de propagação)
+        run: command -v rsync >/dev/null 2>&1 || sudo apt-get install -y rsync
+
+      - name: Testar o *update (herméticos, sem rede)
+        run: bash .claude/skills/team-os-creator/scripts/test-update.sh
+
+      - name: Testar o *install/*propagate (herméticos, sem perder edição do usuário)
+        run: bash .claude/skills/team-os-creator/scripts/test-propagate.sh
+
       - name: Hooks executáveis e sintaxe bash
         run: |
           fail=0
@@ -51,16 +60,22 @@ jobs:
           fi
           echo "✅ Sem resíduo do padrão antigo."
 
-      - name: Contagens do README batem com os arquivos
+      - name: Manifest do pack em dia (pack-manifest.json)
+        run: bash .claude/skills/team-os-creator/scripts/pack-manifest.sh --check
+
+      - name: Contagens do README e do CLAUDE.md batem com o manifest do pack
+        # Conta só o que está no pack-manifest.json: agentes `origin: custom` e skills
+        # próprias de quem usa o pack não entram.
         run: |
-          agents=$(ls .claude/agents/*.md | wc -l | tr -d ' ')
-          skills=$(ls -d .claude/skills/*/ | wc -l | tr -d ' ')
-          hooks=$(ls .claude/hooks/*.sh | wc -l | tr -d ' ')
-          echo "agentes=$agents skills=$skills hooks=$hooks"
+          agents=$(python3 -c "import json; print(sum(1 for k in json.load(open('pack-manifest.json'))['files'] if k.startswith('.claude/agents/') and k.endswith('.md')))")
+          skills=$(python3 -c "import json; print(len({k.split('/')[2] for k in json.load(open('pack-manifest.json'))['files'] if k.startswith('.claude/skills/') and k.count('/') >= 3}))")
+          hooks=$(python3 -c "import json; print(sum(1 for k in json.load(open('pack-manifest.json'))['files'] if k.startswith('.claude/hooks/') and k.endswith('.sh')))")
+          echo "agentes=$agents skills=$skills hooks=$hooks (do manifest)"
           fail=0
           grep -q "$agents agentes" README.md || { echo "❌ README não cita '$agents agentes'"; fail=1; }
           grep -q "$skills skills" README.md   || { echo "❌ README não cita '$skills skills'"; fail=1; }
           grep -q "$agents agentes" CLAUDE.md || { echo "❌ CLAUDE.md não cita '$agents agentes'"; fail=1; }
+          grep -q "$skills skills" CLAUDE.md  || { echo "❌ CLAUDE.md não cita '$skills skills'"; fail=1; }
           exit $fail
 
       - name: Nada específico de máquina versionado
