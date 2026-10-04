@@ -55,3 +55,6 @@ skills-lock.json
 # Python
 __pycache__/
 *.pyc
+
+# Estado local do *update (por máquina): installed.json, backups, removidos, relatório
+.team-os/

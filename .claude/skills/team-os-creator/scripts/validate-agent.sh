@@ -9,7 +9,12 @@
 #               sala-de-controle e maestri-os: só WARN (nunca erro).
 #
 # Fontes da verdade:
-#   - presets/*.yaml ............ archetype + squad + persona de cada agente
+#   - presets/*.yaml ............ archetype + squad + persona de cada agente DO PACK
+#   - presets/custom/*.yaml ..... agentes PRÓPRIOS do usuário (`origin: custom` no frontmatter;
+#                                 squad = prefixo do nome). Passam pelas MESMAS checagens, mas
+#                                 são contados à parte ("N do pack + M próprios"). A pasta
+#                                 presets/custom/ nunca é tocada pelo *update.
+#   - pack-manifest.json ........ (se existir) define quais skills são do pack nas contagens
 #   - reference/native-teams-protocol.md ... bloco NTP canônico (hash byte-idêntico)
 #   - reference/archetypes.md ... defaults documentados (este script implementa as regras)
 #   - reference/mcp-servers.md .. servidores MCP aceitos em tools: (identificadores `mcp__<id>`)
@@ -82,13 +87,14 @@ SKILLS_WARN_ONLY="sala-de-controle maestri-os"
 
 TMPDIR_V="$(mktemp -d "${TMPDIR:-/tmp}/validate-agent.XXXXXX")" || exit 1
 trap 'rm -rf "$TMPDIR_V"' EXIT
-MAP_FILE="$TMPDIR_V/preset-map.txt"     # agent|squad|archetype|persona_preset
+MAP_FILE="$TMPDIR_V/preset-map.txt"     # agent|squad|archetype|persona_preset|origin(pack/custom)
 GLOSS_FILE="$TMPDIR_V/persona-map.txt"  # agent|squad|persona_h1
 COLOR_FILE="$TMPDIR_V/colors.txt"       # squad|color|agent
 
 PROBLEMS=0
 WARNED=0
 CHECKED=0
+CHECKED_CUSTOM=0
 GLOBAL_ERRORS=0
 
 hash_text() {  # hash de stdin (md5 -q no macOS, md5sum como fallback)
@@ -193,18 +199,31 @@ if [ ! -d "$PRESETS_DIR" ]; then
   exit 1
 fi
 : > "$MAP_FILE"
-for preset in "$PRESETS_DIR"/*.yaml; do
-  [ -f "$preset" ] || continue
-  awk -v squad="$(awk -F': *' '/^name:/{print $2; exit}' "$preset")" '
-    /^  - name:/      { if (a != "") print a "|" squad "|" arch "|" pers;
-                        a=$3; arch=""; pers="" }
+# pack: squad = name: do preset · custom: squad = prefixo do nome do agente
+load_preset() {  # load_preset <arquivo.yaml> <pack|custom>
+  awk -v squad="$(awk -F': *' '/^name:/{print $2; exit}' "$1")" -v origin="$2" '
+    function emit() { if (a != "") { s = squad; if (origin == "custom") { s = a; sub(/-.*/, "", s) }
+                                     print a "|" s "|" arch "|" pers "|" origin } }
+    /^  - name:/      { emit(); a=$3; gsub(/["\047]/, "", a); arch=""; pers="" }
     /^    archetype:/ { arch=$2 }
     /^    persona:/   { pers=$2 }
-    END               { if (a != "") print a "|" squad "|" arch "|" pers }
-  ' "$preset" >> "$MAP_FILE"
+    END               { emit() }
+  ' "$1" >> "$MAP_FILE"
+}
+for preset in "$PRESETS_DIR"/*.yaml; do
+  [ -f "$preset" ] || continue
+  load_preset "$preset" pack
+done
+for preset in "$PRESETS_DIR"/custom/*.yaml; do
+  [ -f "$preset" ] || continue
+  load_preset "$preset" custom
+done
+# squads próprias também são squads conhecidas (paths docs/smart-memory/agents/<squad>/)
+for sq in $(awk -F'|' '$5=="custom"{print $2}' "$MAP_FILE" | sort -u); do
+  in_list "$sq" "$KNOWN_SQUADS" || KNOWN_SQUADS="$KNOWN_SQUADS $sq"
 done
 
-preset_field() {  # preset_field <agent> <n>  (2=squad 3=archetype 4=persona)
+preset_field() {  # preset_field <agent> <n>  (2=squad 3=archetype 4=persona 5=origin)
   grep -m1 "^$1|" "$MAP_FILE" | cut -d'|' -f"$2"
 }
 
@@ -218,10 +237,22 @@ for f in "$AGENTS_DIR"/*.md; do
   [ -n "$p" ] && echo "$a|${s:-?}|$p" >> "$GLOSS_FILE"
 done
 
-# ── Contagem de skills instaladas ────────────────────────────────────────────
+# ── Contagem de skills DO PACK ──────────────────────────────────────────────
+# Com pack-manifest.json: só as skills cujo SKILL.md está no manifest (skills próprias
+# do usuário não entram na conta "N skills" do README/CLAUDE.md). Sem manifest: todas.
 SKILLS_COUNT=0
+SKILLS_CUSTOM=0
+PACK_SKILLS=""
+if [ -f pack-manifest.json ] && command -v python3 >/dev/null 2>&1; then
+  PACK_SKILLS="$(python3 -c 'import json,re; m=json.load(open("pack-manifest.json")).get("files",{}); print(" ".join(sorted({k.split("/")[2] for k in m if re.match(r"^\.claude/skills/[^/]+/SKILL\.md$", k)})))' 2>/dev/null)"
+fi
 for d in "$SKILLS_DIR"/*/; do
-  [ -f "${d}SKILL.md" ] && SKILLS_COUNT=$((SKILLS_COUNT + 1))
+  [ -f "${d}SKILL.md" ] || continue
+  if [ -z "$PACK_SKILLS" ] || in_list "$(basename "$d")" "$PACK_SKILLS"; then
+    SKILLS_COUNT=$((SKILLS_COUNT + 1))
+  else
+    SKILLS_CUSTOM=$((SKILLS_CUSTOM + 1))
+  fi
 done
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -250,12 +281,26 @@ validate() {
   COLOR="$(fm_get color)"
   TOOLS="$(fm_get tools)"
 
-  # ── Archetype (fonte: presets) ──
-  local SQUAD ARCH
+  # ── Archetype (fonte: presets do pack ou presets/custom/) ──
+  local SQUAD ARCH ORIGIN FM_ORIGIN
   SQUAD="$(preset_field "$name" 2)"
   ARCH="$(preset_field "$name" 3)"
+  ORIGIN="$(preset_field "$name" 5)"
+  FM_ORIGIN="$(fm_get origin)"
   if [ -z "$ARCH" ]; then
-    errors+=("agente órfão de preset — sem entrada (com archetype:) em presets/*.yaml")
+    if [ "$FM_ORIGIN" = "custom" ]; then
+      errors+=("agente próprio (origin: custom) sem registro — adicione-o (com archetype:) em presets/custom/custom.yaml")
+    else
+      errors+=("agente órfão de preset — sem entrada (com archetype:) em presets/*.yaml (agente próprio: origin: custom + presets/custom/*.yaml)")
+    fi
+  fi
+  if [ "$ORIGIN" = "custom" ] || [ "$FM_ORIGIN" = "custom" ]; then
+    CHECKED_CUSTOM=$((CHECKED_CUSTOM + 1))
+  fi
+  if [ "$ORIGIN" = "custom" ] && [ "$FM_ORIGIN" != "custom" ]; then
+    warnings+=("registrado em presets/custom/ mas o frontmatter não tem 'origin: custom'")
+  elif [ "$ORIGIN" = "pack" ] && [ "$FM_ORIGIN" = "custom" ]; then
+    warnings+=("tem 'origin: custom' mas o nome é de um agente do pack (presets/*.yaml) — renomeie o seu agente")
   fi
 
   # ── Checks v1 mantidos ──
@@ -468,6 +513,8 @@ EOF_CITES
       [ -n "$gl_persona" ] || continue
       [ "$gl_squad" = "$SQUAD" ] && continue
       [ ${#gl_persona} -ge 3 ] || continue
+      # persona de agente próprio do usuário não gera aviso em agente do pack
+      [ "$ORIGIN" != "custom" ] && [ "$(preset_field "$gl_agent" 5)" = "custom" ] && continue
       if printf '%s\n' "$BODY" | grep -qE "(^|[^A-Za-z])${gl_persona}([^A-Za-z]|$)"; then
         warnings+=("cita persona '$gl_persona' ($gl_agent, squad $gl_squad) — fora do glossário da squad $SQUAD")
       fi
@@ -520,9 +567,10 @@ else
   echo "── Checks globais ──"
 
   # entrada de preset sem arquivo de agente = ERRO
-  while IFS='|' read -r p_agent p_squad p_arch p_persona; do
+  while IFS='|' read -r p_agent p_squad p_arch p_persona p_origin; do
     [ -n "$p_agent" ] || continue
     if [ ! -f "$AGENTS_DIR/$p_agent.md" ]; then
+      [ "$p_origin" = "custom" ] && p_squad="custom/$p_squad"
       echo "❌ preset $p_squad declara '$p_agent' mas $AGENTS_DIR/$p_agent.md não existe"
       GLOBAL_ERRORS=$((GLOBAL_ERRORS + 1))
     fi
@@ -545,11 +593,12 @@ $DUPS
 EOF_DUPS
   fi
 
-  # contagens: arquivos reais vs linha "N agentes e N skills" (CLAUDE.md e README.md) = WARNING
-  AGENTS_COUNT=$(ls "$AGENTS_DIR"/*.md 2>/dev/null | wc -l | tr -d ' ')
-  PRESET_COUNT=$(wc -l < "$MAP_FILE" | tr -d ' ')
+  # contagens DO PACK: arquivos reais vs linha "N agentes e N skills" (CLAUDE.md e README.md) = WARNING
+  # (agentes próprios — origin: custom — ficam fora da conta do pack)
+  AGENTS_COUNT=$((CHECKED - CHECKED_CUSTOM))
+  PRESET_COUNT=$(awk -F'|' '$5=="pack"' "$MAP_FILE" | wc -l | tr -d ' ')
   if [ "$AGENTS_COUNT" != "$PRESET_COUNT" ]; then
-    echo "⚠️  $AGENTS_COUNT arquivo(s) em $AGENTS_DIR vs $PRESET_COUNT entrada(s) nos presets"
+    echo "⚠️  $AGENTS_COUNT agente(s) do pack em $AGENTS_DIR vs $PRESET_COUNT entrada(s) nos presets do pack"
     WARNED=$((WARNED + 1))
   fi
   for doc in CLAUDE.md README.md; do
@@ -559,11 +608,11 @@ EOF_DUPS
     DOC_AGENTS="$(printf '%s' "$DOC_LINE" | awk '{print $1}')"
     DOC_SKILLS="$(printf '%s' "$DOC_LINE" | awk '{print $4}')"
     if [ "$DOC_AGENTS" != "$AGENTS_COUNT" ]; then
-      echo "⚠️  $doc diz '$DOC_AGENTS agentes' mas $AGENTS_DIR tem $AGENTS_COUNT arquivos"
+      echo "⚠️  $doc diz '$DOC_AGENTS agentes' mas $AGENTS_DIR tem $AGENTS_COUNT agentes do pack"
       WARNED=$((WARNED + 1))
     fi
     if [ "$DOC_SKILLS" != "$SKILLS_COUNT" ]; then
-      echo "⚠️  $doc diz '$DOC_SKILLS skills' mas $SKILLS_DIR tem $SKILLS_COUNT skills (com SKILL.md)"
+      echo "⚠️  $doc diz '$DOC_SKILLS skills' mas $SKILLS_DIR tem $SKILLS_COUNT skills do pack (com SKILL.md)"
       WARNED=$((WARNED + 1))
     fi
   done
@@ -572,14 +621,15 @@ fi
 
 echo ""
 TOTAL_ERR=$((PROBLEMS + GLOBAL_ERRORS))
+SPLIT="$((CHECKED - CHECKED_CUSTOM)) do pack + $CHECKED_CUSTOM próprio(s)"
 if [ $TOTAL_ERR -eq 0 ]; then
   if [ $WARNED -gt 0 ]; then
-    echo "✅ $CHECKED agente(s) sem erro — $WARNED item(ns) com warning."
+    echo "✅ $CHECKED agente(s) sem erro ($SPLIT) — $WARNED item(ns) com warning."
   else
-    echo "✅ Todos $CHECKED agente(s) conforme(s)."
+    echo "✅ Todos $CHECKED agente(s) conforme(s) ($SPLIT)."
   fi
   exit 0
 else
-  echo "❌ $PROBLEMS agente(s) com erro + $GLOBAL_ERRORS erro(s) global(is), de $CHECKED verificado(s)."
+  echo "❌ $PROBLEMS agente(s) com erro + $GLOBAL_ERRORS erro(s) global(is), de $CHECKED verificado(s) ($SPLIT)."
   exit 1
 fi

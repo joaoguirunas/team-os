@@ -12,8 +12,13 @@
 
 CT_ROOT="${1:-${CT_ROOT:-}}"
 
-# Git root do projeto atual = fonte da verdade (CT)
+# Git root do projeto atual = fonte da verdade (CT). Sem git (pack baixado em .zip):
+# a raiz do CT é 4 pastas acima deste script.
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$GIT_ROOT" ] || [ ! -d "$GIT_ROOT/.claude/skills/team-os-creator" ]; then
+  _here="$(cd "$(dirname "$0")" && pwd)"
+  [ -d "$_here/../../../../.claude/skills/team-os-creator" ] && GIT_ROOT="$(cd "$_here/../../../.." && pwd)"
+fi
 SOURCE_AGENTS=""
 SOURCE_SKILLS=""
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/agents" ] && SOURCE_AGENTS="$GIT_ROOT/.claude/agents"
@@ -58,11 +63,48 @@ hash_file() {
 }
 
 echo "CT_ROOT=$CT_ROOT"
-[ -n "$SOURCE_AGENTS" ] && echo "SOURCE_AGENTS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')"
-# nº de skills e squads do CT (o dashboard imprime "N agentes · N skills · N squads")
-[ -n "$SOURCE_SKILLS" ] && echo "SOURCE_SKILLS_COUNT=$(find "$SOURCE_SKILLS" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')"
-[ -n "$SOURCE_AGENTS" ] && echo "SOURCE_SQUADS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f -exec basename {} .md \; 2>/dev/null \
-  | sed 's/-.*//' | sort -u | wc -l | tr -d ' ')"
+# Contagens DO PACK (o dashboard imprime "N agentes · N skills · N squads"): agentes próprios
+# do usuário (`origin: custom`) e skills fora do pack-manifest.json contam à parte.
+PACK_COUNTS=""
+if [ -n "$GIT_ROOT" ] && command -v python3 >/dev/null 2>&1; then
+  PACK_COUNTS="$(python3 - "$GIT_ROOT" <<'PYEOF' 2>/dev/null
+import json, os, re, sys
+root = sys.argv[1]
+adir, sdir = os.path.join(root, ".claude", "agents"), os.path.join(root, ".claude", "skills")
+pack, custom = [], 0
+for n in sorted(os.listdir(adir)) if os.path.isdir(adir) else []:
+    if not n.endswith(".md"):
+        continue
+    head = open(os.path.join(adir, n), encoding="utf-8", errors="replace").read(4096)
+    m = re.match(r"^---\n(.*?)\n---", head, re.S)
+    if m and re.search(r"^origin:\s*custom\s*$", m.group(1), re.M):
+        custom += 1
+    else:
+        pack.append(n[:-3])
+try:
+    files = json.load(open(os.path.join(root, "pack-manifest.json"), encoding="utf-8")).get("files", {})
+    pack_sk = {k.split("/")[2] for k in files if k.startswith(".claude/skills/")}
+except (OSError, ValueError):
+    pack_sk = None
+dirs = [d for d in os.listdir(sdir) if os.path.isdir(os.path.join(sdir, d))] if os.path.isdir(sdir) else []
+sk = sum(1 for d in dirs if pack_sk is None or d in pack_sk)
+print(len(pack), sk, len({a.split("-")[0] for a in pack}), custom, len(dirs) - sk)
+PYEOF
+)"
+fi
+if [ -n "$PACK_COUNTS" ]; then
+  set -- $PACK_COUNTS
+  [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_AGENTS=$1"
+  [ -n "$SOURCE_SKILLS" ] && echo "SOURCE_SKILLS_COUNT=$2"
+  [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_SQUADS=$3"
+  echo "SOURCE_CUSTOM_AGENTS=$4"
+  echo "SOURCE_CUSTOM_SKILLS=$5"
+else
+  [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_AGENTS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')"
+  [ -n "$SOURCE_SKILLS" ] && echo "SOURCE_SKILLS_COUNT=$(find "$SOURCE_SKILLS" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')"
+  [ -n "$SOURCE_AGENTS" ] && echo "SOURCE_SQUADS=$(find "$SOURCE_AGENTS" -maxdepth 1 -name '*.md' -type f -exec basename {} .md \; 2>/dev/null \
+    | sed 's/-.*//' | sort -u | wc -l | tr -d ' ')"
+fi
 echo "---"
 
 # Candidatos: as pastas irmãs do CT. Uma pasta SEM .claude/ e SEM .git próprios que CONTÉM

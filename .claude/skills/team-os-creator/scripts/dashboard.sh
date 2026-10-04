@@ -23,12 +23,17 @@ ct_root="$(printf '%s\n' "$RAW" | grep '^CT_ROOT=' | cut -d= -f2-)"
 src_agents="$(printf '%s\n' "$RAW" | grep '^SOURCE_AGENTS=' | cut -d= -f2-)"
 src_skills="$(printf '%s\n' "$RAW" | grep '^SOURCE_SKILLS_COUNT=' | cut -d= -f2-)"
 src_squads="$(printf '%s\n' "$RAW" | grep '^SOURCE_SQUADS=' | cut -d= -f2-)"
+src_custom="$(printf '%s\n' "$RAW" | grep '^SOURCE_CUSTOM_AGENTS=' | cut -d= -f2-)"
+src_custom_sk="$(printf '%s\n' "$RAW" | grep '^SOURCE_CUSTOM_SKILLS=' | cut -d= -f2-)"
 
 echo "╔════════════════════════════════════════════════════════════════════╗"
 echo "║  team-os-creator  ·  Command Center  ·  by João Guirunas            ║"
 echo "╚════════════════════════════════════════════════════════════════════╝"
 echo
 echo "  CT (fonte): ${src_agents:-?} agentes · ${src_skills:-?} skills · ${src_squads:-?} squads  ·  root: $ct_root"
+if [ "${src_custom:-0}" -gt 0 ] 2>/dev/null || [ "${src_custom_sk:-0}" -gt 0 ] 2>/dev/null; then
+  echo "  Seus (fora do pack): ${src_custom:-0} agentes próprios · ${src_custom_sk:-0} skills próprias"
+fi
 echo
 printf "  %-24s %-8s %-8s %-13s %s\n" "PROJETO" "team-os" "agentes" "smart-mem" "DRIFT vs CT"
 printf "  %-24s %-8s %-8s %-13s %s\n" "------------------------" "-------" "-------" "-------------" "-----------"

@@ -268,12 +268,35 @@ def load_photos():
     return photos
 
 
+def is_custom_agent(name):
+    """Agente próprio do usuário (`origin: custom` no frontmatter) — fora da página do pack."""
+    try:
+        text = open(os.path.join(ROOT, ".claude", "agents", name + ".md"), encoding="utf-8").read(4096)
+    except OSError:
+        return False
+    m = re.match(r"^---\n(.*?)\n---", text, re.S)
+    return bool(m and re.search(r"^origin:\s*custom\s*$", m.group(1), re.M))
+
+
+def pack_skill_names():
+    """Skills DO PACK segundo o pack-manifest.json (None = sem manifest → todas)."""
+    try:
+        files = json.load(open(os.path.join(ROOT, "pack-manifest.json"), encoding="utf-8")).get("files", {})
+    except (OSError, ValueError):
+        return None
+    return {k.split("/")[2] for k in files if re.match(r"^\.claude/skills/[^/]+/SKILL\.md$", k)}
+
+
 def build():
     agents = load_agents()
     # Só squads oficiais (com preset). Agente de squad ainda sem preset — em construção noutra sessão — não entra na página.
+    # Agentes próprios do usuário (origin: custom) também não: a página mostra só o pack.
     _official = {s[0] for s in SQUADS}
-    agents = [a for a in agents if a['squad'] in _official]
+    agents = [a for a in agents if a['squad'] in _official and not is_custom_agent(a['name'])]
     skills = load_skills()
+    _pack_skills = pack_skill_names()
+    if _pack_skills is not None:
+        skills = {k: v for k, v in skills.items() if k in _pack_skills}
     amap = load_skill_map(skills)
     photos = load_photos()
     counts = {s: sum(1 for a in agents if a["squad"] == s) for s, _, _ in SQUADS}

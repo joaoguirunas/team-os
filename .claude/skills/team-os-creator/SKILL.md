@@ -1,10 +1,10 @@
 ---
 name: team-os-creator
-description: "Factory de agentes nativos do Claude Code para Agent Teams — exclusiva deste repositório fonte. Use para criar agentes ou squads, adicionar agentes a um projeto, atualizar/propagar agentes e skills para os projetos destino, instalar squads em projeto novo, auditar compliance ou migrar o bloco NTP. Propõe squad pelo stack e gera .claude/agents/*.md com Native Teams Protocol + smart-memory."
+description: "Factory de agentes nativos do Claude Code para Agent Teams — exclusiva deste repositório fonte. Use para criar agentes ou squads (inclusive agentes próprios), atualizar o pack sem perder o que você criou (*update), propagar agentes e skills aos projetos, instalar squads em projeto novo, auditar compliance ou migrar o bloco NTP. Gera .claude/agents/*.md com Native Teams Protocol + smart-memory."
 user-invocable: true
-argument-hint: "[*analyze | *squad <preset> | *create <role> | *migrate | *bootstrap | *skills <agente> | *pressure-test <agente> | *audit | *propagate | *install | *organize]"
-version: "3.0"
-updated: "2026-09-25"
+argument-hint: "[*analyze | *squad <preset> | *create <role> | *migrate | *bootstrap | *skills <agente> | *pressure-test <agente> | *audit | *update | *propagate | *install | *organize]"
+version: "3.1"
+updated: "2026-10-03"
 ---
 
 # team-os-creator — Agent Factory
@@ -30,6 +30,8 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 11. **`team-os` É DISTRIBUÍDA aos projetos** — é obrigatória no destino para o usuário rodar `/team-os` em cada sessão. `*install` sempre a inclui. Só o `team-os-creator` fica no CT.
 12. **DEFINITION OF DONE — toda alteração em agente/skill é entregue COMPLETA e REFINADA, sem ser lembrado.** Ao criar/atualizar qualquer agente ou skill, executar SEMPRE o ciclo inteiro de uma vez (ver "Definition of Done" abaixo): refinar tudo → sincronizar docs (contagens + catálogo no `README.md` e `CLAUDE.md`) → `*audit` → **(só o mantenedor) commit no CT com descrição** → `*propagate --match-target-squads` para TODOS os projetos com a squad afetada → relatar quais destinos ficaram com mudanças no working tree. **O COMMIT É SÓ NO CT, e só do MANTENEDOR** (quem tem o arquivo `.team-os-maintainer` na raiz do CT — ignorado pelo git, existe só na máquina do criador): quem apenas baixou o pack **não recebe proposta de commit, push nem CHANGELOG** — o ciclo dele termina no `*audit`/`*propagate`. Nunca commitar os projetos destino a partir do CT — o commit de cada destino é feito dentro da sessão daquele projeto, pelo usuário. Nunca entregar pela metade nem deixar contagem/catálogo desatualizados. Push continua exigindo confirmação de branch (padrão `main`).
 13. **Skills de Sala de Controle são opt-in, nunca automáticas.** São duas, e a pessoa escolhe o modo: **`sala-de-controle`** (padrão — enxerga todas as sessões do Claude Code da máquina, contextualiza cada projeto pela smart-memory e despacha por mensagem entre sessões) e **`maestri-os`** (modo Maestri — terminais ligados por fio no canvas). Não pertencem a squad nenhuma e **nunca** entram num projeto por `*install`/`*propagate` comum — só por `--squads none --extra-skills <skill>` numa **pasta isolada** (sem agentes, sem `team-os`). Uma skill de Sala por pasta. A `sala-de-controle` mora de preferência em `<raiz>/1 | Sala de Controle` — uma só para todos os negócios. Se não existir pasta isolada, **sugerir criar** `1 | Sala de Controle` na raiz. Depois de instalada, o `*propagate` a mantém atualizada (`CONTROL_ROOM=1`). Nunca instalar squad numa Sala de Controle, nem skill de Sala num projeto com squad.
+14. **O `*update` nunca faz commit nem push — e nunca sugere isso ao usuário.** Ele troca arquivos do pack um a um, guarda cópia de segurança, nunca roda `git pull`/`merge`/`checkout`/`commit`/`push` e não mexe no índice git. O que fazer com o git dele é decisão do usuário: o relatório só lista os arquivos alterados.
+15. **Agente criado por quem não é o mantenedor é agente PRÓPRIO.** Sem `.team-os-maintainer` na raiz, o `*create` gera o agente com `origin: custom` no frontmatter e o registra em `presets/custom/custom.yaml` (o `generate-agent.sh` faz os dois). Essa pasta e esses agentes nunca são tocados pelo `*update`; o `*audit` os confere com as mesmas regras e os conta à parte ("N do pack + M próprios"). Nunca registrar agente próprio num preset do pack.
 
 > **Nota — dois mecanismos de memória (complementares):**
 > - `memory: project` (RULE #1) é um **campo real de subagent** que cria uma **memória persistente por-agente** em `.claude/agent-memory/<nome>/`, mantida pelo runtime.
@@ -51,6 +53,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *skills <agente>` | Enriquece agente existente com skills relevantes |
 | `/team-os-creator *pressure-test <agente>` | Testa um agente contra cenários adversariais — obrigatório para agente novo antes do `*propagate` |
 | `/team-os-creator *audit` | Valida compliance de todos os agentes (`validate-agent.sh`) **e** das skills (`validate-agent.sh --skills`) |
+| `/team-os-creator *update` | **Atualiza o pack** nesta pasta para a versão mais nova **sem perder nada** do que o usuário criou ou editou (`scripts/update-pack.sh`): mostra o que muda, pede UMA confirmação, aplica com cópia de segurança e pergunta, um por um, o que fazer com os arquivos que o usuário mudou. Nunca faz commit/push. Ver "Fluxo `*update`" |
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
 | `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill de Sala (`sala-de-controle` por padrão, ou `maestri-os` no modo Maestri) |
 | `/team-os-creator *organize` | Mapa da organização de pastas (negócio → projeto → squads → salas), pontos fora do padrão e proposta de melhoria. **Só propõe** — nada é movido, renomeado ou instalado sem OK explícito, ação por ação |
@@ -266,6 +269,37 @@ Script: `scripts/migrate-ntp.sh` — substitui, em cada `.claude/agents/*.md`, o
 
 ---
 
+## Fluxo `*update`
+
+Para quem usa o pack (mentorado): traz a versão nova do team-os para esta pasta sem perder agentes, skills ou edições próprias. Script: `scripts/update-pack.sh` (saída `KEY=value`; exit 0 ok · 1 erro · 2 há decisões pendentes). Fale sempre em linguagem simples — sem "manifest", "hash" ou "sha256" na conversa.
+
+**O que é de quem:** o `pack-manifest.json` (raiz) lista os arquivos do pack. Tudo que não está nele é do usuário e nunca é tocado: agentes `origin: custom`, skills próprias, `presets/custom/`, `docs/smart-memory/`, `.team-os-root`, `.claude/settings.local.json`. O estado local fica em `.team-os/` (ignorado pelo git): `installed.json`, `backups/`, `removed/`, `update-report.md`.
+
+1. **Verificar** — `bash .claude/skills/team-os-creator/scripts/update-pack.sh --check` (não grava nada). Se `UPDATE_AVAILABLE=0`: diga que está em dia (e, se houver `PENDING_FILE`, ofereça resolver as pendências do passo 6) e pare.
+2. **Resumo simples** — a partir da saída, em poucas linhas: versão atual → nova; o que há de novo (leia o `CHANGELOG_FILE` e resuma em 2–4 itens, sem jargão); quantos arquivos vão ser atualizados (`FILES_UPDATE`), adicionados (`FILES_ADD`) e retirados (`FILES_REMOVE` — vão para `.team-os/removed/`, nada é apagado); e quantos arquivos **que você mudou** também mudaram no pack (`FILES_CONFLICT`) — "os seus ficam como estão; a versão nova fica ao lado para você decidir". Diga que os agentes próprios e as edições que o pack não mudou ficam intactos.
+3. **UMA confirmação** — "Posso atualizar?" Sem OK explícito, nada é aplicado.
+4. **Aplicar** — `update-pack.sh --apply --yes` (baixa a versão, confere cada arquivo e só então aplica; guarda cópia dos trocados em `.team-os/backups/<data>/`, mantém as 3 mais recentes). Se vier `ERROR=` (ex.: verificação falhou), explique em uma linha e pare — nada foi alterado.
+5. **Relatar** — o resumo do `.team-os/update-report.md` em linguagem simples. Não liste os `CHANGED=` um a um se forem muitos; diga onde está o relatório.
+6. **Decisões, uma de cada vez** — para cada `CONFLICT=<arquivo>` (ou `PENDING_FILE=` do `--status`), pergunte em linguagem simples: *"Você mudou `<arquivo>` e a versão nova do pack também mudou esse arquivo. O que prefere?"* com 3 opções:
+   - **Manter o meu** (padrão) → `update-pack.sh --resolve <arquivo>=keep` (a versão nova vai para a Lixeira);
+   - **Usar o novo** → `update-pack.sh --resolve <arquivo>=new` (o seu fica guardado em `.team-os/backups/`);
+   - **Ver a diferença** → mostre `diff -u <arquivo> <arquivo>.new` resumido em palavras ("o novo acrescenta…, o seu tem…") e pergunte de novo.
+   Nunca resolva sem resposta; se o usuário quiser deixar para depois, as pendências continuam (`--status` mostra).
+7. **Audit** — `*audit` (`validate-agent.sh` e `--skills`); o `--apply` já roda o `validate-agent.sh` (`AUDIT=`) e reinjeta o bloco Native Teams Protocol nos agentes próprios (`NTP_REINJECTED=`). Se o audit falhar, mostre o motivo em uma linha.
+8. **Oferecer o `*propagate`** — "Quer levar a versão nova para os seus projetos?" → rode primeiro em **dry-run** (`install-to-project.sh … --match-target-squads --dry-run`) e mostre o que mudaria em cada projeto; só propague com OK.
+
+Desfazer: `update-pack.sh --undo` volta o último `--apply` (ou `--resolve …=new`): os arquivos trocados voltam, os novos vão para a Lixeira. Outra versão: `--to vX.Y.Z`. Sem internet: `--from <pasta com o pack>`. Sem git o update funciona igual (baixa o pacote da versão pelo GitHub).
+
+**Regras:** o `*update` nunca faz `git commit`/`push`/`pull`/`checkout` e **nunca sugere commit ou push ao usuário** (RULE #14) — ele decide o que fazer com o git dele. Na pasta do mantenedor (`.team-os-maintainer`) o `--apply` é recusado: lá o ciclo é o de release.
+
+---
+
+## Agentes próprios (`origin: custom`)
+
+Quem não é o mantenedor cria agentes **próprios** com o `*create` normal (RULE #15): o `generate-agent.sh` acrescenta `origin: custom` ao frontmatter e registra o agente em `presets/custom/custom.yaml` (nome livre; squad = prefixo do nome). O resto é igual: archetype, template, Native Teams Protocol, `*audit`, `*pressure-test`. O `*update` nunca toca nesses arquivos — só reinjeta neles o bloco NTP canônico da versão nova. Com `.team-os-maintainer` (mantenedor), o agente nasce do pack e entra no preset da squad, como sempre. `TEAM_OS_AGENT_ORIGIN=pack|custom` força um dos dois.
+
+---
+
 ## Fluxo `*painel`
 
 Mesma identidade e mecânica do `*painel` da `sala-de-controle`, mas para o **pack**: mostra tudo que existe no CT, não quem está trabalhando.
@@ -334,6 +368,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 .claude/skills/team-os-creator/
 ├── SKILL.md
 ├── presets/                        ← 10 squads (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo), cada agente com `archetype:` (fonte do *audit)
+│   └── custom/                     ← agentes PRÓPRIOS do usuário (custom.yaml); fora do pack, nunca tocada pelo *update
 ├── reference/
 │   ├── archetypes.md               ← defaults por archetype + exceções canônicas
 │   ├── native-teams-protocol.md    ← FONTE CANÔNICA do bloco NTP (hash validado no *audit; reinjetado pelo *migrate)
@@ -341,19 +376,23 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 │   ├── smart-memory-integration.md
 │   ├── skills-catalog-quality.md
 │   └── pressure-testing.md         ← método RED→GREEN→REFACTOR do *pressure-test
-├── scripts/
+├── scripts/                        ← 18 arquivos + painel/
 │   ├── preflight.sh
 │   ├── detect-project-signals.sh   ← aceita [pasta]; devolve control-room + SUGGESTED_EXTRA_SKILLS=sala-de-controle (ou maestri-os) + CONTROL_ROOM_OPTIONS
-│   ├── validate-agent.sh           ← *audit v3 (archetype-driven: model/effort/permissionMode/color/hooks/tools+MCP/NTP-hash/área na smart-memory/paths/skills citadas/contagens; --skills = lint das SKILL.md)
+│   ├── validate-agent.sh           ← *audit v3 (archetype-driven: model/effort/permissionMode/color/hooks/tools+MCP/NTP-hash/área na smart-memory/paths/skills citadas/contagens do pack + próprios; --skills = lint das SKILL.md)
 │   ├── migrate-ntp.sh              ← *migrate (reinjeta o bloco NTP canônico; --dry-run = diff; idempotente)
 │   ├── test-hooks.sh               ← testa os hooks de .claude/hooks/ com entradas de exemplo
 │   ├── scan-ct-projects.sh         ← status + drift por hash (agentes E skills; TSV); raiz = arg, env CT_ROOT, .team-os-root (gitignored) ou pai do git root
 │   ├── dashboard.sh                ← Command Center (render do painel)
 │   ├── diff-agents.sh              ← respeita poda por squad (TSV)
-│   ├── generate-agent.sh           ← materializa template + valida com *audit ao final
+│   ├── generate-agent.sh           ← materializa template + valida com *audit ao final (sem .team-os-maintainer: origin: custom + presets/custom/)
 │   ├── search-skills.sh · install-suggested-skills.sh
 │   ├── install-to-project.sh       ← --squads <lista|none> · --extra-skills · --match-target-squads · --dry-run (origem de cada skill) · backup .claude.bak-* · ensure-settings
-│   ├── generate-agents-page.py     ← gera docs/agentes.html (--check para CI)
+│   ├── generate-agents-page.py     ← gera docs/agentes.html (--check para CI; conta só o pack)
+│   ├── pack-manifest.sh            ← gera/confere (--check) o pack-manifest.json: quais arquivos são do pack + sha256
+│   ├── update-pack.sh · update-pack.py ← *update: --check · --apply [--yes] · --to · --from · --upstream · --status · --resolve <arq>=keep|new · --undo
+│   ├── trash.sh                    ← "mandar para a Lixeira" portável (macOS ~/.Trash; Linux gio → trash-put → ~/.local/share/Trash); nunca apaga
+│   ├── test-update.sh              ← teste hermético do *update (HOME/TMPDIR falsos, upstream git local)
 │   └── painel/                     ← *painel: collect_ct.py + serve.py (127.0.0.1:8788) + index.html (mapa vivo do CT)
 └── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
     └── pressure-scenarios/         ← 13 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade, numero-sem-fonte, emitir-sem-pass, strategist-escreve-e-cede, identidade-sem-plataforma, rollout-sem-pass, pagamento-sem-confirmacao, numero-sem-conciliacao, clausula-fora-da-postura, minuta-sem-pass)
