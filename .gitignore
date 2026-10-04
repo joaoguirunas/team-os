@@ -46,6 +46,9 @@ skills-lock.json
 .gemini/
 .opencode/
 
+# Marca o mantenedor do CT (só na máquina do criador): liga o ciclo commit/CHANGELOG/push da Definition of Done
+.team-os-maintainer
+
 # Raiz dos projetos destino (por máquina) — usado por scan-ct-projects.sh/dashboard.sh
 .team-os-root
 

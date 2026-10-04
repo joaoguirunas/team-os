@@ -691,7 +691,7 @@ docs/smart-memory/                       ← no projeto destino (Obsidian)
 3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 108 skills
 4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 505/505 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
-6. commit no CT (Conventional Commits em português; registrar no CHANGELOG.md)
+6. (só o mantenedor — arquivo `.team-os-maintainer` na raiz, ignorado pelo git) commit no CT (Conventional Commits em português; registrar no CHANGELOG.md). Quem só usa o pack não commita aqui: pule para o 7
 7. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
 8. commit por projeto, dentro da sessão de cada destino
 ```

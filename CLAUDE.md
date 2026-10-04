@@ -26,6 +26,8 @@ Todo agente do CT segue o **Native Teams Protocol** (detalhado em [README.md §1
 - `block-git-push.sh` em **todo agente com Bash exceto os devops** (todas as squads); sem `isolation: worktree` — agentes escrevem direto na branch ativa
 - Política de modelos **Híbrida**: `opus` fixo em architects/planners, QA e strategists (23); `inherit` nos demais (72). Effort por archetype em `.claude/skills/team-os-creator/reference/archetypes.md` (omitido em implementer/devops) → [README.md §9](./README.md#9-política-de-modelos-híbrido)
 
+**Commit/push/CHANGELOG no CT são só do mantenedor** (quem tem o arquivo `.team-os-maintainer` na raiz — ignorado pelo git, só na máquina do criador). Quem apenas usa o pack **não recebe proposta de commit nem de push**: o ciclo dele termina no `*audit`/`*propagate`.
+
 Para criar ou atualizar agentes, use `/team-os-creator` — nunca editar manualmente sem rodar `*audit` depois.
 
 ## Smart-memory (convenção do projeto destino)
@@ -49,8 +51,8 @@ Editar agente/skill no CT
 → validate-agent.sh --skills   (lint das 108 skills)
 → test-hooks.sh                (505/505)
 → generate-agents-page.py      (regenera docs/agentes.html — obrigatório após mudar agente ou skill)
-→ commit no CT (registrar no CHANGELOG.md)
-→ /team-os-creator *propagate  (--match-target-squads) → commit por projeto, na sessão de cada destino
+→ (só o mantenedor) commit no CT, registrando no CHANGELOG.md
+→ /team-os-creator *propagate  (--match-target-squads) → commit por projeto, na sessão de cada destino (o usuário de cada projeto)
 ```
 
 Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere as contagens "95 agentes"/"108 skills" no README e aqui, zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia.
