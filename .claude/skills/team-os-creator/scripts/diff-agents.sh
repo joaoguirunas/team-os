@@ -19,6 +19,19 @@ if [ ! -d "$SOURCE/.claude/agents" ]; then
   exit 1
 fi
 
+# edit_state <destino> <agente> <arquivo fonte> <arquivo destino> → outdated | customized | conflict
+edit_state() {
+  python3 - "$1/.team-os/installed.json" ".claude/agents/$2.md" "$3" "$4" <<'PYEOF' 2>/dev/null || echo outdated
+import hashlib, json, sys
+inst, rel, src, tgt = sys.argv[1:5]
+h = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()
+base = (json.load(open(inst, encoding="utf-8")).get("files") or {}).get(rel)
+th, sh = h(tgt), h(src)
+# sem registro = arquivo com o mesmo nome que não veio do CT → conflito (igual ao propagate-sync.py)
+print("outdated" if th == base else "customized" if sh == base else "conflict")
+PYEOF
+}
+
 SOURCE_NAME=$(basename "$SOURCE")
 SOURCE_AGENTS=$(find "$SOURCE/.claude/agents" -maxdepth 1 -name "*.md" -type f \
   -exec basename {} .md \; 2>/dev/null | sort)
@@ -48,6 +61,8 @@ for target in "$@"; do
   target_squads=",$(echo "$TARGET_AGENTS" | sed 's/-.*//' | sort -u | tr '\n' ',')"
 
   missing=0
+  conflict=0
+  conflict_list=""
   present=0
   outdated=0
   missing_list=""
@@ -70,8 +85,15 @@ for target in "$@"; do
       esac
     elif ! cmp -s "$src_file" "$tgt_file"; then
       # Decide por CONTEÚDO (não por mtime) — alinha com scan-ct-projects.sh (hash).
-      outdated=$((outdated + 1))
-      outdated_list="$outdated_list,$agent"
+      # Com .team-os/installed.json: editado no destino e o CT não mudou → em dia (customizado);
+      # editado E o CT mudou → CONFLICT (o *propagate pergunta; nunca sobrescreve).
+      st="outdated"
+      [ -f "$target/.team-os/installed.json" ] && st="$(edit_state "$target" "$agent" "$src_file" "$tgt_file")"
+      case "$st" in
+        customized) present=$((present + 1)); ok_list="$ok_list,$agent" ;;
+        conflict)   conflict=$((conflict + 1)); conflict_list="$conflict_list,$agent" ;;
+        *)          outdated=$((outdated + 1)); outdated_list="$outdated_list,$agent" ;;
+      esac
     else
       present=$((present + 1))
       ok_list="$ok_list,$agent"
@@ -80,11 +102,11 @@ for target in "$@"; do
 $SOURCE_AGENTS
 EOF
 
-  total_issues=$((missing + outdated))
+  total_issues=$((missing + outdated + conflict))
   status="synced"
   [ $total_issues -gt 0 ] && status="needs_update"
 
-  printf 'TARGET=%s\tPATH=%s\tSTATUS=%s\tMISSING=%s\tPRESENT=%s\tOUTDATED=%s\tMISSING_LIST=%s\tOUTDATED_LIST=%s\n' \
+  printf 'TARGET=%s\tPATH=%s\tSTATUS=%s\tMISSING=%s\tPRESENT=%s\tOUTDATED=%s\tMISSING_LIST=%s\tOUTDATED_LIST=%s\tCONFLICT=%s\tCONFLICT_LIST=%s\n' \
     "$target_name" "$target_path" "$status" "$missing" "$present" "$outdated" \
-    "${missing_list#,}" "${outdated_list#,}"
+    "${missing_list#,}" "${outdated_list#,}" "$conflict" "${conflict_list#,}"
 done

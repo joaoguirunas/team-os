@@ -2,8 +2,9 @@
 # install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
 # Skills instaladas = união de: citadas no body dos agentes instalados (`/skill` ou skill `x`),
 # team-os (sempre), --extra-skills, prefixo da squad ({dev,sites,…,seo}-*), e as já presentes
-# no destino (mantidas atualizadas). Copiadas se ausentes, ATUALIZADAS se o conteúdo difere.
-# Skills extras no destino são preservadas. team-os-creator nunca vai para o destino.
+# no destino (mantidas atualizadas). Copiadas se ausentes, ATUALIZADAS (arquivo por arquivo) se o
+# conteúdo difere — menos o que o usuário editou no destino (vira CONFLICT, ver --on-conflict).
+# Skills e arquivos extras no destino são preservados. team-os-creator nunca vai para o destino.
 # --dry-run imprime a origem de cada skill (SKILL_ORIGIN=<skill>|<origem>).
 # No *install, antes de qualquer escrita, um .claude/ prévio do destino é copiado para
 # .claude.bak-<timestamp>/ (só fora do dry-run; o *propagate não faz backup; guarda 3, o resto vai à Lixeira). settings.json é garantido pelo
@@ -27,6 +28,25 @@
 #                                       context-watch.sh são
 #                                       SEMPRE instalados)
 #   --dry-run                           simula sem copiar nada
+#   --custom <nome1,nome2|all>          instala também agentes PRÓPRIOS do CT (`origin: custom`,
+#                                       registrados em presets/custom/*.yaml), fora do filtro por
+#                                       squad. Com --match-target-squads os próprios que já existem
+#                                       no destino são atualizados como os do pack.
+#   --on-conflict keep|new              arquivo que o usuário editou NO DESTINO e que o CT também
+#                                       mudou (CONFLICT): keep = mantém o do usuário; new = usa o
+#                                       novo e guarda o do usuário em .team-os/backups/<data>/.
+#                                       Sem a flag: mantém e grava <arquivo>.new ao lado (pendente).
+#                                       Com a flag (decisão do usuário): keep descarta o .new e não
+#                                       pergunta de novo até o CT mudar esse arquivo outra vez.
+#   --only <nome1,nome2>                restringe a gravação a esses agentes/skills/hooks (usado
+#                                       depois que o usuário decide cada conflito)
+#
+# Estado do destino: .team-os/installed.json (versão do pack + sha256 de cada arquivo gravado:
+# agentes, arquivos de skill e hooks) — permite saber o que o usuário editou lá. Destino sem
+# installed.json (instalação antiga): sobrescreve o que difere, como antes, e grava a base
+# (BASELINE_CREATED=1). Motor por arquivo: propagate-sync.py. Arquivos que o usuário criou no
+# destino nunca são tocados nem apagados. Conflito não é erro: exit 0 com CONFLICT_FILES=<n> e
+# uma linha CONFLICT=<caminho relativo> por arquivo.
 
 SOURCE=""
 TARGET=""
@@ -36,6 +56,11 @@ DRY_RUN=0
 MATCH_TARGET=0   # --match-target-squads: deriva squads do que JÁ existe no destino (modo propagate)
 EXTRA_SKILLS=""  # --extra-skills: opt-in fora do filtro por squad (ex.: sala-de-controle, maestri-os)
 CONTROL_ROOM=0   # Sala de Controle: --squads none, ou propagate em destino sem agentes mas com skill de Sala
+CUSTOM=""        # --custom: agentes próprios (origin: custom) do CT a instalar (lista ou "all")
+ON_CONFLICT="keep"
+ON_CONFLICT_SET=0  # 1 = --on-conflict veio explícito (decisão do usuário)
+ONLY=""          # --only: restringe a gravação a estes agentes/skills/hooks
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Skills de Sala de Controle: opt-in, nunca vazam para projeto com squad.
 #   sala-de-controle = roteia entre sessões do Claude Code · maestri-os = roteia entre terminais do Maestri
 CONTROL_ROOM_SKILLS="sala-de-controle maestri-os"
@@ -57,13 +82,18 @@ while [[ $# -gt 0 ]]; do
     --target)       need_value "$1" "${2:-}"; TARGET="$2";   shift 2 ;;
     --squads)       need_value "$1" "${2:-}"; SQUADS="$2";   shift 2 ;;
     --extra-skills) need_value "$1" "${2:-}"; EXTRA_SKILLS="$2"; shift 2 ;;
+    --custom)       need_value "$1" "${2:-}"; CUSTOM="$2";   shift 2 ;;
+    --only)         need_value "$1" "${2:-}"; ONLY="$2";     shift 2 ;;
+    --on-conflict)  need_value "$1" "${2:-}"
+                    case "$2" in keep|new) ;; *) echo "ERROR=invalid_on_conflict|use keep ou new (veio: $2)" >&2; exit 2 ;; esac
+                    ON_CONFLICT="$2"; ON_CONFLICT_SET=1; shift 2 ;;
     --match-target-squads) MATCH_TARGET=1; shift ;;
     --include-hooks)  INCLUDE_HOOKS=1;  shift ;;
     --dry-run)      DRY_RUN=1;     shift ;;
     --include-skills) shift ;;  # ignorado — skills são sempre incluídas
     *)
       echo "ERROR=unknown_flag|FLAG=$1" >&2
-      echo "Usage: install-to-project.sh --source <path> --target <path> [--squads <lista> | --match-target-squads] [--include-hooks] [--dry-run]" >&2
+      echo "Usage: install-to-project.sh --source <path> --target <path> [--squads <lista> | --match-target-squads] [--custom <nomes|all>] [--on-conflict keep|new] [--only <nomes>] [--include-hooks] [--dry-run]" >&2
       exit 2 ;;
   esac
 done
@@ -93,6 +123,30 @@ if [ ! -d "$SOURCE/.claude/agents" ]; then
   echo "ERROR=no_source_agents|SOURCE=$SOURCE_NAME"
   exit 1
 fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "ERROR=python3_missing|instale o Python 3 — ele confere arquivo por arquivo para não perder edições do destino"
+  exit 1
+fi
+SYNC_PY="$SCRIPT_DIR/propagate-sync.py"
+[ -f "$SYNC_PY" ] || { echo "ERROR=propagate_sync_missing|$SYNC_PY"; exit 1; }
+
+# O destino não pode ser outra cópia do pack (lá o .team-os/ é do *update)
+if [ -f "$TARGET/pack-manifest.json" ] && grep -q '"name": *"team-os"' "$TARGET/pack-manifest.json" 2>/dev/null; then
+  echo "ERROR=target_is_pack|$TARGET_NAME é uma cópia do pack team-os — para atualizá-la use /team-os-creator *update lá dentro"
+  exit 1
+fi
+
+PACK_VERSION="$(sed -n '1p' "$SOURCE/VERSION" 2>/dev/null | tr -d '[:space:]')"
+[ -n "$PACK_VERSION" ] || PACK_VERSION="desconhecida"
+
+# Agente próprio do usuário (frontmatter com `origin: custom`)
+is_custom_agent() {
+  awk 'NR==1 && $0!="---"{exit 1} NR>1 && $0=="---"{exit 1} /^origin:[[:space:]]*custom[[:space:]]*$/{f=1; exit 0} END{exit f?0:1}' "$1" 2>/dev/null
+}
+in_csv() { # $1=item $2=csv
+  case ",$2," in *",$1,"*) return 0 ;; esac; return 1
+}
 
 # Modo propagate: deriva as squads a sincronizar a partir do que JÁ existe no destino.
 # Garante que squads podadas (não instaladas) nunca sejam re-adicionadas.
@@ -151,58 +205,34 @@ do_mkdir() {
   mkdir -p "$1"
 }
 
-do_cp() {
-  [ $DRY_RUN -eq 1 ] && return
-  cp "$1" "$2"
-}
-
-# Lixo que NUNCA viaja para o destino: artefatos macOS, runtime local da skill seo
-# (.venv, Chromium do Playwright, estado por máquina) e bytecode Python.
-# Mesma lista no cp recursivo, no rsync e no diff — senão o hash do scan (que os
-# ignora) gera drift eterno.
-SYNC_EXCLUDES=".DS_Store Icon? .venv ms-playwright runtime-state.json __pycache__ *.pyc"
-rsync_excludes() { local x; for x in $SYNC_EXCLUDES; do printf -- "--exclude=%s\n" "$x"; done; }
-diff_excludes()  { local x; for x in $SYNC_EXCLUDES; do printf -- "-x\n%s\n" "$x"; done; }
-
-# Cópia recursiva sem lixo (substitui cp -r): rsync sem --delete
-do_cp_r() { # $1=src $2=dst
-  [ $DRY_RUN -eq 1 ] && return
-  mkdir -p "$2"
-  # shellcheck disable=SC2046
-  rsync -a $(rsync_excludes) "${1%/}/" "${2%/}/"
-}
-
-# Sync de diretório de skill: rsync com --delete e exclusão de lixo (SYNC_EXCLUDES).
-# Elimina lixo propagado e drift falso — o hash do scan ignora esses arquivos,
-# então cp -R os copiando gerava divergência eterna.
-do_sync_dir() { # $1=src (SEM barra final exigida) $2=dst
-  [ $DRY_RUN -eq 1 ] && return
-  mkdir -p "$2"
-  # shellcheck disable=SC2046
-  rsync -a --delete $(rsync_excludes) "${1%/}/" "$2/"
-}
-
-# Diferença de conteúdo ignorando o mesmo lixo (mesmo critério do sync)
-dir_differs() { # $1=src $2=dst → exit 0 se DIFERE
-  # shellcheck disable=SC2046
-  ! diff -rq $(diff_excludes) "${1%/}" "${2%/}" >/dev/null 2>&1
-}
+# Lixo que NUNCA viaja para o destino: artefatos macOS (.DS_Store, Icon?), runtime local da
+# skill seo (.venv, ms-playwright, runtime-state.json), bytecode Python (__pycache__, *.pyc) e
+# pendências do *update do CT (*.new). A lista vive no propagate-sync.py (SKIP_DIRS/SKIP_FILES),
+# que é quem grava — arquivo por arquivo, sem rsync --delete (nada do usuário é apagado).
 
 # ── Backup do .claude/ prévio (antes de QUALQUER escrita no destino) ─────────
 # Só no *install (1ª instalação num .claude/ existente) e NUNCA na Sala de Controle (só tem uma cópia da skill, o CT é a fonte): o *propagate (--match-target-squads) NÃO faz
 # backup — tudo que ele grava vem do CT (versionado), então desfazer = rodar o propagate de novo, e
 # cada cópia custava centenas de MB por projeto. Só fora do dry-run; cp -R, nunca mv.
-# Guarda no máximo BACKUP_KEEP (default 3) cópias; as mais antigas vão para a Lixeira (~/.Trash), não são apagadas.
+# Guarda no máximo BACKUP_KEEP (default 3) cópias; as mais antigas vão para a Lixeira (trash.sh: macOS/Linux), não são apagadas.
 if [ $DRY_RUN -eq 0 ] && [ $MATCH_TARGET -eq 0 ] && [ $CONTROL_ROOM -eq 0 ] && [ -d "$TARGET/.claude" ]; then
   BACKUP_DIR="$TARGET/.claude.bak-$(date +%Y%m%d-%H%M%S)"
   if cp -R "$TARGET/.claude" "$BACKUP_DIR" 2>/dev/null; then
     echo "BACKUP=$BACKUP_DIR"
     KEEP=${BACKUP_KEEP:-3}; case "$KEEP" in ''|*[!0-9]*) KEEP=3 ;; esac
     TRASHED=0
-    for old_bak in $(ls -1d "$TARGET"/.claude.bak-* 2>/dev/null | sort -r | tail -n +$((KEEP + 1)) | tr ' ' '\001'); do
-      old_bak=$(printf '%s' "$old_bak" | tr '\001' ' ')
-      mkdir -p "$HOME/.Trash" && mv "$old_bak" "$HOME/.Trash/$(basename "$TARGET").$(basename "$old_bak")" 2>/dev/null && TRASHED=$((TRASHED + 1))
-    done
+    # Lixeira portável (macOS ~/.Trash · Linux gio/trash-put/~/.local/share/Trash) — nunca rm
+    # shellcheck source=trash.sh
+    . "$SCRIPT_DIR/trash.sh"
+    OLD_BAKS="$(ls -1d "$TARGET"/.claude.bak-* 2>/dev/null | sort -r | tail -n +$((KEEP + 1)))"
+    if [ -n "$OLD_BAKS" ]; then
+      while IFS= read -r old_bak; do
+        [ -n "$old_bak" ] || continue
+        team_os_trash "$old_bak" >/dev/null && TRASHED=$((TRASHED + 1))
+      done <<EOF
+$OLD_BAKS
+EOF
+    fi
     [ $TRASHED -gt 0 ] && echo "BACKUP_TRASHED=$TRASHED|cópias antigas de .claude.bak-* movidas para a Lixeira (guardadas: $KEEP)"
   else
     echo "BACKUP_FAILED=$BACKUP_DIR|não foi possível copiar .claude/ — abortando sem escrever" >&2
@@ -215,11 +245,17 @@ ensure_gitignore() {
   [ $DRY_RUN -eq 1 ] && return
   local gi="$TARGET/.gitignore" added=""
   [ -f "$gi" ] || : > "$gi"
+  # última linha sem quebra: completa antes de acrescentar (senão gruda na linha do usuário)
+  if [ -s "$gi" ] && [ -n "$(tail -c1 "$gi")" ]; then printf '\n' >> "$gi"; fi
   if ! grep -q '^\.DS_Store$\|^\*\*/\.DS_Store$\|^\.DS_Store\b' "$gi" 2>/dev/null; then
     printf '.DS_Store\n' >> "$gi"; added="$added .DS_Store"
   fi
   if ! grep -q '^Icon?$\|^Icon\\r$\|^Icon\?' "$gi" 2>/dev/null; then
     printf 'Icon?\n' >> "$gi"; added="$added Icon?"
+  fi
+  # Estado local da instalação (installed.json, backups de conflito) — por máquina
+  if ! grep -qE '^/?\.team-os/?[[:space:]]*$' "$gi" 2>/dev/null; then
+    printf '.team-os/\n' >> "$gi"; added="$added .team-os/"
   fi
   # Sala de Controle: o snapshot guarda trechos das conversas de TODAS as sessões da
   # máquina — nunca versionar.
@@ -229,57 +265,55 @@ ensure_gitignore() {
   [ -n "$added" ] && echo "GITIGNORE_ADDED=${added# }"
 }
 
+# ── Plano de gravação ────────────────────────────────────────────────────────
+# Agentes, skills e hooks entram num PLANO (um item por linha: tipo<TAB>nome<TAB>caminho na
+# fonte). Quem grava é o propagate-sync.py, arquivo por arquivo, comparando com o
+# .team-os/installed.json do destino — assim uma edição feita lá nunca é sobrescrita.
+PLAN="$(mktemp "${TMPDIR:-/tmp}/team-os-plan.XXXXXX")" || exit 1
+RESULTS="$(mktemp "${TMPDIR:-/tmp}/team-os-results.XXXXXX")" || exit 1
+trap 'rm -f "$PLAN" "$RESULTS"' EXIT
+plan_add() { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$PLAN"; }
+
 # ── Agentes ──────────────────────────────────────────────────────────────────
 
-[ $CONTROL_ROOM -eq 0 ] && do_mkdir "$TARGET/.claude/agents"
-
-agents_copied=0
-agents_skipped=0
-agents_updated=0
-agents_list=""
+agents_skipped=0           # fora do filtro de squad (os idênticos somam depois)
 INSTALLED_AGENT_FILES=""   # todos os agentes que FICAM no destino (novos, atualizados ou idênticos)
+custom_found=""
 
 for agent_file in "$SOURCE/.claude/agents/"*.md; do
   [ -f "$agent_file" ] || continue
   agent_name=$(basename "$agent_file" .md)
 
-  # Filtra por squad
-  if [ "$SQUADS" != "all" ]; then
+  # Agente próprio (origin: custom) pedido em --custom: entra fora do filtro de squad
+  custom_pick=0
+  if [ -n "$CUSTOM" ] && is_custom_agent "$agent_file"; then
+    if [ "$CUSTOM" = "all" ] || in_csv "$agent_name" "$CUSTOM"; then
+      custom_pick=1; custom_found="$custom_found,$agent_name"
+    fi
+  fi
+
+  [ $CONTROL_ROOM -eq 1 ] && { agents_skipped=$((agents_skipped + 1)); continue; }
+  # Filtra por squad (os próprios seguem a mesma regra: squad = prefixo do nome)
+  if [ "$SQUADS" != "all" ] && [ $custom_pick -eq 0 ]; then
     match=0
     for squad in $(echo "$SQUADS" | tr ',' ' '); do
       [[ "$agent_name" == ${squad}-* ]] && { match=1; break; }
     done
     [ $match -eq 0 ] && { agents_skipped=$((agents_skipped + 1)); continue; }
   fi
-  [ $CONTROL_ROOM -eq 1 ] && { agents_skipped=$((agents_skipped + 1)); continue; }
   INSTALLED_AGENT_FILES="$INSTALLED_AGENT_FILES
 $agent_file"
-
-  target_file="$TARGET/.claude/agents/$agent_name.md"
-
-  if [ -f "$target_file" ]; then
-    # Destino já tem o agente: decide por CONTEÚDO (não por mtime).
-    # Conteúdo idêntico → skipped (alinha com o scan por hash). Difere → updated.
-    if cmp -s "$agent_file" "$target_file"; then
-      agents_skipped=$((agents_skipped + 1))
-      continue
-    fi
-    do_cp "$agent_file" "$target_file"
-    agents_updated=$((agents_updated + 1))
-    agents_list="$agents_list $agent_name"
-    continue
-  fi
-
-  # Novo no destino → copiado
-  do_cp "$agent_file" "$target_file"
-  agents_copied=$((agents_copied + 1))
-  agents_list="$agents_list $agent_name"
+  plan_add agent "$agent_name" "$agent_file"
 done
 
-echo "AGENTS_COPIED=$agents_copied"
-echo "AGENTS_UPDATED=$agents_updated"
-echo "AGENTS_SKIPPED=$agents_skipped"
-echo "AGENTS_LIST=${agents_list# }"
+# --custom com nome que não existe (ou não é agente próprio) no CT: avisa
+if [ -n "$CUSTOM" ] && [ "$CUSTOM" != "all" ]; then
+  for cn in $(echo "$CUSTOM" | tr ',' ' '); do
+    in_csv "$cn" "${custom_found#,}" || echo "CUSTOM_NOT_FOUND=$cn|não há agente próprio (origin: custom) com esse nome no CT"
+  done
+fi
+[ -n "$CUSTOM" ] && [ $CONTROL_ROOM -eq 1 ] && echo "CUSTOM_IGNORED=Sala de Controle não recebe agentes"
+[ -n "$custom_found" ] && echo "CUSTOM_AGENTS=${custom_found#,}"
 
 # ── Skills — lista = união de 4 origens ──────────────────────────────────────
 #   (i)   citadas no body dos agentes instalados (`/nome-da-skill` ou skill `nome`)
@@ -368,54 +402,98 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
   [ -z "$origin" ] && { skills_skipped=$((skills_skipped + 1)); continue; }
   [ $DRY_RUN -eq 1 ] && echo "SKILL_ORIGIN=$skill_name|$origin"
 
-  target_skill="$TARGET/.claude/skills/$skill_name"
   [ "$skill_name" = "team-os" ] && team_os_handled=1
-
-  if [ -d "$target_skill" ]; then
-    # Já existe: ATUALIZA se o conteúdo difere da fonte (CT é source of truth).
-    # Skills extras no destino (não presentes na fonte) são preservadas — não apagamos.
-    if ! dir_differs "$skill_path" "$target_skill"; then
-      skills_skipped=$((skills_skipped + 1))   # idêntica — nada a fazer
-      continue
-    fi
-    do_sync_dir "$skill_path" "$target_skill"
-    skills_updated=$((skills_updated + 1))
-    skills_list="$skills_list $skill_name"
-    continue
-  fi
-
-  do_sync_dir "$skill_path" "$target_skill"
-  skills_copied=$((skills_copied + 1))
-  skills_list="$skills_list $skill_name"
+  # Existe no destino: arquivo por arquivo, só o que difere (edição do usuário vira conflito).
+  # Arquivos que o usuário criou dentro da skill nunca são apagados.
+  plan_add skill "$skill_name" "${skill_path%/}"
 done
 
 # Garante team-os no destino (obrigatória para /team-os funcionar).
-# team_os_handled evita dupla contagem quando o loop já processou team-os
-# (no --dry-run nada é copiado de fato, então o teste de diretório enganava).
+# team_os_handled evita dupla contagem quando o loop já processou team-os.
 if [ $CONTROL_ROOM -eq 1 ]; then
   :   # Sala de Controle não tem squad → não força team-os
-elif [ $team_os_handled -eq 0 ] && [ ! -d "$TARGET/.claude/skills/team-os" ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
-  do_sync_dir "$SOURCE/.claude/skills/team-os" "$TARGET/.claude/skills/team-os"
-  skills_copied=$((skills_copied + 1))
-  skills_list="$skills_list team-os"
-  echo "TEAM_OS_FORCED=1"
-elif [ $team_os_handled -eq 0 ] && [ ! -d "$SOURCE/.claude/skills/team-os" ]; then
+elif [ $team_os_handled -eq 0 ] && [ -d "$SOURCE/.claude/skills/team-os" ]; then
+  plan_add skill team-os "$SOURCE/.claude/skills/team-os"
+  [ -d "$TARGET/.claude/skills/team-os" ] || echo "TEAM_OS_FORCED=1"
+elif [ $team_os_handled -eq 0 ]; then
   echo "TEAM_OS_WARNING=skill team-os não encontrada na fonte — instale manualmente"
 fi
 
-echo "SKILLS_COPIED=$skills_copied"
-echo "SKILLS_UPDATED=$skills_updated"
-echo "SKILLS_SKIPPED=$skills_skipped"
-echo "SKILLS_LIST=${skills_list# }"
+# ── Hooks (não vão para a Sala de Controle) ──────────────────────────────────
+# block-worktree.sh é referenciado pelo settings.json; block-git-push.sh é referenciado no
+# frontmatter dos agentes com Bash — sem ele no destino, a garantia dura de push não existe.
+# Quality gate (pacote padrão — sempre): task-quality.sh (TaskCreated), check-*-progress.sh
+# (TaskCompleted), guard-push-branch.sh (devops), guard-smart-memory-read.sh,
+# guard-message-size.sh e context-watch.sh — registrados no settings.json pelo ensure-settings.sh.
+STD_HOOKS="block-worktree.sh block-git-push.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh context-watch.sh"
+hooks_extra=0
+if [ $CONTROL_ROOM -eq 0 ]; then
+  for uh in block-worktree.sh block-git-push.sh; do
+    key="WORKTREE_HOOK"; [ "$uh" = "block-git-push.sh" ] && key="GIT_PUSH_HOOK"
+    if [ -f "$SOURCE/.claude/hooks/$uh" ]; then
+      plan_add hook "$uh" "$SOURCE/.claude/hooks/$uh"
+      echo "$key=installed"
+    else
+      echo "${key}_MISSING=$uh não encontrado na fonte"
+    fi
+  done
+  quality_hooks_installed=""
+  quality_hooks_missing=""
+  for qh in $STD_HOOKS; do
+    case "$qh" in block-worktree.sh|block-git-push.sh) continue ;; esac
+    if [ -f "$SOURCE/.claude/hooks/$qh" ]; then
+      plan_add hook "$qh" "$SOURCE/.claude/hooks/$qh"
+      quality_hooks_installed="$quality_hooks_installed $qh"
+    else
+      quality_hooks_missing="$quality_hooks_missing $qh"
+    fi
+  done
+  [ -n "$quality_hooks_installed" ] && echo "QUALITY_HOOKS=${quality_hooks_installed# }"
+  [ -n "$quality_hooks_missing" ] && echo "QUALITY_HOOKS_MISSING=${quality_hooks_missing# }"
 
-# ── Higiene: remover artefatos Icon\r do macOS copiados junto ────────────────
-# cp -R traz os ícones custom de pasta (Icon\r) da fonte; eles poluem o git
-# dos destinos. Remove do que acabou de ser instalado (agents/skills/hooks).
-if [ $DRY_RUN -eq 0 ]; then
-  icon_cleaned=$(find "$TARGET/.claude/agents" "$TARGET/.claude/skills" "$TARGET/.claude/hooks" \
-    -name "Icon"$'\r' -type f -print -delete 2>/dev/null | wc -l | tr -d ' ')
-  echo "ICON_CLEANED=$icon_cleaned"
+  # --include-hooks: só hooks extras (fora do pacote padrão)
+  if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
+    for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
+      [ -f "$hook_file" ] || continue
+      hook_name=$(basename "$hook_file")
+      case " $STD_HOOKS " in *" $hook_name "*) continue ;; esac
+      plan_add hook "$hook_name" "$hook_file"
+      hooks_extra=$((hooks_extra + 1))
+    done
+  fi
 fi
+
+# ── Gravação (arquivo por arquivo, sem perder edição do destino) ─────────────
+SYNC_ARGS="--on-conflict $ON_CONFLICT"
+[ $ON_CONFLICT_SET -eq 1 ] && [ "$ON_CONFLICT" = "keep" ] && SYNC_ARGS="$SYNC_ARGS --decided"
+[ $DRY_RUN -eq 1 ] && SYNC_ARGS="$SYNC_ARGS --dry-run"
+[ -n "$ONLY" ] && echo "ONLY=$ONLY"
+# shellcheck disable=SC2086
+if ! python3 "$SYNC_PY" sync --target "$TARGET" --plan "$PLAN" --results "$RESULTS" \
+    --version "$PACK_VERSION" --only "$ONLY" --trash "$SCRIPT_DIR/trash.sh" $SYNC_ARGS > "$RESULTS.out" 2>&1; then
+  cat "$RESULTS.out"; rm -f "$RESULTS.out"
+  echo "ERROR=sync_failed|a gravação parou no meio; rode de novo (o que já foi gravado está registrado)"
+  exit 1
+fi
+SYNC_OUT="$(cat "$RESULTS.out")"; rm -f "$RESULTS.out"
+
+# Contagens por item (copied | updated | skipped | only-skipped)
+count_status() { awk -F'\t' -v k="$1" -v s="$2" '$1==k && $3==s {n++} END {print n+0}' "$RESULTS"; }
+list_changed() { awk -F'\t' -v k="$1" '$1==k && ($3=="copied" || $3=="updated") {printf "%s%s", sep, $2; sep=" "}' "$RESULTS"; }
+
+echo "AGENTS_COPIED=$(count_status agent copied)"
+echo "AGENTS_UPDATED=$(count_status agent updated)"
+echo "AGENTS_SKIPPED=$((agents_skipped + $(count_status agent skipped) + $(count_status agent only-skipped)))"
+echo "AGENTS_LIST=$(list_changed agent)"
+echo "SKILLS_COPIED=$(count_status skill copied)"
+echo "SKILLS_UPDATED=$(count_status skill updated)"
+echo "SKILLS_SKIPPED=$((skills_skipped + $(count_status skill skipped) + $(count_status skill only-skipped)))"
+echo "SKILLS_LIST=$(list_changed skill)"
+if [ $CONTROL_ROOM -eq 0 ]; then
+  echo "HOOKS_UPDATED=$(( $(count_status hook copied) + $(count_status hook updated) ))"
+  [ $INCLUDE_HOOKS -eq 1 ] && echo "HOOKS_COPIED=$hooks_extra"
+fi
+printf '%s\n' "$SYNC_OUT"
 
 # ── Sala de Controle: para aqui ──────────────────────────────────────────────
 # Sem agentes → sem hooks de quality gate, sem settings de Agent Teams, sem session-title.
@@ -454,51 +532,6 @@ EOF
   exit 0
 fi
 
-# ── Hooks universais (sempre instalados, independente de --include-hooks) ────
-# block-worktree.sh é referenciado pelo settings.json; block-git-push.sh é
-# referenciado no frontmatter dos implementers/agentes com Bash das squads de
-# código — sem ele no destino, a garantia dura de push não existe.
-WORKTREE_HOOK_SRC="$SOURCE/.claude/hooks/block-worktree.sh"
-if [ -f "$WORKTREE_HOOK_SRC" ]; then
-  do_mkdir "$TARGET/.claude/hooks"
-  do_cp "$WORKTREE_HOOK_SRC" "$TARGET/.claude/hooks/block-worktree.sh"
-  [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/block-worktree.sh"
-  echo "WORKTREE_HOOK=installed"
-else
-  echo "WORKTREE_HOOK_MISSING=block-worktree.sh não encontrado na fonte"
-fi
-
-GIT_PUSH_HOOK_SRC="$SOURCE/.claude/hooks/block-git-push.sh"
-if [ -f "$GIT_PUSH_HOOK_SRC" ]; then
-  do_mkdir "$TARGET/.claude/hooks"
-  do_cp "$GIT_PUSH_HOOK_SRC" "$TARGET/.claude/hooks/block-git-push.sh"
-  [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/block-git-push.sh"
-  echo "GIT_PUSH_HOOK=installed"
-else
-  echo "GIT_PUSH_HOOK_MISSING=block-git-push.sh não encontrado na fonte"
-fi
-
-# ── Hooks de quality gate (pacote padrão — sempre instalados) ─────────────────
-# task-quality.sh (TaskCreated), check-story-progress.sh, check-social-progress.sh e
-# check-proposal-progress.sh, check-finance-progress.sh e check-legal-progress.sh (TaskCompleted)
-# e guard-push-branch.sh (PreToolUse Bash do devops), guard-smart-memory-read.sh (PreToolUse
-# Read|Bash) e guard-message-size.sh (PreToolUse SendMessage) — economia de tokens como garantia
-# dura. Registrados no settings.json gerado (ensure-settings.sh) — não são mais opcionais.
-quality_hooks_installed=""
-quality_hooks_missing=""
-for qh in task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh context-watch.sh; do
-  if [ -f "$SOURCE/.claude/hooks/$qh" ]; then
-    do_mkdir "$TARGET/.claude/hooks"
-    do_cp "$SOURCE/.claude/hooks/$qh" "$TARGET/.claude/hooks/$qh"
-    [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/$qh"
-    quality_hooks_installed="$quality_hooks_installed $qh"
-  else
-    quality_hooks_missing="$quality_hooks_missing $qh"
-  fi
-done
-[ -n "$quality_hooks_installed" ] && echo "QUALITY_HOOKS=${quality_hooks_installed# }"
-[ -n "$quality_hooks_missing" ] && echo "QUALITY_HOOKS_MISSING=${quality_hooks_missing# }"
-
 # ── .gitignore do destino: cobrir lixo macOS (.DS_Store, Icon?) ──────────────
 ensure_gitignore
 
@@ -525,32 +558,6 @@ if [ -f "$ENSURE_SETTINGS" ]; then
   fi
 else
   echo "SETTINGS_ERROR=1|ensure-settings.sh não encontrado em $ENSURE_SETTINGS — settings.json do destino não foi tocado"
-fi
-
-# ── Hooks ────────────────────────────────────────────────────────────────────
-
-if [ $INCLUDE_HOOKS -eq 1 ] && [ -d "$SOURCE/.claude/hooks" ]; then
-  do_mkdir "$TARGET/.claude/hooks"
-
-  hooks_copied=0
-  # Copiar apenas hooks extras — o pacote padrão (block-worktree, block-git-push,
-  # task-quality, check-story-progress, check-social-progress, check-proposal-progress, check-finance-progress, check-legal-progress,
-  # guard-push-branch, guard-smart-memory-read, guard-message-size) já foi instalado acima.
-  for hook_file in "$SOURCE/.claude/hooks/"*.sh; do
-    [ -f "$hook_file" ] || continue
-    hook_name=$(basename "$hook_file")
-
-    case "$hook_name" in
-      block-worktree.sh|block-git-push.sh|task-quality.sh|check-story-progress.sh|check-social-progress.sh|check-proposal-progress.sh|check-finance-progress.sh|check-legal-progress.sh|guard-push-branch.sh|guard-smart-memory-read.sh|guard-message-size.sh|context-watch.sh)
-        continue ;;
-    esac
-
-    do_cp "$hook_file" "$TARGET/.claude/hooks/$hook_name"
-    [ $DRY_RUN -eq 0 ] && chmod +x "$TARGET/.claude/hooks/$hook_name"
-    hooks_copied=$((hooks_copied + 1))
-  done
-
-  echo "HOOKS_COPIED=$hooks_copied"
 fi
 
 # ── Session-title hook (global, core UX — sempre instalado) ──────────────────

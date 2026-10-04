@@ -24,6 +24,8 @@ SOURCE_SKILLS=""
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/agents" ] && SOURCE_AGENTS="$GIT_ROOT/.claude/agents"
 [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude/skills" ] && SOURCE_SKILLS="$GIT_ROOT/.claude/skills"
 
+PROPAGATE_SYNC="$(cd "$(dirname "$0")" && pwd)/propagate-sync.py"
+
 # Hash de diretório de skill (nomes relativos + conteúdo agregado; ignora
 # artefatos macOS Icon\r e .DS_Store). Incluir os NOMES no hash garante que
 # renomear/mover um arquivo também gera drift — não só mudar conteúdo.
@@ -219,12 +221,27 @@ while IFS=$'\t' read -r dir name; do
     done
   fi
 
+  # Projeto com .team-os/installed.json (instalado/propagado com a proteção de edições): o que o
+  # usuário editou lá NÃO é "desatualizado". Editado e o CT não mudou → conta como em dia;
+  # editado E o CT mudou → DRIFT_CONFLICT / SKILLS_CONFLICT (o *propagate pergunta, um a um).
+  drift_conflict=0; skills_conflict=0
+  if [ "$is_current" -eq 0 ] && [ -f "$dir/.team-os/installed.json" ] && [ -n "$GIT_ROOT" ] \
+     && [ -f "$PROPAGATE_SYNC" ] && command -v python3 >/dev/null 2>&1; then
+    dline="$(python3 "$PROPAGATE_SYNC" drift --source "$GIT_ROOT" --target "$dir" 2>/dev/null)"
+    if [ -n "$dline" ]; then
+      dget() { printf '%s\n' "$dline" | tr '\t' '\n' | grep -m1 "^$1=" | cut -d= -f2; }
+      [ "$has_agents" -eq 1 ] && { drift_ok=$(dget DRIFT_OK); drift_outdated=$(dget DRIFT_OUTDATED); drift_conflict=$(dget DRIFT_CONFLICT); }
+      [ "$has_skills" -eq 1 ] && { skills_outdated=$(dget SKILLS_OUTDATED); skills_conflict=$(dget SKILLS_CONFLICT); }
+    fi
+  fi
+
   # Formato TSV (TAB-delimitado): nomes reais de pasta contêm "|" (ex.: "João | Externo"),
   # então pipe como delimitador quebrava o parse do dashboard.
-  printf 'PROJECT=%s\tPATH=%s\tIS_CURRENT=%s\tHAS_AGENTS=%s\tAGENT_COUNT=%s\tAGENT_SQUADS=%s\tHAS_SKILLS=%s\tSKILL_COUNT=%s\tHAS_HOOKS=%s\tHAS_TEAM_OS=%s\tHAS_SMART_MEMORY=%s\tDRIFT_OK=%s\tDRIFT_OUTDATED=%s\tDRIFT_EXTRA=%s\tDRIFT_MISSING=%s\tSKILLS_OUTDATED=%s\tHAS_MAESTRI_OS=%s\tIS_CONTROL_ROOM=%s\tHAS_SALA_DE_CONTROLE=%s\n' \
+  printf 'PROJECT=%s\tPATH=%s\tIS_CURRENT=%s\tHAS_AGENTS=%s\tAGENT_COUNT=%s\tAGENT_SQUADS=%s\tHAS_SKILLS=%s\tSKILL_COUNT=%s\tHAS_HOOKS=%s\tHAS_TEAM_OS=%s\tHAS_SMART_MEMORY=%s\tDRIFT_OK=%s\tDRIFT_OUTDATED=%s\tDRIFT_EXTRA=%s\tDRIFT_MISSING=%s\tSKILLS_OUTDATED=%s\tHAS_MAESTRI_OS=%s\tIS_CONTROL_ROOM=%s\tHAS_SALA_DE_CONTROLE=%s\tDRIFT_CONFLICT=%s\tSKILLS_CONFLICT=%s\n' \
     "$name" "$dir" "$is_current" "$has_agents" "$agent_count" "$agent_squads" \
     "$has_skills" "$skill_count" "$([ -d "$dir/.claude/hooks" ] && echo 1 || echo 0)" \
     "$has_team_os" "$has_smart_memory" "$drift_ok" "$drift_outdated" "$drift_extra" \
-    "$drift_missing" "$skills_outdated" "$has_maestri_os" "$is_control_room" "$has_sala"
+    "$drift_missing" "$skills_outdated" "$has_maestri_os" "$is_control_room" "$has_sala" \
+    "$drift_conflict" "$skills_conflict"
 done < "$CANDIDATES"
 rm -f "$CANDIDATES"

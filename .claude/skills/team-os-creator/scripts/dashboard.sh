@@ -60,6 +60,9 @@ while IFS= read -r line; do
   d_extra="$(field "$line" DRIFT_EXTRA)"
   d_miss="$(field "$line" DRIFT_MISSING)"
   s_out="$(field "$line" SKILLS_OUTDATED)"
+  d_conf="$(field "$line" DRIFT_CONFLICT)"
+  s_conf="$(field "$line" SKILLS_CONFLICT)"
+  n_conf=$(( ${d_conf:-0} + ${s_conf:-0} ))
   has_mos="$(field "$line" HAS_MAESTRI_OS)"
   is_cr="$(field "$line" IS_CONTROL_ROOM)"
   has_sala="$(field "$line" HAS_SALA_DE_CONTROLE)"
@@ -95,6 +98,8 @@ while IFS= read -r line; do
   else
     drift="em dia"
   fi
+  # Editados no projeto E mudados no CT: o *propagate pergunta o que fazer (nada é sobrescrito)
+  [ "$n_conf" -gt 0 ] 2>/dev/null && drift="$drift · $n_conf editado(s) no projeto"
 
   printf "  %-24.24s %-8s %-8s %-13s %s\n" "$name" "$tos" "${acount:-0}" "$sm" "$drift"
 done <<EOF
