@@ -5,6 +5,23 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 ## [Não lançado]
 
 ### Adicionado
+- **Squad `security` (7 agentes, personas nórdicas) + 4 skills `security-*`** — add-on de projetos com código (`--squads sites,security` ou `dev,security`), adaptada de `msitarzewski/agency-agents` (MIT, ver `THIRD_PARTY_NOTICES.md`). Audita, prioriza e especifica a correção. **Nunca** edita o código (dev/sites corrige), **nunca** rotaciona credencial nem executa contenção em produção (usuário/devops), **nunca** testa contra terceiro (teste ativo só em local/staging com escopo escrito).
+  - **Agentes:**
+    - `security-architect` (MIMIR, opus) — modelos de ameaça, stories de segurança e ordem de correção (exclusivo)
+    - `security-appsec` (HEIMDALL) — autorização/IDOR, entrada, sessão, headers, dependências, webhooks
+    - `security-ai-code` (HUGIN) — código gerado por IA, inclusive no histórico do git, e apps com LLM: injeção de prompt, tools sem confirmação, saída do modelo confiada
+    - `security-secrets` (VÁR) — fonte única do inventário de credenciais e dos roteiros de rotação; nunca toca no valor
+    - `security-privacy` (FRIGG) — fonte única do mapa técnico de dados pessoais; base legal fica com `legal-compliance`/advogado
+    - `security-incident` (VIDAR) — SEV, linha do tempo em UTC, preservação de evidência, post-mortem; comunicação externa é do usuário
+    - `security-qa` (FORSETI, opus) — veredictos e fechamento de achados; nunca WAIVED de CRITICAL
+  - **Skills:**
+    - `security-audit-method` — escopo autorizado, severidade, formato `SEC-{NN}`, nunca expor segredo, fechamento por nova varredura, waiver
+    - `security-threat-modeling` — STRIDE por fronteira → REQ-SEC testáveis
+    - `security-incident-response`
+    - `security-privacy-data-map`
+  - **Integração:** registrada no `validate-agent.sh`, `install-to-project.sh`, `discovery.sh` (áreas `agents/security/*`), 4 hooks `check-*-progress.sh`, `generate-agents-page.py` e templates. O `detect-project-signals.sh` sugere `security` como add-on quando o `package.json` tem banco, auth, pagamento ou IA, ou quando existe `supabase/migrations/`.
+  - **Pressure-test:** 21 cenários ad-hoc (3 por agente), todos limpos. Um deles achou um exemplo enganoso no `security-secrets` (linha de inventário com rotação "confirmada" e data real), que foi trocado por um modelo neutro.
+  - **Contagens:** 95 → 102 agentes, 108 → 112 skills, 10 → 11 squads. Política de modelos: 25 `opus` e 77 `inherit`. `block-git-push.sh` em 99 agentes.
 - **`scripts/release.sh X.Y.Z` (só mantenedor)**: exige `.team-os-maintainer`, recusa árvore git suja fora de `VERSION`/`CHANGELOG.md`/`docs/agentes.html`/`pack-manifest.json`, fora da `main`, tag já existente ou `[Não lançado]` vazio; grava `VERSION`, converte `## [Não lançado]` em `## [X.Y.Z] — AAAA-MM-DD` (recriando um vazio acima), regera `docs/agentes.html` e o manifest, roda audit, `--skills`, `test-hooks.sh`, `test-update.sh` e `test-propagate.sh` (se falhar, devolve os arquivos ao estado anterior) e cria o commit `release: vX.Y.Z` e a tag anotada, só locais. **Imprime** `git push origin main vX.Y.Z` e nunca dá push. `--dry-run` mostra o que faria sem alterar nada.
 - **`MAINTAINERS.md`**: o ciclo do mantenedor (editar → audit → testes → manifest → CHANGELOG → commit → propagate → release → push manual), o papel do `.team-os-maintainer`, como fazer um release e como regerar o manifest. Entra na lista de documentos do pack (`pack-manifest.sh` e `update-pack.py`).
 - **README: seção "Instalar e atualizar"** (clone, `*install`, `*update` passo a passo, o que ele nunca toca, o que acontece com arquivo editado, como desfazer, "Onde ficam os meus agentes") com o aviso de que versões anteriores à 2.4.0 não têm `*update` e se atualizam uma única vez com `git pull` (ou baixando de novo).

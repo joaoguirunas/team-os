@@ -74,5 +74,11 @@ Trechos de método foram adaptados (reescritos em PT-BR, no padrão do pack — 
 | Destino no pack | Origem | O que foi adaptado |
 |---|---|---|
 | skill `dev-security-patterns` (seção "Varredura de código gerado por IA"); agentes `dev-qa`, `sites-qa`, `dev-data-engineer`, `sites-data` | `security/security-ai-generated-code-auditor.md` | Os cinco erros típicos de código gerado por IA, a lista do que não acusar, "segredo vazado = rotacionar" e "correção só vale com nova varredura" |
+| squad `security` — agente `security-architect`, skill `security-threat-modeling` | `security/security-architect.md`, `security/security-appsec-engineer.md` | Modelagem de ameaças com STRIDE por fronteira e saída em requisitos testáveis |
+| agente `security-appsec`, skill `security-audit-method` | `security/security-appsec-engineer.md`, `security/security-architect.md` | Áreas de auditoria de aplicação, escala de severidade e "nunca aceitar risco sem dono" |
+| agente `security-ai-code` | `security/security-ai-generated-code-auditor.md` | Riscos de apps com LLM (injeção, agência excessiva, saída do modelo confiada) |
+| agente `security-secrets` | `security/security-secrets-credential-engineer.md` | Inventário de credenciais, rotação sem derrubar o serviço, nunca expor o valor |
+| agente `security-privacy`, skill `security-privacy-data-map` | `engineering/engineering-privacy-engineer.md` | Mapa técnico de dados pessoais, minimização, consentimento aplicado no código, exclusão provada |
+| agente `security-incident`, skill `security-incident-response` | `security/security-incident-responder.md` | Classificação SEV, preservação de evidência, linha do tempo em UTC, post-mortem com poucas correções |
 
 Skills não listadas aqui são de autoria de João Guirunas e seguem a licença MIT do repositório.

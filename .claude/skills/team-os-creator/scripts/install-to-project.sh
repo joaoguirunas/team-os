@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install-to-project.sh — instala agentes e skills do projeto fonte em um projeto destino
 # Skills instaladas = união de: citadas no body dos agentes instalados (`/skill` ou skill `x`),
-# team-os (sempre), --extra-skills, prefixo da squad ({dev,sites,…,seo}-*), e as já presentes
+# team-os (sempre), --extra-skills, prefixo da squad ({dev,sites,…,seo,security}-*), e as já presentes
 # no destino (mantidas atualizadas). Copiadas se ausentes, ATUALIZADAS (arquivo por arquivo) se o
 # conteúdo difere — menos o que o usuário editou no destino (vira CONFLICT, ver --on-conflict).
 # Skills e arquivos extras no destino são preservados. team-os-creator nunca vai para o destino.
@@ -319,7 +319,7 @@ fi
 #   (i)   citadas no body dos agentes instalados (`/nome-da-skill` ou skill `nome`)
 #   (ii)  team-os (sempre, salvo Sala de Controle)
 #   (iii) --extra-skills (opt-in)
-#   (iv)  prefixo da squad instalada ({dev,sites,…,seo}-*)
+#   (iv)  prefixo da squad instalada ({dev,sites,…,seo,security}-*)
 #   (+)   já presente no destino → mantida atualizada (propagate), nunca removida
 # Nunca: team-os-creator · sala-de-controle/maestri-os (só via --extra-skills ou já presente).
 # No dry-run cada skill sai com a origem: SKILL_ORIGIN=<skill>|<origem>.
@@ -383,7 +383,7 @@ for skill_path in "$SOURCE/.claude/skills"/*/; do
     if [ -z "$origin" ] && [ "$SQUADS" != "all" ]; then
       skill_prefix="${skill_name%%-*}"
       case "$skill_prefix" in
-        dev|sites|social|traffic|pm|sales|brand|finance|legal|seo)
+        dev|sites|social|traffic|pm|sales|brand|finance|legal|seo|security)
           for squad in $(echo "$SQUADS" | tr ',' ' '); do
             [ "$skill_prefix" = "$squad" ] && { origin="prefixo da squad $squad"; break; }
           done ;;

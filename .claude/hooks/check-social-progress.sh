@@ -49,7 +49,7 @@ texts = []
 collect(data, texts)
 blob = "\n".join(texts)
 
-SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo)/)?"
+SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo|security)/)?"
 path_ref = re.search(r"docs/smart-memory/agents/" + SQUAD + r"(content|design|photo|video|publisher)\b", blob) is not None
 
 SOCIAL_NOUN = r"(?:posts?|reels?|stor(?:y|ies)|carross[eé]is|carrossel|carousels?|feed|v[íi]deos?|conte[úu]dos?|campanha|instagram|facebook|tiktok|linkedin|youtube|threads|meta|redes? sociais?|social)"

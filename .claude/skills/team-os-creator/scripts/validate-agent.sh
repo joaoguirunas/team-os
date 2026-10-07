@@ -67,7 +67,7 @@ PRESETS_DIR="$SKILLS_DIR/team-os-creator/presets"
 NTP_FILE="$SKILLS_DIR/team-os-creator/reference/native-teams-protocol.md"
 MCP_FILE="$SKILLS_DIR/team-os-creator/reference/mcp-servers.md"
 
-KNOWN_SQUADS="dev sites social traffic pm sales brand finance legal seo"
+KNOWN_SQUADS="dev sites social traffic pm sales brand finance legal seo security"
 COLOR_ENUM="red blue green yellow purple orange pink cyan"
 COLOR_LIMIT=7  # 8 cores do enum menos blue (reservada ao lead): acima disso repetição é inevitável
 PERMISSION_ENUM="default acceptEdits auto dontAsk bypassPermissions plan"
@@ -504,7 +504,7 @@ validate() {
       warnings+=("cita persona '$cited_persona' para $cited_agent, mas o H1 atual dele é '$current_persona'")
     fi
   done <<EOF_CITES
-$(printf '%s\n' "$BODY" | grep -oE '[A-Z][A-Za-z+]+ \((dev|sites|social|traffic|pm|sales|brand|finance|legal|seo)-[a-z][a-z-]+\)' | sort -u)
+$(printf '%s\n' "$BODY" | grep -oE '[A-Z][A-Za-z+]+ \((dev|sites|social|traffic|pm|sales|brand|finance|legal|seo|security)-[a-z][a-z-]+\)' | sort -u)
 EOF_CITES
   # (b) persona de OUTRA squad citada no body
   if [ -n "$SQUAD" ]; then

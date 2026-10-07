@@ -230,6 +230,18 @@ SUGGESTED_SQUAD_ADDON=""
 if [ $HAS_SEO -eq 1 ] && [ "$ARCHETYPE" != "seo" ]; then
   case "$ARCHETYPE" in website|content-site|fullstack-saas|frontend-app) SUGGESTED_SQUAD_ADDON="seo" ;; esac
 fi
+# Projeto com código que guarda dado, autentica, cobra ou chama IA → sugere a squad security como
+# add-on (audita e especifica; dev/sites corrige). Lista separada por vírgula (ex.: "seo,security").
+SEC_HITS=0
+if [ -f "package.json" ]; then
+  grep -qiE '"(@supabase/[a-z-]+|next-auth|@auth/[a-z-]+|@clerk/[a-z-]+|firebase|prisma|@prisma/client|drizzle-orm|stripe|openai|@anthropic-ai/sdk|ai|@ai-sdk/[a-z-]+|langchain)"' package.json 2>/dev/null && SEC_HITS=1
+fi
+[ -d "supabase/migrations" ] && SEC_HITS=1
+if [ $SEC_HITS -eq 1 ]; then
+  case "$ARCHETYPE" in website|content-site|fullstack-saas|frontend-app)
+    SUGGESTED_SQUAD_ADDON="${SUGGESTED_SQUAD_ADDON:+$SUGGESTED_SQUAD_ADDON,}security" ;;
+  esac
+fi
 [ -n "$WARNING" ] && echo "⚠️  $WARNING" >&2
 
 echo "PROJECT_ARCHETYPE=$ARCHETYPE"

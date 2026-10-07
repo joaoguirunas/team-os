@@ -56,7 +56,7 @@ texts = []
 collect(data, texts)
 blob = "\n".join(texts)
 
-SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo)/)?"
+SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo|security)/)?"
 
 # Referencia a squad legal ou um artefato jurídico?
 legal_ref = re.search(r"docs/smart-memory/agents/" + SQUAD + r"(drafting|disputes|ops|compliance|architecture|strategy|research|qa)\b", blob) \

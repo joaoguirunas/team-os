@@ -42,6 +42,7 @@ SQUADS = [
     ("finance", "Finance", "Gestão financeira — coleta, política, plano de caixa, conciliação, contas a pagar/receber, fiscal, relatório, QA"),
     ("legal", "Legal", "Jurídico do dia a dia — pesquisa, postura, arquitetura documental, minutas, registro e LGPD, conflitos, operações, QA"),
     ("seo", "SEO", "Auditoria e otimização de busca — técnico, conteúdo, schema, sitemap/i18n, CWV, GEO/AI search, SXO, clusters, local, backlinks, e-commerce, dados Google, drift, QA"),
+    ("security", "Security", "Segurança de aplicação — modelo de ameaças, appsec, código gerado por IA e apps com LLM, credenciais, privacidade no código, incidente, QA"),
 ]
 
 # Resumo em PT por agente (linha principal do card). Agente ausente → 1ª frase da description.

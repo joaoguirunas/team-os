@@ -57,7 +57,7 @@ texts = []
 collect(data, texts)
 blob = "\n".join(texts)
 
-SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo)/)?"
+SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo|security)/)?"
 
 # Referencia a squad finance ou um artefato financeiro?
 finance_ref = (

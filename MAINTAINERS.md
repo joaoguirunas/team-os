@@ -16,8 +16,8 @@ Para virar mantenedor numa máquina, basta criar o arquivo vazio: `touch .team-o
 
 ```
 1. Editar agente/skill/hook AQUI (agentes via /team-os-creator; nunca direto num projeto destino)
-2. validate-agent.sh            → 95/95 agentes do pack conformes (= *audit)
-3. validate-agent.sh --skills   → lint das 108 skills
+2. validate-agent.sh            → 102/102 agentes do pack conformes (= *audit)
+3. validate-agent.sh --skills   → lint das 112 skills
 4. test-hooks.sh                → todos os casos dos hooks
    test-update.sh               → teste do *update (se mexeu em update/manifest/propagação)
    test-propagate.sh            → teste do *install/*propagate (precisa de rsync)
@@ -30,7 +30,7 @@ Para virar mantenedor numa máquina, basta criar o arquivo vazio: `touch .team-o
 11. push MANUAL                 → o comando é impresso pelo release.sh; quem executa é o mantenedor
 ```
 
-Todos os scripts ficam em `.claude/skills/team-os-creator/scripts/` (rode com `bash`, a partir da raiz). Os passos 2 a 6 se repetem no CI (`.github/workflows/audit.yml`), que ainda confere as contagens "95 agentes" e "108 skills" no `README.md` e no `CLAUDE.md` (contadas pelo manifest), zero caminho de máquina versionado e `docs/agentes.html` em dia.
+Todos os scripts ficam em `.claude/skills/team-os-creator/scripts/` (rode com `bash`, a partir da raiz). Os passos 2 a 6 se repetem no CI (`.github/workflows/audit.yml`), que ainda confere as contagens "102 agentes" e "112 skills" no `README.md` e no `CLAUDE.md` (contadas pelo manifest), zero caminho de máquina versionado e `docs/agentes.html` em dia.
 
 ## Como fazer um release
 

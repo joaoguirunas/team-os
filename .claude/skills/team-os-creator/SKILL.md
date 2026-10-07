@@ -46,7 +46,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 |---|---|
 | `/team-os-creator` | **Command Center** — escaneia as pastas irmãs, mostra status por projeto e abre 3 ações: Criar / Atualizar / Instalar |
 | `/team-os-creator *analyze` | Só análise: archetype detectado, sem criar |
-| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`traffic`/`pm`/`sales`/`brand`/`finance`/`legal`/`seo`/`custom`) |
+| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`traffic`/`pm`/`sales`/`brand`/`finance`/`legal`/`seo`/`security`/`custom`) |
 | `/team-os-creator *create <role>` | Cria UM agente interativamente |
 | `/team-os-creator *migrate` | Reinjeta o bloco NTP canônico em todos os agentes (`scripts/migrate-ntp.sh`; `--dry-run` mostra o diff) — também converte o antigo "Contrato com team-os" |
 | `/team-os-creator *bootstrap` | Cria `docs/smart-memory/` + injeta protocolo no `CLAUDE.md` do projeto atual |
@@ -57,7 +57,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *propagate` | Propaga agentes atualizados para outros projetos |
 | `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. Pasta **Sala de Controle** → instala só a skill de Sala (`sala-de-controle` por padrão, ou `maestri-os` no modo Maestri) |
 | `/team-os-creator *organize` | Mapa da organização de pastas (negócio → projeto → squads → salas), pontos fora do padrão e proposta de melhoria. **Só propõe** — nada é movido, renomeado ou instalado sem OK explícito, ação por ação |
-| `/team-os-creator *painel` | **Mapa vivo do CT** no navegador do próprio Claude: o raio no centro, as 10 squads no anel, os agentes de cada squad ao redor (persona + cargo), skills principais ligadas ao centro; clique na squad expande as skills dela, clique no agente/skill abre o perfil e o arquivo inteiro. Estático (o que existe), read-only. `*painel stop` derruba |
+| `/team-os-creator *painel` | **Mapa vivo do CT** no navegador do próprio Claude: o raio no centro, as 11 squads no anel, os agentes de cada squad ao redor (persona + cargo), skills principais ligadas ao centro; clique na squad expande as skills dela, clique no agente/skill abre o perfil e o arquivo inteiro. Estático (o que existe), read-only. `*painel stop` derruba |
 
 ---
 
@@ -121,9 +121,10 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | **finance** | 8 (analyst, strategist, planner, controller, billing, tax, reporter, qa) | Gestão financeira — prepara, registra e confere; nunca move dinheiro nem declara ao fisco (quem executa é o usuário/contador). Genérica, contexto da empresa na smart-memory |
 | **legal** | 8 (analyst, strategist, architect, drafter, compliance, disputes, ops, qa) | Jurídico do dia a dia — prepara para o advogado, nunca o substitui; envio e assinatura são do usuário. Genérica, contexto da empresa na smart-memory |
 | **seo** | 15 (architect, technical, performance, schema, sitemap, content, cluster, geo, local, ecommerce, backlinks, sxo, drift, google, qa) | Auditoria e otimização de busca — audita, prioriza e recomenda; nunca implementa o fix (squad `sites`) nem sobe deploy. Add-on natural de um site (`--squads sites,seo`). Motor: skills `seo-*` |
+| **security** | 7 (architect, appsec, ai-code, secrets, privacy, incident, qa) | Segurança de aplicação — audita, prioriza e especifica a correção; nunca edita o código (dev/sites corrige), nunca rotaciona credencial nem executa contenção em produção, nunca testa contra terceiro. Add-on de dev ou sites (`--squads sites,security`) |
 | **custom** | 0 | Usuário monta do zero |
 
-> Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites` (ou `social` se for workspace de conteúdo); `data-pipeline` → `dev`; `seo` (workspace de SEO sem código, ou pasta nomeada SEO) → `seo`; site com sinais de SEO (sitemap.xml, robots.txt, `next-sitemap`, "seo" no package.json, pasta `seo/`) devolve `SUGGESTED_SQUAD_ADDON=seo` → `--squads sites,seo`.
+> Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites` (ou `social` se for workspace de conteúdo); `data-pipeline` → `dev`; `seo` (workspace de SEO sem código, ou pasta nomeada SEO) → `seo`; site com sinais de SEO (sitemap.xml, robots.txt, `next-sitemap`, "seo" no package.json, pasta `seo/`) devolve `SUGGESTED_SQUAD_ADDON=seo` → `--squads sites,seo`. Projeto com banco, auth, pagamento ou IA no `package.json` (Supabase, Prisma, NextAuth, Clerk, Stripe, OpenAI, Anthropic, AI SDK) ou com `supabase/migrations/` acrescenta `security` à lista (`SUGGESTED_SQUAD_ADDON=seo,security`).
 
 ---
 
@@ -375,7 +376,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ```
 .claude/skills/team-os-creator/
 ├── SKILL.md
-├── presets/                        ← 10 squads (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo), cada agente com `archetype:` (fonte do *audit)
+├── presets/                        ← 11 squads (dev, sites, social, traffic, pm, sales, brand, finance, legal, seo, security), cada agente com `archetype:` (fonte do *audit)
 │   └── custom/                     ← agentes PRÓPRIOS do usuário (custom.yaml); fora do pack, nunca tocada pelo *update
 ├── reference/
 │   ├── archetypes.md               ← defaults por archetype + exceções canônicas

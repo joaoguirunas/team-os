@@ -106,7 +106,7 @@ want() { # $1=path-absoluto-dentro-da-SM
 AREAS=""
 add_area() { case " $AREAS " in *" $1 "*) : ;; *) AREAS="$AREAS${AREAS:+ }$1" ;; esac; }
 
-KNOWN_SQUADS="dev sites social traffic pm sales brand finance legal seo"
+KNOWN_SQUADS="dev sites social traffic pm sales brand finance legal seo security"
 
 # Fallback por squad — usado SÓ para agente sem a linha "Área na smart-memory".
 squad_areas() { # $1=squad → áreas (sem o prefixo da squad)
@@ -121,6 +121,7 @@ squad_areas() { # $1=squad → áreas (sem o prefixo da squad)
     finance) echo "research strategy planning controller billing tax reporting qa" ;;
     legal)   echo "research strategy architecture drafting compliance disputes ops qa" ;;
     seo)     echo "technical performance schema sitemap content cluster geo local ecommerce backlinks sxo drift google architect qa" ;;
+    security) echo "architecture appsec ai-code secrets privacy incident qa" ;;
   esac
 }
 
