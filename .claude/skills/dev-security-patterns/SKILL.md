@@ -1,8 +1,8 @@
 ---
 name: dev-security-patterns
-description: "Padrões de segurança para software complexo — autenticação, autorização, RLS, OWASP top 10, validação de input, secrets management."
-version: "1.1"
-updated: "2026-04-21"
+description: "Padrões de segurança para software complexo — autenticação, autorização, RLS, OWASP top 10, validação de input, secrets management e a varredura das armadilhas de código gerado por IA (segredo no cliente, RLS aberta, auth por user_metadata, prompt injection)."
+version: "1.2"
+updated: "2026-10-07"
 ---
 
 # Security Patterns — Software Complexo
@@ -61,12 +61,17 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "user_own_orders" ON orders
   FOR ALL USING (auth.uid() = user_id);
 
--- Admin vê tudo
+-- Admin vê tudo — papel vem de app_metadata (só o servidor escreve)
 CREATE POLICY "admin_all_orders" ON orders
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 ```
 
 **RLS é a última linha de defesa — aplicar em todas as tabelas com dados de usuário.**
+
+- `auth.jwt() ->> 'role'` (claim de topo) é o papel do Postgres (`authenticated`/`anon`), não o papel da aplicação — política escrita assim nunca casa.
+- **Nunca autorizar por `user_metadata`** (`raw_user_meta_data`): o próprio usuário edita esse campo pela API de auth e se dá qualquer papel. Papel de aplicação mora em `app_metadata` ou numa tabela de papéis.
+- "RLS ativo" não prova nada: RLS ligado **sem policy** nega tudo; RLS com `USING (true)` libera tudo. Leia a policy.
+- Bucket do Storage é tabela também (`storage.objects`) — `USING (true)` ali expõe todos os arquivos.
 
 ## Validação de Input
 
@@ -123,6 +128,64 @@ Regras:
 - `.env` no `.gitignore` — nunca commitar
 - `.env.example` com chaves sem valores — commitar
 - Em produção: secret manager (AWS Secrets Manager, Vercel env vars)
+- Prefixo público (`NEXT_PUBLIC_`, `VITE_`, `PUBLIC_`, `EXPO_PUBLIC_`) **vai para o navegador por definição** — só chave publicável usa esse prefixo
+- **Segredo que vazou já está queimado:** apagar do código não basta. A correção só termina com a chave **rotacionada no provedor**
+
+## Varredura de código gerado por IA
+
+Assistentes de código otimizam para a demo rodar. Os cinco erros abaixo são os que mais escapam em projetos Next.js + Supabase + LLM. Rode a varredura na raiz do projeto, leia cada ocorrência e classifique. **Busca é triagem, não veredicto** — toda ocorrência é conferida no arquivo antes de virar achado.
+
+```bash
+# Funciona em bash e zsh. Rode da raiz do projeto.
+
+# 1. Segredo atrás de prefixo público
+grep -rnE "(NEXT_PUBLIC|VITE|PUBLIC|EXPO_PUBLIC)_[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE|TOKEN|PASSWORD|API_KEY)" \
+  --include='*.[jt]s' --include='*.[jt]sx' --include='*.mjs' --include='*.astro' --include='*.vue' --include='*.svelte' --include='.env*' \
+  --exclude-dir={node_modules,.next,.git,dist,build} .
+
+# 2. Chave literal no código (OpenAI/Anthropic, Stripe live, JWT, AWS, chave privada)
+grep -rnE "sk-(proj-|ant-)?[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|eyJhbGciOi[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY" \
+  --exclude-dir={node_modules,.next,.git,dist,build} .
+
+# 3. service_role fora do servidor
+grep -rnE "service_role|SERVICE_ROLE" \
+  --include='*.[jt]s' --include='*.[jt]sx' --include='*.mjs' --include='*.astro' --include='*.vue' --include='*.svelte' \
+  --exclude-dir={node_modules,.next,.git,dist,build} .
+
+# 4. RLS aberta e autorização por user_metadata
+grep -rniE "using[[:space:]]*\([[:space:]]*true[[:space:]]*\)|with check[[:space:]]*\([[:space:]]*true[[:space:]]*\)|user_metadata|raw_user_meta_data" \
+  --include='*.sql' --include='*.[jt]s' --include='*.[jt]sx' \
+  --exclude-dir={node_modules,.next,.git,dist,build} .
+
+# 4. Tabelas criadas sem "enable row level security" (a saída é a lista de suspeitas)
+comm -23 \
+  <(grep -rhoiE "create table( if not exists)? [a-z_.\"]+" --include='*.sql' --exclude-dir=node_modules --exclude-dir=.git . | tr A-Z a-z | awk '{print $NF}' | sort -u) \
+  <(grep -rhoiE "alter table( only)? [a-z_.\"]+ enable row level security" --include='*.sql' --exclude-dir=node_modules --exclude-dir=.git . | tr A-Z a-z | awk '{print $(NF-4)}' | sort -u)
+
+# 5. Prompt de sistema montado com dado da requisição
+grep -rnE "role:[[:space:]]*[\"']system[\"']|system:[[:space:]]*\`" \
+  --include='*.[jt]s' --include='*.[jt]sx' --include='*.mjs' \
+  --exclude-dir={node_modules,.next,.git,dist,build} .
+```
+
+Sem migrations SQL no repositório (schema só no painel do Supabase)? A busca 4 não enxerga nada — rode no SQL Editor: `select tablename, rowsecurity from pg_tables where schemaname = 'public';` e `select * from pg_policies where schemaname in ('public','storage');`. Sem esse acesso, o item vira **NÃO VERIFICÁVEL**, nunca "ok".
+
+| # | Achado | Quando é achado | Severidade |
+|---|---|---|---|
+| 1 | Segredo com prefixo público | Valor não publicável (chave de API privada, service_role, token) | **CRITICAL** |
+| 2 | Chave literal no código | Qualquer chave privada no repositório. JWT literal: decodifique o payload — `"role":"service_role"` é CRITICAL; `"role":"anon"` não é achado | **CRITICAL** |
+| 3 | `service_role` alcançável pelo cliente | Arquivo com `"use client"`, componente, hook ou módulo importado por eles | **CRITICAL** |
+| 4a | Tabela com dado de usuário sem RLS, ou com `USING (true)` / `WITH CHECK (true)` | Dado não é público por desenho. Sem RLS, ou `UPDATE`/`DELETE`/`ALL` aberto: **CRITICAL**. `SELECT` aberto (qualquer um lê): **HIGH**. `INSERT` aberto fora de formulário público: **HIGH** | ver coluna ao lado |
+| 4b | Autorização por `user_metadata` | Policy, middleware ou checagem de papel lê `user_metadata` | **HIGH** |
+| 4c | Bucket do Storage aberto | Policy `USING (true)` em `storage.objects` de bucket com arquivo privado | **HIGH** |
+| 5a | Entrada da requisição no prompt de sistema **e** chamada com tools | `req.body`/query/form chega ao `system` numa chamada com `tools` | **HIGH** |
+| 5b | Entrada da requisição no prompt de sistema, sem tools | Idem, sem tools — heurístico, conferir à mão | **MEDIUM** |
+
+**Não é achado (não acusar):** anon key do Supabase e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (a RLS é o portão); chave publicável do Stripe (`pk_`); chave de projeto de analytics (PostHog, GA); `USING (true)` só para `SELECT` em tabela pública por desenho (catálogo, posts publicados) e documentada como tal; `INSERT ... WITH CHECK (true)` em tabela de **formulário público** (lead, contato, newsletter) **sem** policy de `SELECT`/`UPDATE`/`DELETE` para `anon` — é o desenho normal de formulário (no máximo uma recomendação: limitar formato e tamanho no `WITH CHECK` ou inserir por rota de servidor com rate limit); entrada do usuário numa mensagem `role: "user"` separada, sem tools. Acusar o padrão seguro ensina o time a ignorar o QA.
+
+**Como reportar cada achado:** linha (`arquivo:linha`) → o risco em uma frase ("vai para o navegador de todo visitante") → a correção em um commit. Para segredo: **tipo e local, nunca o valor** (mostre no máximo os 4 primeiros caracteres), e a correção sempre inclui **rotacionar no provedor**.
+
+**Correção só vale com nova varredura.** Depois do fix, rode a varredura de novo e compare: resolvido, ainda presente, novo. Segredo só sai da lista com a rotação confirmada pelo usuário — remover do código não basta.
 
 ## Rate Limiting
 

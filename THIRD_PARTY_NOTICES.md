@@ -66,4 +66,13 @@ o texto integral da MIT é o mesmo de [LICENSE](./LICENSE), trocando-se o titula
 | `data-sql-optimization` | não declarado | **licença upstream não localizada; verificar antes de redistribuir** | idem |
 | `web-design-guidelines` | João Guirunas (skill) — carrega as **Vercel Web Interface Guidelines** em runtime | MIT (skill); guidelines © Vercel, uso conforme o repositório da Vercel | conteúdo externo não é vendorizado |
 
+## Conteúdo adaptado de agency-agents
+
+Trechos de método foram adaptados (reescritos em PT-BR, no padrão do pack — não copiados) do repositório
+[msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents), licença MIT, © 2025 AgentLand Contributors.
+
+| Destino no pack | Origem | O que foi adaptado |
+|---|---|---|
+| skill `dev-security-patterns` (seção "Varredura de código gerado por IA"); agentes `dev-qa`, `sites-qa`, `dev-data-engineer`, `sites-data` | `security/security-ai-generated-code-auditor.md` | Os cinco erros típicos de código gerado por IA, a lista do que não acusar, "segredo vazado = rotacionar" e "correção só vale com nova varredura" |
+
 Skills não listadas aqui são de autoria de João Guirunas e seguem a licença MIT do repositório.

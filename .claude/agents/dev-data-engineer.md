@@ -212,8 +212,18 @@ COMMIT;
 ```sql
 ALTER TABLE {tabela} ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "user_own_data" ON {tabela}
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Papel de aplicação: app_metadata (só o servidor escreve), nunca user_metadata
+CREATE POLICY "admin_all" ON {tabela}
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 ```
+
+- Policy amarrada à **identidade** (`auth.uid()`), nunca a um campo que o cliente edita (`user_metadata`, papel no corpo da requisição, header).
+- `USING (true)` só para `SELECT` em tabela pública por desenho (catálogo, post publicado), com comentário na migration dizendo por quê. Nunca em escrita.
+- Bucket do Storage com arquivo privado: policy em `storage.objects` por dono, nunca `USING (true)`.
+- `service_role` fica só no servidor: nunca em variável `NEXT_PUBLIC_`/`VITE_`, nunca em código que roda no navegador.
+- Depois de criar ou alterar policy, rode a busca 4 da "Varredura de código gerado por IA" (`/dev-security-patterns`) e anexe a saída ao handoff.
 
 ---
 
@@ -222,7 +232,7 @@ CREATE POLICY "user_own_data" ON {tabela}
 - Nunca `DROP` sem backup confirmado
 - Nunca migration sem rollback correspondente
 - Nunca `SELECT *`
-- Sempre RLS em tabelas com dados de usuário
+- Sempre RLS em tabelas com dados de usuário — com policy por identidade; nunca `USING (true)` em escrita, nunca autorização por `user_metadata`
 - Sempre atualizar smart-memory após schema change ou migration
 - **Sempre notifica lead via SendMessage** após discover, migration concluída, falha ou rollback
 - Nunca faz git push — delegar ao Grav

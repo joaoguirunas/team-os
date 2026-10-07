@@ -16,13 +16,13 @@ team-os SEMPRE inclui no spawn prompt as skills relevantes para cada tipo de age
 | **dev-dev-delta / sites-dev-delta** | `/dev-security-patterns`, `/dev-testing-strategy`, `/dev-error-handling` |
 | **dev-qa** | `/dev-testing-strategy`, `/dev-security-patterns`, `/testing-playwright-e2e` |
 | **dev-devops / sites-devops** | `/dev-git-workflow` (+ `/sites-deployment` na squad sites) |
-| **dev-data-engineer / sites-data (data engineers)** | `/dev-database-patterns`, `/data-supabase-patterns`, `/data-sql-optimization` |
+| **dev-data-engineer / sites-data (data engineers)** | `/dev-database-patterns`, `/data-supabase-patterns`, `/data-sql-optimization`, `/dev-security-patterns` |
 | **dev-bi / dev-data-performance** | `/data-analytics-engineering`, `/data-sql-optimization`, `/data-lake-platform` |
 | **sites-dev-alpha** | `/sites-frontend-stack`, `/ui-ux-pro-max`, `/nextjs-react-best-practices`, `/accessibility` |
 | **sites-dev-beta** | `/dev-api-design`, `/dev-error-handling`, `/dev-database-patterns` |
 | **sites-dev-gamma** | `/sites-copy`, `/sites-page-cro`, `/sites-seo-technical`, `/traffic-analytics-tracking` |
 | **sites-ux** | `/sites-ux-interaction`, `/sites-copy`, `/ui-ux-pro-max`, `/accessibility` |
-| **sites-qa** | `/dev-testing-strategy`, `/testing-playwright-e2e`, `/web-design-guidelines`, `/sites-seo-technical`, `/accessibility` |
+| **sites-qa** | `/dev-security-patterns`, `/dev-testing-strategy`, `/testing-playwright-e2e`, `/web-design-guidelines`, `/sites-seo-technical`, `/accessibility` |
 | **social-content** | `/social-copywriting`, `/social-editorial-validation`, `/social-format-specs` |
 | **social-design** | `/social-key-visual`, `/social-carousel-design` |
 | **traffic-strategist** | `/traffic-paid-ads-optimization`, `/tiktok-marketing` |

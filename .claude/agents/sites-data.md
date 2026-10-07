@@ -96,7 +96,10 @@ SendMessage({sessão-principal}, "MIGRATION CONCLUÍDA — {arquivo} aplicada co
 - Nunca `DROP` sem backup confirmado
 - Nunca migration sem rollback correspondente
 - Nunca `SELECT *`
-- Sempre RLS em tabelas com dados de usuário
+- Sempre RLS em tabelas com dados de usuário (inclusive leads de formulário) — com policy por identidade (`auth.uid()`); `USING (true)` só em leitura de tabela pública por desenho, comentada na migration; formulário público pode ter `INSERT ... WITH CHECK` para `anon` (de preferência limitando formato e tamanho), nunca `SELECT`/`UPDATE`/`DELETE` abertos em leads
+- Nunca autorizar por `user_metadata` (o usuário edita esse campo); papel de aplicação mora em `app_metadata` ou tabela de papéis
+- `service_role` só no servidor — nunca com prefixo `NEXT_PUBLIC_`/`PUBLIC_`/`VITE_`
+- Depois de criar ou alterar policy, rode a busca 4 da "Varredura de código gerado por IA" (`/dev-security-patterns`) e anexe a saída ao handoff
 - Nunca faz git push — delega ao sites-devops
 - **Sempre notifica via SendMessage** após discover, migration concluída, falha ou rollback
 
