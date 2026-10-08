@@ -93,25 +93,111 @@ CAMADA 2 — Projeto (execução, toda sessão de trabalho)
 
 Esta seção é para quem **usa** o pack. (Quem mantém o pack oficial tem outro ciclo: [MAINTAINERS.md](./MAINTAINERS.md).)
 
-### Como baixar
+### Do zero ao time rodando
 
-A forma oficial é o `git clone`:
+**Pré-requisitos:** o app do Claude com a aba **Code** (ou o Claude Code no terminal), um plano com Agent Teams, e `git`, `bash` e `python3` na máquina. Você **não** precisa configurar o Agent Teams: o `*install` e a `/team-os` fazem isso.
 
-```bash
-git clone https://github.com/joaoguirunas/team-os.git
+A ideia em uma linha: o **CT** (o clone deste repositório) é onde você monta e mantém as equipes; os **projetos** são onde elas trabalham.
+
+#### 1. Crie a pasta pai e as pastas dos projetos
+
+Uma pasta pai (o nome é livre, por exemplo `Projetos`) guarda o CT e todos os seus projetos, lado a lado. Projetos podem ficar soltos ou agrupados por negócio.
+
+```
+Projetos/
+├── 0 | Centro de Treinamento/   ← o clone do team-os (passo 2)
+├── 1 | Sala de Controle/        ← opcional (passo 6)
+├── projeto-a/
+└── Minha Empresa/
+    ├── Minha Empresa | Site/
+    └── Minha Empresa | Comercial/
 ```
 
-Isso cria a pasta `team-os/` — é o seu **Centro de Treinamento** (o "CT"). É dentro dela que você abre o Claude Code e roda `/team-os-creator`. (Sem git, também dá: baixe o `.zip` do GitHub e descompacte. O `*update` funciona igual nos dois casos.)
+**Por quê:** o CT enxerga os projetos olhando a pasta onde ele mesmo está. **Você deve ver:** a pasta pai com as pastas dos projetos dentro.
 
-### Como instalar num projeto
+#### 2. Clone o team-os dentro da pasta pai
 
-Abra o Claude Code **dentro da pasta do CT** e rode:
+Num terminal aberto na pasta pai (ou pedindo ao Claude, na aba Code, com a pasta pai aberta):
+
+```bash
+git clone https://github.com/joaoguirunas/team-os.git "0 | Centro de Treinamento"
+```
+
+O nome da pasta é livre; o `0 |` só faz o CT aparecer primeiro na lista. Sem git, baixe o `.zip` do GitHub e descompacte no mesmo lugar.
+
+**Por quê:** o clone é o CT, a fonte da verdade dos agentes e das skills. **Você deve ver:** a pasta do CT ao lado das pastas dos projetos.
+
+> Seus projetos estão em outro lugar? Crie, na raiz do CT, um arquivo `.team-os-root` com o caminho da pasta pai (uma linha). Ele fica fora do git.
+
+#### 3. Abra o CT e rode o Command Center
+
+No app do Claude, abra a pasta do CT na aba Code e rode:
+
+```
+/team-os-creator
+```
+
+**Por quê:** o CT é a camada de configuração. Aqui você cria, instala e atualiza equipes; não trabalha nos projetos. **Você deve ver:** uma tabela com cada projeto (team-os instalada, nº de agentes, smart-memory, desatualizado ou em dia) e quatro ações: Criar, Atualizar, Instalar, Organizar.
+
+#### 4. Instale a equipe de cada projeto
+
+Ainda no CT:
 
 ```
 /team-os-creator *install
 ```
 
-Ele pergunta qual é o projeto e quais squads você quer, mostra o que vai copiar e só faz depois do seu OK. O projeto recebe os agentes, as skills que eles usam (incluindo a `team-os`) e os hooks de qualidade, e já sai com o Agent Teams ativado — não há nada para configurar à mão. Depois, dentro do projeto, rode `/team-os` para começar uma sessão. Mais detalhes no [tutorial B](#b-instalar-squads-num-projeto-novo).
+Ou em linguagem natural: *"instale a squad sites no projeto-a"*. Ele pergunta o projeto e as squads, mostra exatamente o que vai copiar e só age depois do seu OK.
+
+Cada projeto recebe **só as squads de que precisa**, uma ou mais: `dev`, `sites`, `social`, `traffic`, `pm`, `sales`, `brand`, `finance`, `legal`, `seo` e `security`. As de auditoria entram como complemento: um site com SEO é `sites,seo`; um app com banco e login é `dev,security`. O `*install` sugere a combinação pelos sinais do projeto.
+
+**Por quê:** cada projeto só carrega o time que vai usar. **Você deve ver:** o preview (agentes, skills, hooks) antes de confirmar. Depois, o projeto tem `.claude/agents/`, `.claude/skills/` (com a `team-os`), os hooks e o Agent Teams já ativado.
+
+#### 5. Ligue o time no projeto
+
+Abra a pasta do **projeto** no app (aba Code) e rode:
+
+```
+/team-os
+```
+
+Na primeira vez:
+
+- se o Agent Teams ainda não estiver ativo nesta sessão, a `/team-os` avisa: feche e abra uma sessão nova (só acontece uma vez);
+- ela lê o código do projeto e monta a **smart-memory** (`docs/smart-memory/`), a memória compartilhada da equipe.
+
+Depois ela pergunta o objetivo da sessão e propõe um time do tamanho do trabalho (começa com 3 a 5 agentes e cresce se houver trabalho paralelo de verdade). **Nada é criado sem o seu OK.**
+
+Com o time rodando, o **agent panel** aparece abaixo do prompt: ↑↓ navegam, Enter abre, Esc interrompe, `x` para, Ctrl+T mostra as tasks. Sessões em segundo plano ficam no **Agent view** (`claude agents`). A diferença: o agent panel mostra os teammates desta sessão; o Agent view lista sessões independentes.
+
+**Você deve ver:** a proposta de time e, depois do OK, os agentes trabalhando no agent panel.
+
+#### 6. (Opcional) Crie a Sala de Controle
+
+Um lugar único para mandar pedidos para todos os projetos e ver o que cada sessão está fazendo.
+
+1. Crie a pasta `1 | Sala de Controle` na pasta pai.
+2. No CT, rode `/team-os-creator *install` e escolha essa pasta. Ele reconhece a Sala e instala **só** a skill `sala-de-controle`, sem agentes (por baixo: `--squads none --extra-skills sala-de-controle`).
+3. Abra uma sessão na pasta da Sala e rode:
+
+```
+/sala-de-controle
+/sala-de-controle *organizar
+/sala-de-controle *painel
+```
+
+**Você deve ver:** no `*organizar`, a árvore negócio → projeto → squads com o que está fora do padrão; no `*painel`, o mapa vivo em `127.0.0.1:8787`, com cada sessão, seus agentes por estado (ativo, aguardando, parado, precisa de você) e o consumo de tokens.
+
+#### 7. Mantenha tudo atualizado
+
+| Comando (no CT) | O que faz |
+|---|---|
+| `/team-os-creator` | Mostra quais projetos estão desatualizados em relação ao CT |
+| `/team-os-creator *update` | Traz a versão nova do pack para o seu CT, sem perder agentes, skills ou edições suas (detalhes abaixo) |
+| `/team-os-creator *propagate` | Leva as mudanças do CT para os projetos, só nas squads que cada um já tem; se você editou um arquivo no projeto, ele pergunta antes de trocar |
+| `/team-os-creator *audit` | Confere se os agentes e as skills do CT seguem o padrão (rode depois de criar ou editar) |
+
+O `*propagate` não faz commit nos projetos: as mudanças ficam esperando o commit na sessão de cada projeto.
 
 ### Como atualizar o pack (`*update`)
 
@@ -148,7 +234,7 @@ O `*update` também **não mexe no seu git**: não roda `git pull`, não faz com
 
 ### Onde ficam os meus agentes
 
-Os agentes que você cria com `/team-os-creator *create` (ou `*squad`) nascem como **agentes próprios**: o arquivo em `.claude/agents/` leva `origin: custom` no cabeçalho e o registro fica em `.claude/skills/team-os-creator/presets/custom/custom.yaml`. Você escolhe o nome livremente. Essa pasta e esses agentes são seus: o `*update` nunca os apaga nem os sobrescreve (ele só renova neles o bloco do Native Teams Protocol, que precisa ser igual ao da versão nova). O `*audit` confere os seus agentes com as mesmas regras dos do pack e os conta à parte ("95 do pack + N próprios"). Para levá-los a um projeto, use o `*install`/`*propagate` com a opção `--custom <nomes|all>`.
+Os agentes que você cria com `/team-os-creator *create` (ou `*squad`) nascem como **agentes próprios**: o arquivo em `.claude/agents/` leva `origin: custom` no cabeçalho e o registro fica em `.claude/skills/team-os-creator/presets/custom/custom.yaml`. Você escolhe o nome livremente. Essa pasta e esses agentes são seus: o `*update` nunca os apaga nem os sobrescreve (ele só renova neles o bloco do Native Teams Protocol, que precisa ser igual ao da versão nova). O `*audit` confere os seus agentes com as mesmas regras dos do pack e os conta à parte ("102 do pack + N próprios"). Para levá-los a um projeto, use o `*install`/`*propagate` com a opção `--custom <nomes|all>`.
 
 ---
 
