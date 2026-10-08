@@ -111,7 +111,7 @@ Abra o Claude Code **dentro da pasta do CT** e rode:
 /team-os-creator *install
 ```
 
-Ele pergunta qual é o projeto e quais squads você quer, mostra o que vai copiar e só faz depois do seu OK. O projeto recebe os agentes, as skills que eles usam (incluindo a `team-os`) e os hooks de qualidade. Depois, dentro do projeto, rode `/team-os` para começar uma sessão. Mais detalhes no [tutorial B](#b-instalar-squads-num-projeto-novo).
+Ele pergunta qual é o projeto e quais squads você quer, mostra o que vai copiar e só faz depois do seu OK. O projeto recebe os agentes, as skills que eles usam (incluindo a `team-os`) e os hooks de qualidade, e já sai com o Agent Teams ativado — não há nada para configurar à mão. Depois, dentro do projeto, rode `/team-os` para começar uma sessão. Mais detalhes no [tutorial B](#b-instalar-squads-num-projeto-novo).
 
 ### Como atualizar o pack (`*update`)
 
@@ -171,20 +171,15 @@ Os agentes que você cria com `/team-os-creator *create` (ou `*squad`) nascem co
 
 ## 2. Pré-requisitos e setup
 
-1. **Claude Code** com Agent Teams habilitado. Em `~/.claude/settings.json`:
-   ```json
-   {
-     "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-     "teammateMode": "auto"
-   }
-   ```
-   Reinicie o Claude Code após adicionar. Sem essa variável, nenhum time é criado.
+1. **Agent Teams: você não precisa configurar nada.** A ativação já vem no pack:
+   - o `*install` grava `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` no `.claude/settings.json` do projeto (via `ensure-settings.sh`, sem sobrescrever nada que já exista);
+   - a `/team-os` confere, no início de cada sessão, se o recurso está ativo de verdade e, se faltar, acrescenta a flag também no `~/.claude/settings.json`.
 
-2. **`teammateMode`** (opcional): default `"in-process"` (todos no terminal principal, agent panel ativo). Use `"auto"` para split panes em tmux/iTerm2.
+   **Único cuidado:** a flag só vale para sessões abertas **depois** de ela existir. Se a `/team-os` avisar que o Agent Teams não está ativo, feche a sessão e abra uma nova (só acontece na primeira vez).
 
-3. A skill `/team-os` faz esse check e corrige o `settings.json` automaticamente — basta carregá-la.
+2. **`teammateMode`** (opcional): default `"in-process"` (todos no terminal principal, agent panel ativo). Use `"auto"` para split panes em tmux/iTerm2. A `/team-os` sugere o ajuste.
 
-4. Agent Teams é experimental e exige plano com suporte ao recurso — ver [limitações oficiais](https://code.claude.com/docs/en/agent-teams#limitations).
+3. Agent Teams é experimental e exige plano com suporte ao recurso — ver [limitações oficiais](https://code.claude.com/docs/en/agent-teams#limitations).
 
 ### Requisitos de máquina
 
