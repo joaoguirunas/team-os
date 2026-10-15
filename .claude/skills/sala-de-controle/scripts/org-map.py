@@ -5,10 +5,11 @@ Padrão esperado (o que o team-os entende):
   <raiz>/
   ├── 0 | Centro de Treinamento         ← CT (fonte do pack; só existe na máquina do mantenedor)
   ├── 1 | Sala de Controle              ← UMA pasta isolada com a skill sala-de-controle (sem agentes)
+  ├── <N> | <Nome>                      ← pasta de sistema (prefixo numérico): fica na raiz, sem negócio
   ├── <Negócio>/                        ← contêiner: sem .claude/ nem .git próprios
   │   ├── <Negócio> | <Projeto>         ← projeto: .claude/agents (squad) + docs/smart-memory
   │   └── <Negócio> | Sala de Controle  ← opcional: maestri-os (modo Maestri) daquele negócio
-  └── …
+  └── _arquivo/                         ← ignorada
 
 Nunca move, renomeia nem escreve nada — só aponta e sugere. Quem executa é o usuário (ou o
 team-os-creator, com OK explícito).
@@ -18,7 +19,7 @@ Usage: org-map.py [raiz] [--tree] [--json]
 Saída padrão (TSV): ROOT=…, uma linha NODE=… por pasta, uma linha FINDING=… por problema,
 e SUMMARY=… no fim. --tree imprime a árvore legível + os achados.
 """
-import json, os, sys, unicodedata
+import json, os, re, sys, unicodedata
 
 # macOS: nomes de pasta vêm do disco em NFD ('ã' decomposto) e o cwd das sessões em NFC.
 # Tudo que é comparado ou exibido passa por nfc() — senão sessão e projeto nunca batem.
@@ -30,7 +31,7 @@ TREE = "--tree" in ARGS
 AS_JSON = "--json" in ARGS
 POS = [a for a in ARGS if not a.startswith("--")]
 ROOT = nfc(os.path.abspath(POS[0]) if POS else os.path.dirname(os.getcwd()))
-SKIP = {"node_modules", ".git", ".claude", "docs"}
+SKIP = {"node_modules", ".git", ".claude", "docs", "_arquivo"}
 
 
 def lc(s):
@@ -42,14 +43,15 @@ def is_sala_name(n):
     return any(k in n for k in ("sala de controle", "sala-de-controle", "control room", "control-room"))
 
 
-def is_ct(path):
-    return os.path.isdir(os.path.join(path, ".claude", "skills", "team-os-creator"))
+def is_system(path):
+    return os.path.dirname(path) == ROOT and re.match(r"^\d+ \| ", os.path.basename(path)) is not None
 
 
 def info(path):
     ad = os.path.join(path, ".claude", "agents")
     agents = [f[:-3] for f in os.listdir(ad) if f.endswith(".md")] if os.path.isdir(ad) else []
     sk = os.path.join(path, ".claude", "skills")
+    creator = os.path.isdir(os.path.join(sk, "team-os-creator"))
     return {
         "path": nfc(path),
         "name": nfc(os.path.basename(path)),
@@ -61,7 +63,9 @@ def info(path):
         "smart_memory": os.path.isfile(os.path.join(path, "docs", "smart-memory", "INDEX.md")),
         "is_project": os.path.isdir(os.path.join(path, ".claude")) or os.path.isdir(os.path.join(path, ".git"))
                       or os.path.isdir(os.path.join(path, "docs", "smart-memory")),
-        "is_ct": is_ct(path),
+        "system": is_system(nfc(path)),
+        "has_creator": creator,
+        "is_ct": creator and is_system(nfc(path)),
     }
 
 
@@ -98,7 +102,7 @@ containers = {}
 for top in children(ROOT):
     i = info(top)
     k = kind_of(i)
-    if k == "pasta":
+    if k == "pasta" and not i["system"]:
         subs = [info(s) for s in children(top)]
         if any(s["is_project"] or is_sala_name(s["name"]) for s in subs) or not subs:
             k = "negocio"
@@ -127,7 +131,7 @@ salas = [n for n in nodes if n["sala"] and not n["is_ct"]]
 maestris = [n for n in nodes if n["maestri"] and not n["is_ct"]]
 for n in nodes:
     nm, biz = n["name"], n["business"]
-    if n["kind"] == "projeto" and n["level"] == 0:
+    if n["kind"] == "projeto" and n["level"] == 0 and not n["system"]:
         prefix = nm.split(" | ")[0] if " | " in nm else ""
         if prefix and prefix in containers:
             add_finding("PROJETO_SOLTO", nm, f"projeto na raiz, mas existe o negócio '{prefix}'",
@@ -141,6 +145,9 @@ for n in nodes:
     if n["level"] >= 1 and n["kind"] in ("projeto", "sala") and biz and not nm.startswith(biz + " | "):
         add_finding("NOME_FORA_DO_PADRAO", nm, f"dentro de '{biz}' mas o nome não começa com '{biz} | '",
                     f"renomear para '{biz} | {nm}'")
+    if n["has_creator"] and not n["is_ct"]:
+        add_finding("CREATOR_FORA_DO_CT", nm, "cópia do team-os-creator fora do CT",
+                    "remover .claude/skills/team-os-creator — o creator só existe no CT")
     if n["kind"] == "projeto" and n["agents"] == 0 and not n["is_ct"]:
         add_finding("SEM_SQUAD", nm, "projeto sem nenhum agente instalado",
                     "rodar /team-os-creator *install com a squad da categoria (ou confirmar que não precisa)")
@@ -198,7 +205,7 @@ elif TREE:
         elif n["kind"] == "sala":
             desc = "Sala de Controle · " + ("sala-de-controle" if n["sala"] else "maestri-os" if n["maestri"] else "vazia")
         elif n["kind"] == "projeto":
-            desc = (f"{n['agents']} agentes · {','.join(n['squads']) or 'sem squad'}"
+            desc = (("sistema · " if n["system"] else "") + f"{n['agents']} agentes · {','.join(n['squads']) or 'sem squad'}"
                     + ("" if n["smart_memory"] else " · sem smart-memory"))
         else:
             desc = "pasta"
