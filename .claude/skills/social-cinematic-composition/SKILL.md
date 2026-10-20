@@ -47,7 +47,7 @@ Horizonte numa das linhas horizontais.
 - Product shots (produto em foco)
 - Criar separação entre sujeito e fundo
 
-**No prompt Freepik:**
+**No prompt Magnific (ex-Freepik):**
 ```
 85mm portrait lens, f/1.8 bokeh, shallow depth of field, 
 subject sharp, background beautifully blurred

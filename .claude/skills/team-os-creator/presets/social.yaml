@@ -1,5 +1,5 @@
 name: social
-description: Social media production squad (6 agentes). Cobre estratégia/validação, copy/roteiros + research (Apify MCP), design gráfico (Stitch MCP), fotos AI (Freepik MCP), edição de vídeo (ffmpeg) e publicação/analytics (Meta MCP).
+description: Social media production squad (6 agentes). Cobre estratégia/validação, copy/roteiros + research (Apify MCP), design gráfico (Stitch MCP), fotos AI (Magnific MCP), edição de vídeo (ffmpeg) e publicação/analytics (Meta MCP).
 project_archetypes: [social-media, content-marketing, brand-social]
 agents:
   - name: social-strategist
@@ -27,7 +27,7 @@ agents:
     archetype: ux
     persona: IRIS
     role_title: Photo Creator
-    description: "IRIS, Photo Creator for the Social squad. Generates AI photos via Freepik MCP for covers, carousels, posts, hero images and cinematic backgrounds."
+    description: "IRIS, Photo Creator for the Social squad. Generates AI photos via Magnific MCP (formerly Freepik) for covers, carousels, posts, hero images and cinematic backgrounds."
     color: cyan
     skills: [social-freepik-generation, social-cinematic-composition]
   - name: social-video

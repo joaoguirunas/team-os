@@ -291,7 +291,7 @@ Alguns agentes declaram servidores MCP em `tools:` (fonte da verdade e check do 
 |---|---|---|
 | Social | `social-content` | `mcp__apify` (scraping/research) |
 | Social | `social-design` | `mcp__stitch` (Google Stitch, design generativo) |
-| Social | `social-photo` | `mcp__freepik` (imagens AI) |
+| Social | `social-photo` | `mcp__magnific` (imagens AI — ex-Freepik) |
 | Social | `social-publisher` | `mcp__meta` (publicação Instagram/Facebook + insights) |
 | Social | `social-video` | `mcp__heygen` (avatar/vídeo AI) |
 | Dev / Sites / PM | `dev-data-engineer`, `dev-bi`, `sites-data`, `pm-data` | `mcp__supabase` (via skill `data-supabase-patterns`) |
@@ -450,7 +450,7 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 |---|---|---|---|
 | `social-content` | LYRIS | Research (Apify) + copywriting | `/social-copywriting`, `/social-scriptwriting`, `/social-editorial-validation`, `/social-format-specs`, `/social-apify-research` |
 | `social-design` | AEON | Key visuals, carrosséis (Stitch) | `/social-key-visual`, `/social-carousel-design`, `/social-stitch-workflow` |
-| `social-photo` | IRIS | Fotos AI (Freepik) | `/social-freepik-generation`, `/social-cinematic-composition` |
+| `social-photo` | IRIS | Fotos AI (Magnific) | `/social-freepik-generation`, `/social-cinematic-composition` |
 | `social-publisher` | PULSE | Publicação (Meta) + métricas | `/social-meta-publishing`, `/social-analytics` |
 | `social-strategist` | VERA | Estratégia + validação editorial (gate) | `/social-editorial-validation`, `/social-format-specs` |
 | `social-video` | FLUX | Reels/Stories/Shorts (ffmpeg) + vídeo com avatar AI (HeyGen) | `/social-video-editing`, `/social-heygen-avatar`, `/social-scriptwriting`, `/social-cinematic-composition` |

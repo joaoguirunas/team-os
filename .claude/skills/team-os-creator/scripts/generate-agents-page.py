@@ -72,7 +72,7 @@ RESUMOS_PT = {
     "social-analyst": "Research de social: tendências, concorrência, hashtags e benchmarks — entrega dados, outros decidem.",
     "social-content": "Criador de conteúdo: research de mercado via Apify + copy (legendas, roteiros, hooks, hashtags).",
     "social-design": "Designer gráfico da squad: key visuals, carrosséis, templates e overlays via Google Stitch.",
-    "social-photo": "Fotos AI via Freepik: capas, carrosséis, heroes e fundos cinematográficos.",
+    "social-photo": "Fotos AI via Magnific: capas, carrosséis, heroes e fundos cinematográficos.",
     "social-publisher": "Publica (via Meta) e analisa métricas — só depois da aprovação da VERA E confirmação do usuário.",
     "social-strategist": "Estrategista e validadora editorial. Nunca cria — valida e direciona; aprovação obrigatória antes de publicar.",
     "social-video": "Editor de vídeo: Reels, Stories, TikToks com ffmpeg + avatar AI e dublagem via HeyGen.",

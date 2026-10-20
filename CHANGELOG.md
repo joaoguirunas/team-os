@@ -4,6 +4,10 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+### Alterado
+- **IRIS (`social-photo`) gera imagens pelo MCP do Magnific em vez do Freepik.** O Freepik virou Magnific; o MCP oficial é `https://mcp.magnific.com` (OAuth com a conta Magnific, sem API key). `tools:` passa de `mcp__freepik` para `mcp__magnific`; o fluxo usa `images_models_list`/`images_models_show` (modelo e parâmetros vêm do servidor, não ficam fixos no agente), `images_generate`, `creation_status`/`creations_wait`, `images_upscale`, `images_crop`/`images_resize`, `images_remove_background` e `account_balance` antes de lote grande. `reference/mcp-servers.md` ganha a linha Magnific e mantém o Freepik como legado; preset `social`, `social-freepik-generation` (nome mantido), `social-cinematic-composition`, README e `docs/agentes.html` atualizados.
+- **IRIS confere custo, usa brand kit e faz outpainting no Magnific.** Entram `simulate_cost` (custo exato sem cobrar, antes de toda geração paga) e `images_expand` (outpainting ou mudança de proporção mantendo o conteúdo). A seção Créditos explica que o modo ilimitado do plano não vale pelo MCP e que limite, aprovação e registro de gasto são regra do projeto, lida no DIGEST da área. Nova seção Brand kit, genérica: `brandKitId` + `templateSlug`; o Magnific One não gera em 4:5 (cai para 3:4, recortar com `images_crop`); sem texto no prompt o modelo inventa a copy. O passo 4 do protocolo e as regras absolutas seguem a regra de crédito do projeto.
+
 ## [2.4.0] — 2026-10-14
 
 ### Adicionado
