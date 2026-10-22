@@ -129,7 +129,7 @@ in_list() {  # in_list "item" "a b c"
 # ${CLAUDE_PROJECT_DIR} SEM fallback `:-`. Ignora caminho de hook e o marcador `hook-example`.
 cpd_no_fallback() {
   grep -v 'hook-example' \
-    | sed -E 's#\$\{?CLAUDE_PROJECT_DIR\}?/\.claude/hooks/#<hook>/#g' \
+    | sed -E 's#\\?"?\$\{?CLAUDE_PROJECT_DIR\}?\\?"?/\.claude/hooks/#<hook>/#g' \
     | grep -E '\$(\{CLAUDE_PROJECT_DIR\}|CLAUDE_PROJECT_DIR([^A-Za-z0-9_]|$))'
 }
 
@@ -468,6 +468,9 @@ validate() {
   for hook_ref in $(printf '%s\n' "$FM" | grep -oE '\.claude/hooks/[A-Za-z0-9._-]+\.sh' | sort -u); do
     [ -f "$hook_ref" ] || errors+=("hook referenciado não existe: $hook_ref")
   done
+  # Caminho com espaço ("CT Agentes") parte $CLAUDE_PROJECT_DIR sem aspas: o hook falha e não bloqueia nada.
+  printf '%s\n' "$FM" | grep -qE '\$\{?CLAUDE_PROJECT_DIR\}?/\.claude/hooks/' \
+    && errors+=("hook sem aspas: use '\"\$CLAUDE_PROJECT_DIR\"/.claude/hooks/<script>.sh' (caminho com espaço quebra o hook)")
 
   # ── Bloco NTP byte-idêntico ao canônico ──
   if grep -q "^## Native Teams Protocol" "$file"; then

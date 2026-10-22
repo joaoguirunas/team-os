@@ -1056,6 +1056,8 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 14 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**544 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
 
+> **Caminho do hook sempre com aspas:** todo registro chama `"$CLAUDE_PROJECT_DIR"/.claude/hooks/<script>.sh`. Sem as aspas, um projeto com espaço no nome (`CT Agentes`, `BNI ELLOS`) faz o shell cortar o caminho — o hook falha com "No such file or directory" e **não bloqueia nada**. O `ensure-settings.sh` corrige registros antigos sem aspas no `*install`/`*propagate`, e o `*audit` dá erro em agente com caminho sem aspas.
+
 **Guards de git (`PreToolUse` em `Bash`)** — além de `git push` direto, os dois cobrem flags globais (`git -C`, `--git-dir`, `-c alias.x=push`), wrappers (`env`, `sudo`, `\git`, `/usr/bin/git`), comandos multilinha e encadeados, `git send-pack`, `gh pr create/merge`, `gh release create`, `gh api` de escrita em PRs, e **bloqueiam shell embutido** (`sh -c`, `bash -c`, `eval`, `xargs`, `find -exec`, `python3 -c`/`node -e` com git) e variáveis no lugar do comando — expansão indireta não é permitida para operações git.
 
 - **`block-git-push.sh`** — em **107 agentes: todo agente com Bash exceto os devops, em TODAS as squads** (inclusive as sem devops — lá push é sempre do usuário/lead). Garantia dura: push é autoridade exclusiva do DevOps.

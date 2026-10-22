@@ -10,7 +10,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh"
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-git-push.sh'
 color: orange
 ---
 

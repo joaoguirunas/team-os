@@ -151,10 +151,27 @@ def ensure_hook(event, matcher, script_name, match_on_matcher):
     if not isinstance(entries, list):
         warnings.append(f"~ hooks.{event} existe mas não é lista — deixado intacto (corrija manualmente)")
         return
-    command = f"$CLAUDE_PROJECT_DIR/.claude/hooks/{script_name}"
+    command = f'"$CLAUDE_PROJECT_DIR"/.claude/hooks/{script_name}'
     entries.append({"matcher": matcher, "hooks": [{"type": "command", "command": command}]})
     label = matcher if matcher else "(sem matcher)"
     changes.append(f"+ hooks.{event} [{label}] → {script_name}")
+
+# Caminho com espaço ("CT Agentes", "BNI ELLOS"): a variável do projeto sem aspas é cortada pelo
+# shell e o hook falha sem bloquear nada. Registro antigo sem aspas → reescrito com aspas.
+UNQUOTED = "$CLAUDE_PROJECT_DIR/.claude/hooks/"
+QUOTED = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/'
+if isinstance(hooks, dict):
+    for event, entries in hooks.items():
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            for h in entry.get("hooks", []) or []:
+                cmd = h.get("command") if isinstance(h, dict) else None
+                if isinstance(cmd, str) and cmd.startswith(UNQUOTED):
+                    h["command"] = QUOTED + cmd[len(UNQUOTED):]
+                    changes.append(f"~ hooks.{event} → aspas no caminho de {cmd[len(UNQUOTED):]}")
 
 # PreToolUse: o mesmo script em dois matchers distintos → deduplicar POR matcher.
 ensure_hook("PreToolUse", "Agent|Task|EnterWorktree", "block-worktree.sh", match_on_matcher=True)

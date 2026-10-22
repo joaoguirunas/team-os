@@ -11,7 +11,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-push-branch.sh"
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-push-branch.sh'
 ---
 
 ## Native Teams Protocol

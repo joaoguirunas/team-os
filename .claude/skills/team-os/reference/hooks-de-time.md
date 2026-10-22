@@ -14,7 +14,7 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
   "hooks": {
     "TaskCreated": [{
       "matcher": "",
-      "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-quality.sh" }]
+      "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/task-quality.sh" }]
     }]
   }
 }
@@ -31,11 +31,11 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
     "TaskCompleted": [{
       "matcher": "",
       "hooks": [
-        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-story-progress.sh" },
-        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-social-progress.sh" },
-        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-proposal-progress.sh" },
-        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-finance-progress.sh" },
-        { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-legal-progress.sh" }
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-story-progress.sh" },
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-social-progress.sh" },
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-proposal-progress.sh" },
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-finance-progress.sh" },
+        { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-legal-progress.sh" }
       ]
     }]
   }
@@ -61,9 +61,9 @@ Registro (o `ensure-settings.sh` garante — não edite à mão):
   "hooks": {
     "PreToolUse": [
       { "matcher": "Read|Bash",
-        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-smart-memory-read.sh" }] },
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-smart-memory-read.sh" }] },
       { "matcher": "SendMessage",
-        "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-message-size.sh" }] }
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-message-size.sh" }] }
     ]
   }
 }
@@ -98,7 +98,7 @@ Versão **condicional segura** ("mantém trabalhando" sem loop): `exit 2` **apen
   "hooks": {
     "TeammateIdle": [{
       "matcher": "",
-      "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/idle-nudge.sh" }]
+      "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/idle-nudge.sh" }]
     }]
   }
 }

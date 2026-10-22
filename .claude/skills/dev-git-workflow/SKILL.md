@@ -63,7 +63,7 @@ chore(deps): upgrade Next.js to 15.2.0
 
 **Garantia técnica:** Os agentes `dev-dev-alpha`, `dev-dev-beta`, `dev-dev-gamma` e `dev-dev-delta` têm o hook `block-git-push.sh` configurado via `PreToolUse` no frontmatter. Qualquer tentativa de `git push` nesses agentes é bloqueada automaticamente antes de executar — não é apenas uma regra no prompt, é uma barreira técnica.
 
-O hook está em `.claude/hooks/block-git-push.sh` no projeto e é referenciado diretamente no frontmatter de cada agente implementer via `$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.sh`.
+O hook está em `.claude/hooks/block-git-push.sh` no projeto e é referenciado diretamente no frontmatter de cada agente implementer via `"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-git-push.sh` (com aspas: caminho com espaço quebra o hook).
 
 Se `git push` for necessário em algum desses agentes, o fluxo correto é:
 1. Dev completa o commit local
