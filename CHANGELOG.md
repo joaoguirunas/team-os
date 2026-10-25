@@ -31,6 +31,10 @@ Evolução a partir da análise de ~50 repositórios (guia "15 skills essenciais
 - Dois painéis com papéis claros e link cruzado: `/sala-de-controle *painel` = agentes em produção (8787, ao vivo); `/team-os-creator *painel` = mapa do pack (8788).
 - `*install` recusa `--extra-skills sala-de-controle` (`ERROR=sala_mora_no_ct`); `*propagate` numa pasta de Sala antiga não atualiza e avisa `LEGACY_CONTROL_ROOM`. O Command Center avisa a pasta antiga e sugere a migração.
 - Novo `migrate-sala-to-ct.sh` (+ `test-migrate-sala.sh` no CI): simula por padrão; com `--apply` copia registro, histórico e organização para o CT sem sobrescrever (colisão vira `-da-pasta-antiga`) e manda a pasta antiga para a Lixeira.
+- Painel 8787: seletor **Ativas · Todas** (*Todas* inclui as sessões paradas da barra lateral do app, lidas de `claude-code-sessions/*/*/local_*.json` sem processo e não arquivadas, apagadas e marcadas *parada*, sem duplicar as abertas).
+- Painel 8787: mapa em rede neural com física agrupada por negócio (força suave por setor, rótulos sempre horizontais com colisão que inclui o texto, simulação que assenta e só reaquece de leve quando entra ou sai nó); câmera com zoom/pinça/arrastar, **Recentrar** e **Câmera auto** que enquadra o que ativa e volta à visão geral (pausa de 20 s ao mexer, `prefers-reduced-motion` corta sem animar).
+- Painel 8787: resumo por IA ao passar o mouse (`/api/summary`, `claude -p --model haiku` sob demanda) e passos/estado do agente em português simples (concluído fica verde 5 min, *esperando resposta* até 10 min).
+- Painel 8787: fundo não pisca mais — a barra do topo, o popover e a gaveta só reescrevem o DOM quando o valor muda, e o canvas é opaco.
 
 ### Removido — maestri-os
 - Skill `maestri-os` (Sala de Controle no modo Maestri) e todas as referências: a Sala única é a `sala-de-controle`, no CT. Pasta antiga com `maestri-os` entra na mesma migração (o histórico vai como arquivo). Contagem: 125 → 124 skills.

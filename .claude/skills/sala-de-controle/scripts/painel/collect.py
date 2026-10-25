@@ -5,6 +5,8 @@ Junta, num só JSON, o que já existe no disco:
   • organização (org-map.py)                → negócios e projetos
   • etapa de cada projeto (project-context.py) → resumo, ledger, stories, backlog
   • sessões abertas (scan-sessions.py)       → uma por processo do Claude Code
+  • sessões paradas do app (~/Library/Application Support/Claude/claude-code-sessions/*/*/local_*.json)
+                                             → as da barra lateral sem processo, não arquivadas (só em "Todas")
   • times de cada sessão (~/.claude/teams/*/config.json) → membros, tipo, modelo
   • transcritos dos agentes (~/.claude/projects/<slug>/<sessionId>/subagents/) → o que cada um faz agora
   • caixas de entrada (~/.claude/teams/*/inboxes/*.json) → mensagens agente ↔ agente
@@ -26,10 +28,14 @@ import tokens  # noqa: E402  contador de tokens (thread de fundo, leitura increm
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 HOME = os.path.expanduser("~")
-AGENT_TTL = 5 * 60       # agente sem atividade há mais de 5 min sai do painel
-AGENT_FADE = 60          # a partir de 1 min parado começa a desbotar (a página usa)
+DONE_TTL = 5 * 60        # agente que concluiu fica no mapa (verde, com a entrega) por 5 min e depois sai
+WAIT_TTL = 10 * 60       # mandou mensagem e parou: "esperando resposta" por até 10 min
+THINK_TTL = 3 * 60       # resultado devolvido e o modelo pensando: conta como trabalhando por até 3 min
+RECENT = 3 * 3600        # sessão com atividade nas últimas 3 h conta como "ativa" no filtro do painel
+SUMMARY_CWD = os.path.join(HOME, ".claude", "sala-de-controle-resumo")  # pasta das chamadas de resumo (fora do mapa)
 TEAMS_DIR = os.path.join(HOME, ".claude", "teams")
 PROJ_DIR = os.path.join(HOME, ".claude", "projects")
+DESKTOP_DIR = os.path.join(HOME, "Library", "Application Support", "Claude", "claude-code-sessions")
 
 
 def nfc(s):
@@ -88,6 +94,78 @@ def tool_summary(name, inp):
     return name, clean(json.dumps(inp, ensure_ascii=False), 80)
 
 
+# blocos que o harness injeta na fala do usuário: não são pedido de ninguém
+NOISE_RE = re.compile(r"<(system-reminder|task-notification|local-command-stdout|local-command-caveat|command-message|"
+                      r"tool-use-id|output-file|status|summary)>.*?</\1>", re.S)
+TEST_RE = re.compile(r"\b(pytest|jest|vitest|playwright|npm (run )?test|pnpm test|yarn test|test-[\w-]+\.sh|go test|cargo test)\b")
+
+
+def human_action(name, inp):
+    """A ação de uma ferramenta em português simples ("Editando index.html")."""
+    inp = inp or {}
+    base = lambda p: os.path.basename(p or "") or (p or "")
+    if name == "Read":
+        return "Lendo " + base(inp.get("file_path"))
+    if name == "Write":
+        return "Escrevendo " + base(inp.get("file_path"))
+    if name in ("Edit", "MultiEdit", "NotebookEdit"):
+        return "Editando " + base(inp.get("file_path") or inp.get("notebook_path"))
+    if name == "Bash":
+        cmd = re.sub(r'^\s*cd\s+("[^"]*"|\'[^\']*\'|\S+)\s*(&&|;)\s*', "", inp.get("command", "") or "").split("\n")[0]
+        if inp.get("description"):
+            return clean(inp["description"], 70)
+        if TEST_RE.search(cmd):
+            return "Rodando os testes"
+        if re.match(r"\s*git\b", cmd):
+            return "Mexendo no git: " + clean(cmd[4:], 40)
+        if re.search(r"\b(build|tsc|next build|vite build)\b", cmd):
+            return "Rodando o build"
+        if re.search(r"\b(npm|pnpm|yarn) (i|install|add)\b", cmd):
+            return "Instalando dependências"
+        m = re.search(r"([\w.-]+\.(py|sh|js|ts|mjs|sql))\b", cmd)
+        if m:
+            return "Rodando " + m.group(1)
+        # tira `VAR=valor`, `cd …` e `export …` do começo e fica com o programa
+        rest = cmd
+        for _ in range(6):
+            rest2 = re.sub(r'^\s*(export\s+)?\w+=("[^"]*"|\'[^\']*\'|\S*)\s*(;|&&)?\s*', "", rest)
+            rest2 = re.sub(r'^\s*cd\s+("[^"]*"|\'[^\']*\'|\S+)\s*(;|&&)\s*', "", rest2)
+            if rest2 == rest:
+                break
+            rest = rest2
+        prog = os.path.basename((rest.split() or ["comando"])[0].strip("\"'"))
+        if prog == "cd":
+            return "Mudando de pasta"
+        return "Rodando " + (prog if re.fullmatch(r"[\w.+-]{1,30}", prog) else "comando no terminal")
+    if name in ("Grep", "Glob"):
+        return "Procurando “" + clean(inp.get("pattern", ""), 40) + "”"
+    if name == "WebSearch":
+        return "Pesquisando na web: " + clean(inp.get("query", ""), 60)
+    if name == "WebFetch":
+        return "Lendo a página " + (urlparse_host(inp.get("url", "")) or "web")
+    if name == "SendMessage":
+        return "Mandando mensagem para " + str(inp.get("to", "?"))
+    if name in ("Agent", "Task"):
+        return "Chamando o agente " + str(inp.get("subagent_type") or inp.get("description") or "")
+    if name.startswith("Task"):
+        return "Atualizando as tarefas"
+    if name == "SubagentHandback":
+        return "Entregou o trabalho"
+    if name == "Skill":
+        return "Usando a skill " + str(inp.get("skill", ""))
+    if name == "TodoWrite":
+        return "Organizando a lista de tarefas"
+    if name.startswith("mcp__"):
+        parts = name.split("__")
+        return "Usando " + (parts[1] if len(parts) > 1 else name) + (" · " + parts[2].replace("_", " ") if len(parts) > 2 else "")
+    return "Usando " + name
+
+
+def urlparse_host(u):
+    m = re.match(r"https?://([^/]+)", u or "")
+    return m.group(1) if m else ""
+
+
 def tail_lines(path, max_bytes=200_000):
     """Últimas linhas de um jsonl sem ler o arquivo inteiro."""
     try:
@@ -105,8 +183,11 @@ def tail_lines(path, max_bytes=200_000):
 def read_transcript_state(path, n_turns=6):
     """Resume um transcript: última ação, últimas falas, último timestamp, pendência de tool."""
     turns = deque(maxlen=n_turns)
+    steps = deque(maxlen=5)
     last_tool = None
     last_ts = ""
+    last_ask = ""
+    handback = ""
     pending_tool = False
     last_role = ""
     for line in tail_lines(path):
@@ -127,6 +208,11 @@ def read_transcript_state(path, n_turns=6):
                 for c in content:
                     if isinstance(c, dict) and c.get("type") == "tool_use":
                         last_tool = tool_summary(c.get("name", ""), c.get("input"))
+                        act = human_action(c.get("name", ""), c.get("input"))
+                        if c.get("name") == "SubagentHandback":
+                            handback = clean(re.sub(r"^\s*(\[handoff\]\s*|STATUS:\s*)*(conclu[ií]do\.?)?\s*", "", str((c.get("input") or {}).get("message", ""))), 200)
+                        if not steps or steps[-1]["text"] != act:
+                            steps.append({"text": act, "ts": ts})
                         tool_here = True
             txt = clean(text_of(content))
             if txt:
@@ -138,12 +224,37 @@ def read_transcript_state(path, n_turns=6):
             if is_result:
                 pending_tool = False
             else:
-                txt = clean(text_of(content))
+                raw = NOISE_RE.sub(" ", text_of(content))
+                txt = clean(raw)
                 if txt:
                     turns.append({"who": "usuário", "text": txt, "ts": ts})
+                    if not d.get("isMeta") and not txt.startswith(("Caveat:", "[Request interrupted")):
+                        last_ask = clean(raw, 180)
             last_role = "user"
+    doing = steps[-1]["text"] if (steps and pending_tool) else ""
+    if not doing and turns and turns[-1]["who"] == "agente":
+        doing = "Respondeu: " + clean(turns[-1]["text"], 110)
     return {"last_tool": last_tool, "turns": list(turns), "last_ts": last_ts,
-            "last_epoch": iso_to_epoch(last_ts), "pending_tool": pending_tool, "last_role": last_role}
+            "last_epoch": iso_to_epoch(last_ts), "pending_tool": pending_tool, "last_role": last_role,
+            "steps": list(steps), "last_ask": last_ask, "handback": handback, "doing": doing or (steps[-1]["text"] if steps else "")}
+
+
+def first_prompt(path):
+    """O pedido que abriu o transcript de um agente (a missão dele)."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for _ in range(15):
+                line = fh.readline()
+                if not line:
+                    break
+                d = json.loads(line)
+                if d.get("type") == "user":
+                    t = clean(text_of((d.get("message") or {}).get("content")), 180)
+                    if t:
+                        return t
+    except Exception:
+        pass
+    return ""
 
 
 # ---------- camada cara (cache) ----------
@@ -172,6 +283,33 @@ def scan(ttl=3):
         v = run_json([os.path.join(SCRIPTS, "scan-sessions.py"), "--json"]) or {"sessions": []}
         _cache["scan"] = (time.time(), v)
     return v
+
+
+def desktop_sessions(live_ids, live_names):
+    """Sessões da barra lateral do app (local_<uuid>.json) que não têm processo vivo e não estão arquivadas.
+    Viram linhas no formato do scan-sessions.py com STATUS=parada. Pula a que já aparece pelo processo
+    (mesmo cliSessionId, um id anterior dela, ou mesmo título + pasta)."""
+    rows = []
+    for f in glob.glob(os.path.join(DESKTOP_DIR, "*", "*", "local_*.json")):
+        try:
+            d = json.load(open(f, encoding="utf-8"))
+        except Exception:
+            continue
+        if d.get("isArchived"):
+            continue
+        cli = d.get("cliSessionId") or ""
+        ids = {cli, *(d.get("priorCliSessionIds") or [])} - {""}
+        cwd = nfc(d.get("cwd") or "")
+        title = nfc(d.get("title") or "")
+        if ids & live_ids or (title, cwd) in live_names:
+            continue
+        last = (d.get("lastActivityAt") or d.get("createdAt") or 0) / 1000
+        rows.append({"NAME": title or os.path.basename(cwd), "SESSION_ID": cli or d.get("sessionId", ""),
+                     "SHORT_ID": (d.get("sessionId") or "")[6:14], "CWD": cwd,
+                     "FOLDER": os.path.basename(cwd.rstrip("/")), "KIND": "desktop", "STATUS": "parada",
+                     "STATE": "", "UPDATED": time.strftime("%Y-%m-%d %H:%M", time.localtime(last)) if last else "",
+                     "IS_SELF": "0", "TRANSCRIPT": "", "STOPPED": "1", "LAST_EPOCH": last})
+    return rows
 
 
 # ---------- camada barata ----------
@@ -247,18 +385,30 @@ def agents_of(session_dir, members):
             # um agente pode ter vários transcritos (re-spawn): fica o mais recente
             if st["last_epoch"] >= a.get("last_epoch", 0):
                 a.update({"tool": st["last_tool"], "turns": st["turns"], "last_epoch": st["last_epoch"],
-                          "pending_tool": st["pending_tool"], "last_role": st["last_role"]})
+                          "pending_tool": st["pending_tool"], "last_role": st["last_role"],
+                          "steps": st["steps"], "doing": st["doing"], "src": jsonl, "handback": st["handback"],
+                          "goal": a["description"] or first_prompt(jsonl)})
         agents[name] = a
     now = time.time()
     for a in agents.values():
         age = now - a.get("last_epoch", 0) if a.get("last_epoch") else 1e9
         last_text = (a["turns"][-1]["text"] if a["turns"] else "")
-        if a.get("pending_tool") or age < 20:
+        # ferramenta rodando, ou resultado devolvido e o modelo pensando no próximo passo = trabalhando
+        # (sem isso o agente piscava entre "concluiu" e "voltou a trabalhar" a cada pausa para pensar)
+        delivered = bool(a.get("tool") and a["tool"][0] == "SubagentHandback" and not a.get("pending_tool"))
+        if delivered:
+            a["state"] = "done" if age < DONE_TTL else "idle"   # entregou: concluiu na hora
+            a["doing"] = "Concluiu: " + (a.get("handback") or "entregou o trabalho")
+        elif a.get("pending_tool") or age < 20 or (a.get("last_role") == "user" and age < THINK_TTL):
             a["state"] = "active"
         elif age < 180 and a.get("last_role") == "assistant" and re.search(r"\?\s*$|DECIS[ÃA]O|aprova|autoriza|confirm", last_text, re.I):
             a["state"] = "approval"
-        elif age < 600:
+        elif age < WAIT_TTL and a.get("tool") and a["tool"][0] == "SendMessage":
             a["state"] = "waiting"
+            a["doing"] = "Esperando resposta de " + (a["tool"][1] or "").replace("→", "").split("·")[0].strip()
+        elif age < DONE_TTL:
+            a["state"] = "done"
+            a["doing"] = "Concluiu: " + (a.get("handback") or clean(last_text, 160)) if (a.get("handback") or last_text) else "Concluiu a tarefa"
         else:
             a["state"] = "idle"
         if a.get("tool"):
@@ -266,8 +416,8 @@ def agents_of(session_dir, members):
         elif last_text:
             a["now"] = last_text
         a["age"] = int(age) if age < 1e9 else None
-    # só quem está operando agora (ou esperando o usuário); parado/finalizado não entra no mapa
-    fresh = [a for a in agents.values() if a["state"] in ("active", "approval")]
+    # quem está operando, esperando o usuário, esperando resposta ou concluiu na última hora
+    fresh = [a for a in agents.values() if a["state"] != "idle"]
     return sorted(fresh, key=lambda x: x["name"])
 
 
@@ -289,6 +439,8 @@ def collect(root):
     nodes = [n for n in o.get("nodes", []) if n.get("is_project")]
     sc = scan()
     sessions = sc.get("sessions", [])
+    sessions = sessions + desktop_sessions({s.get("SESSION_ID", "") for s in sessions} - {""},
+                                           {(nfc(s.get("NAME", "")), nfc(s.get("CWD", ""))) for s in sessions})
     self_name = sc.get("self", "")
     teams = teams_by_lead()
     now = time.time()
@@ -337,17 +489,24 @@ def collect(root):
         team_name, cfg = teams.get(sid, (None, None))
         members = (cfg or {}).get("members", [])
         agents = agents_of(sdir, members) if sdir else []
+        if SUMMARY_CWD and nfc(cwd).startswith(SUMMARY_CWD):
+            continue  # chamada do resumo por IA (serve.py) — não é sessão de trabalho
+        stopped = s.get("STOPPED") == "1"
         main = read_transcript_state(tr, 5) if tr and os.path.isfile(tr) else {"turns": [], "last_tool": None, "last_epoch": 0}
+        if stopped and not main.get("last_epoch"):
+            main["last_epoch"] = s.get("LAST_EPOCH") or 0
         # a Sala mora no CT: reconhece pelo nome da sessão ("Sala de Controle" ou
         # "0 | Centro de Treinamento | Sala de Controle"); pastas de Sala antigas também contam
-        is_sala = s.get("IS_SELF") == "1" or "sala de controle" in (s.get("NAME", "") + " " + cwd).lower()
+        is_sala = not stopped and (s.get("IS_SELF") == "1" or "sala de controle" in (s.get("NAME", "") + " " + cwd).lower())
         status = s.get("STATUS") or s.get("STATE") or ""
         sess = {"id": sid, "short": s.get("SHORT_ID") or sid[:8], "name": nfc(s.get("NAME", "")), "cwd": cwd,
                 "folder": nfc(s.get("FOLDER", "")), "kind": s.get("KIND"), "status": status,
                 "state": s.get("STATE", ""), "updated": s.get("UPDATED", ""), "is_self": s.get("IS_SELF") == "1",
-                "is_sala": is_sala, "team": team_name, "agents": agents,
+                "is_sala": is_sala, "stopped": stopped, "team": team_name, "agents": agents,
                 "turns": main.get("turns", []), "tool": main.get("last_tool"), "last_epoch": main.get("last_epoch", 0),
-                "tokens": tokens.summary(tr) if tr and os.path.isfile(tr) else None,
+                "tokens": tokens.summary(tr) if tr and os.path.isfile(tr) and not stopped else None,
+                "doing": main.get("doing", ""), "goal": main.get("last_ask", ""), "steps": main.get("steps", []),
+                "age": int(now - main["last_epoch"]) if main.get("last_epoch") else None, "src": tr,
                 "project": cwd if cwd in projects else ""}
         # projeto pai por prefixo (sessão aberta numa subpasta)
         if not sess["project"]:
@@ -371,14 +530,19 @@ def collect(root):
                                "kind": m["kind"], "title": m["subject"] or m["text"][:90], "project": sess["project"] or cwd})
                 if now - m["epoch"] < 90:
                     edges.append({"session": sid, "from": m["from"], "to": m["to"], "epoch": m["epoch"], "kind": m["kind"]})
+        # parada (sem processo) só entra em "Todas": "Ativas" segue igual
+        sess["recent"] = not stopped and bool(status == "busy" or sess["state"] == "blocked" or agents
+                              or (sess["age"] is not None and sess["age"] < RECENT) or is_sala)
         if sess["project"]:
             projects[sess["project"]]["sessions"].append(sid)
         out_sessions.append(sess)
 
     events.sort(key=lambda e: e["epoch"], reverse=True)
     counts = {"sessions": len([s for s in out_sessions if not s["is_self"]]),
+              "recent": len([s for s in out_sessions if s["recent"] and not s["is_self"] and not s["is_sala"]]),
               "agents": sum(len(s["agents"]) for s in out_sessions),
               "active": sum(1 for s in out_sessions for a in s["agents"] if a["state"] == "active"),
+              "done": sum(1 for s in out_sessions for a in s["agents"] if a["state"] == "done"),
               "approval": sum(1 for s in out_sessions for a in s["agents"] if a["state"] == "approval")
               + sum(1 for s in out_sessions if s.get("state") == "blocked"),
               "tokens": sum((s.get("tokens") or {}).get("total", 0) for s in out_sessions),
