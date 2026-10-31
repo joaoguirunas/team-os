@@ -88,6 +88,8 @@ Conceitos e métodos reescritos em pt-BR no padrão do pack (texto próprio, sem
 
 | Onde no pack | Fonte | Licença | Observação |
 |---|---|---|---|
+| `team-os` — modo `*tdah` (`reference/modo-tdah.md`, hook `team-os-tdah.sh`) | [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) — `i-have-adhd` | MIT | regras de saída para leitor com TDAH (ação primeiro, estado a cada turno, tempo concreto, teto de 5 itens, checagem antes de enviar) e hook SessionStart com arquivo de opt-in; texto reescrito em pt-BR |
+| `team-os` — modo `*tdah` (seção "Nunca encurtar a ponto de errar") | [juliusbrussee/caveman](https://github.com/juliusbrussee/caveman) — `caveman` | Apache-2.0 | nunca cortar negação; pergunta em frase completa; artefatos persistidos ficam completos; ideia reescrita em pt-BR, sem texto copiado |
 | `team-os` — modo `*grill` (Fase 3) | [mattpocock/skills](https://github.com/mattpocock/skills) — `grilling`/`grill-me` | MIT | rodadas de perguntas com resposta recomendada |
 | `seo-google/references/rankings-push.md`; `seo-sxo` (Diagnóstico contra o top 3) | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) — `seo-audit/references/rankings-push.md` | MIT — `Copyright (c) 2025 Corey Haines` | commit e85f3cb |
 | `seo-geo` (Medir visibilidade real) | coreyhaines31/marketingskills — `ai-seo` | MIT — `Copyright (c) 2025 Corey Haines` | commit 001fd4e |

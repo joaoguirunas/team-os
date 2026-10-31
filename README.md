@@ -16,7 +16,7 @@ Três skills fazem o pack funcionar. Uma vai para todo projeto; duas ficam só n
 
 | Peça | Onde mora | O que faz |
 |---|---|---|
-| **`/team-os`** | Em **todo projeto** (o `*install` leva) | Bootstrap e orquestração da sessão. É o 1º comando de cada sessão: liga o Agent Teams, roda o **Discovery Engine** (lê o código e monta a smart-memory na 1ª vez), pergunta o objetivo, propõe o time do tamanho do trabalho e cria as tasks. Tem `*grill` (sabatina para objetivo vago), `*compact` (enxuga a memória) e sugere automações sem aplicar nada sem OK. → [§3](#3-skill-principal-team-os) |
+| **`/team-os`** | Em **todo projeto** (o `*install` leva) | Bootstrap e orquestração da sessão. É o 1º comando de cada sessão: liga o Agent Teams, roda o **Discovery Engine** (lê o código e monta a smart-memory na 1ª vez), pergunta o objetivo, propõe o time do tamanho do trabalho e cria as tasks. Tem `*grill` (sabatina para objetivo vago), `*compact` (enxuga a memória), `*tdah` (respostas curtas, ação primeiro, sem jargão) e sugere automações sem aplicar nada sem OK. → [§3](#3-skill-principal-team-os) |
 | **`/team-os-creator`** | **Só no CT** | A factory do pack. O **Command Center** mostra cada projeto da pasta pai (team-os instalada? agentes? desatualizado?) e oferece criar, atualizar, instalar e organizar. Comandos: `*create`/`*squad`, `*audit`, `*install`, `*propagate`, `*update`, `*painel` (mapa do pack em `127.0.0.1:8788`), `*migrate-social`, `*migrate-sala` e `*feedback`. → [§4](#4-skill-principal-team-os-creator) |
 | **`/sala-de-controle`** | **Só no CT** | O lugar único de comando. Enxerga **todas as sessões do Claude Code da máquina**, sabe a etapa de cada projeto pela smart-memory dele, despacha cada pedido para a sessão certa e abre o **painel dos agentes em produção** (`127.0.0.1:8787`). Lê e roteia, **nunca executa em outro projeto**; a memória dela fica no CT, fora do git. → [§6](#sala-de-controle--sala-de-controle-mora-no-ct) |
 
@@ -52,7 +52,7 @@ Em volta dessas três peças, quatro mecanismos valem para todos os agentes:
 
 - **Native Teams Protocol** — o contrato que todo agente carrega, byte a byte igual: a smart-memory é a fonte da verdade, o trabalho passa pela TaskList nativa, os agentes conversam direto entre si (peer-to-peer) e ninguém cria sub-time. → [§1](#1-conceitos-fundamentais) · [§8](#8-modelo-de-coordenação)
 - **Smart-memory** — `docs/smart-memory/` em cada projeto, no formato do Obsidian (frontmatter, wikilinks, tags). Leitura em camadas: cada agente lê o índice, o `DIGEST.md` da sua área e as stories ativas, nunca pastas inteiras; o frio vai para `_archive/` com `*compact`. → [§11](#11-estrutura-do-repositório)
-- **Hooks de qualidade e de economia de tokens** — 14 hooks: push só pelo devops, task vaga recusada, publicação/envio/pagamento só com PASS e confirmação do usuário, leitura de memória com orçamento, mensagem entre agentes curta e aviso de contexto grande. → [§10](#10-hooks-de-qualidade)
+- **Hooks de qualidade e de economia de tokens** — 15 hooks: push só pelo devops, task vaga recusada, publicação/envio/pagamento só com PASS e confirmação do usuário, leitura de memória com orçamento, mensagem entre agentes curta, aviso de contexto grande e o modo TDAH (respostas curtas). → [§10](#10-hooks-de-qualidade)
 - **Política de modelos Híbrida** — `opus` fixo onde o raciocínio decide (28 agentes: arquitetos, planejadores, QAs e estrategistas); `inherit` no resto (83), que segue o `/model` da sua sessão. → [§9](#9-política-de-modelos-híbrido)
 
 ---
@@ -419,7 +419,11 @@ Credenciais (token, key, project-ref) nunca vão no agente nem na smart-memory �
 /team-os *spawn {desc}  → proposta de time para {desc} (pula o scan)
 /team-os *grill {obj}   → modo sabatina: perguntas em rodadas, cada uma com resposta recomendada (objetivo vago ou grande)
 /team-os *status        → dashboard do time atual
+/team-os *tdah          → modo TDAH: respostas curtas, ação primeiro, sem jargão — vale em todos os seus projetos até *tdah off
 ```
+
+### Modo TDAH (`*tdah`)
+Para quem tem TDAH ou só quer ler menos. Ligado, toda resposta ao usuário: começa pela ação ou decisão, mostra no máximo 5 itens, até 3 passos com tempo e quem faz, diz em que passo estamos, sem jargão técnico e sem "Ótima pergunta"/"Qualquer coisa me avise". Decisão vem como ★ 1 recomendação + até 2 alternativas. Sai do formato só para explicar quando você pede, antes de ação sem volta e quando o mesmo erro se repete. Arquivos, smart-memory e mensagens entre agentes continuam completos. Fica ligado entre sessões e em todos os projetos (hook global `team-os-tdah.sh`); `*tdah off` desliga. Regras em `team-os/reference/modo-tdah.md`, adaptadas de i-have-adhd e caveman (créditos em `THIRD_PARTY_NOTICES.md`).
 
 ### Boas práticas que ela aplica
 - **Spawn prompts cirúrgicos** (papel + paths de ownership + contexto + entregável + como reportar).
@@ -1055,7 +1059,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 ## 10. Hooks de qualidade
 
-14 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**544 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
+15 hooks em `.claude/hooks/`, referenciados no frontmatter dos agentes ou registrados no `settings.json` (pelo `ensure-settings.sh`/`*install`). Todos são bash 3.2-safe, testados com payloads reais do Claude Code por `scripts/test-hooks.sh` (**564 casos**, roda no CI) e com fallback em grep quando o `python3` falta.
 
 **Guards de git (`PreToolUse` em `Bash`)** — além de `git push` direto, os dois cobrem flags globais (`git -C`, `--git-dir`, `-c alias.x=push`), wrappers (`env`, `sudo`, `\git`, `/usr/bin/git`), comandos multilinha e encadeados, `git send-pack`, `gh pr create/merge`, `gh release create`, `gh api` de escrita em PRs, e **bloqueiam shell embutido** (`sh -c`, `bash -c`, `eval`, `xargs`, `find -exec`, `python3 -c`/`node -e` com git) e variáveis no lugar do comando — expansão indireta não é permitida para operações git.
 
@@ -1081,6 +1085,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 **Sessão**
 
 - **`team-os-session-title.sh`** — `SessionStart`: nomeia a sessão por "projeto · branch", preservando o padrão `<PASTA> | <Título>`. Instalado globalmente em `~/.claude/hooks/` e registrado no `~/.claude/settings.json` pelo `*install`.
+- **`team-os-tdah.sh`** — `SessionStart`: com o modo TDAH ligado (`~/.claude/.team-os-tdah`, criado por `/team-os *tdah`), injeta as regras de `team-os/reference/modo-tdah.md` em toda sessão, inclusive depois de compactar. Instalado e registrado no settings global pelo `tdah.sh on` (só quem liga); o `*install` atualiza a cópia de quem já usa. Desligado = não faz nada. `TEAM_OS_TDAH=0` desliga na hora.
 
 **Opcional (só com OK do usuário)**
 
@@ -1095,7 +1100,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 ```
 .claude/
 ├── agents/              ← 111 definições de agentes (fonte da verdade)
-├── hooks/               ← 14 hooks de qualidade (ver §10)
+├── hooks/               ← 15 hooks de qualidade (ver §10)
 │   ├── block-git-push.sh          ← PreToolUse: bloqueia push em todo agente com Bash exceto devops
 │   ├── block-worktree.sh          ← PreToolUse (settings.json): bloqueia isolation: worktree, EnterWorktree, git worktree add e criação de branch
 │   ├── guard-push-branch.sh       ← PreToolUse (devops): push só na main/master; fora dela bloqueio sempre aplicado
@@ -1109,7 +1114,8 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 │   ├── guard-message-size.sh      ← PreToolUse (settings.json): mensagem entre agentes ≤20 linhas ([handoff] até 60)
 │   ├── context-watch.sh           ← UserPromptSubmit (settings.json): avisa contexto >200k/400k, nunca bloqueia
 │   ├── guard-env-files.sh         ← PreToolUse OPCIONAL (--with-env-guard): bloqueia .env/.env.* (exceto example/sample/template) e lockfiles
-│   └── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado em ~/.claude/hooks/ pelo *install)
+│   ├── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado em ~/.claude/hooks/ pelo *install)
+│   └── team-os-tdah.sh            ← SessionStart: modo TDAH — injeta as regras de respostas curtas quando ligado (/team-os *tdah)
 └── skills/              ← 124 skills (diretórios reais)
     ├── sala-de-controle/        ← Sala de Controle (exclusiva do CT, nunca vai para projeto): SKILL.md + scripts/{refresh,scan-sessions,session-tail,project-context,org-map}.py + scripts/painel/{collect.py,serve.py,index.html} (painel ao vivo, 8787) + templates/{panorama,registry,dispatches,organizacao}.md
     ├── doc-to-markdown/         ← SKILL.md + scripts/convert.sh (PDF/DOCX/XLSX/PPTX/ODT/RTF/HTML → Markdown na própria máquina)
@@ -1181,7 +1187,7 @@ O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados ao
 1. Editar agente/skill AQUI — agentes via /team-os-creator (*create, *squad, *migrate)
 2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 111/111 agentes do pack conformes (= *audit)
 3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 124 skills
-4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 544/544 casos dos hooks
+4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 564/564 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
 6. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
 ```

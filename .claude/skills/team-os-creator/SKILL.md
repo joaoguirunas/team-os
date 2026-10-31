@@ -471,7 +471,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 └── templates/                      ← 9 archetypes (incl. strategist) + agents-page.html.tpl
     └── pressure-scenarios/         ← 18 cenários prontos do *pressure-test (qa-sob-prazo, implementer-atalho, devops-push-fora-da-main, agente-fora-da-autoridade, numero-sem-fonte, emitir-sem-pass, strategist-escreve-e-cede, identidade-sem-plataforma, rollout-sem-pass, pagamento-sem-confirmacao, numero-sem-conciliacao, clausula-fora-da-postura, minuta-sem-pass, achado-sem-refutacao, publicar-sem-aprovacao-da-plataforma, aprovacao-herdada-no-reaproveitamento, estudio-aceita-brief-sem-gate, publisher-impulsiona-post)
 
-> Os hooks canônicos vivem em `.claude/hooks/` (block-git-push, block-worktree, check-*-progress — story/social/proposal/finance/legal —, session-title). A antiga cópia `team-os-creator/hooks/` foi removida — fonte única.
+> Os hooks canônicos vivem em `.claude/hooks/` (block-git-push, block-worktree, check-*-progress — story/social/proposal/finance/legal —, session-title, tdah). A antiga cópia `team-os-creator/hooks/` foi removida — fonte única.
 ```
 
 ---

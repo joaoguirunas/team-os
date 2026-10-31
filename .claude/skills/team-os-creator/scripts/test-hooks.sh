@@ -576,6 +576,56 @@ expect_out_empty $H "$(session_payload resume "$REPO" "Meu título escolhido")" 
 expect_out_empty $H "$(session_payload clear "$REPO" "")" "clear → ignora (sem saída)"
 expect 0 $H "$(session_payload startup "$REPO" "")" "exit 0 em startup"
 
+# ── 10a. team-os-tdah.sh (SessionStart — modo TDAH, opt-in global) ────────────
+section "team-os-tdah.sh"
+H=team-os-tdah.sh
+OLD_CFG="${CLAUDE_CONFIG_DIR:-}"; export CLAUDE_CONFIG_DIR="$TMP/cfg-tdah"; mkdir -p "$CLAUDE_CONFIG_DIR"
+mkdir -p "$REPO/.claude/skills/team-os/reference"
+printf -- '---\nname: modo-tdah\n---\n\n# Modo TDAH\nREGRA-DO-PROJETO\n' > "$REPO/.claude/skills/team-os/reference/modo-tdah.md"
+OLD_CPD="$CPD"; CPD="$NOT_A_REPO"; mkdir -p "$NOT_A_REPO"
+expect_out_empty $H "$(session_payload startup "$REPO" "")" "modo desligado (sem arquivo) → silêncio"
+: > "$CLAUDE_CONFIG_DIR/.team-os-tdah"
+expect_out_contains $H "$(session_payload startup "$REPO" "")" "MODO TDAH LIGADO" "ligado → injeta o cabeçalho"
+expect_out_contains $H "$(session_payload startup "$REPO" "")" "REGRA-DO-PROJETO" "ligado → injeta as regras do projeto"
+expect_out_contains $H "$(session_payload compact "$REPO" "")" "REGRA-DO-PROJETO" "compact → reinjeta as regras"
+expect_out_empty $H "$(session_payload startup "$NOT_A_REPO" "")" "ligado, projeto sem regras e sem cópia global → silêncio"
+TEAM_OS_TDAH=0 expect_out_empty $H "$(session_payload startup "$REPO" "")" "TEAM_OS_TDAH=0 → desligado"
+expect 0 $H 'isto nao e json' "JSON inválido → exit 0"
+TOTAL=$((TOTAL + 1))
+if printf '%s' "$(session_payload startup "$REPO" "")" | bash "$HOOKS/$H" 2>/dev/null | grep -q '^name: modo-tdah'; then
+  FAILED=$((FAILED + 1)); echo "FAIL [$H] frontmatter vazou para o contexto"
+else PASSED=$((PASSED + 1)); echo "PASS [$H] frontmatter removido"; fi
+rm -f "$CLAUDE_CONFIG_DIR/.team-os-tdah"
+CPD="$OLD_CPD"
+
+# tdah.sh (liga/desliga) — HOME de mentira via CLAUDE_CONFIG_DIR
+TDAH_SH="$CT_ROOT/.claude/skills/team-os/scripts/tdah.sh"
+tcheck() {  # <condição shell> <rótulo>
+  TOTAL=$((TOTAL + 1))
+  if eval "$1"; then PASSED=$((PASSED + 1)); echo "PASS [tdah.sh] $2"
+  else FAILED=$((FAILED + 1)); echo "FAIL [tdah.sh] $2"; fi
+}
+if [ -f "$TDAH_SH" ]; then
+  printf '{"hooks":{"SessionStart":[{"matcher":"","hooks":[{"type":"command","command":"bash x/team-os-session-title.sh"}]}]},"theme":"dark"}\n' > "$CLAUDE_CONFIG_DIR/settings.json"
+  OUT=$(bash "$TDAH_SH" on)
+  tcheck '[ -f "$CLAUDE_CONFIG_DIR/.team-os-tdah" ]' "on → cria o arquivo do modo"
+  tcheck 'case "$OUT" in *TDAH_REGISTERED=1*) true;; *) false;; esac' "on → registra o SessionStart"
+  tcheck '[ -x "$CLAUDE_CONFIG_DIR/hooks/team-os-tdah.sh" ] && [ -f "$CLAUDE_CONFIG_DIR/hooks/team-os-tdah.md" ]' "on → instala hook + cópia das regras"
+  tcheck 'grep -q team-os-session-title "$CLAUDE_CONFIG_DIR/settings.json" && grep -q "\"theme\": \"dark\"" "$CLAUDE_CONFIG_DIR/settings.json"' "on → preserva o resto do settings"
+  OUT=$(bash "$TDAH_SH" on)
+  tcheck '[ "$(grep -c team-os-tdah.sh "$CLAUDE_CONFIG_DIR/settings.json")" -eq 1 ]' "on 2x → registra uma vez só (idempotente)"
+  tcheck 'printf "%s" "$(session_payload startup "$NOT_A_REPO" "")" | bash "$CLAUDE_CONFIG_DIR/hooks/team-os-tdah.sh" | grep -q "Modo TDAH"' "hook global sem skill no projeto → usa a cópia das regras"
+  OUT=$(bash "$TDAH_SH" off)
+  tcheck '[ ! -f "$CLAUDE_CONFIG_DIR/.team-os-tdah" ] && [ "$OUT" = "TDAH=off" ]' "off → desliga"
+  tcheck '[ "$(bash "$TDAH_SH" status | head -1)" = "TDAH=off" ]' "status → off"
+  printf '{ isto não é json' > "$CLAUDE_CONFIG_DIR/settings.json"
+  OUT=$(bash "$TDAH_SH" on)
+  tcheck 'case "$OUT" in *TDAH_REGISTER_TODO*) true;; *) false;; esac && [ "$(cat "$CLAUDE_CONFIG_DIR/settings.json")" = "{ isto não é json" ]' "settings inválido → não toca e avisa"
+  bash "$TDAH_SH" off >/dev/null
+  tcheck '! bash "$TDAH_SH" banana >/dev/null 2>&1' "argumento inválido → erro de uso"
+fi
+if [ -n "$OLD_CFG" ]; then export CLAUDE_CONFIG_DIR="$OLD_CFG"; else unset CLAUDE_CONFIG_DIR; fi
+
 # ── 10b. guard-smart-memory-read.sh (PreToolUse Read|Bash) ───────────────────
 section "guard-smart-memory-read.sh"
 H=guard-smart-memory-read.sh

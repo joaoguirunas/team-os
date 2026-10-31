@@ -611,5 +611,16 @@ else
   echo "SESSION_TITLE_HOOK_MISSING=team-os-session-title.sh não encontrado na fonte"
 fi
 
+# ── Modo TDAH (global, opt-in) — só atualiza quem já ligou com /team-os *tdah ──
+TDAH_HOOK_DST="$HOME/.claude/hooks/team-os-tdah.sh"
+if [ -f "$TDAH_HOOK_DST" ] && [ -f "$SOURCE/.claude/hooks/team-os-tdah.sh" ]; then
+  if [ $DRY_RUN -eq 0 ]; then
+    cp "$SOURCE/.claude/hooks/team-os-tdah.sh" "$TDAH_HOOK_DST"
+    chmod +x "$TDAH_HOOK_DST"
+    cp "$SOURCE/.claude/skills/team-os/reference/modo-tdah.md" "$HOME/.claude/hooks/team-os-tdah.md" 2>/dev/null
+  fi
+  echo "TDAH_HOOK=refreshed"
+fi
+
 echo "---"
 echo "STATUS=done"

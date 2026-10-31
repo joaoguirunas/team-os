@@ -2,9 +2,9 @@
 name: team-os
 description: "Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os"
 user-invocable: true
-argument-hint: "[*env | *memory | *compact [--auto] | *tasks | *spawn <objetivo> | *grill [objetivo] | *status]"
-version: "3.2.1"
-updated: "2026-10-20"
+argument-hint: "[*env | *memory | *compact [--auto] | *tasks | *spawn <objetivo> | *grill [objetivo] | *status | *tdah [off|status]]"
+version: "3.3.0"
+updated: "2026-10-31"
 ---
 
 # team-os — Agent Teams Bootstrap
@@ -305,6 +305,18 @@ Após confirmação do usuário:
 
 ---
 
+## Modo TDAH (`*tdah`)
+
+Respostas curtas e acionáveis para quem tem TDAH (ou só quer ler menos): ação ou decisão na 1ª linha, no máximo 5 itens visíveis, até 3 passos com tempo e quem faz, sem jargão técnico, sem abertura nem fechamento. As regras completas estão em `reference/modo-tdah.md` (fonte única).
+
+- **`/team-os *tdah`** → rodar `bash "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/team-os/scripts/tdah.sh" on`, ler `reference/modo-tdah.md` e **aplicar já nesta sessão**. Confirme em 1 linha ("Modo TDAH ligado. Vale em todos os seus projetos até `*tdah off`."). Se sair `TDAH_REGISTER_TODO`, o settings global é inválido: diga em 1 linha e não o edite sem OK.
+- **`*tdah off`** (ou "modo normal") → `tdah.sh off`, volte ao estilo normal e confirme em 1 linha. **`*tdah status`** → `tdah.sh status`.
+- **Como persiste:** o `tdah.sh on` instala o hook global `team-os-tdah.sh` (SessionStart em `~/.claude/settings.json`) e cria `~/.claude/.team-os-tdah`. Com o arquivo, toda sessão — em qualquer projeto, inclusive depois de compactar — já começa com as regras no contexto. Preferência da pessoa, nunca do projeto: nada vai para o git.
+- **Só muda o chat com o usuário.** Arquivos, smart-memory, stories, handoffs e mensagens entre agentes seguem completos. O painel do bootstrap (Fase 2) vira resumo de até 5 linhas; o painel inteiro só se pedir.
+- Sessão começou com "MODO TDAH LIGADO" no contexto → siga as regras sem anunciar.
+
+---
+
 ## Settings e nomeação da sessão
 
 Settings do projeto = o que o `ensure-settings.sh` garante (Fase 2-C); global = flag + `teammateMode` → `reference/settings-canonico.md`. O hook `SessionStart` global (`team-os-session-title.sh`, instalado pelo `*install`) nomeia toda sessão como `{projeto} · {branch}` — a skill não digita `/rename` (use o pronto da Fase 6) → `reference/session-naming.md`.
@@ -476,6 +488,7 @@ Demais problemas conhecidos (resume não restaura teammates, task travada, idle-
 /team-os *spawn {desc}  → Gate 0 + proposta de time para {desc}
 /team-os *grill [obj]   → sabatina em rodadas até fechar as decisões do objetivo (Fase 3)
 /team-os *status        → dashboard de status do time atual + placar (--report)
+/team-os *tdah          → liga o modo TDAH (respostas curtas, ação primeiro, sem jargão) — vale em todo projeto até *tdah off
 ```
 
 > Subcomandos são **atalhos** para a fase correspondente (*env = Gate 0 + 2-A/B/C · *memory = 2-D/E + Discovery/Repair · *tasks = scan item 5 · *spawn = Gate 0 + Fases 4-5 · *grill = Fase 3 em modo sabatina · *status = painel + task list + `WEIGH_REPORT`). **Nenhum subcomando que spawna pula o Gate 0** (escape hatch: ferramentas de teammate já disponíveis = gate satisfeito).
