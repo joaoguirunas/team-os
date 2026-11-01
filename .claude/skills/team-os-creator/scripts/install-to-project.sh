@@ -483,7 +483,9 @@ fi
 # Quality gate (pacote padrão — sempre): task-quality.sh (TaskCreated), check-*-progress.sh
 # (TaskCompleted), guard-push-branch.sh (devops), guard-smart-memory-read.sh,
 # guard-message-size.sh e context-watch.sh — registrados no settings.json pelo ensure-settings.sh.
-STD_HOOKS="block-worktree.sh block-git-push.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh context-watch.sh"
+# team-os-tdah.sh vai junto sem registro no projeto: é a fonte que o /team-os *tdah (tdah.sh on)
+# instala no ~/.claude/hooks/ de quem liga o modo.
+STD_HOOKS="block-worktree.sh block-git-push.sh task-quality.sh check-story-progress.sh check-social-progress.sh check-proposal-progress.sh check-finance-progress.sh check-legal-progress.sh guard-push-branch.sh guard-smart-memory-read.sh guard-message-size.sh context-watch.sh team-os-tdah.sh"
 hooks_extra=0
 {
   for uh in block-worktree.sh block-git-push.sh; do
