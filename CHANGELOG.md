@@ -4,6 +4,8 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+## [2.5.0] — 2026-11-03
+
 Evolução a partir da análise de ~50 repositórios (guia "15 skills essenciais" + 11 Reels). Método trazido para dentro das nossas skills, em pt-BR; créditos em `THIRD_PARTY_NOTICES.md` ("Métodos adaptados (2026-10)").
 
 ### Corrigido
