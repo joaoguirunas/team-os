@@ -3,8 +3,8 @@ name: team-os-creator
 description: "Factory de agentes nativos do Claude Code para Agent Teams — exclusiva deste repositório fonte. Use para criar agentes ou squads (inclusive agentes próprios), atualizar o pack sem perder o que você criou (*update), propagar agentes e skills aos projetos, instalar squads em projeto novo, auditar compliance ou migrar o bloco NTP. Gera .claude/agents/*.md com Native Teams Protocol + smart-memory."
 user-invocable: true
 argument-hint: "[*analyze | *squad <preset> | *create <role> | *migrate | *bootstrap | *skills <agente> | *pressure-test <agente> | *audit | *update | *propagate | *feedback | *migrate-social <pasta> | *migrate-sala <pasta> | *install | *organize | *painel]"
-version: "3.5"
-updated: "2026-10-21"
+version: "3.7"
+updated: "2026-11-14"
 ---
 
 # team-os-creator — Agent Factory
@@ -46,7 +46,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 |---|---|
 | `/team-os-creator` | **Command Center** — escaneia as pastas irmãs, mostra status por projeto e abre 3 ações: Criar / Atualizar / Instalar |
 | `/team-os-creator *analyze` | Só análise: archetype detectado, sem criar |
-| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`instagram`/`tiktok`/`youtube`/`linkedin`/`traffic`/`pm`/`sales`/`brand`/`finance`/`legal`/`seo`/`security`/`custom` — a lista real é o `name:` de cada `presets/*.yaml`) |
+| `/team-os-creator *squad <preset>` | Cria squad inteira de preset (`dev`/`sites`/`social`/`instagram`/`tiktok`/`youtube`/`linkedin`/`traffic`/`pm`/`sales`/`brand`/`finance`/`legal`/`seo`/`security`/`robotics`/`custom` — a lista real é o `name:` de cada `presets/*.yaml`) |
 | `/team-os-creator *create <role>` | Cria UM agente interativamente |
 | `/team-os-creator *migrate` | Reinjeta o bloco NTP canônico em todos os agentes (`scripts/migrate-ntp.sh`; `--dry-run` mostra o diff) — também converte o antigo "Contrato com team-os" |
 | `/team-os-creator *bootstrap` | Cria `docs/smart-memory/` + injeta protocolo no `CLAUDE.md` do projeto atual |
@@ -60,7 +60,7 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | `/team-os-creator *install` | Instala squads + skills (incluindo `team-os`) + `settings.json` em projeto destino. **Nunca** a Sala de Controle — ela mora no CT (`ERROR=sala_mora_no_ct`) |
 | `/team-os-creator *migrate-sala <pasta>` | Leva uma pasta de Sala de Controle antiga (fora do CT) para o CT (`scripts/migrate-sala-to-ct.sh`; dry-run primeiro, `--apply` só com OK). Ver "Fluxo `*migrate-sala`" |
 | `/team-os-creator *organize` | Mapa da organização de pastas (negócio → projeto → squads), pontos fora do padrão e proposta de melhoria. **Só propõe** — nada é movido, renomeado ou instalado sem OK explícito, ação por ação |
-| `/team-os-creator *painel` | **Mapa do pack** (127.0.0.1:8788) no navegador do próprio Claude: o raio no centro, as squads do pack (15) no anel, os agentes de cada squad ao redor (persona + cargo), skills principais ligadas ao centro; clique na squad expande as skills dela, clique no agente/skill abre o perfil e o arquivo inteiro. Estático (o que existe), read-only. `*painel stop` derruba |
+| `/team-os-creator *painel` | **Mapa do pack** (127.0.0.1:8788) no navegador do próprio Claude: o raio no centro, as squads do pack (16) no anel, os agentes de cada squad ao redor (persona + cargo), skills principais ligadas ao centro; clique na squad expande as skills dela, clique no agente/skill abre o perfil e o arquivo inteiro. Estático (o que existe), read-only. `*painel stop` derruba |
 
 ---
 
@@ -129,9 +129,10 @@ Output: arquivos `.md` em `.claude/agents/` + skills + bootstrap de `docs/smart-
 | **legal** | 8 (analyst, strategist, architect, drafter, compliance, disputes, ops, qa) | Jurídico do dia a dia — prepara para o advogado, nunca o substitui; envio e assinatura são do usuário. Genérica, contexto da empresa na smart-memory |
 | **seo** | 15 (architect, technical, performance, schema, sitemap, content, cluster, geo, local, ecommerce, backlinks, sxo, drift, google, qa) | Auditoria e otimização de busca — audita, prioriza e recomenda; nunca implementa o fix (squad `sites`) nem sobe deploy. Add-on natural de um site (`--squads sites,seo`). Motor: skills `seo-*` |
 | **security** | 7 (architect, appsec, ai-code, secrets, privacy, incident, qa) | Segurança de aplicação — audita, prioriza e especifica a correção; nunca edita o código (dev/sites corrige), nunca rotaciona credencial nem executa contenção em produção, nunca testa contra terceiro. Add-on de dev ou sites (`--squads sites,security`) |
+| **robotics** | 10 (architect, analyst, electronics, firmware, control, autonomy, connectivity, mechanics, bench, qa) | Robótica, automação e IoT com qualquer placa (Arduino, ESP32, Pico/RP2040, STM32, Raspberry Pi) — plano por etapas, pinagem congelada, eletrônica e energia, firmware não bloqueante com failsafe, controle, ROS 2, conectividade, mecânica e bancada; QA com gates G1 compra · G2 energização · G3 gravação com atuador · G4 etapa pronta. O agente não tem mãos: montagem e medição são do usuário, guiadas passo a passo. Sem devops (push é do usuário) |
 | **custom** | 0 | Usuário monta do zero |
 
-> Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites`; workspace de conteúdo para redes (Reels, carrosséis, roteiros, pasta Marketing/Social) sai `PROJECT_ARCHETYPE=social-media` com `SUGGESTED_SQUADS=social,instagram` (troque `instagram` pela rede do projeto); `data-pipeline` → `dev`; `seo` (workspace de SEO sem código, ou pasta nomeada SEO) → `seo`; site com sinais de SEO (sitemap.xml, robots.txt, `next-sitemap`, "seo" no package.json, pasta `seo/`) devolve `SUGGESTED_SQUAD_ADDON=seo` → `--squads sites,seo`. Projeto com banco, auth, pagamento ou IA no `package.json` (Supabase, Prisma, NextAuth, Clerk, Stripe, OpenAI, Anthropic, AI SDK) ou com `supabase/migrations/` acrescenta `security` à lista (`SUGGESTED_SQUAD_ADDON=seo,security`).
+> Nota: os presets legados (`content.yaml`, `marketing.yaml`, `data.yaml`) foram **removidos** — referenciam agentes que nunca existiram no CT atual. Se o `detect-project-signals.sh` classificar `content-site`, use o preset `sites`; workspace de conteúdo para redes (Reels, carrosséis, roteiros, pasta Marketing/Social) sai `PROJECT_ARCHETYPE=social-media` com `SUGGESTED_SQUADS=social,instagram` (troque `instagram` pela rede do projeto); `data-pipeline` → `dev`; `seo` (workspace de SEO sem código, ou pasta nomeada SEO) → `seo`; site com sinais de SEO (sitemap.xml, robots.txt, `next-sitemap`, "seo" no package.json, pasta `seo/`) devolve `SUGGESTED_SQUAD_ADDON=seo` → `--squads sites,seo`. Projeto com banco, auth, pagamento ou IA no `package.json` (Supabase, Prisma, NextAuth, Clerk, Stripe, OpenAI, Anthropic, AI SDK) ou com `supabase/migrations/` acrescenta `security` à lista (`SUGGESTED_SQUAD_ADDON=seo,security`). Firmware ou robótica (`platformio.ini`, `.ino`, ESP-IDF, `boot.py`, ESPHome, ROS 2 `package.xml`, ou pasta com nome de robô/arduino/esp32/iot/automação) sai `PROJECT_ARCHETYPE=robotics` → preset `robotics` (vence dev/sites).
 
 ---
 
@@ -377,7 +378,7 @@ O que ele lê (só leitura, só no CT): `presets/*.yaml` (squads, persona, cargo
 Organização de pastas é parte do Command Center — o `dashboard.sh` já imprime a árvore; este fluxo aprofunda e propõe.
 
 1. `python3 .claude/skills/sala-de-controle/scripts/org-map.py "<raiz>" --tree` (fonte única, read-only — mesma do `/sala-de-controle *organizar`).
-2. Padrão esperado: `<raiz>/0 | Centro de Treinamento` (CT — fonte do pack e casa da Sala de Controle) · `<raiz>/<Negócio>/<Negócio> | <Projeto>` (projeto com squad + smart-memory). Pasta de Sala separada é antiga (achado `SALA_ANTIGA`).
+2. Padrão esperado: `<raiz>/0 | Centro de Treinamento` (CT — fonte do pack e casa da Sala de Controle) · `<raiz>/<Negócio>/<Negócio> | <Projeto>` (projeto com squad + smart-memory) · `<raiz>/<Grupo>/` (ex.: `Outros/`) reúne negócios menores um nível abaixo — `Outros/<Negócio>/<Negócio> | <Projeto>` ou `Outros/<Negócio> | <Projeto>`; o scan, o `*propagate` e o `*feedback` leem esse nível. Pasta de Sala separada é antiga (achado `SALA_ANTIGA`).
 3. Mostre, em linguagem simples: **árvore atual → o que está fora do padrão → árvore proposta → lista de ações**, cada ação com quem executa e o aviso de risco:
    - mover/renomear pasta → **usuário** no Finder (ou você, só com OK explícito para aquela ação). Avisar antes: sessões abertas na pasta ficam órfãs e o histórico do Claude (`~/.claude/projects/<caminho>`) fica preso ao caminho antigo — fechar as sessões antes;
    - squad faltando / squad errada para a categoria → `*install --squads <categoria>` (poda de squad errada: só com OK, e nunca apagar smart-memory);
@@ -433,7 +434,7 @@ Qualquer criação/atualização de agente ou skill **só está pronta** quando 
 ```
 .claude/skills/team-os-creator/
 ├── SKILL.md
-├── presets/                        ← 15 squads (dev, sites, social, instagram, tiktok, youtube, linkedin, traffic, pm, sales, brand, finance, legal, seo, security), cada agente com `archetype:` (fonte do *audit). O `name:` de cada preset é a lista de squads que install/validate/discovery/página usam — squad nova = preset novo, sem editar script
+├── presets/                        ← 16 squads (dev, sites, social, instagram, tiktok, youtube, linkedin, traffic, pm, sales, brand, finance, legal, seo, security, robotics), cada agente com `archetype:` (fonte do *audit). O `name:` de cada preset é a lista de squads que install/validate/discovery/página usam — squad nova = preset novo, sem editar script
 │   └── custom/                     ← agentes PRÓPRIOS do usuário (custom.yaml); fora do pack, nunca tocada pelo *update
 ├── reference/
 │   ├── archetypes.md               ← defaults por archetype + exceções canônicas

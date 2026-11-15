@@ -50,7 +50,7 @@ texts = []
 collect(data, texts)
 blob = "\n".join(texts)
 
-SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo|security)/)?"
+SQUAD = r"(?:(?:sales|dev|sites|social|traffic|pm|brand|finance|legal|seo|security|robotics)/)?"
 
 # Referencia a squad sales ou um artefato de proposta?
 sales_ref = re.search(r"docs/smart-memory/agents/" + SQUAD + r"(closer|design|copy|planning|finance|strategy|discovery|qa)\b", blob) \

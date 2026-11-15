@@ -120,6 +120,21 @@ Conceitos e métodos reescritos em pt-BR no padrão do pack (texto próprio, sem
 | `team-os` — Discovery "Automações sugeridas"; hook opcional `guard-env-files.sh` | [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) — `claude-code-setup` | Apache-2.0 — © Anthropic, PBC | só ideia; nenhum texto copiado |
 | convenção `[skill-feedback]`; `team-os-creator *feedback` | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) | CC-BY-4.0 | só ideia; nenhum texto copiado |
 
+## Métodos adaptados (2026-11) — squad Robotics
+
+Método reescrito em pt-BR, no padrão do pack — nenhum texto ou código copiado. Licenças conferidas em 2026-11-14. Nas fontes Apache-2.0, todo o conteúdo usado foi **modificado** (traduzido, resumido, reorganizado e combinado com outras fontes); nenhuma delas tem arquivo NOTICE.
+
+| Skill do pack | Origem | Licença | Observação |
+|---|---|---|---|
+| `robotics-project-planning`, `robotics-component-research`, `robotics-electrical-safety`, `robotics-power-battery`, `robotics-firmware-patterns`, `robotics-motion-control`, `robotics-iot-connectivity`, `robotics-mechanical-build`, `robotics-bringup-testing` | [wedsamuel1230/embedded-engineering-skills](https://github.com/wedsamuel1230/embedded-engineering-skills) (antes `arduino-skills`) | MIT — `Copyright (c) 2026 Samuel F.` | commit 869710e — wiring-safety-check, board-support, battery-selector (erro do LiPo 1S direto em 3,3 V corrigido), power-budget, field-power-triager, realtime-control-design, enclosure-designer, embedded-project-loop |
+| `robotics-component-research`, `robotics-electrical-safety`, `robotics-firmware-patterns`, `robotics-iot-connectivity` | [ezrover/ESP32-AI-Agent-Skill](https://github.com/ezrover/ESP32-AI-Agent-Skill) | MIT — `Copyright (c) 2026 Vibe Coder` | commit 124d298 — pinos restritos do ESP32, conversão de nível, matriz de variantes |
+| `robotics-firmware-patterns`, `robotics-iot-connectivity`, `robotics-power-battery`, `robotics-bringup-testing` | [johnkozaris/jko-claude-plugins](https://github.com/johnkozaris/jko-claude-plugins) — plugin `esp32-cpp` | MIT — `Copyright (c) 2026 John` | commit 47c0ec0 — causa × sintoma, contexto de execução, recursos com limite, energia medida na placa, soak test |
+| `robotics-component-research` | [aklofas/kicad-happy](https://github.com/aklofas/kicad-happy) | MIT — `Copyright (c) 2025 Andrew Klofas` | commit 7d9d4d9 — só o contrato de revisão (o que foi e o que não foi verificado) |
+| `robotics-motion-control`, `robotics-ros2-autonomy` | [arpitg1304/robotics-agent-skills](https://github.com/arpitg1304/robotics-agent-skills) | Apache-2.0 — © 2026 robotics-agent-skills contributors | commit f9bc546 — **modificado**: hierarquia de segurança, bringup com systemd, cinemática testada como função pura |
+| `robotics-project-planning`, `robotics-electrical-safety`, `robotics-motion-control`, `robotics-ros2-autonomy`, `robotics-bringup-testing` | [dbwls99706/ros2-engineering-skills](https://github.com/dbwls99706/ros2-engineering-skills) | Apache-2.0 — © 2025 dbwls99706 | v1.8.1, commit d569707 — **modificado**: escada L0–L6, e-stop fora do software, falhas injetadas só com operador, micro-ROS |
+
+ESPHome e Home Assistant (`robotics-iot-connectivity`) foram escritos a partir da documentação oficial (esphome.io, home-assistant.io). Avaliados e **não** usados: travisjneuman/.claude (API legada), VoltAgent/awesome-claude-code-subagents (genérico) e esp32-emu-turbo (sem licença).
+
 ## Conteúdo adaptado de agency-agents
 
 Trechos de método foram adaptados (reescritos em PT-BR, no padrão do pack — não copiados) do repositório

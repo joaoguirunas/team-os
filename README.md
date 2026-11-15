@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**O team-os transforma o Claude Code num time de especialistas.** São **111 agentes e 124 skills** em **15 squads** (Dev, Sites, SEO, Security, Social — estúdio comum, Instagram, TikTok, YouTube, LinkedIn, Traffic, PM, Sales, Brand, Finance e Legal), prontos para trabalhar em paralelo com o recurso **Agent Teams** do Claude Code. Cada agente tem um papel com fronteira clara (quem planeja, quem produz, quem aprova, quem publica), uma memória compartilhada que persiste entre sessões e regras de qualidade embutidas.
+**O team-os transforma o Claude Code num time de especialistas.** São **121 agentes e 134 skills** em **16 squads** (Dev, Sites, SEO, Security, Social — estúdio comum, Instagram, TikTok, YouTube, LinkedIn, Traffic, PM, Sales, Brand, Finance, Legal e Robotics), prontos para trabalhar em paralelo com o recurso **Agent Teams** do Claude Code. Cada agente tem um papel com fronteira clara (quem planeja, quem produz, quem aprova, quem publica), uma memória compartilhada que persiste entre sessões e regras de qualidade embutidas.
 
 **Para quem é:** quem já usa o Claude Code (no app, aba **Code**, ou no terminal) e quer tocar vários projetos com times de IA em vez de uma conversa só — produto e software, sites, conteúdo orgânico e tráfego pago, propostas comerciais, marca, financeiro e jurídico do dia a dia. Serve para quem trabalha sozinho, para agências e consultorias com vários clientes e para equipes que querem um método repetível. Você não precisa saber criar agentes: instala as squads que o projeto pede e conversa em português.
 
@@ -25,7 +25,7 @@ flowchart LR
     GH["GitHub — pack oficial"] -- "*update" --> CT
 
     subgraph CT["CT — Centro de Treinamento (fonte da verdade)"]
-        PK[("111 agentes · 124 skills · 15 squads")]
+        PK[("121 agentes · 134 skills · 16 squads")]
         CR["/team-os-creator<br/>cria · audita · instala · propaga"]
         SC["/sala-de-controle<br/>lê sessões · despacha · painel 8787"]
         CR --- PK
@@ -53,7 +53,7 @@ Em volta dessas três peças, quatro mecanismos valem para todos os agentes:
 - **Native Teams Protocol** — o contrato que todo agente carrega, byte a byte igual: a smart-memory é a fonte da verdade, o trabalho passa pela TaskList nativa, os agentes conversam direto entre si (peer-to-peer) e ninguém cria sub-time. → [§1](#1-conceitos-fundamentais) · [§8](#8-modelo-de-coordenação)
 - **Smart-memory** — `docs/smart-memory/` em cada projeto, no formato do Obsidian (frontmatter, wikilinks, tags). Leitura em camadas: cada agente lê o índice, o `DIGEST.md` da sua área e as stories ativas, nunca pastas inteiras; o frio vai para `_archive/` com `*compact`. → [§11](#11-estrutura-do-repositório)
 - **Hooks de qualidade e de economia de tokens** — 15 hooks: push só pelo devops, task vaga recusada, publicação/envio/pagamento só com PASS e confirmação do usuário, leitura de memória com orçamento, mensagem entre agentes curta, aviso de contexto grande e o modo TDAH (respostas curtas). → [§10](#10-hooks-de-qualidade)
-- **Política de modelos Híbrida** — `opus` fixo onde o raciocínio decide (28 agentes: arquitetos, planejadores, QAs e estrategistas); `inherit` no resto (83), que segue o `/model` da sua sessão. → [§9](#9-política-de-modelos-híbrido)
+- **Política de modelos Híbrida** — `opus` fixo onde o raciocínio decide (30 agentes: arquitetos, planejadores, QAs e estrategistas); `inherit` no resto (91), que segue o `/model` da sua sessão. → [§9](#9-política-de-modelos-híbrido)
 
 ---
 
@@ -62,7 +62,7 @@ Em volta dessas três peças, quatro mecanismos valem para todos os agentes:
 Times de IA superam uma sessão única quando o trabalho tem partes independentes. O team-os transforma isso em algo pronto pra usar:
 
 - **Paralelismo real** — várias sessões trabalham ao mesmo tempo, cada uma com seu próprio context window. Research, review e features divididas por módulo terminam em uma fração do tempo de uma sessão sequencial.
-- **Especialização com autoridade clara** — 111 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
+- **Especialização com autoridade clara** — 121 papéis prontos, com fronteiras explícitas (quem cria story, quem dá veredicto de QA, quem faz `git push`). Sem sobreposição, sem agente pisando no outro.
 - **Coordenação autônoma** — comunicação peer-to-peer + TaskList compartilhada + self-claim. Os teammates se organizam sozinhos; o lead orquestra em vez de microgerenciar.
 - **Memória que persiste** — smart-memory em formato Obsidian acumula arquitetura, decisões, stories e QA entre sessões. O time não recomeça do zero.
 - **Qualidade embutida** — hooks (`block-git-push`, gates de task), QA com veredicto formal PASS/CONCERNS/FAIL/WAIVED e plan mode obrigatório em mudanças de risco (schema, auth, CI/CD).
@@ -76,15 +76,15 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 
 - [Como o pack se organiza](#como-o-pack-se-organiza) — `/team-os`, `/team-os-creator`, `/sala-de-controle` e o diagrama
 - [Por que team-os?](#por-que-team-os)
-- [Squads](#squads) — as 15 squads, personas e como combinar
+- [Squads](#squads) — as 16 squads, personas e como combinar
 - ⭐ [the team-os Method](#-the-team-os-method) — a metodologia
 - [Instalar e atualizar](#instalar-e-atualizar) — baixar, instalar, `*update`, onde ficam os meus agentes
 1. [Conceitos fundamentais](#1-conceitos-fundamentais)
 2. [Pré-requisitos e setup](#2-pré-requisitos-e-setup) — [Requisitos de máquina](#requisitos-de-máquina) · [MCPs por squad](#mcps-por-squad)
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
-5. [Os 111 agentes e suas skills](#5-os-111-agentes-e-suas-skills)
-6. [Catálogo completo de skills](#6-catálogo-completo-de-skills) — as 124, com para que serve e quem usa · [Sala de Controle](#sala-de-controle--sala-de-controle-mora-no-ct)
+5. [Os 121 agentes e suas skills](#5-os-121-agentes-e-suas-skills)
+6. [Catálogo completo de skills](#6-catálogo-completo-de-skills) — as 134, com para que serve e quem usa · [Sala de Controle](#sala-de-controle--sala-de-controle-mora-no-ct)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
 9. [Política de modelos (Híbrido)](#9-política-de-modelos-híbrido)
@@ -98,7 +98,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 
 ## Squads
 
-Cada projeto recebe só as squads de que precisa (`/team-os-creator *install --squads sites,seo`, por exemplo). As 15 squads, com as personas dos agentes na ordem do preset — os perfis completos estão em [§5](#5-os-111-agentes-e-suas-skills) e na página [`docs/agentes.html`](./docs/agentes.html):
+Cada projeto recebe só as squads de que precisa (`/team-os-creator *install --squads sites,seo`, por exemplo). As 16 squads, com as personas dos agentes na ordem do preset — os perfis completos estão em [§5](#5-os-121-agentes-e-suas-skills) e na página [`docs/agentes.html`](./docs/agentes.html):
 
 | Squad | Papel | Agentes (personas) | Como entra no projeto |
 |---|---|---|---|
@@ -106,6 +106,7 @@ Cada projeto recebe só as squads de que precisa (`/team-os-creator *install --s
 | **`sites`** (10) | Sites e landing pages em Next.js ou Astro, do UX ao deploy | Zael-S, Lyra-S, Vela-S, Nova-S, Rex-S, Sera-S, Kron-S, Axis-S, Grav-S, Byte-S | Base (site); combine com `seo` e/ou `security` |
 | **`seo`** (15) | Auditoria e otimização de busca, inclusive busca por IA — audita e recomenda, não implementa | THOTH, PTAH, NEITH, KHNUM, GEB, SHU, NUT, HORUS, HEKA, BASTET, ANUBIS, HAPI, SESHAT, WADJET, MAAT | Add-on de `sites` (handoff do fix para a squad sites) |
 | **`security`** (7) | Segurança de aplicação: ameaças, appsec, código gerado por IA, segredos, privacidade e incidentes | MIMIR, HEIMDALL, HUGIN, VÁR, FRIGG, VIDAR, FORSETI | Add-on de `dev` ou `sites` (dev/sites corrige) |
+| **`robotics`** (10) | Robótica, automação e IoT com qualquer placa (Arduino, ESP32, Pico, STM32, Raspberry Pi): plano por etapas, eletrônica e energia, firmware, controle, ROS 2, conectividade, mecânica, bancada e QA com gates de segurança elétrica | JAZARI, HERON, VOLTA, ADA, BROOKS, MORAVEC, MARCONI, LEONARDO, FARADAY, ASIMOV | Base (projeto físico); combine com `security` se o dispositivo vai para a rede |
 | **`social`** (3) | Estúdio comum de produção: arte, foto e vídeo, só sob brief — não aprova nem publica | AEON, IRIS, FLUX | Add-on de `instagram`, `tiktok`, `youtube` e/ou `linkedin` (sozinha não tem gate) |
 | **`instagram`** (3) | Instagram, página do Facebook e Threads: pauta, copy, DM/ManyChat e publicação via Meta | VERA, LYRIS, PULSE | Plataforma; instale com `social` |
 | **`tiktok`** (3) | TikTok orgânico: pauta, sons em alta, roteiro nativo e pacote de upload | RIFF, BEAT, LOOP | Plataforma; instale com `social` |
@@ -437,13 +438,13 @@ Para quem tem TDAH ou só quer ler menos. Ligado, toda resposta ao usuário: com
 
 ## 4. Skill principal: `/team-os-creator`
 
-**Factory de agentes.** Existe **somente no CT**. Gera arquivos `.claude/agents/*.md` completos (Native Teams Protocol + smart-memory) a partir de **9 archetypes** e 15 presets de squad, e mantém os agentes alinhados.
+**Factory de agentes.** Existe **somente no CT**. Gera arquivos `.claude/agents/*.md` completos (Native Teams Protocol + smart-memory) a partir de **9 archetypes** e 16 presets de squad, e mantém os agentes alinhados.
 
 ### Comandos
 ```
 /team-os-creator                       → Command Center: escaneia as pastas irmãs, status por projeto, ações Criar / Atualizar / Instalar (avisa pasta de Sala antiga e sugere migrate-sala-to-ct.sh)
 /team-os-creator *analyze              → detecta archetype/stack, sem criar
-/team-os-creator *squad <preset>       → cria uma squad inteira (dev/sites/social/instagram/tiktok/youtube/linkedin/traffic/pm/sales/brand/finance/legal/seo/security/custom)
+/team-os-creator *squad <preset>       → cria uma squad inteira (dev/sites/social/instagram/tiktok/youtube/linkedin/traffic/pm/sales/brand/finance/legal/seo/security/robotics/custom)
 /team-os-creator *create <role>        → cria UM agente interativamente
 /team-os-creator *migrate              → reinjeta o bloco NTP canônico em todos os agentes (scripts/migrate-ntp.sh; --dry-run mostra o diff)
 /team-os-creator *bootstrap            → cria docs/smart-memory/ + injeta protocolo no CLAUDE.md do projeto atual
@@ -501,7 +502,7 @@ No CT também roda a **Sala de Controle** (ver [§6](#sala-de-controle--sala-de-
 
 ---
 
-## 5. Os 111 agentes e suas skills
+## 5. Os 121 agentes e suas skills
 
 Spawne pelo nome do arquivo, ex.:
 `"Spawn um teammate usando o agente dev-architect para mapear a arquitetura de auth"`.
@@ -721,13 +722,30 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 | `security-incident` | VIDAR | Registro e coordenação de incidente — SEV, linha do tempo, evidência, post-mortem | `/security-incident-response`, `/security-audit-method` |
 | `security-qa` | FORSETI | Veredictos PASS/CONCERNS/FAIL/WAIVED sobre auditorias e fechamento de achados (exclusivo) | `/security-audit-method`, `/dev-security-patterns`, `/verify-before-done` |
 
+### Robotics — Robótica, automação e IoT (10, pioneiros da robótica e da eletricidade)
+
+> Squad **base** de projeto físico com **qualquer placa** (Arduino, ESP32, Raspberry Pi Pico/RP2040, STM32, Raspberry Pi/Jetson): plano em etapas que se testam sozinhas, pinagem congelada (`PIN-NN`) que vira o `pins.h` do firmware, eletrônica com orçamento de energia, firmware não bloqueante com failsafe, controle de motores e sensores, ROS 2 quando o microcontrolador não basta, conectividade (Wi-Fi, painel no celular, MQTT, OTA, Home Assistant) e mecânica. **O agente não tem mãos:** quem compra, monta, mede, liga e grava é o usuário, guiado passo a passo com o resultado esperado. QA com quatro gates — **G1 compra · G2 energização · G3 gravação com atuador · G4 etapa pronta** — e piso de segurança que nunca vira WAIVED (bateria Li-ion sem proteção, 5V em pino 3.3V, motor pelo regulador da placa, atuador sem failsafe, rede 110/220V aberta). Sem devops: push é do usuário. Método adaptado de wedsamuel1230/embedded-engineering-skills, ezrover/ESP32-AI-Agent-Skill, johnkozaris/jko-claude-plugins (MIT), arpitg1304/robotics-agent-skills e dbwls99706/ros2-engineering-skills (Apache-2.0).
+
+| Agente | Persona | Papel | Skills relacionadas |
+|---|---|---|---|
+| `robotics-architect` | JAZARI | Plataforma (placa, framework), arquitetura, plano em etapas e stories (exclusivo); aprova mudança de pinagem congelada | `/robotics-project-planning`, `/robotics-component-research`, `/dev-technical-writing` |
+| `robotics-analyst` | HERON | Datasheets, comparação de componentes e bibliotecas, preço, prazo e falsificação — toda afirmação com fonte | `/robotics-component-research`, `/deep-research`, `/doc-to-markdown`, `/dev-defuddle` |
+| `robotics-electronics` | VOLTA | **Fonte única** da pinagem, do esquema de ligação, da BOM e do orçamento de energia | `/robotics-electrical-safety`, `/robotics-power-battery`, `/robotics-component-research`, `/robotics-project-planning` |
+| `robotics-firmware` | ADA | Firmware de qualquer MCU (Arduino/C++, PlatformIO, ESP-IDF, MicroPython) — não bloqueante, failsafe, compila antes de entregar | `/robotics-firmware-patterns`, `/robotics-electrical-safety`, `/dev-debugging`, `/dev-git-workflow` |
+| `robotics-control` | BROOKS | Motores, servos, steppers, encoders, PID, cinemática, sensores e comportamentos autônomos no MCU | `/robotics-motion-control`, `/robotics-firmware-patterns`, `/robotics-bringup-testing` |
+| `robotics-autonomy` | MORAVEC | Raspberry Pi/Jetson com ROS 2, ponte micro-ROS, visão, SLAM/Nav2 e simulação primeiro | `/robotics-ros2-autonomy`, `/robotics-motion-control`, `/robotics-bringup-testing` |
+| `robotics-connectivity` | MARCONI | Wi-Fi, painel web local, BLE, MQTT, OTA, ESPHome e Home Assistant — failsafe na queda e nenhum segredo no repositório | `/robotics-iot-connectivity`, `/robotics-firmware-patterns`, `/dev-security-patterns` |
+| `robotics-mechanics` | LEONARDO | Chassi, massa e centro de massa, torque, fixação, impressão 3D, umidade, cabos e guia de montagem | `/robotics-mechanical-build`, `/robotics-bringup-testing` |
+| `robotics-bench` | FARADAY | Roteiro de energização e teste, medições `MED-NN` pedidas ao usuário, análise de falha e nível de verificação L0–L6 alcançado | `/robotics-bringup-testing`, `/robotics-electrical-safety`, `/robotics-power-battery`, `/dev-debugging` |
+| `robotics-qa` | ASIMOV | Veredictos PASS/CONCERNS/FAIL/WAIVED nos gates G1–G4 (exclusivo); nunca WAIVED de risco elétrico ou de fogo | `/robotics-electrical-safety`, `/robotics-bringup-testing`, `/verify-before-done` |
+
 ---
 
 ## 6. Catálogo completo de skills
 
-As **124 skills** do pack, todas diretórios reais e versionados em `.claude/skills/` (repositório self-contained). Gerado a partir dos arquivos do pack: **para que serve** resume a `description` da skill; **usada por** são os agentes que a citam no próprio arquivo (o `*install` leva a um projeto exatamente as skills citadas pelos agentes instalados, mais a `team-os`).
+As **134 skills** do pack, todas diretórios reais e versionados em `.claude/skills/` (repositório self-contained). Gerado a partir dos arquivos do pack: **para que serve** resume a `description` da skill; **usada por** são os agentes que a citam no próprio arquivo (o `*install` leva a um projeto exatamente as skills citadas pelos agentes instalados, mais a `team-os`).
 
-Índice rápido: Orquestração (3) · Transversais (15) · Dev (10) · Dados e IA (6) · Sites (9) · SEO (27) · Security (4) · Social (13) · Instagram (3) · TikTok (2) · YouTube (4) · LinkedIn (2) · Traffic (4) · Sales (6) · Brand (6) · Finance (5) · Legal (5) = **124**.
+Índice rápido: Orquestração (3) · Transversais (15) · Dev (10) · Dados e IA (6) · Sites (9) · SEO (27) · Security (4) · Robotics (10) · Social (13) · Instagram (3) · TikTok (2) · YouTube (4) · LinkedIn (2) · Traffic (4) · Sales (6) · Brand (6) · Finance (5) · Legal (5) = **134**.
 
 #### Orquestração (CT) (3)
 
@@ -837,6 +855,21 @@ As **124 skills** do pack, todas diretórios reais e versionados em `.claude/ski
 | **`security-incident-response`** | Resposta a incidente: SEV1–SEV4, primeira hora, evidência, contenção planejada, rotação e post-mortem | `security-incident`, `security-secrets` |
 | **`security-privacy-data-map`** | Mapa técnico de dados pessoais: onde mora, quem lê, para onde vai, retenção e exclusão provada | `security-privacy` |
 | **`security-threat-modeling`** | Modelagem de ameaças leve: ativos, fronteiras, STRIDE por fronteira e requisitos testáveis | `security-architect` |
+
+#### Robotics (10)
+
+| Skill | Para que serve | Usada por |
+|---|---|---|
+| **`robotics-project-planning`** | Plano em etapas, resolução da placa, physical gate, convenções de ids e arquivos, checklist de 5 pontos da story, controle de mudança da pinagem | `robotics-architect`, `robotics-electronics` |
+| **`robotics-component-research`** | Ledger de afirmações com datasheet e página, limites elétricos, armadilhas de componentes de hobby, falsificação, maturidade de biblioteca, ficha de compra | `robotics-analyst`, `robotics-architect`, `robotics-electronics` |
+| **`robotics-electrical-safety`** | Contrato antes de energizar: níveis lógicos 3.3V/5V, pinos proibidos por placa, cargas e flyback, desacoplamento, proteção, multímetro, piso de segurança dos gates | `robotics-electronics`, `robotics-firmware`, `robotics-bench`, `robotics-qa` |
+| **`robotics-power-battery`** | Orçamento de energia com pico e stall, químicas, Li-ion/LiPo com BMS e carregador, regulação, "funciona no USB e não na bateria" | `robotics-electronics`, `robotics-bench` |
+| **`robotics-firmware-patterns`** | Build reproduzível por plataforma, `pins.h` gerado, loop não bloqueante e máquina de estados, ISR e tasks, failsafe por heartbeat, recursos com limite | `robotics-firmware`, `robotics-control`, `robotics-connectivity` |
+| **`robotics-motion-control`** | Interface única de movimento, drivers, sensores com leitura inválida = parar, PID com sintonia por log, cinemática diferencial, comportamentos em camadas, hierarquia de parada | `robotics-control`, `robotics-autonomy` |
+| **`robotics-iot-connectivity`** | Wi-Fi AP/STA, painel web com WebSocket, BLE, MQTT, OTA com rollback, ESPHome e Home Assistant, segurança do dispositivo | `robotics-connectivity` |
+| **`robotics-ros2-autonomy`** | Quando subir para ROS 2, ponte com o MCU, QoS, TF/URDF, SLAM e Nav2, visão, simulação primeiro, bringup com systemd, e-stop fora do ROS | `robotics-autonomy` |
+| **`robotics-mechanical-build`** | Massa e centro de massa, torque e roda, fixação, impressão 3D, umidade e poeira, cabos, guia de montagem passo a passo | `robotics-mechanics` |
+| **`robotics-bringup-testing`** | Escada de verificação L0–L6, roteiro de energização, medições `MED-NN`, teste suspenso, falhas provocadas com operador, resistência, análise de falha | `robotics-bench`, `robotics-qa`, `robotics-control`, `robotics-autonomy`, `robotics-mechanics` |
 
 #### Social — método comum (estúdio e plataformas) (13)
 
@@ -1038,12 +1071,12 @@ O `*propagate` só atualiza os arquivos de cada projeto e **nunca sobrescreve o 
 
 O campo `model` do arquivo do agente **prevalece** sobre o "Default teammate model" do `/config` quando o agente roda como teammate. Por isso o CT adota o **Híbrido**:
 
-Contagem real (`grep -h '^model:' .claude/agents/*.md | sort | uniq -c`): **28 `opus` / 83 `inherit`**.
+Contagem real (`grep -h '^model:' .claude/agents/*.md | sort | uniq -c`): **30 `opus` / 91 `inherit`**.
 
-| Modelo | Agentes (28 / 83) | Por quê |
+| Modelo | Agentes (30 / 91) | Por quê |
 |---|---|---|
 | `opus` (fixo) | **architects/planners (9):** `dev-architect`, `sites-architect`, `brand-architect`, `legal-architect`, `seo-architect`, `security-architect`, `finance-planner`, `pm-planner`, `sales-planner` · **QA (10):** `dev-qa`, `sites-qa`, `pm-qa`, `traffic-qa`, `sales-qa`, `brand-qa`, `finance-qa`, `legal-qa`, `seo-qa`, `security-qa` · **strategists (9):** `traffic-strategist`, `instagram-strategist`, `tiktok-strategist`, `youtube-strategist`, `linkedin-strategist`, `sales-strategist`, `brand-strategist`, `finance-strategist`, `legal-strategist` | Raciocínio crítico e veredictos — não vale economizar |
-| `inherit` | os 83 demais | Seguem o `/model` do lead → controle central de custo |
+| `inherit` | os 91 demais | Seguem o `/model` do lead → controle central de custo |
 
 Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {nome} usando modelo haiku para…"`.
 
@@ -1051,9 +1084,9 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 | Effort | Papéis (contagem real) |
 |---|---|
-| `high` (39) | architects/planners, QAs e strategists (os 28 `opus`), hardening (`dev-dev-delta`, `sites-dev-delta`), data (`dev-data-engineer`, `sites-data`, `pm-data`) e as "fontes únicas de números" (`brand-insights`, `finance-controller`, `legal-compliance`, `sales-finance`, `seo-google`, `traffic-bi`) |
-| `medium` (35) | analysts (`*-analyst`), UX (`dev-ux`, `sites-ux`), designers (`brand-designer`, `sales-designer`, `social-design`, `social-photo`, `traffic-designer`), BI/insights/coaching (`dev-bi`, `dev-data-performance`, `pm-coach`) e os especialistas da squad SEO (`seo-technical`, `seo-content`, `seo-schema`, `seo-sitemap`, `seo-performance`, `seo-geo`, `seo-sxo`, `seo-cluster`, `seo-local`, `seo-backlinks`, `seo-ecommerce`, `seo-drift`) e os especialistas da squad Security (`security-appsec`, `security-ai-code`, `security-secrets`, `security-privacy`, `security-incident`) |
-| omitido (37) | implementers (`*-dev-alpha/beta/gamma`), devops (`dev-devops`, `sites-devops`) e os papéis operacionais das squads de negócio (`brand-voice`, `brand-rollout`, `finance-billing`, `finance-tax`, `finance-reporter`, `legal-drafter`, `legal-disputes`, `legal-ops`, `pm-client`, `pm-demand`, `pm-engineer`, `pm-ops`, `pm-reporter`, `sales-copywriter`, `sales-closer`, `social-video`, `instagram-content`, `instagram-publisher`, `tiktok-content`, `tiktok-publisher`, `youtube-content`, `youtube-publisher`, `linkedin-content`, `linkedin-publisher`, `traffic-automation`, `traffic-copywriter`, `traffic-google`, `traffic-meta`, `traffic-tiktok`) — seguem o default do modelo |
+| `high` (43) | architects/planners, QAs e strategists (os 30 `opus`), hardening (`dev-dev-delta`, `sites-dev-delta`, `robotics-bench`), data (`dev-data-engineer`, `sites-data`, `pm-data`, `robotics-electronics`) e as "fontes únicas de números" (`brand-insights`, `finance-controller`, `legal-compliance`, `sales-finance`, `seo-google`, `traffic-bi`) |
+| `medium` (37) | analysts (`*-analyst`), UX (`dev-ux`, `sites-ux`, `robotics-mechanics`), designers (`brand-designer`, `sales-designer`, `social-design`, `social-photo`, `traffic-designer`), BI/insights/coaching (`dev-bi`, `dev-data-performance`, `pm-coach`) e os especialistas da squad SEO (`seo-technical`, `seo-content`, `seo-schema`, `seo-sitemap`, `seo-performance`, `seo-geo`, `seo-sxo`, `seo-cluster`, `seo-local`, `seo-backlinks`, `seo-ecommerce`, `seo-drift`) e os especialistas da squad Security (`security-appsec`, `security-ai-code`, `security-secrets`, `security-privacy`, `security-incident`) |
+| omitido (41) | implementers (`*-dev-alpha/beta/gamma`, `robotics-firmware`, `robotics-control`, `robotics-autonomy`, `robotics-connectivity`), devops (`dev-devops`, `sites-devops`) e os papéis operacionais das squads de negócio (`brand-voice`, `brand-rollout`, `finance-billing`, `finance-tax`, `finance-reporter`, `legal-drafter`, `legal-disputes`, `legal-ops`, `pm-client`, `pm-demand`, `pm-engineer`, `pm-ops`, `pm-reporter`, `sales-copywriter`, `sales-closer`, `social-video`, `instagram-content`, `instagram-publisher`, `tiktok-content`, `tiktok-publisher`, `youtube-content`, `youtube-publisher`, `linkedin-content`, `linkedin-publisher`, `traffic-automation`, `traffic-copywriter`, `traffic-google`, `traffic-meta`, `traffic-tiktok`) — seguem o default do modelo |
 
 ---
 
@@ -1063,7 +1096,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 **Guards de git (`PreToolUse` em `Bash`)** — além de `git push` direto, os dois cobrem flags globais (`git -C`, `--git-dir`, `-c alias.x=push`), wrappers (`env`, `sudo`, `\git`, `/usr/bin/git`), comandos multilinha e encadeados, `git send-pack`, `gh pr create/merge`, `gh release create`, `gh api` de escrita em PRs, e **bloqueiam shell embutido** (`sh -c`, `bash -c`, `eval`, `xargs`, `find -exec`, `python3 -c`/`node -e` com git) e variáveis no lugar do comando — expansão indireta não é permitida para operações git.
 
-- **`block-git-push.sh`** — em **107 agentes: todo agente com Bash exceto os devops, em TODAS as squads** (inclusive as sem devops — lá push é sempre do usuário/lead). Garantia dura: push é autoridade exclusiva do DevOps.
+- **`block-git-push.sh`** — em **117 agentes: todo agente com Bash exceto os devops, em TODAS as squads** (inclusive as sem devops — lá push é sempre do usuário/lead). Garantia dura: push é autoridade exclusiva do DevOps.
 - **`guard-push-branch.sh`** — nos 2 devops (`dev-devops`, `sites-devops`): push permitido só quando a branch do repositório alvo **e** toda ref de destino são `main`/`master`; detached HEAD ou branch indeterminável bloqueiam. Fora da `main` **o bloqueio é sempre aplicado** — um hook não consegue verificar "pedido explícito do usuário" (só vê o comando e o cwd), e não existe override por env ou texto no comando. Nesse caso o agente pede ao usuário que faça o push manualmente (ou volte para a `main`).
 - **`block-worktree.sh`** — registrado no `.claude/settings.json` de **cada projeto** (matchers `Agent|Task|EnterWorktree` e `Bash`). Bloqueia spawn de agente com `isolation: worktree`, a ferramenta EnterWorktree, `git worktree add` **e criação de branch** (`checkout -b`, `switch -c`, `git branch <nome>`) — todo trabalho acontece na branch ativa. Complementado por `"worktree": { "bgIsolation": "none" }` no mesmo settings. Instalado sempre pelo `*install`.
 
@@ -1099,7 +1132,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 
 ```
 .claude/
-├── agents/              ← 111 definições de agentes (fonte da verdade)
+├── agents/              ← 121 definições de agentes (fonte da verdade)
 ├── hooks/               ← 15 hooks de qualidade (ver §10)
 │   ├── block-git-push.sh          ← PreToolUse: bloqueia push em todo agente com Bash exceto devops
 │   ├── block-worktree.sh          ← PreToolUse (settings.json): bloqueia isolation: worktree, EnterWorktree, git worktree add e criação de branch
@@ -1116,7 +1149,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 │   ├── guard-env-files.sh         ← PreToolUse OPCIONAL (--with-env-guard): bloqueia .env/.env.* (exceto example/sample/template) e lockfiles
 │   ├── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado em ~/.claude/hooks/ pelo *install)
 │   └── team-os-tdah.sh            ← SessionStart: modo TDAH — injeta as regras de respostas curtas quando ligado (/team-os *tdah)
-└── skills/              ← 124 skills (diretórios reais)
+└── skills/              ← 134 skills (diretórios reais)
     ├── sala-de-controle/        ← Sala de Controle (exclusiva do CT, nunca vai para projeto): SKILL.md + scripts/{refresh,scan-sessions,session-tail,project-context,org-map}.py + scripts/painel/{collect.py,serve.py,index.html} (painel ao vivo, 8787) + templates/{panorama,registry,dispatches,organizacao}.md
     ├── doc-to-markdown/         ← SKILL.md + scripts/convert.sh (PDF/DOCX/XLSX/PPTX/ODT/RTF/HTML → Markdown na própria máquina)
     ├── seo/                     ← orquestradora da squad SEO + runtime Python (scripts/, schema/, data/, pdf/, hooks/); .venv/ e ms-playwright/ são runtime local (gitignored)
@@ -1133,7 +1166,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
         ├── templates/           ← 9 templates de archetype + agents-page.html.tpl + pressure-scenarios/ (13 cenários)
         ├── reference/           ← archetypes · native-teams-protocol · smart-memory-integration · mcp-servers · skills-catalog-quality · pressure-testing
         ├── scripts/             ← validate-agent.sh (+ --skills) · test-hooks.sh · migrate-ntp.sh · install-to-project.sh · scan-ct-projects.sh · detect-project-signals.sh · dashboard.sh · diff-agents.sh · generate-agent.sh · search-skills.sh + install-suggested-skills.sh (opcionais: sugerir skills externas no `*create`, só com OK; CLI com versão fixa) · preflight.sh · generate-agents-page.py · update-pack.sh/.py (`*update`) · pack-manifest.sh · trash.sh · release.sh (só mantenedor) · test-update.sh · test-propagate.sh · migrate-social-split.sh + test-migrate-social.sh (`*migrate-social`) · migrate-sala-to-ct.sh + test-migrate-sala.sh (pasta de Sala antiga → CT; simula por padrão) · feedback-scan.sh (`*feedback`, só leitura) · painel/ (`*painel`: mapa do pack, 8788)
-        └── presets/             ← 15 presets de squad (dev, sites, social, instagram, tiktok, youtube, linkedin, traffic, pm, sales, brand, finance, legal, seo, security)
+        └── presets/             ← 16 presets de squad (dev, sites, social, instagram, tiktok, youtube, linkedin, traffic, pm, sales, brand, finance, legal, seo, security, robotics)
 
 .github/workflows/audit.yml  ← CI: validate-agent.sh (+ --skills) · test-hooks.sh · test-update.sh · test-propagate.sh · test-migrate-social.sh · test-migrate-sala.sh · manifest do pack em dia · sintaxe dos scripts · 0 symlinks quebrados · contagens do README/CLAUDE.md (pelo manifest) · zero caminho de máquina · docs/agentes.html atualizado
 docs/agentes.html            ← página oficial dos agentes (gerada — ver §13)
@@ -1185,8 +1218,8 @@ O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados ao
 
 ```
 1. Editar agente/skill AQUI — agentes via /team-os-creator (*create, *squad, *migrate)
-2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 111/111 agentes do pack conformes (= *audit)
-3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 124 skills
+2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 121/121 agentes do pack conformes (= *audit)
+3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 134 skills
 4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 564/564 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
 6. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
@@ -1194,9 +1227,9 @@ O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados ao
 
 **Quem mantém o pack oficial** (e só quem tem o arquivo `.team-os-maintainer` na raiz) segue um ciclo maior — manifest, CHANGELOG, commit, release e push manual. Ele está descrito em **[MAINTAINERS.md](./MAINTAINERS.md)**. Quem só usa o pack não precisa dele: para receber as versões novas, use o `*update` ([Instalar e atualizar](#instalar-e-atualizar)).
 
-**Regra de ouro:** auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5, roda `test-update.sh`, `test-propagate.sh` e `test-migrate-sala.sh`, confere o `pack-manifest.json` e ainda checa: contagens "111 agentes"/"124 skills" no README e no CLAUDE.md (contadas pelo manifest — agentes e skills próprios de cada usuário não entram), zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
+**Regra de ouro:** auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5, roda `test-update.sh`, `test-propagate.sh` e `test-migrate-sala.sh`, confere o `pack-manifest.json` e ainda checa: contagens "121 agentes"/"134 skills" no README e no CLAUDE.md (contadas pelo manifest — agentes e skills próprios de cada usuário não entram), zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
 
-**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 111 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills** (o CI falha se estiver desatualizada). Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
+**Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 121 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills** (o CI falha se estiver desatualizada). Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 
 ---
 

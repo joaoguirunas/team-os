@@ -4,6 +4,12 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+### Adicionado
+- **Squad Robotics** (10 agentes, 10 skills): robótica, automação e IoT com qualquer placa (Arduino, ESP32, Pico/RP2040, STM32, Raspberry Pi/Jetson). Agentes: robotics-architect (JAZARI, opus), robotics-analyst (HERON), robotics-electronics (VOLTA — fonte única de pinagem, ligação, BOM e energia), robotics-firmware (ADA), robotics-control (BROOKS), robotics-autonomy (MORAVEC — ROS 2, visão, SLAM), robotics-connectivity (MARCONI), robotics-mechanics (LEONARDO), robotics-bench (FARADAY), robotics-qa (ASIMOV, opus). Skills: robotics-project-planning, robotics-component-research, robotics-electrical-safety, robotics-power-battery, robotics-firmware-patterns, robotics-motion-control, robotics-iot-connectivity, robotics-ros2-autonomy, robotics-mechanical-build, robotics-bringup-testing. Princípio "o agente não tem mãos" (montagem e medição são do usuário, com resultado esperado), pinagem congelada que vira o `pins.h`, escada de verificação L0–L6, gates G1 compra · G2 energização · G3 gravação com atuador · G4 etapa pronta e piso de segurança que nunca vira WAIVED. Método adaptado de wedsamuel1230/embedded-engineering-skills, ezrover/ESP32-AI-Agent-Skill, johnkozaris/jko-claude-plugins, aklofas/kicad-happy (MIT), arpitg1304/robotics-agent-skills e dbwls99706/ros2-engineering-skills (Apache-2.0).
+- `detect-project-signals.sh` reconhece projeto de firmware/robótica (`platformio.ini`, `.ino`, ESP-IDF, `boot.py`, ESPHome, ROS 2, nome da pasta) → preset `robotics`; discovery cria as áreas `agents/robotics/*`; hooks `check-*-progress`, validador, install e templates conhecem a squad.
+- Pasta-grupo de negócios (ex.: `Outros/<Negócio>/<Negócio> | <Projeto>`): Command Center, `*propagate`, `*feedback` e o mapa da Sala de Controle leem o 3º nível (team-os-creator 3.6, sala-de-controle 2.1).
+- Contagens: 121 agentes (30 opus / 91 inherit) · 134 skills · 16 squads; `block-git-push` em 117 agentes.
+
 ## [2.5.0] — 2026-11-03
 
 Evolução a partir da análise de ~50 repositórios (guia "15 skills essenciais" + 11 Reels). Método trazido para dentro das nossas skills, em pt-BR; créditos em `THIRD_PARTY_NOTICES.md` ("Métodos adaptados (2026-10)").

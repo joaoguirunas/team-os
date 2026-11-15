@@ -78,7 +78,7 @@ SALA_MSG="A Sala de Controle agora mora no Centro de Treinamento: abra uma sess�
 # Squads do pack — derivadas do campo `name:` de cada presets/*.yaml (presets/custom/ fica de
 # fora: agente próprio segue a regra do prefixo, mas não vira squad do pack). Sem presets
 # legíveis, cai na lista fixa abaixo (fallback seguro). Nunca escreva a lista à mão em outro lugar.
-PACK_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security"
+PACK_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security robotics"
 # Squads de PLATAFORMA social: dão gate (estrategista) e publicação ao estúdio `social`.
 PLATFORM_SQUADS="instagram tiktok youtube linkedin"
 pack_squads() { # $1=raiz do CT → squads separadas por espaço

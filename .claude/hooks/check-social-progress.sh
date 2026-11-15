@@ -55,7 +55,7 @@ texts = []
 collect(data, texts)
 blob = "\n".join(texts)
 
-SQUAD = r"(?:(?:sales|dev|sites|social|instagram|tiktok|youtube|linkedin|traffic|pm|brand|finance|legal|seo|security)/)?"
+SQUAD = r"(?:(?:sales|dev|sites|social|instagram|tiktok|youtube|linkedin|traffic|pm|brand|finance|legal|seo|security|robotics)/)?"
 path_ref = re.search(r"docs/smart-memory/agents/" + SQUAD + r"(content|design|photo|video|publisher)\b", blob) is not None
 
 PLATFORM = r"(?:instagram|facebook|tiktok|linkedin|youtube|threads)"

@@ -80,7 +80,7 @@ MCP_FILE="$SKILLS_DIR/team-os-creator/reference/mcp-servers.md"
 
 # Squads do pack: derivadas do `name:` de cada presets/*.yaml (logo abaixo, ao carregar os presets).
 # Esta lista é só o fallback seguro — usada se nenhum preset do pack for lido.
-KNOWN_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security"
+KNOWN_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security robotics"
 KNOWN_SQUADS=""
 COLOR_ENUM="red blue green yellow purple orange pink cyan"
 COLOR_LIMIT=7  # 8 cores do enum menos blue (reservada ao lead): acima disso repetição é inevitável

@@ -162,6 +162,20 @@ if [ "${SOCIAL_HITS:-0}" -ge 2 ] && [ "${PROPOSAL_CORE_HITS:-0}" -lt 1 ] && [ $H
   HAS_SOCIAL=1
 fi
 
+# Robotics signals — firmware de microcontrolador, robótica, automação e IoT: platformio.ini,
+# sketch .ino, ESP-IDF (sdkconfig, idf_component.yml), MicroPython (boot.py), ESPHome (yaml com
+# "esphome:"), ROS 2 (package.xml com ament/colcon) ou o nome da pasta (robô, arduino, esp32, iot,
+# automação, domótica). Firmware é código, mas nenhuma squad web serve: robotics vence dev/sites.
+ROBOTICS_HITS=0
+[ -f "platformio.ini" ] && ROBOTICS_HITS=$((ROBOTICS_HITS + 2))
+find . -maxdepth 3 \( -name "*.ino" -o -name "platformio.ini" -o -name "sdkconfig" -o -name "idf_component.yml" \) -not -path "*/.git/*" -not -path "*/.claude/*" -not -path "*/node_modules/*" 2>/dev/null | head -1 | grep -q . && ROBOTICS_HITS=$((ROBOTICS_HITS + 2))
+find . -maxdepth 3 -name "boot.py" -not -path "*/.git/*" -not -path "*/.claude/*" 2>/dev/null | head -1 | grep -q . && ROBOTICS_HITS=$((ROBOTICS_HITS + 1))
+find . -maxdepth 3 -name "package.xml" -not -path "*/.git/*" -not -path "*/node_modules/*" -exec grep -l -E "ament_(cmake|python)|<buildtool_depend>" {} + 2>/dev/null | head -1 | grep -q . && ROBOTICS_HITS=$((ROBOTICS_HITS + 2))
+find . -maxdepth 2 -name "*.yaml" -not -path "*/.git/*" -not -path "*/.claude/*" -not -path "*/node_modules/*" -exec grep -l -E "^esphome:" {} + 2>/dev/null | head -1 | grep -q . && ROBOTICS_HITS=$((ROBOTICS_HITS + 2))
+case "$BASENAME_LC" in *robo*|*arduino*|*esp32*|*esp8266*|*raspberry*|*iot*|*automacao*|*domotica*|*firmware*|*embarcado*|*embedded*|*mecatronica*) ROBOTICS_HITS=$((ROBOTICS_HITS + 2)) ;; esac
+HAS_ROBOTICS=0
+[ "${ROBOTICS_HITS:-0}" -ge 2 ] && HAS_ROBOTICS=1
+
 # Pasta de Sala de Controle ANTIGA: a Sala agora mora no CT (exclusiva do CT, nunca instalada em
 # projeto). Sem agentes, com a skill sala-de-controle ou maestri-os (versões anteriores do pack)
 # ou com nome de Sala → não sugere squad; sugere migrar (migrate-sala-to-ct.sh, dry-run primeiro).
@@ -181,6 +195,8 @@ fi
 # comerciais sem código → preset `sales`.
 if [ $LEGACY_CONTROL_ROOM -eq 1 ]; then
   ARCHETYPE="legacy-control-room"
+elif [ $HAS_ROBOTICS -eq 1 ]; then
+  ARCHETYPE="robotics"
 elif [ $HAS_FINANCE -eq 1 ]; then
   ARCHETYPE="finance"
 elif [ $HAS_LEGAL -eq 1 ]; then
@@ -242,6 +258,8 @@ case "$ARCHETYPE" in
     SUGGESTED_PRESET="legal" ;;
   seo)
     SUGGESTED_PRESET="seo" ;;
+  robotics)
+    SUGGESTED_PRESET="robotics" ;;
   mobile-app)
     # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
     SUGGESTED_PRESET="dev"
@@ -283,4 +301,5 @@ echo "HAS_CI=$HAS_CI"
 echo "HAS_ML=$HAS_ML"
 echo "HAS_CONTENT=$HAS_CONTENT"
 echo "HAS_SEO=$HAS_SEO"
+echo "HAS_ROBOTICS=$HAS_ROBOTICS"
 echo "HAS_SOCIAL=$HAS_SOCIAL"
