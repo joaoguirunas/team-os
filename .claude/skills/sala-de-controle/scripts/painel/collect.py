@@ -366,12 +366,25 @@ def agents_of(session_dir, members):
                              "color": m.get("color") or "", "kind": "teammate", "state": "idle",
                              "now": "", "tool": None, "turns": [], "last_epoch": 0}
     sub = os.path.join(session_dir, "subagents")
-    for meta_path in glob.glob(os.path.join(sub, "*.meta.json")):
+    # subagents diretos + agentes de Workflow (subagents/workflows/<wf_id>/agent-*.meta.json)
+    metas = glob.glob(os.path.join(sub, "*.meta.json")) + glob.glob(os.path.join(sub, "workflows", "*", "*.meta.json"))
+    for meta_path in metas:
         try:
             meta = json.load(open(meta_path, encoding="utf-8"))
         except Exception:
             continue
-        name = meta.get("name") or meta.get("agentType") or os.path.basename(meta_path)
+        file_id = os.path.basename(meta_path)[:-len(".meta.json")]
+        if meta.get("name"):
+            name = meta["name"]
+        elif os.path.basename(os.path.dirname(os.path.dirname(meta_path))) == "workflows":
+            # agente de workflow não tem name: chave = workflow + rótulo da tarefa (nunca o agentType,
+            # senão todos os agentes do workflow virariam um nó só)
+            wf = os.path.basename(os.path.dirname(meta_path))
+            wf_short = wf[3:11] if wf.startswith("wf_") else wf[:8]
+            label = meta.get("description") or file_id.replace("agent-", "")[:8]
+            name = f"wf:{wf_short} · {label}"   # mesmo rótulo re-spawnado = mesma tarefa: fica o transcrito mais recente
+        else:
+            name = meta.get("agentType") or file_id
         jsonl = meta_path[:-len(".meta.json")] + ".jsonl"
         st = read_transcript_state(jsonl) if os.path.isfile(jsonl) else None
         a = agents.get(name) or {"name": name, "type": meta.get("customAgentType") or meta.get("agentType") or "",
@@ -381,6 +394,8 @@ def agents_of(session_dir, members):
         if not a.get("type"):
             a["type"] = meta.get("customAgentType") or meta.get("agentType") or ""
         a["description"] = clean(meta.get("description", ""), 120)
+        if meta.get("workflowPhase"):
+            a["description"] = clean(f"Workflow · {meta['workflowPhase']} · {a['description']}", 120)
         if st:
             # um agente pode ter vários transcritos (re-spawn): fica o mais recente
             if st["last_epoch"] >= a.get("last_epoch", 0):

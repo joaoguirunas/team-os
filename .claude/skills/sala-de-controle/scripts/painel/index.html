@@ -464,7 +464,7 @@ function rebuild(){
         const ags=sx.agents.slice().sort((x,y)=>x.name.localeCompare(y.name));
         ags.forEach((ag,j)=>{const aa=Math.atan2(SN.y-L.y,SN.x-L.x)+(j-(ags.length-1)/2)*0.55;
           const A=get('a:'+sx.id+'/'+ag.name,{kind:'agent',r:9,ag,sess:sx,lead:SN,proj:L},SN.x+Math.cos(aa)*74,SN.y+Math.sin(aa)*74);members.push(A);SN.wires.push(A);A.wires=[SN];});});});
-    const seed=(a0+a)/2;get('b:'+g.name,{kind:'biz',r:0,name:g.name,seed,members,side:'c',wires:[]},Math.cos(seed)*LY.R1*1.9,Math.sin(seed)*LY.R1*1.9);a+=GAP_B*u;});
+    const seed=(a0+a)/2;get('b:'+g.name,{kind:'biz',r:0,name:g.name,seed,members,solo:groups.length===1,side:'c',wires:[]},Math.cos(seed)*LY.R1*1.9,Math.sin(seed)*LY.R1*1.9);a+=GAP_B*u;});
   hub.wires=[];let removed=0;
   for(const id of [...nodes.keys()])if(!keep.has(id)){nodes.delete(id);removed++;}
   SIM.arr=[...nodes.values()];
@@ -528,7 +528,9 @@ function tick(){
   const al=SIM.alpha,arr=SIM.arr;
   for(const n of arr){if(n.fixed)continue;let tx,ty,st;
     if(n.kind==='lead'){tx=Math.cos(n.seed)*LY.R1;ty=Math.sin(n.seed)*LY.R1;st=0.06;}            // atração para o setor do negócio
-    else if(n.kind==='biz'){let R=0;for(const m of n.members)R=Math.max(R,Math.hypot(m.x,m.y)+m.r);tx=Math.cos(n.seed)*(R+50);ty=Math.sin(n.seed)*(R+50);st=0.1;}
+    else if(n.kind==='biz'){if(n.solo){tx=0;ty=hub.r+62;st=0.2;}                                   // um só negócio na tela: rótulo logo abaixo do hub da Sala
+      else{let R=0,cx=0,cy=0;for(const m of n.members){R=Math.max(R,Math.hypot(m.x,m.y)+m.r);cx+=m.x;cy+=m.y;}       // vários: mira o centróide real dos membros, não a semente do setor
+        const ang=n.members.length&&Math.hypot(cx,cy)>1?Math.atan2(cy,cx):n.seed;tx=Math.cos(ang)*(R+50);ty=Math.sin(ang)*(R+50);st=0.1;}}
     else{const p=n.lead,q=n.kind==='session'?hub:p.lead;let ux=p.x-q.x,uy=p.y-q.y;const d=Math.hypot(ux,uy)||1,len=n.kind==='session'?(n.sess.stopped?78:96):74;
       tx=p.x+ux/d*len;ty=p.y+uy/d*len;st=0.04;                                                      // leve empurrão para fora do pai
       const dx=n.x-p.x,dy=n.y-p.y,dd=Math.hypot(dx,dy)||1,f=(dd-len)/dd*0.3*al;n.vx-=dx*f*0.85;n.vy-=dy*f*0.85;if(!p.fixed){p.vx+=dx*f*0.15;p.vy+=dy*f*0.15;}}
