@@ -66,10 +66,13 @@ if [ ! -s "$PROJECTS_FILE" ]; then
   [ -d "$ROOT" ] || { echo "ERROR=root_not_found|$ROOT" >&2; exit 1; }
   ROOT="$(cd "$ROOT" && pwd)"
   echo "ROOT=$ROOT"
-  for d in "$ROOT"/*/ "$ROOT"/*/*/; do
+  # 3º nível: grupo → negócio → projeto (ex.: "Outros/Sahaj/Sahaj | Marketing")
+  for d in "$ROOT"/*/ "$ROOT"/*/*/ "$ROOT"/*/*/*/; do
     [ -d "${d}docs/smart-memory" ] || continue
     d="${d%/}"
-    case "$d" in "$ROOT"/.*|"$ROOT"/*/.*) continue ;; esac
+    case "$d" in "$ROOT"/.*|"$ROOT"/*/.*|"$ROOT"/*/*/.*) continue ;; esac
+    # projeto dentro de projeto (ex.: pasta de proposta com smart-memory própria) não conta
+    case "$(dirname "$d")" in "$ROOT") ;; *) [ -d "$(dirname "$d")/docs/smart-memory" ] && continue ;; esac
     printf '%s\t%s\n' "$d" "${d#"$ROOT"/}" >> "$PROJECTS_FILE"
   done
 fi

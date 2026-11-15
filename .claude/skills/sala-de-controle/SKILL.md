@@ -1,8 +1,8 @@
 ---
 name: sala-de-controle
 description: Sala de Controle das sessões do Claude Code, que mora no CT: a cada invocação relê todas as sessões abertas, a etapa de cada projeto pela smart-memory e o que cada sessão faz agora; abre o painel de agentes em produção, decompõe o pedido, despacha para a sessão certa (sessão nova só com OK) e acompanha os retornos. Mapeia a organização de pastas. Roteia, nunca executa. Trigger: /sala-de-controle
-version: "2.0"
-updated: "2026-10-21"
+version: "2.1"
+updated: "2026-11-14"
 user-invocable: true
 ---
 
@@ -209,7 +209,7 @@ O que ele lê (tudo read-only, mesma regra do resto da Sala): `~/.claude/session
 python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/org-map.py" --tree
 ```
 
-Padrão que o pack entende: na raiz, `0 | Centro de Treinamento` (CT — fonte do pack e casa da Sala) + os negócios, cada um com `<Negócio>/<Negócio> | <Projeto>`. O script aponta: projeto solto na raiz, nome fora do padrão `<Negócio> | …`, nível extra de pasta, projeto sem squad, squad sem smart-memory, sem `team-os`, negócio vazio e **Sala antiga** (`SALA_ANTIGA`: pasta fora do CT com `sala-de-controle`, com a antiga `maestri-os` ou com "Sala de Controle" no nome) — a sugestão traz o comando de migração `migrate-sala-to-ct.sh` (simulação por padrão; quem roda é o usuário ou o `/team-os-creator`).
+Padrão que o pack entende: na raiz, `0 | Centro de Treinamento` (CT — fonte do pack e casa da Sala) + os negócios, cada um com `<Negócio>/<Negócio> | <Projeto>`; uma pasta-grupo (ex.: `Outros/`) pode reunir negócios menores um nível abaixo (`Outros/<Negócio>/<Negócio> | <Projeto>`). O script aponta: projeto solto na raiz, nome fora do padrão `<Negócio> | …`, nível extra de pasta, projeto sem squad, squad sem smart-memory, sem `team-os`, negócio vazio e **Sala antiga** (`SALA_ANTIGA`: pasta fora do CT com `sala-de-controle`, com a antiga `maestri-os` ou com "Sala de Controle" no nome) — a sugestão traz o comando de migração `migrate-sala-to-ct.sh` (simulação por padrão; quem roda é o usuário ou o `/team-os-creator`).
 
 Entregue ao usuário:
 1. **A árvore atual** (negócio → projeto → squads · smart-memory).

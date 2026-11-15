@@ -114,16 +114,31 @@ echo "---"
 # seus filhos diretos entram como projetos "Contêiner/Filho" — inclusive os vazios, para
 # aparecerem como "não instalado" no dashboard. Pasta de Sala de Controle (antiga) nunca é contêiner.
 CANDIDATES="$(mktemp "${TMPDIR:-/tmp}/scan-ct.XXXXXX")" || exit 1
+# Pasta "de negócio" dentro de outra (ex.: "Outros/Sahaj" com "Sahaj | Marketing"): sem .claude/
+# nem .git próprios e com pelo menos um filho nomeado "<pasta> | …". Uma pasta da raiz que tem
+# filhos assim é um GRUPO (ex.: "Outros/"): seus negócios são lidos um nível abaixo.
+is_business_dir() {
+  local p="$1" bn
+  [ -d "$p/.claude" ] || [ -d "$p/.git" ] && return 1
+  bn=$(basename "$p")
+  for g in "$p"*/; do
+    case "$(basename "$g")" in "$bn |"*|"$bn|"*) return 0 ;; esac
+  done
+  return 1
+}
 for d in "$CT_ROOT"/*/; do
   [ -d "$d" ] || continue
   n=$(basename "$d")
   case "$n" in .*) continue ;; esac
-  is_container=0
+  is_container=0; is_group=0
   if [ ! -d "$d/.claude" ] && [ ! -d "$d/.git" ]; then
     lc=$(printf '%s' "$n" | tr '[:upper:]' '[:lower:]')
     case "$lc" in
       *"sala de controle"*|*"sala-de-controle"*|*"control room"*|*"control-room"*) ;;
-      *) for sub in "$d"*/; do [ -d "$sub/.claude" ] && { is_container=1; break; }; done ;;
+      *) for sub in "$d"*/; do
+           [ -d "$sub/.claude" ] && is_container=1
+           is_business_dir "$sub" && { is_container=1; is_group=1; }
+         done ;;
     esac
   fi
   if [ $is_container -eq 1 ]; then
@@ -131,8 +146,24 @@ for d in "$CT_ROOT"/*/; do
       [ -d "$sub" ] || continue
       sn=$(basename "$sub")
       case "$sn" in .*) continue ;; esac
-      # Filho já nomeado "<Contêiner> | <escopo>" (convenção Maestri) → usa o nome do filho
-      case "$sn" in "$n |"*|"$n|"*) label="$sn" ;; *) label="$n/$sn" ;; esac
+      if [ $is_group -eq 1 ] && is_business_dir "$sub"; then
+        # Grupo → negócio → projeto (ex.: "Outros/Sahaj/Sahaj | Marketing")
+        for gsub in "$sub"*/; do
+          [ -d "$gsub" ] || continue
+          gn=$(basename "$gsub")
+          case "$gn" in .*) continue ;; esac
+          case "$gn" in "$sn |"*|"$sn|"*) label="$gn" ;; *) label="$sn/$gn" ;; esac
+          printf '%s\t%s\n' "$gsub" "$label" >> "$CANDIDATES"
+        done
+        continue
+      fi
+      # Filho já nomeado "<Contêiner> | <escopo>" (convenção Maestri) → usa o nome do filho;
+      # num grupo, projeto direto com nome próprio ("Outros/Céu de Gaia | Site") também
+      case "$sn" in
+        "$n |"*|"$n|"*) label="$sn" ;;
+        *" | "*) if [ $is_group -eq 1 ]; then label="$sn"; else label="$n/$sn"; fi ;;
+        *) label="$n/$sn" ;;
+      esac
       printf '%s\t%s\n' "$sub" "$label" >> "$CANDIDATES"
     done
   else

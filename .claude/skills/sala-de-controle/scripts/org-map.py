@@ -7,6 +7,9 @@ Padrão esperado (o que o team-os entende):
   │                                       (skill sala-de-controle; memória em docs/smart-memory/sala-de-controle/)
   ├── <Negócio>/                        ← contêiner: sem .claude/ nem .git próprios
   │   └── <Negócio> | <Projeto>         ← projeto: .claude/agents (squad) + docs/smart-memory
+  ├── <Grupo>/  (ex.: Outros)            ← reúne negócios menores, um nível abaixo
+  │   ├── <Negócio>/<Negócio> | <Projeto>
+  │   └── <Negócio> | <Projeto>          ← projeto direto no grupo, com nome próprio
   └── …
 
 A Sala de Controle mora no CT. Pasta fora do CT com a skill sala-de-controle, com a antiga
@@ -97,10 +100,37 @@ if not os.path.isdir(ROOT):
     print(f"ERROR=not_a_dir|PATH={ROOT}", file=sys.stderr)
     sys.exit(1)
 
+def is_business_dir(i, path):
+    """Pasta de negócio dentro de um grupo: não é projeto e tem filho '<pasta> | …'."""
+    if kind_of(i) != "pasta":
+        return False
+    return any(nfc(os.path.basename(c)).startswith(i["name"] + " |") for c in children(path))
+
+
 containers = {}
 for top in children(ROOT):
     i = info(top)
     k = kind_of(i)
+    # GRUPO (ex.: "Outros/"): pasta da raiz que reúne negócios — "Outros/Sahaj/Sahaj | Marketing".
+    # Pode ter também projetos diretos com nome próprio ("Outros/Céu de Gaia | Site").
+    if k == "pasta" and any(is_business_dir(info(s), s) for s in children(top)):
+        i["kind"], i["level"], i["business"] = "grupo", 0, ""
+        nodes.append(i)
+        for s in [info(x) for x in children(top)]:
+            if is_business_dir(s, s["path"]):
+                s["kind"], s["level"], s["business"] = "negocio", 1, ""
+                containers[s["name"]] = s["path"]
+                nodes.append(s)
+                for g in [info(x) for x in children(s["path"])]:
+                    g["kind"], g["level"], g["business"] = kind_of(g), 2, s["name"]
+                    nodes.append(g)
+            else:
+                sk = kind_of(s)
+                nm = s["name"]
+                s["kind"], s["level"] = sk, 1
+                s["business"] = nm.split(" | ")[0] if " | " in nm else i["name"]
+                nodes.append(s)
+        continue
     if k == "pasta":
         subs = [info(s) for s in children(top)]
         if any(s["is_project"] or is_sala_name(s["name"]) for s in subs) or not subs:
@@ -164,7 +194,7 @@ for n in nodes:
         add_finding("SEM_TEAM_OS", nm, "tem agentes mas não tem a skill team-os",
                     "rodar /team-os-creator *propagate (team-os é obrigatória)")
     if n["kind"] == "negocio":
-        kids = [c for c in nodes if c["business"] == nm and c["level"] == 1]
+        kids = [c for c in nodes if c["business"] == nm and c["level"] == n["level"] + 1]
         if not kids:
             add_finding("NEGOCIO_VAZIO", nm, "pasta de negócio sem projetos", "remover ou criar o primeiro projeto")
 
@@ -183,6 +213,8 @@ elif TREE:
         ind = "│   " * n["level"]
         if n["kind"] == "negocio":
             desc = "negócio"
+        elif n["kind"] == "grupo":
+            desc = "grupo de negócios"
         elif n["kind"] == "ct":
             desc = "CT · fonte do pack e casa da Sala de Controle"
         elif n["kind"] == "sala":
