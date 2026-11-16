@@ -2,7 +2,7 @@
 
 ### Pack de orquestração para Claude Code Agent Teams — *by João Guirunas*
 
-**O team-os transforma o Claude Code num time de especialistas.** São **121 agentes e 134 skills** em **16 squads** (Dev, Sites, SEO, Security, Social — estúdio comum, Instagram, TikTok, YouTube, LinkedIn, Traffic, PM, Sales, Brand, Finance, Legal e Robotics), prontos para trabalhar em paralelo com o recurso **Agent Teams** do Claude Code. Cada agente tem um papel com fronteira clara (quem planeja, quem produz, quem aprova, quem publica), uma memória compartilhada que persiste entre sessões e regras de qualidade embutidas.
+**O team-os transforma o Claude Code num time de especialistas.** São **121 agentes e 135 skills** em **16 squads** (Dev, Sites, SEO, Security, Social — estúdio comum, Instagram, TikTok, YouTube, LinkedIn, Traffic, PM, Sales, Brand, Finance, Legal e Robotics), prontos para trabalhar em paralelo com o recurso **Agent Teams** do Claude Code. Cada agente tem um papel com fronteira clara (quem planeja, quem produz, quem aprova, quem publica), uma memória compartilhada que persiste entre sessões e regras de qualidade embutidas.
 
 **Para quem é:** quem já usa o Claude Code (no app, aba **Code**, ou no terminal) e quer tocar vários projetos com times de IA em vez de uma conversa só — produto e software, sites, conteúdo orgânico e tráfego pago, propostas comerciais, marca, financeiro e jurídico do dia a dia. Serve para quem trabalha sozinho, para agências e consultorias com vários clientes e para equipes que querem um método repetível. Você não precisa saber criar agentes: instala as squads que o projeto pede e conversa em português.
 
@@ -25,7 +25,7 @@ flowchart LR
     GH["GitHub — pack oficial"] -- "*update" --> CT
 
     subgraph CT["CT — Centro de Treinamento (fonte da verdade)"]
-        PK[("121 agentes · 134 skills · 16 squads")]
+        PK[("121 agentes · 135 skills · 16 squads")]
         CR["/team-os-creator<br/>cria · audita · instala · propaga"]
         SC["/sala-de-controle<br/>lê sessões · despacha · painel 8787"]
         CR --- PK
@@ -50,7 +50,7 @@ flowchart LR
 
 Em volta dessas três peças, quatro mecanismos valem para todos os agentes:
 
-- **Native Teams Protocol** — o contrato que todo agente carrega, byte a byte igual: a smart-memory é a fonte da verdade, o trabalho passa pela TaskList nativa, os agentes conversam direto entre si (peer-to-peer) e ninguém cria sub-time. → [§1](#1-conceitos-fundamentais) · [§8](#8-modelo-de-coordenação)
+- **Native Teams Protocol** — o contrato que todo agente carrega, byte a byte igual: a smart-memory é a fonte da verdade, o trabalho passa pela TaskList nativa, os agentes conversam direto entre si (peer-to-peer), ninguém cria sub-time e ninguém trava o computador do usuário com processo pesado (mede antes com `/machine-resources`). → [§1](#1-conceitos-fundamentais) · [§8](#8-modelo-de-coordenação)
 - **Smart-memory** — `docs/smart-memory/` em cada projeto, no formato do Obsidian (frontmatter, wikilinks, tags). Leitura em camadas: cada agente lê o índice, o `DIGEST.md` da sua área e as stories ativas, nunca pastas inteiras; o frio vai para `_archive/` com `*compact`. → [§11](#11-estrutura-do-repositório)
 - **Hooks de qualidade e de economia de tokens** — 15 hooks: push só pelo devops, task vaga recusada, publicação/envio/pagamento só com PASS e confirmação do usuário, leitura de memória com orçamento, mensagem entre agentes curta, aviso de contexto grande e o modo TDAH (respostas curtas). → [§10](#10-hooks-de-qualidade)
 - **Política de modelos Híbrida** — `opus` fixo onde o raciocínio decide (30 agentes: arquitetos, planejadores, QAs e estrategistas); `inherit` no resto (91), que segue o `/model` da sua sessão. → [§9](#9-política-de-modelos-híbrido)
@@ -84,7 +84,7 @@ Times de IA superam uma sessão única quando o trabalho tem partes independente
 3. [Skill principal: `/team-os`](#3-skill-principal-team-os)
 4. [Skill principal: `/team-os-creator`](#4-skill-principal-team-os-creator)
 5. [Os 121 agentes e suas skills](#5-os-121-agentes-e-suas-skills)
-6. [Catálogo completo de skills](#6-catálogo-completo-de-skills) — as 134, com para que serve e quem usa · [Sala de Controle](#sala-de-controle--sala-de-controle-mora-no-ct)
+6. [Catálogo completo de skills](#6-catálogo-completo-de-skills) — as 135, com para que serve e quem usa · [Sala de Controle](#sala-de-controle--sala-de-controle-mora-no-ct)
 7. [Tutorial passo a passo](#7-tutorial-passo-a-passo)
 8. [Modelo de coordenação](#8-modelo-de-coordenação)
 9. [Política de modelos (Híbrido)](#9-política-de-modelos-híbrido)
@@ -743,9 +743,9 @@ A coluna **Skills relacionadas** é um mapa de skills **recomendadas/disponívei
 
 ## 6. Catálogo completo de skills
 
-As **134 skills** do pack, todas diretórios reais e versionados em `.claude/skills/` (repositório self-contained). Gerado a partir dos arquivos do pack: **para que serve** resume a `description` da skill; **usada por** são os agentes que a citam no próprio arquivo (o `*install` leva a um projeto exatamente as skills citadas pelos agentes instalados, mais a `team-os`).
+As **135 skills** do pack, todas diretórios reais e versionados em `.claude/skills/` (repositório self-contained). Gerado a partir dos arquivos do pack: **para que serve** resume a `description` da skill; **usada por** são os agentes que a citam no próprio arquivo (o `*install` leva a um projeto exatamente as skills citadas pelos agentes instalados, mais a `team-os`).
 
-Índice rápido: Orquestração (3) · Transversais (15) · Dev (10) · Dados e IA (6) · Sites (9) · SEO (27) · Security (4) · Robotics (10) · Social (13) · Instagram (3) · TikTok (2) · YouTube (4) · LinkedIn (2) · Traffic (4) · Sales (6) · Brand (6) · Finance (5) · Legal (5) = **134**.
+Índice rápido: Orquestração (3) · Transversais (16) · Dev (10) · Dados e IA (6) · Sites (9) · SEO (27) · Security (4) · Robotics (10) · Social (13) · Instagram (3) · TikTok (2) · YouTube (4) · LinkedIn (2) · Traffic (4) · Sales (6) · Brand (6) · Finance (5) · Legal (5) = **135**.
 
 #### Orquestração (CT) (3)
 
@@ -755,10 +755,11 @@ As **134 skills** do pack, todas diretórios reais e versionados em `.claude/ski
 | **`team-os-creator`** | Factory do pack, só no CT: cria, audita, instala, propaga e atualiza agentes e skills; Command Center e mapa do pack (8788) | você, numa sessão no CT (nenhum agente) |
 | **`sala-de-controle`** | Sala de Controle, só no CT: lê todas as sessões e a etapa de cada projeto, despacha pedidos e abre o painel ao vivo (8787) | você, numa sessão no CT (nenhum agente) |
 
-#### Transversais (qualquer squad) (15)
+#### Transversais (qualquer squad) (16)
 
 | Skill | Para que serve | Usada por |
 |---|---|---|
+| **`machine-resources`** | Mede a máquina (memória livre, núcleos, swap) antes de processo pesado — Whisper, IA local, vídeo, build — e diz quantos jobs cabem juntos sem travar o computador | todos os 121 agentes (regra 9 do Native Teams Protocol) e o lead do `/team-os` |
 | **`verify-before-done`** | Evidência antes de afirmação: verificação obrigatória antes de dizer que algo está pronto ou corrigido | 53 agentes de 12 squads — brand (todos, 8) · finance (todos, 8) · legal (todos, 8) · dev (5) · sales (5) · sites (5) · pm (4) · linkedin (todos, 3) · youtube (todos, 3) · tiktok (2) · security (1) · traffic (1) |
 | **`copy-humanize`** | Checklist para tirar a "cara de IA" de texto em pt-BR: tiques, clichês, painel de 5 sinais e ajuste por canal | 7 agentes de 7 squads — brand (1) · instagram (1) · linkedin (1) · sales (1) · tiktok (1) · traffic (1) · youtube (1) |
 | **`deep-research`** | Pesquisa multi-fonte com rastreio de citações, evidência persistida e relatório estruturado | 9 agentes de 8 squads — finance (2) · brand (1) · dev (1) · instagram (1) · legal (1) · sales (1) · sites (1) · youtube (1) |
@@ -1149,7 +1150,7 @@ Para forçar outro modelo num agente `inherit`, especifique no spawn: `"Spawn {n
 │   ├── guard-env-files.sh         ← PreToolUse OPCIONAL (--with-env-guard): bloqueia .env/.env.* (exceto example/sample/template) e lockfiles
 │   ├── team-os-session-title.sh   ← SessionStart: nomeia a sessão por "projeto · branch" (instalado em ~/.claude/hooks/ pelo *install)
 │   └── team-os-tdah.sh            ← SessionStart: modo TDAH — injeta as regras de respostas curtas quando ligado (/team-os *tdah)
-└── skills/              ← 134 skills (diretórios reais)
+└── skills/              ← 135 skills (diretórios reais)
     ├── sala-de-controle/        ← Sala de Controle (exclusiva do CT, nunca vai para projeto): SKILL.md + scripts/{refresh,scan-sessions,session-tail,project-context,org-map}.py + scripts/painel/{collect.py,serve.py,index.html} (painel ao vivo, 8787) + templates/{panorama,registry,dispatches,organizacao}.md
     ├── doc-to-markdown/         ← SKILL.md + scripts/convert.sh (PDF/DOCX/XLSX/PPTX/ODT/RTF/HTML → Markdown na própria máquina)
     ├── seo/                     ← orquestradora da squad SEO + runtime Python (scripts/, schema/, data/, pdf/, hooks/); .venv/ e ms-playwright/ são runtime local (gitignored)
@@ -1219,7 +1220,7 @@ O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados ao
 ```
 1. Editar agente/skill AQUI — agentes via /team-os-creator (*create, *squad, *migrate)
 2. bash .claude/skills/team-os-creator/scripts/validate-agent.sh            → 121/121 agentes do pack conformes (= *audit)
-3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 134 skills
+3. bash .claude/skills/team-os-creator/scripts/validate-agent.sh --skills   → lint das 135 skills
 4. bash .claude/skills/team-os-creator/scripts/test-hooks.sh                → 564/564 casos dos hooks
 5. python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py   → regenera docs/agentes.html
 6. /team-os-creator *propagate   → leva aos projetos destino (--match-target-squads)
@@ -1227,7 +1228,7 @@ O CT é a fonte da verdade: agentes e skills são editados **aqui** e levados ao
 
 **Quem mantém o pack oficial** (e só quem tem o arquivo `.team-os-maintainer` na raiz) segue um ciclo maior — manifest, CHANGELOG, commit, release e push manual. Ele está descrito em **[MAINTAINERS.md](./MAINTAINERS.md)**. Quem só usa o pack não precisa dele: para receber as versões novas, use o `*update` ([Instalar e atualizar](#instalar-e-atualizar)).
 
-**Regra de ouro:** auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5, roda `test-update.sh`, `test-propagate.sh` e `test-migrate-sala.sh`, confere o `pack-manifest.json` e ainda checa: contagens "121 agentes"/"134 skills" no README e no CLAUDE.md (contadas pelo manifest — agentes e skills próprios de cada usuário não entram), zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
+**Regra de ouro:** auditoria sempre verde antes de propagar. O CI (`.github/workflows/audit.yml`) repete os passos 2-5, roda `test-update.sh`, `test-propagate.sh` e `test-migrate-sala.sh`, confere o `pack-manifest.json` e ainda checa: contagens "121 agentes"/"135 skills" no README e no CLAUDE.md (contadas pelo manifest — agentes e skills próprios de cada usuário não entram), zero caminho de máquina versionado e `docs/agentes.html` em dia (`--check`). Detalhes de contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); histórico em [CHANGELOG.md](./CHANGELOG.md).
 
 **Página oficial dos agentes:** [`docs/agentes.html`](./docs/agentes.html) — apresentação navegável dos 121 agentes: card inteiro clicável abre modal de **perfil completo** (bio, matriz de autoridade, regras absolutas, skills), skills clicáveis abrem modal com versão/seções e navegação cruzada de volta aos agentes que a usam. Gerada dos arquivos reais por `python3 .claude/skills/team-os-creator/scripts/generate-agents-page.py` — **regenerar após qualquer mudança em agentes ou skills** (o CI falha se estiver desatualizada). Preview local: `npx http-server docs -p 8765` (config pronta em `.claude/launch.json`).
 

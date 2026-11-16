@@ -1,6 +1,6 @@
 # team-os — by João Guirunas
 
-Pack **team-os**: 121 agentes e 134 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Pack **team-os**: 121 agentes e 135 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
 > 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 121 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos, hooks e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
@@ -50,14 +50,14 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 ```
 Editar agente/skill no CT
 → validate-agent.sh            (= *audit; 121/121 do pack)
-→ validate-agent.sh --skills   (lint das 134 skills)
+→ validate-agent.sh --skills   (lint das 135 skills)
 → test-hooks.sh                (564/564)
 → test-propagate.sh            (127/127)
 → generate-agents-page.py      (regenera docs/agentes.html — obrigatório após mudar agente ou skill)
 → /team-os-creator *propagate  (--match-target-squads)
 ```
 
-Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere o manifest do pack, as contagens "121 agentes"/"134 skills" no README e aqui (contadas só no pack), zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia. Mantenedor: ciclo completo em [MAINTAINERS.md](./MAINTAINERS.md).
+Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere o manifest do pack, as contagens "121 agentes"/"135 skills" no README e aqui (contadas só no pack), zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia. Mantenedor: ciclo completo em [MAINTAINERS.md](./MAINTAINERS.md).
 
 ## Comandos rápidos
 

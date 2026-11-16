@@ -3,8 +3,8 @@ name: team-os
 description: "Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os"
 user-invocable: true
 argument-hint: "[*env | *memory | *compact [--auto] | *tasks | *spawn <objetivo> | *grill [objetivo] | *status | *tdah [off|status]]"
-version: "3.3.1"
-updated: "2026-11-14"
+version: "3.3.2"
+updated: "2026-11-16"
 ---
 
 # team-os — Agent Teams Bootstrap
@@ -270,6 +270,7 @@ A filosofia do team-os é **acelerar com paralelismo real**. **Comece com 3-5 te
 1. **Ownership exclusivo** — dois agentes nunca no mesmo arquivo. Se dois workstreams tocam o mesmo arquivo, eles NÃO são independentes: junte num agente só. **Onde o ownership de arquivo NÃO é disjunto, serialize (task dependencies) — nunca paralelize.**
 2. **Dependências viram sequência** — trabalho que depende de outro NÃO paraleliza. **Tasks com dependência: use o campo de dependências do TaskCreate — B só destrava quando A completa.** Não spawne agente ocioso esperando.
 3. **Throughput** — ~5-6 tasks por agente mantém o pipeline fluindo com self-claim (throughput esperado, não regra de dimensionamento).
+4. **A máquina do usuário é o teto dos processos pesados** — paralelismo de agentes não é paralelismo de processos. Se as tasks rodam algo pesado na máquina (transcrição, IA local, render, build grande, navegadores de teste), meça antes com `/machine-resources` (`check-resources.sh --per-job-gb N`) e não deixe mais que `MAX_PARALLEL` desses processos rodando ao mesmo tempo, somando todos os agentes: dê o processo pesado a um agente só (fila) ou serialize por dependência. Na dúvida, um de cada vez.
 
 > Esta Fase 4c é a **regra canônica de dimensionamento** — qualquer outro número citado na skill (ex.: "5-6 tasks por agente") é throughput, não dimensionamento.
 
