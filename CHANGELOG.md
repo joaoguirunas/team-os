@@ -4,6 +4,8 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+## [2.7.0] — 2026-11-16
+
 ### Adicionado
 - **Skill `machine-resources` — não travar o computador do usuário.** Mede memória livre, núcleos, swap, carga e disco antes de processo local pesado (Whisper, IA local, ffmpeg, build grande, navegadores de teste) e calcula quantos jobs cabem juntos (`scripts/check-resources.sh --per-job-gb N [--threads-per-job N] [--reserve-gb N]` → `MAX_PARALLEL` e `VERDICT=ok|apertado|parar`), deixando reserva para o sistema (o maior entre 4 GB e 25% da RAM). Só leitura, macOS e Linux. Traz tabela de memória por job, como medir o pico do primeiro job (`/usr/bin/time`), por que paralelo não acelera processo que já usa todos os núcleos e quando parar o lote. Origem: 5 transcrições do Whisper em paralelo travaram um Mac de 18 GB.
 - **NTP regra 9 — "Não trave a máquina do usuário"**: antes de processo pesado ou de várias cópias de um comando, medir com `/machine-resources` e respeitar o `MAX_PARALLEL`. Reaplicada nos 121 agentes e nos 9 modelos via `migrate-ntp.sh`.
