@@ -51,6 +51,7 @@ SQUAD_META = [
     ("seo", "SEO", "Auditoria e otimização de busca — técnico, conteúdo, schema, sitemap/i18n, CWV, GEO/AI search, SXO, clusters, local, backlinks, e-commerce, dados Google, drift, QA"),
     ("security", "Security", "Segurança de aplicação — modelo de ameaças, appsec, código gerado por IA e apps com LLM, credenciais, privacidade no código, incidente, QA"),
     ("robotics", "Robotics", "Robótica, automação e IoT com qualquer placa — arquitetura, componentes, eletrônica e energia, firmware, controle, autonomia/ROS 2, conectividade, mecânica, bancada, QA com gates de segurança"),
+    ("book", "Oficina do Livro", "Livro do mercado à loja — pesquisa de mercado, conceito e sumário, pesquisa com fonte, capítulos na voz do autor, edição, revisão, capa, ilustração, diagramação, ISBN e KDP, QA com gates"),
 ]
 
 

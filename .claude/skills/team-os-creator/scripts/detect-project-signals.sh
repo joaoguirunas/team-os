@@ -176,6 +176,19 @@ case "$BASENAME_LC" in *robo*|*arduino*|*esp32*|*esp8266*|*raspberry*|*iot*|*aut
 HAS_ROBOTICS=0
 [ "${ROBOTICS_HITS:-0}" -ge 2 ] && HAS_ROBOTICS=1
 
+# Livro (escrita e publicação): pasta de manuscrito, capítulos em Markdown, EPUB ou nome de
+# livro/ebook. Projeto com código (package.json) só conta se tiver a pasta de manuscrito.
+BOOK_HITS=0
+{ [ -d "manuscrito" ] || [ -d "manuscript" ]; } && BOOK_HITS=$((BOOK_HITS + 3))
+find . -maxdepth 3 -name "*.epub" -not -path "*/.git/*" -not -path "*/.claude/*" 2>/dev/null | head -1 | grep -q . && BOOK_HITS=$((BOOK_HITS + 1))
+CHAP_COUNT=$(find . -maxdepth 3 \( -iname "cap-*.md" -o -iname "capitulo*.md" -o -iname "capítulo*.md" -o -iname "chapter*.md" \) -not -path "*/.git/*" -not -path "*/.claude/*" -not -path "*/node_modules/*" 2>/dev/null | wc -l | tr -d ' ')
+[ "${CHAP_COUNT:-0}" -ge 3 ] && BOOK_HITS=$((BOOK_HITS + 2))
+case "$BASENAME_LC" in *livro*|*book*|*ebook*|*e-book*|*manuscrito*|*romance*) BOOK_HITS=$((BOOK_HITS + 2)) ;; esac
+HAS_BOOK=0
+if [ "${BOOK_HITS:-0}" -ge 2 ]; then
+  if [ ! -f "package.json" ] || [ -d "manuscrito" ] || [ -d "manuscript" ]; then HAS_BOOK=1; fi
+fi
+
 # Pasta de Sala de Controle ANTIGA: a Sala agora mora no CT (exclusiva do CT, nunca instalada em
 # projeto). Sem agentes, com a skill sala-de-controle ou maestri-os (versões anteriores do pack)
 # ou com nome de Sala → não sugere squad; sugere migrar (migrate-sala-to-ct.sh, dry-run primeiro).
@@ -197,6 +210,8 @@ if [ $LEGACY_CONTROL_ROOM -eq 1 ]; then
   ARCHETYPE="legacy-control-room"
 elif [ $HAS_ROBOTICS -eq 1 ]; then
   ARCHETYPE="robotics"
+elif [ $HAS_BOOK -eq 1 ]; then
+  ARCHETYPE="book"
 elif [ $HAS_FINANCE -eq 1 ]; then
   ARCHETYPE="finance"
 elif [ $HAS_LEGAL -eq 1 ]; then
@@ -260,6 +275,8 @@ case "$ARCHETYPE" in
     SUGGESTED_PRESET="seo" ;;
   robotics)
     SUGGESTED_PRESET="robotics" ;;
+  book)
+    SUGGESTED_PRESET="book" ;;
   mobile-app)
     # Não existe preset mobile — usa dev (o mais próximo), com aviso explícito.
     SUGGESTED_PRESET="dev"
@@ -302,4 +319,5 @@ echo "HAS_ML=$HAS_ML"
 echo "HAS_CONTENT=$HAS_CONTENT"
 echo "HAS_SEO=$HAS_SEO"
 echo "HAS_ROBOTICS=$HAS_ROBOTICS"
+echo "HAS_BOOK=$HAS_BOOK"
 echo "HAS_SOCIAL=$HAS_SOCIAL"

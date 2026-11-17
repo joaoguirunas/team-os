@@ -135,6 +135,20 @@ Método reescrito em pt-BR, no padrão do pack — nenhum texto ou código copia
 
 ESPHome e Home Assistant (`robotics-iot-connectivity`) foram escritos a partir da documentação oficial (esphome.io, home-assistant.io). Avaliados e **não** usados: travisjneuman/.claude (API legada), VoltAgent/awesome-claude-code-subagents (genérico) e esp32-emu-turbo (sem licença).
 
+## Métodos adaptados (2026-11) — Oficina do Livro (squad `book`)
+
+Método reescrito em pt-BR, no padrão do pack — nenhum texto ou código copiado. Licenças conferidas em 2026-11-17 (arquivo LICENSE de cada repositório).
+
+| Skill do pack | Origem | Licença | Observação |
+|---|---|---|---|
+| `book-concept-outline`, `book-author-voice` | [rhavekost/author-toolkit](https://github.com/rhavekost/author-toolkit) — skills `narrative-nonfiction` e `fiction-workshop` | MIT — `Copyright (c) 2026 rhavekost` | commit b5e15ef — estrutura de não ficção narrativa e oficina de ficção; a skill de terceiro que o repositório inclui (`avoid-ai-writing`) não foi usada |
+| `book-editing` | [robertguss/claude-code-toolkit](https://github.com/robertguss/claude-code-toolkit) — `plugins/compound-writing/agents/clarity-editor.md` | MIT — `Copyright (c) 2025-2026 Robert Guss` | commit f7fd35e — lentes da edição de linha (clareza, corte, jargão, voz ativa) |
+| `book-publishing`, `book-cover-design`, `book-production` | [queelius/pub-pipeline](https://github.com/queelius/pub-pipeline) | MIT — `Copyright (c) 2026 Alexander Towell` | commit b40a0d7 — checklist do KDP, estrutura da descrição; a fórmula de margem interna do repositório diverge da tabela oficial da KDP e **não** foi usada |
+| `book-production` | [smerchek/claude-epub-skill](https://github.com/smerchek/claude-epub-skill) | MIT — `Copyright (c) 2025 Scott Smerchek` | commit 7c07230 — fluxo Markdown → EPUB |
+
+Números e regras de plataforma e de lei vêm das fontes oficiais, citadas com data em cada skill: Ajuda KDP, CBL, Biblioteca Nacional (Lei 10.994/2004 e IN FBN nº 001/2026), Lei 10.753/2003, Lei 9.610/98, ABNT NBR 6023 e NBR 10520, Decreto 6.583/2008. Avaliados e **não** usados: aktsmm/agent-skills (licença CC BY-NC-SA por skill) e frankxai/agentic-creator-os (Apache-2.0, sem método útil para estas skills).
+
+
 ## Conteúdo adaptado de agency-agents
 
 Trechos de método foram adaptados (reescritos em PT-BR, no padrão do pack — não copiados) do repositório

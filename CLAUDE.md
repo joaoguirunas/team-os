@@ -1,8 +1,8 @@
 # team-os — by João Guirunas
 
-Pack **team-os**: 121 agentes e 135 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
+Pack **team-os**: 132 agentes e 144 skills para Claude Code Agent Teams. (Codinome interno do repo: **CT — Centro de Treinamento**.)
 
-> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 121 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos, hooks e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
+> 📖 **Documentação completa: [README.md](./README.md)** — tutorial detalhado das skills principais (`/team-os` e `/team-os-creator`), dos 132 agentes com suas skills relacionadas, do catálogo de skills de apoio, passo a passo, modelo de coordenação, política de modelos, hooks e manutenção. Consulte o README como fonte completa; este arquivo traz só as regras operacionais essenciais.
 
 ## O que é este projeto
 
@@ -25,7 +25,7 @@ Todo agente do CT segue o **Native Teams Protocol** (detalhado em [README.md §1
 - Linha `**Área na smart-memory:** \`docs/smart-memory/agents/<squad>/<área>/\`` logo após o H1 — o `discovery.sh` da `team-os` lê essa linha para criar as áreas no projeto destino
 - Sem campo `skills:` no frontmatter (ignorado em Agent Teams); tools `mcp__*` só na forma curta `mcp__<server>` e só servidores de `.claude/skills/team-os-creator/reference/mcp-servers.md`
 - `block-git-push.sh` em **todo agente com Bash exceto os devops** (todas as squads); sem `isolation: worktree` — agentes escrevem direto na branch ativa
-- Política de modelos **Híbrida**: `opus` fixo em architects/planners, QA e strategists (30); `inherit` nos demais (91). Effort por archetype em `.claude/skills/team-os-creator/reference/archetypes.md` (omitido em implementer/devops) → [README.md §9](./README.md#9-política-de-modelos-híbrido)
+- Política de modelos **Híbrida**: `opus` fixo em architects/planners, QA e strategists (32); `inherit` nos demais (100). Effort por archetype em `.claude/skills/team-os-creator/reference/archetypes.md` (omitido em implementer/devops) → [README.md §9](./README.md#9-política-de-modelos-híbrido)
 
 **Commit, push e CHANGELOG no CT são só do mantenedor** (quem tem o arquivo `.team-os-maintainer` na raiz — ignorado pelo git, só na máquina do criador). Quem apenas usa o pack **não recebe proposta de commit nem de push**: o ciclo dele termina no `*audit`/`*propagate`. O ciclo do mantenedor (manifest, release, push manual) está em [MAINTAINERS.md](./MAINTAINERS.md).
 
@@ -39,7 +39,7 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 
 15 hooks em `.claude/hooks/`, testados por `scripts/test-hooks.sh` (564 casos, no CI). Descrição completa em [README.md §10](./README.md#10-hooks-de-qualidade):
 
-- Guards de git (`PreToolUse`): `block-git-push.sh` (117 agentes) · `guard-push-branch.sh` (2 devops — push só na `main`/`master`; fora dela o bloqueio é **sempre** aplicado, o hook não consegue verificar pedido do usuário, push é manual) · `block-worktree.sh` (settings.json de cada projeto). Ambos os guards de push bloqueiam shell embutido (`sh -c`, `eval`, `xargs`…).
+- Guards de git (`PreToolUse`): `block-git-push.sh` (128 agentes) · `guard-push-branch.sh` (2 devops — push só na `main`/`master`; fora dela o bloqueio é **sempre** aplicado, o hook não consegue verificar pedido do usuário, push é manual) · `block-worktree.sh` (settings.json de cada projeto). Ambos os guards de push bloqueiam shell embutido (`sh -c`, `eval`, `xargs`…).
 - Gates de task (`TaskCreated`/`TaskCompleted`, leem `task_subject`/`task_description`): `task-quality.sh` · `check-story-progress.sh` · `check-social-progress.sh` (social, instagram, tiktok, youtube, linkedin) · `check-proposal-progress.sh` · `check-finance-progress.sh` · `check-legal-progress.sh`
 - Economia de tokens (`PreToolUse`, settings de cada projeto): `guard-smart-memory-read.sh` (bloqueia `_archive/`, pasta inteira e a 4ª nota sem `sm-find.sh`) · `guard-message-size.sh` (mensagem entre agentes ≤20 linhas; `[handoff]` até 60) · `context-watch.sh` (`UserPromptSubmit`: avisa contexto >200k/400k e propõe `/compact` ou sessão nova; nunca bloqueia)
 - Sessão: `team-os-session-title.sh` (`SessionStart`, instalado em `~/.claude/hooks/` pelo `*install`) · `team-os-tdah.sh` (`SessionStart`, modo TDAH — respostas curtas; instalado e registrado por `/team-os *tdah`, só para quem liga)
@@ -49,15 +49,15 @@ O CT não versiona `docs/smart-memory/` — ela nasce em cada destino na 1ª ses
 
 ```
 Editar agente/skill no CT
-→ validate-agent.sh            (= *audit; 121/121 do pack)
-→ validate-agent.sh --skills   (lint das 135 skills)
+→ validate-agent.sh            (= *audit; 132/132 do pack)
+→ validate-agent.sh --skills   (lint das 144 skills)
 → test-hooks.sh                (564/564)
 → test-propagate.sh            (127/127)
 → generate-agents-page.py      (regenera docs/agentes.html — obrigatório após mudar agente ou skill)
 → /team-os-creator *propagate  (--match-target-squads)
 ```
 
-Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere o manifest do pack, as contagens "121 agentes"/"135 skills" no README e aqui (contadas só no pack), zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia. Mantenedor: ciclo completo em [MAINTAINERS.md](./MAINTAINERS.md).
+Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/audit.yml`) repete tudo e ainda confere o manifest do pack, as contagens "132 agentes"/"144 skills" no README e aqui (contadas só no pack), zero caminho de máquina versionado (use `<raiz>/...`) e `docs/agentes.html` em dia. Mantenedor: ciclo completo em [MAINTAINERS.md](./MAINTAINERS.md).
 
 ## Comandos rápidos
 

@@ -111,7 +111,7 @@ add_area() { case " $AREAS " in *" $1 "*) : ;; *) AREAS="$AREAS${AREAS:+ }$1" ;;
 #   2. fallback fixo abaixo (o destino não tem presets);
 #   3. prefixo dos agentes do destino que declaram a linha "Área na smart-memory" (squads
 #      novas do pack e agentes próprios entram sem editar este arquivo).
-KNOWN_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security robotics"
+KNOWN_SQUADS_FALLBACK="dev sites social instagram tiktok youtube linkedin traffic pm sales brand finance legal seo security robotics book"
 KNOWN_SQUADS=""
 add_squad() { case " $KNOWN_SQUADS " in *" $1 "*) : ;; *) KNOWN_SQUADS="$KNOWN_SQUADS${KNOWN_SQUADS:+ }$1" ;; esac; }
 _DISC_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
@@ -145,6 +145,7 @@ squad_areas() { # $1=squad → áreas (sem o prefixo da squad)
     seo)     echo "technical performance schema sitemap content cluster geo local ecommerce backlinks sxo drift google architect qa" ;;
     security) echo "architecture appsec ai-code secrets privacy incident qa" ;;
     robotics) echo "architecture research electronics firmware control autonomy connectivity mechanics bench qa" ;;
+    book) echo "architecture market research manuscript editing copyedit design illustration production publishing qa" ;;
   esac
 }
 
