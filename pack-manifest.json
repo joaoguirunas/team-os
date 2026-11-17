@@ -1,8 +1,8 @@
 {
  "name": "team-os",
- "version": "2.7.0",
+ "version": "2.8.0",
  "upstream": "https://github.com/joaoguirunas/team-os",
- "generated": "2026-11-17T14:25:14Z",
+ "generated": "2026-11-17T14:31:43Z",
  "files": {
   ".claude/agents/book-analyst.md": "551ca6c5eecd00ce31470ff8e59d90f8787eb81dd8b3aa7c804476e8458b4b4f",
   ".claude/agents/book-architect.md": "2f2597750a452fe6146063fdd5658a5ca353eacb37279462b4a691f9524440bf",
@@ -901,13 +901,13 @@
   ".claude/skills/youtube-packaging/SKILL.md": "c1198ee5b236c368ec2239bf91ee9ed584c1309bd1c6d02e106ed14ab751542f",
   ".claude/skills/youtube-publishing/SKILL.md": "266fed6b0f7325c5568c4d61f6914b4b7554e5ad22c6327ae21b2e0107de9e8b",
   ".claude/skills/youtube-scriptwriting/SKILL.md": "77c4aedb5911b5ccd0f5f9ff09cfc9f89f913ad3cf2f762ecfabc5916548459f",
-  "CHANGELOG.md": "181809ee18a41b1e3189550da7b79124543dab4fa024398c46fb62a5b14888a0",
+  "CHANGELOG.md": "3a1d7b49098aaf7e8cdc7d16e58edae78cd98b6f9c3d3d7d882e40688f898462",
   "CLAUDE.md": "b11465d480bfde44983cc3bef8af7f46dab5bec9c9721fbfa4b931276cde9c77",
   "CONTRIBUTING.md": "73f6ec17dfbf4930968ff0d7c2e62442203e01653d09379295413f54fb992e8f",
   "LICENSE": "9c975ba958127912f398c40d76067ab2e313e5aaf807d010c7adb14060dc700b",
   "MAINTAINERS.md": "4bcde50640e1335efb0833e9ee50105de05f0d9e590bc1214c3931653dd770c6",
   "README.md": "41aa11901775ee580a14e6ad3e63f43efd6ecc47e101e496290116aa818906e8",
   "THIRD_PARTY_NOTICES.md": "41e4f3c4bce74d7bfee349de96cc1c2a7018a4080c870f3aa60b2bb11712820d",
-  "VERSION": "362148d7721ad4a1bb64981ff8d604ef7f4d22267ea8845042f54f90940f24fd"
+  "VERSION": "dceb827995520dae388b7283c5bc7847ef58a16e8013318c3bb436feeb5dc51e"
  }
 }
