@@ -384,7 +384,10 @@ def agents_of(session_dir, members):
             label = meta.get("description") or file_id.replace("agent-", "")[:8]
             name = f"wf:{wf_short} · {label}"   # mesmo rótulo re-spawnado = mesma tarefa: fica o transcrito mais recente
         else:
-            name = meta.get("agentType") or file_id
+            # subagent sem name: chave = a tarefa (description), nunca só o agentType — senão todos os
+            # subagents do mesmo tipo (ex.: general-purpose) viram um nó só e o painel não diz o que cada um faz
+            desc = clean(meta.get("description", ""), 60)
+            name = desc or f'{meta.get("agentType") or "agente"} {file_id.replace("agent-", "")[:6]}'
         jsonl = meta_path[:-len(".meta.json")] + ".jsonl"
         st = read_transcript_state(jsonl) if os.path.isfile(jsonl) else None
         a = agents.get(name) or {"name": name, "type": meta.get("customAgentType") or meta.get("agentType") or "",

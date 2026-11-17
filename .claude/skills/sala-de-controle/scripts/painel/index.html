@@ -442,10 +442,15 @@ const LY={R1:240,sig:1};
 const SIM={alpha:0,min:0.004,decay:0.028,ticks:0,arr:[],full:true};
 const PREV=new Map();let armedAt=performance.now()+3500;   // estados anteriores (para a câmera automática)
 function bizOf(p){return p.kind==='ct'?'Centro de Treinamento':(p.business||p.name);}
+// sessão sem título (o app usa o nome da pasta) e única no projeto: vira o próprio nó do projeto — evita "Site" dentro de "Site"
+const nfcS=x=>String(x||'').normalize('NFC');
+function untitled(s,p){const n=nfcS(s.name),base=nfcS(p.path.split('/').pop());return !n||n===base||n===nfcS(p.name);}
+const MERGED=new Map();   // id da sessão → nó do projeto que a absorveu
+function sessNode(sid){return nodes.get('s:'+sid)||MERGED.get(sid)||null;}
 function hsh(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;}
 function rebuild(){
   if(!S)return;
-  const keep=new Set();let added=0;
+  const keep=new Set();let added=0;MERGED.clear();
   const get=(id,init,x,y)=>{let n=nodes.get(id);if(!n){n=Object.assign({id,x,y,vx:0,vy:0,pulse:0,glow:0,phase:hsh(id+'#')*6.28,side:null},init);nodes.set(id,n);added++;}else Object.assign(n,init);keep.add(id);return n;};
   const salaSess=S.sessions.find(s=>s.is_sala);
   hub=get('hub',{kind:'hub',r:34,fixed:true,sess:salaSess||null},0,0);hub.x=hub.y=0;
@@ -458,7 +463,11 @@ function rebuild(){
   let a=-Math.PI/2+GAP_B*u/2;
   groups.forEach(g=>{const a0=a,members=[];
     g.ps.forEach(({p,ss,w})=>{const seed=a+(w+0.6)*u/2;a+=(w+0.6)*u;
-      const L=get('p:'+p.path,{kind:'lead',r:15,proj:p,biz:g.name,seed,sess:ss},Math.cos(seed)*LY.R1,Math.sin(seed)*LY.R1);members.push(L);L.wires=[hub];
+      const solo=ss.length===1&&untitled(ss[0],p)?ss[0]:null;
+      const L=get('p:'+p.path,{kind:'lead',r:15,proj:p,biz:g.name,seed,sess:ss,solo},Math.cos(seed)*LY.R1,Math.sin(seed)*LY.R1);members.push(L);L.wires=[hub];
+      if(solo){MERGED.set(solo.id,L);const ags=solo.agents.slice().sort((x,y)=>x.name.localeCompare(y.name));   // agentes ligados direto no projeto
+        ags.forEach((ag,j)=>{const aa=Math.atan2(L.y,L.x)+(j-(ags.length-1)/2)*0.4;
+          const A=get('a:'+solo.id+'/'+ag.name,{kind:'agent',r:9,ag,sess:solo,lead:L,proj:L},L.x+Math.cos(aa)*96,L.y+Math.sin(aa)*96);members.push(A);L.wires.push(A);A.wires=[L];});return;}
       ss.forEach((sx,i)=>{const sa=Math.atan2(L.y,L.x)+(i-(ss.length-1)/2)*0.45,sl=sx.stopped?78:96;
         const SN=get('s:'+sx.id,{kind:'session',r:sx.stopped?7:11,sess:sx,lead:L,proj:p},L.x+Math.cos(sa)*sl,L.y+Math.sin(sa)*sl);members.push(SN);L.wires.push(SN);SN.wires=[L];
         const ags=sx.agents.slice().sort((x,y)=>x.name.localeCompare(y.name));
@@ -478,7 +487,7 @@ function rebuild(){
   // câmera automática: sessão que passa a trabalhar / precisar de você, agente que começa, manda mensagem ou conclui
   const armed=performance.now()>armedAt;
   for(const n of nodes.values()){
-    const cur=n.kind==='session'?stateOfSession(n.sess):n.kind==='agent'?n.ag.state:null;if(cur==null)continue;
+    const cur=n.kind==='session'?stateOfSession(n.sess):n.kind==='lead'&&n.solo?stateOfSession(n.solo):n.kind==='agent'?n.ag.state:null;if(cur==null)continue;
     const prev=PREV.get(n.id);PREV.set(n.id,cur);
     if(armed&&prev!==cur&&(cur==='active'||cur==='approval'||cur==='done'||cur==='waiting')&&(prev!==undefined||cur==='active'))camFocus(n);}
   document.getElementById('emptyv').classList.toggle('on',VIEW==='ativas'&&!projs.length);
@@ -487,9 +496,17 @@ function rebuild(){
   if(sel&&!nodes.has(sel.id)){closeDrawer();}else if(sel){sel=nodes.get(sel.id);renderDrawer(sel);}
 }
 // texto do rótulo de cada nó: [nome, linha de baixo usada na medida, tamanho, largura máxima]
-function ltext(n){if(n.kind==='lead')return [projShort(n.proj.name,n.biz),(n.sess.length+(n.sess.length===1?' sessão':' sessões')).toUpperCase(),12,118];
+function ltext(n){if(n.kind==='lead')return [projShort(n.proj.name,n.biz),leadSub(n).toUpperCase(),12,118];
   if(n.kind==='session')return [shortName(n.sess.name),'PARADA',n.sess.stopped?9.5:10.5,135];
   if(n.kind==='agent')return [n.ag.name,(n.ag.type||n.ag.kind||'').toUpperCase(),10.5,135];return null;}
+// linha de baixo do projeto: com a sessão absorvida, mostra o estado dela (busy, idle, parada)
+function leadSub(L){if(L.solo)return 'pasta · '+sessWord(L.solo);return 'pasta · '+(!L.sess.length?'sem sessão aberta':L.sess.length+(L.sess.length===1?' sessão':' sessões'));}
+// rótulos em português: o estado de cada sessão e de cada agente, e o que o agente está fazendo (não o tipo)
+function sessWord(s){if(s.stopped)return 'parada';const st=stateOfSession(s);return st==='approval'?'precisa de você':st==='active'?'trabalhando':'aguardando';}
+const AG_WORD={active:'trabalhando',approval:'precisa de você',done:'concluído',waiting:'esperando',idle:'parado'};
+const GENERIC_T=new Set(['general-purpose','claude','explore','plan','fork','']);
+function agTitle(a){const n=a.name||'',t=(a.type||'').toLowerCase();if(n.startsWith('wf:'))return n.split(' · ').slice(1).join(' · ')||n;if(GENERIC_T.has(n.toLowerCase())||n.toLowerCase()===t)return a.description||a.doing||n;return n;}
+function agSub(a){const w=AG_WORD[a.state]||'',t=a.type||'';return GENERIC_T.has(t.toLowerCase())||t===a.name?w:(w?w+' · ':'')+t;}
 const bizFont=()=>`500 ${(11*(LY.sig||1)).toFixed(1)}px "IBM Plex Mono",Menlo,monospace`;
 function measure(n){const g=LY.sig||1;if(n.kind==='biz'){const f=bizFont();ctx.font=f;n.lw=ctx.measureText(ell(n.name.toUpperCase(),220*g,f)).width+12;n.lh=16*g;}
   else{const t=ltext(n);if(!t){n.lw=n.lh=0;}else{n.lw=labelW(t[0],t[1],t[2],t[3])+4;n.lh=t[2]*g+13*g;}}n.box=nbox(n);}
@@ -528,10 +545,10 @@ function tick(){
   const al=SIM.alpha,arr=SIM.arr;
   for(const n of arr){if(n.fixed)continue;let tx,ty,st;
     if(n.kind==='lead'){tx=Math.cos(n.seed)*LY.R1;ty=Math.sin(n.seed)*LY.R1;st=0.06;}            // atração para o setor do negócio
-    else if(n.kind==='biz'){if(n.solo){tx=0;ty=hub.r+62;st=0.2;}                                   // um só negócio na tela: rótulo logo abaixo do hub da Sala
+    else if(n.kind==='biz'){if(n.solo){tx=0;ty=hub.r+96;st=0.2;}                                   // um só negócio na tela: rótulo abaixo do hub, com folga do "Sala de Controle · roteando"
       else{let R=0,cx=0,cy=0;for(const m of n.members){R=Math.max(R,Math.hypot(m.x,m.y)+m.r);cx+=m.x;cy+=m.y;}       // vários: mira o centróide real dos membros, não a semente do setor
         const ang=n.members.length&&Math.hypot(cx,cy)>1?Math.atan2(cy,cx):n.seed;tx=Math.cos(ang)*(R+50);ty=Math.sin(ang)*(R+50);st=0.1;}}
-    else{const p=n.lead,q=n.kind==='session'?hub:p.lead;let ux=p.x-q.x,uy=p.y-q.y;const d=Math.hypot(ux,uy)||1,len=n.kind==='session'?(n.sess.stopped?78:96):74;
+    else{const p=n.lead,q=n.kind==='session'||p.kind==='lead'?hub:p.lead;let ux=p.x-q.x,uy=p.y-q.y;const d=Math.hypot(ux,uy)||1,len=n.kind==='session'?(n.sess.stopped?78:96):p.kind==='lead'?96:74;
       tx=p.x+ux/d*len;ty=p.y+uy/d*len;st=0.04;                                                      // leve empurrão para fora do pai
       const dx=n.x-p.x,dy=n.y-p.y,dd=Math.hypot(dx,dy)||1,f=(dd-len)/dd*0.3*al;n.vx-=dx*f*0.85;n.vy-=dy*f*0.85;if(!p.fixed){p.vx+=dx*f*0.15;p.vy+=dy*f*0.15;}}
     n.vx+=(tx-n.x)*st*al;n.vy+=(ty-n.y)*st*al;}
@@ -658,7 +675,8 @@ function frame(now){
     if(st==='approval'){ctx.globalAlpha=0.35+0.25*Math.sin(T*3);circ(L.x,L.y,L.r+8,'#3d8fff30');ctx.globalAlpha=1;}
     const isSel=sel===L||hov===L;circ(L.x,L.y,L.r+L.pulse*3,on?'#1C1E1B':'#131412',col,isSel?2.5:1.75,L.glow?col:null,22);
     if(!on){ctx.strokeStyle=COL.off;ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(L.x,L.y,L.r,0,6.283);ctx.stroke();ctx.setLineDash([]);}
-    const sub=!on?'sem sessão aberta':L.sess.length+(L.sess.length===1?' sessão':' sessões'),nm=projShort(L.proj.name,L.biz);
+    if(L.solo){ctx.fillStyle=L.solo.stopped?COL.off:col;ctx.beginPath();ctx.arc(L.x,L.y,3.5,0,6.283);ctx.fill();}
+    const sub=leadSub(L),nm=projShort(L.proj.name,L.biz);
     LBL.push(()=>hlabel(L,nm,sub.toUpperCase(),on?COL.bone:COL.mute,COL.mute,12,118,1));}
   // sessões
   for(const SN of nodes.values()){if(SN.kind!=='session')continue;SN.pulse=Math.max(0,SN.pulse-dt/900);SN.glow=Math.max(0,SN.glow-dt/700);const st=stateOfSession(SN.sess),col=st==='approval'?COL.amber:st==='active'?COL.bone:COL.dim,isSel=sel===SN||hov===SN;
@@ -667,7 +685,7 @@ function frame(now){
     if(st==='approval'){ctx.globalAlpha=0.35+0.25*Math.sin(T*3);circ(SN.x,SN.y,SN.r+7,'#3d8fff30');ctx.globalAlpha=1;}
     ctx.globalAlpha=fade;circ(SN.x,SN.y,SN.r+SN.pulse*3,'#1C1E1B',SN.sess.stopped?COL.off:col,isSel?2.5:SN.sess.stopped?1.2:1.6,SN.glow?col:null,20);
     ctx.fillStyle=SN.sess.stopped?COL.off:col;ctx.beginPath();ctx.arc(SN.x,SN.y,SN.sess.stopped?2:3,0,6.283);ctx.fill();ctx.globalAlpha=1;
-    const stt=SN.sess.stopped?'parada':(SN.sess.status||'');
+    const stt=sessWord(SN.sess);
     LBL.push(()=>hlabel(SN,shortName(SN.sess.name),stt.toUpperCase(),SN.sess.stopped?COL.mute:st==='idle'?COL.dim:COL.bone,'#8F948D',SN.sess.stopped?9.5:10.5,135,SN.sess.stopped&&!isSel?0.6:1));}
   // agentes
   for(const A of nodes.values()){if(A.kind!=='agent')continue;A.glow=Math.max(0,A.glow-dt/700);A.pulse=Math.max(0,A.pulse-dt/900);const s=A.ag.state,col=colorOf(s),isSel=sel===A||hov===A;
@@ -679,7 +697,7 @@ function frame(now){
     else circ(A.x,A.y,A.r,'#131412',COL.off,1.5);
     if(isSel){ctx.strokeStyle=col;ctx.lineWidth=1;ctx.beginPath();ctx.arc(A.x,A.y,A.r+9,0,6.283);ctx.stroke();}
     const af=agentFade(A.ag);ctx.globalAlpha=1;
-    LBL.push(()=>hlabel(A,A.ag.name,(A.ag.type||A.ag.kind||'').toUpperCase(),s==='idle'?'#8F948D':s==='approval'?COL.amber:s==='done'?COL.ok:COL.bone,s==='idle'?'#585C57':'#8F948D',10.5,135,af));}
+    LBL.push(()=>hlabel(A,agTitle(A.ag),agSub(A.ag).toUpperCase(),s==='idle'?'#8F948D':s==='approval'?COL.amber:s==='done'?COL.ok:COL.bone,s==='idle'?'#585C57':'#8F948D',10.5,135,af));}
   LBL.forEach(f=>f());
   // tooltip
   const tip=document.getElementById('tip');
@@ -718,7 +736,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 function pushFeed(kind,who,what,where,ep){FEED.push({kind,who,what,where,ep});if(FEED.length>40)FEED.shift();sFeed.textContent=fmtTime(ep).slice(0,5);
   mFeed.classList.add('flash');clearTimeout(feedFlashT);feedFlashT=setTimeout(()=>mFeed.classList.remove('flash'),1600);if(POP==='feed')renderPop();}
 function findAgentNode(sid,name){const lc=(name||'').toLowerCase();for(const n of nodes.values())if(n.kind==='agent'&&n.sess.id===sid&&n.ag.name.toLowerCase()===lc)return n;return null;}
-function findLeadBySession(sid){return nodes.get('s:'+sid)||null;}
+function findLeadBySession(sid){return sessNode(sid);}
 function findLeadByName(name){const lc=(name||'').toLowerCase();for(const n of nodes.values())if(n.kind==='session'&&(n.sess.name.toLowerCase()===lc||lc.startsWith(n.sess.name.toLowerCase())))return n;for(const n of nodes.values())if(n.kind==='lead'&&n.proj.name.toLowerCase()===lc)return n;return null;}
 function send(a,b,kind,speed){if(a&&b&&a!==b)parts.push({a,b,t:0,kind:kind||'ink',speed:speed||0.012});}
 function handleEvent(e){
@@ -798,7 +816,7 @@ document.querySelectorAll('.m[data-pop]').forEach(b=>b.addEventListener('click',
 document.addEventListener('click',()=>{if(POP){POP=null;renderPop();}});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&POP){POP=null;renderPop();}});
 popEl.addEventListener('click',e=>{e.stopPropagation();if(e.target.id==='tokRst'){tbReset();updateStats();return;}
-  const r=e.target.closest('[data-sess],[data-agent]');if(!r)return;const n=r.dataset.agent?findAgentNode(r.dataset.sid,r.dataset.agent):nodes.get('s:'+r.dataset.sess);if(n){POP=null;renderPop();open(n);}});
+  const r=e.target.closest('[data-sess],[data-agent]');if(!r)return;const n=r.dataset.agent?findAgentNode(r.dataset.sid,r.dataset.agent):sessNode(r.dataset.sess);if(n){POP=null;renderPop();open(n);}});
 function updateStats(){const c=S.counts||{};if(!TB)tbReset();
   const busyLeads=S.sessions.filter(s=>!s.is_sala&&s.status==='busy'&&!s.agents.some(a=>a.state==='active')).length;
   setTxt(sWork,(c.active||0)+busyLeads);mWork.classList.toggle('act',((c.active||0)+busyLeads)>0);setTxt(sDone,c.done||0);mDone.classList.toggle('dim',!(c.done));
@@ -812,11 +830,23 @@ const lampCls=s=>'lamp '+(s==='active'?'f':s==='approval'?'a':s==='done'?'ok':s=
 function open(n){document.body.classList.add('open');sel=n;renderDrawer(n);}
 function closeDrawer(){document.body.classList.remove('open');sel=null;}
 dClose.onclick=closeDrawer;
-document.getElementById('dBody').addEventListener('click',e=>{const v=e.target.closest('[data-vault]');if(v){if(!v.disabled&&v.dataset.vault)openVault(v.dataset.vault);return;}const a=e.target.closest('[data-agent]');if(a){openAgent(a.dataset.sid,a.dataset.agent);return;}const l=e.target.closest('[data-lead]');if(l){openLead(l.dataset.lead);return;}const sn=e.target.closest('[data-sess]');if(sn){const x=nodes.get('s:'+sn.dataset.sess);if(x)open(x);}});
+document.getElementById('dBody').addEventListener('click',e=>{const v=e.target.closest('[data-vault]');if(v){if(!v.disabled&&v.dataset.vault)openVault(v.dataset.vault);return;}const a=e.target.closest('[data-agent]');if(a){openAgent(a.dataset.sid,a.dataset.agent);return;}const l=e.target.closest('[data-lead]');if(l){openLead(l.dataset.lead);return;}const sn=e.target.closest('[data-sess]');if(sn){const x=sessNode(sn.dataset.sess);if(x)open(x);}});
 function turnsHtml(turns){return (turns&&turns.length?turns.slice(-4):[]).map(t=>`<div class="msg"><b>${esc(t.who)}</b><span class="s">${esc((t.ts||'').slice(11,16))}</span><br>${esc(t.text)}</div>`).join('')||'<div class="msg">—</div>';}
 function renderDrawer(n){const real=document.getElementById('dBody'),tmp=document.createElement('div');const H={lamp:document.createElement('div'),name:document.createElement('div'),sub:document.createElement('div')};tmp._hdr=H;_render(n,tmp);
   const rl=document.getElementById('dLamp');if(rl.className!==H.lamp.className)rl.className=H.lamp.className;if(rl.innerHTML!==H.lamp.innerHTML)rl.innerHTML=H.lamp.innerHTML;
   ['dName','dSub'].forEach((id,i)=>{const r=document.getElementById(id),h=i?H.sub:H.name;if(r.innerHTML!==h.innerHTML)r.innerHTML=h.innerHTML;});const was=real.querySelector('details.more');if(was&&was.open){const d=tmp.querySelector('details.more');if(d)d.open=true;}if(tmp.innerHTML!==real.innerHTML){const y=real.scrollTop;real.innerHTML=tmp.innerHTML;real.scrollTop=y;}}
+// corpo da gaveta de uma sessão; top = seção antes de "Fazendo agora", projRow = atalho para o projeto dentro de Detalhes
+function sessBody(n,s,top,projRow){const c=sumOf(s.id,'',s.last_epoch);if(!c)setTimeout(()=>askSum(s.id,'',s.last_epoch),0);
+  return `${top}<div class="sec"><div class="kicker">Fazendo agora</div><div class="big"><span class="bt">${esc((s.doing||'Sem atividade registrada').replace(/^Respondeu: /,''))}</span>${aiHtml(c)}</div></div>
+      ${s.goal?`<div class="sec"><div class="kicker">Último pedido</div><div class="goalt clamp">${esc(s.goal)}</div></div>`:''}
+      <div class="sec"><div class="kicker">Últimos passos</div>${stepsHtml(s.steps)}</div>
+      ${s.agents.length?`<div class="sec"><div class="kicker">Agentes</div>${s.agents.map(a=>`<div class="row click" data-agent="${esc(a.name)}" data-sid="${esc(s.id)}"><span class="n" style="${a.state==='approval'?'background:#3d8fff;box-shadow:0 0 0 3px #3d8fff33':a.state==='done'?'background:#3fbf7a':'background:#f1f1f3'}"></span><span class="t"><b>${esc(a.name)}</b><span class="one">${esc((a.doing||a.now||'').replace(/^Concluiu: /,'✓ '))}</span></span><span class="s">${a.state==='done'?'há '+ago(a.age):a.state==='approval'?'decidir':a.state==='waiting'?'esperando':'agora'}</span></div>`).join('')}</div>`:''}
+      <div class="sec"><details class="more"><summary>Detalhes</summary>
+        ${tokensHtml(s.tokens)}
+        <div class="sec"><div class="kicker">Últimas falas</div>${turnsHtml(s.turns)}</div>
+${projRow}        ${s.short?`<div class="kicker" style="margin-top:8px">id ${esc(s.short)}${s.updated?' · atualizada '+esc(s.updated):''}</div>`:''}</div>
+        <div class="sec"><button class="btn" ${n.proj.smart_memory?'':'disabled'} data-vault="${esc(n.proj.path)}">${n.proj.smart_memory?'Abrir smart-memory':'Sem smart-memory ainda'} <span>→</span></button></div>
+      </details></div>`;}
 function _render(n,body){
   const {lamp,name,sub}=body._hdr||{lamp:document.getElementById('dLamp'),name:document.getElementById('dName'),sub:document.getElementById('dSub')};
   if(n.kind==='hub'){lamp.className='lamp hub';lamp.innerHTML='<svg viewBox="0 0 84.54 136" height="26"><polygon fill="#3d8fff" points="69.84,0.00 0.00,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>';name.textContent='Sala de Controle';const s=n.sess;sub.textContent=s?esc(s.name)+' · '+(s.status||''):'sem sessão aberta';
@@ -825,24 +855,17 @@ function _render(n,body){
       ${s?'':`<div class="goalt" style="margin-top:8px">Abra no app uma sessão nova na pasta do Centro de Treinamento, chame de “Sala de Controle” e rode <code>/sala-de-controle</code>.</div>`}</div>
       ${s&&s.steps&&s.steps.length?`<div class="sec"><div class="kicker">Últimos passos</div>${stepsHtml(s.steps)}</div>`:''}
       <div class="sec"><a class="lnk" ${salaProj&&salaProj.smart_memory?`data-vault="${esc(salaProj.path)}"`:''}>Memória da Sala →</a></div>`;return;}
+  if(n.kind==='lead'&&n.solo){const p=n.proj,s=n.solo,st=stateOfSession(s);lamp.className=lampCls(st);lamp.innerHTML='';name.textContent=p.name;sub.textContent=[sinceWord(s,st),p.squads.join(' · ')||'sem squad'].join(' · ');   // projeto com a sessão única absorvida
+    const stage=String(p.stage||p.summary||'—').replace(/^\s*\w+:\s*/,'').replace(/^["']|["']$/g,'');
+    body.innerHTML=sessBody(n,s,`<div class="sec"><div class="kicker">Etapa</div><div class="goalt">${esc(stage)}</div>${p.last_touch?`<div class="since">última atividade ${esc(String(p.last_touch).slice(0,16))}</div>`:''}</div>`,'');return;}
   if(n.kind==='lead'){const p=n.proj,st=stateOfLead(n);lamp.className=lampCls(st==='off'?'waiting':st);lamp.innerHTML='';name.textContent=p.name;sub.textContent=(n.sess.length?n.sess.length+' sessão'+(n.sess.length>1?'s':'')+' aberta'+(n.sess.length>1?'s':''):'sem sessão aberta')+' · '+(p.squads.join(' · ')||'sem squad');
     const stage=String(p.stage||p.summary||'—').replace(/^\s*\w+:\s*/,'').replace(/^["']|["']$/g,'');
     body.innerHTML=`<div class="sec"><div class="kicker">Etapa</div><div class="goalt">${esc(stage)}</div>${p.last_touch?`<div class="since">última atividade ${esc(String(p.last_touch).slice(0,16))}</div>`:''}</div>
       <div class="sec"><div class="kicker">Sessões</div>${n.sess.map(s=>`<div class="row click${s.stopped?' stop':''}" data-sess="${esc(s.id)}"><span class="n" style="${s.status==='busy'?'background:#f1f1f3':'border:1.5px solid #84848c'}"></span><span class="t"><b>${esc(shortName(s.name))}</b><span class="one">${esc(s.doing||'sem atividade')}</span></span><span class="s">${s.agents.length?s.agents.length+' ag.':''}</span></div>`).join('')||'<div class="goalt">Nenhuma sessão aberta.</div>'}</div>
       <div class="sec"><a class="lnk" ${p.smart_memory?`data-vault="${esc(p.path)}"`:''}>${p.smart_memory?'Abrir smart-memory →':'Sem smart-memory ainda'}</a></div>`;return;}
   if(n.kind==='session'){const s=n.sess,st=stateOfSession(s);lamp.className=lampCls(st);lamp.innerHTML='';name.textContent=shortName(s.name);sub.textContent=[n.proj.name,sinceWord(s,st)].filter(Boolean).join(' · ');
-    const c=sumOf(s.id,'',s.last_epoch);if(!c)setTimeout(()=>askSum(s.id,'',s.last_epoch),0);
-    body.innerHTML=`<div class="sec"><div class="kicker">Fazendo agora</div><div class="big"><span class="bt">${esc((s.doing||'Sem atividade registrada').replace(/^Respondeu: /,''))}</span>${aiHtml(c)}</div></div>
-      ${s.goal?`<div class="sec"><div class="kicker">Último pedido</div><div class="goalt clamp">${esc(s.goal)}</div></div>`:''}
-      <div class="sec"><div class="kicker">Últimos passos</div>${stepsHtml(s.steps)}</div>
-      ${s.agents.length?`<div class="sec"><div class="kicker">Agentes</div>${s.agents.map(a=>`<div class="row click" data-agent="${esc(a.name)}" data-sid="${esc(s.id)}"><span class="n" style="${a.state==='approval'?'background:#3d8fff;box-shadow:0 0 0 3px #3d8fff33':a.state==='done'?'background:#3fbf7a':'background:#f1f1f3'}"></span><span class="t"><b>${esc(a.name)}</b><span class="one">${esc((a.doing||a.now||'').replace(/^Concluiu: /,'✓ '))}</span></span><span class="s">${a.state==='done'?'há '+ago(a.age):a.state==='approval'?'decidir':a.state==='waiting'?'esperando':'agora'}</span></div>`).join('')}</div>`:''}
-      <div class="sec"><details class="more"><summary>Detalhes</summary>
-        ${tokensHtml(s.tokens)}
-        <div class="sec"><div class="kicker">Últimas falas</div>${turnsHtml(s.turns)}</div>
-        <div class="sec"><div class="kicker">Projeto</div><div class="row click" data-lead="${esc(n.lead.id)}"><span class="n" style="border:1.5px solid #84848c"></span><span class="t"><b>${esc(n.proj.name)}</b><br>${esc(n.proj.stage||'')}</span><span class="s">→</span></div>
-        ${s.short?`<div class="kicker" style="margin-top:8px">id ${esc(s.short)}${s.updated?' · atualizada '+esc(s.updated):''}</div>`:''}</div>
-        <div class="sec"><button class="btn" ${n.proj.smart_memory?'':'disabled'} data-vault="${esc(n.proj.path)}">${n.proj.smart_memory?'Abrir smart-memory':'Sem smart-memory ainda'} <span>→</span></button></div>
-      </details></div>`;return;}
+    body.innerHTML=sessBody(n,s,'',`        <div class="sec"><div class="kicker">Projeto</div><div class="row click" data-lead="${esc(n.lead.id)}"><span class="n" style="border:1.5px solid #84848c"></span><span class="t"><b>${esc(n.proj.name)}</b><br>${esc(n.proj.stage||'')}</span><span class="s">→</span></div>
+`);return;}
   const a=n.ag,s=n.sess;lamp.className=lampCls(a.state);lamp.innerHTML='';name.textContent=a.name;sub.textContent=[a.type,sinceWord(a,a.state).split(' · ')[0]].filter(Boolean).join(' · ');
   const c=sumOf(s.id,a.name,a.last_epoch);if(!c)setTimeout(()=>askSum(s.id,a.name,a.last_epoch),0);
   body.innerHTML=`<div class="sec"><div class="kicker" ${a.state==='done'?'style="color:#3fbf7a"':''}>${a.state==='done'?'Concluiu':'Fazendo agora'}</div><div class="big"><span class="bt">${esc((a.doing||a.now||'—').replace(/^(Concluiu|Respondeu): /,''))}</span>${aiHtml(c)}</div></div>
