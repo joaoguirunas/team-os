@@ -7,6 +7,13 @@ Rotas:
   GET /api/state       → estado atual (JSON)
   GET /api/vault?p=    → árvore da smart-memory de um projeto (p = caminho do projeto)
   GET /api/note?p=&n=  → conteúdo de uma nota (n = caminho relativo dentro de docs/smart-memory)
+  GET /ganga.js, /ganga.css → a Ganga (assistente da Sala; desligada por padrão)
+  GET /api/ganga        → preferências da Ganga (ligada?, modo)
+  POST /api/ganga       → muda preferências ({"on": bool, "mode": "silencioso"|"copiloto"})
+  POST /api/ganga/toggle → liga/desliga (atalho do app Atalhos do macOS)
+  POST /api/ganga/ask   → pergunta digitada → resposta da Ganga (claude -p sonnet, sem ferramentas)
+  GET /api/ganga/reports?p= → relatórios do projeto (notas da smart-memory + .html em docs/)
+  GET /api/ganga/report?p=&f= → um relatório (html isolado em sandbox; nota em json)
   GET /api/summary?sid=&agent= → resumo de 1–2 frases do que a sessão/agente faz agora, por um modelo pequeno
                          (`claude -p --model haiku`, só ao passar o mouse; cache por última atividade)
 
@@ -28,6 +35,7 @@ from urllib.parse import urlparse, parse_qs
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import collect  # noqa: E402
+import ganga  # noqa: E402
 
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-painel.pid")
@@ -192,14 +200,15 @@ class Summarizer:
     o contexto não crescer. Só texto: sem ferramentas, sem MCP, sem settings/hooks do usuário."""
     MAX_USES = 25
 
-    def __init__(self):
+    def __init__(self, model="haiku", system=None, max_uses=25):
         self.p, self.uses = None, 0
+        self.model, self.system, self.MAX_USES = model, system or SUM_SYSTEM, max_uses
 
     def _start(self):
         os.makedirs(collect.SUMMARY_CWD, exist_ok=True)
         self.p = subprocess.Popen(
-            ["claude", "-p", "--model", "haiku", "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "",
-             "--system-prompt", SUM_SYSTEM, "--tools", "", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
+            ["claude", "-p", "--model", self.model, "--no-session-persistence", "--strict-mcp-config", "--setting-sources", "",
+             "--system-prompt", self.system, "--tools", "", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1, cwd=collect.SUMMARY_CWD)
         self.uses = 0
 
@@ -248,6 +257,50 @@ class Summarizer:
 
 
 WORKER = Summarizer()
+BRAIN = Summarizer(model="sonnet", system=ganga.SYSTEM, max_uses=30)   # a Ganga: só sobe com ela ligada
+BRAIN_LOCK = threading.Lock()
+
+
+def ganga_ask(question):
+    if not ganga.load_prefs()["on"]:
+        return 409, {"error": "desligada"}
+    q = (question or "").strip()
+    if not q:
+        return 400, {"error": "pergunta vazia"}
+    with LOCK:
+        st = json.loads(json.dumps(STATE["data"] or {}))
+    prompt, hits = ganga.build_prompt(q, st, ganga.load_prefs())
+    with BRAIN_LOCK:
+        try:
+            out, err = BRAIN.ask(prompt, timeout=120)
+        except FileNotFoundError:
+            return 200, {"error": "sem_claude"}
+        except Exception:
+            return 200, {"error": "falhou"}
+    if not out:
+        return 200, {"error": err or "falhou"}
+    return 200, {"text": out.strip(), "projects": hits}
+
+
+def warm_brain():
+    def run():
+        with BRAIN_LOCK:
+            try:
+                BRAIN.ask("Responda só: pronta.", timeout=90)
+            except Exception:
+                pass
+    threading.Thread(target=run, daemon=True).start()
+
+
+def set_ganga(upd):
+    before = ganga.load_prefs()
+    p = ganga.save_prefs(upd)
+    if p["on"] and not before["on"]:
+        warm_brain()
+    elif not p["on"] and before["on"]:
+        with BRAIN_LOCK:
+            BRAIN.stop()
+    return p
 
 
 def find_target(sid, agent):
@@ -314,6 +367,33 @@ class H(BaseHTTPRequestHandler):
         q = {k: v[0] for k, v in parse_qs(u.query).items()}
         if u.path == "/":
             return self._send(200, open(os.path.join(HERE, "index.html"), encoding="utf-8").read(), "text/html; charset=utf-8")
+        if u.path in ("/ganga.js", "/ganga.css"):
+            ct = "text/javascript; charset=utf-8" if u.path.endswith(".js") else "text/css; charset=utf-8"
+            return self._send(200, open(os.path.join(HERE, u.path[1:]), encoding="utf-8").read(), ct)
+        if u.path == "/api/ganga":
+            return self._send(200, ganga.load_prefs())
+        if u.path == "/api/ganga/reports":
+            p = nfc(q.get("p", ""))
+            if p not in known_projects():
+                return self._send(404, {"error": "projeto desconhecido"})
+            return self._send(200, {"project": p, "reports": ganga.reports(p)})
+        if u.path == "/api/ganga/report":
+            p = nfc(q.get("p", ""))
+            full = ganga.report_path(p, q.get("f", "")) if p in known_projects() else None
+            if not full:
+                return self._send(404, {"error": "relatório não encontrado"})
+            if full.lower().endswith(".html"):
+                body = open(full, "rb").read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Security-Policy", "sandbox; script-src 'none'; connect-src 'none'; form-action 'none'")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            fm, body = parse_fm(open(full, encoding="utf-8", errors="replace").read())
+            return self._send(200, {"path": q.get("f"), "frontmatter": fm, "body": body})
         if u.path == "/api/state":
             with LOCK:
                 return self._send(200, STATE["data"] or {"projects": [], "sessions": [], "counts": {}})
@@ -362,6 +442,37 @@ class H(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, OSError):
                 return
         return self._send(404, {"error": "rota desconhecida"})
+
+
+def _post_ok(h):
+    """Só aceita POST do próprio painel (ou de curl local sem Origin) e com corpo JSON."""
+    origin = h.headers.get("Origin")
+    host = h.headers.get("Host", "")
+    if origin and origin not in (f"http://{host}", f"http://127.0.0.1:{host.split(':')[-1]}", f"http://localhost:{host.split(':')[-1]}"):
+        return False
+    return (h.headers.get("Content-Type") or "").startswith("application/json")
+
+
+def do_POST(self):
+    u = urlparse(self.path)
+    if not _post_ok(self):
+        return self._send(403, {"error": "origem ou formato recusado"})
+    try:
+        n = min(int(self.headers.get("Content-Length") or 0), 20000)
+        body = json.loads(self.rfile.read(n) or b"{}")
+    except Exception:
+        return self._send(400, {"error": "json inválido"})
+    if u.path == "/api/ganga":
+        return self._send(200, set_ganga(body if isinstance(body, dict) else {}))
+    if u.path == "/api/ganga/toggle":
+        return self._send(200, set_ganga({"on": not ganga.load_prefs()["on"]}))
+    if u.path == "/api/ganga/ask":
+        code, res = ganga_ask(str(body.get("text", ""))[:2000] if isinstance(body, dict) else "")
+        return self._send(code, res)
+    return self._send(404, {"error": "rota desconhecida"})
+
+
+H.do_POST = do_POST
 
 
 def home_is_ct():
@@ -422,7 +533,9 @@ def main():
                 pass
     threading.Thread(target=warm, daemon=True).start()
     # --stop manda SIGTERM: fecha junto o claude do resumo para não deixar processo órfão
-    signal.signal(signal.SIGTERM, lambda *_: (WORKER.stop(), os._exit(0)))
+    if ganga.load_prefs()["on"]:
+        warm_brain()
+    signal.signal(signal.SIGTERM, lambda *_: (WORKER.stop(), BRAIN.stop(), os._exit(0)))
     srv = ThreadingHTTPServer(("127.0.0.1", port), H)
     srv.daemon_threads = True
     print(f"painel · http://127.0.0.1:{port} · raiz {root}", flush=True)
@@ -432,6 +545,7 @@ def main():
         pass
     finally:
         WORKER.stop()
+        BRAIN.stop()
 
 
 if __name__ == "__main__":

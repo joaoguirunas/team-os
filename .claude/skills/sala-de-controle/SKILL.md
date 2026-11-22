@@ -1,8 +1,8 @@
 ---
 name: sala-de-controle
 description: Sala de Controle das sessões do Claude Code, que mora no CT: a cada invocação relê todas as sessões abertas, a etapa de cada projeto pela smart-memory e o que cada sessão faz agora; abre o painel de agentes em produção, decompõe o pedido, despacha para a sessão certa (sessão nova só com OK) e acompanha os retornos. Mapeia a organização de pastas. Roteia, nunca executa. Trigger: /sala-de-controle
-version: "2.1"
-updated: "2026-11-14"
+version: "2.2"
+updated: "2026-11-20"
 user-invocable: true
 ---
 
@@ -17,6 +17,7 @@ Invocação:
 - `/sala-de-controle *historico` → despachos em andamento e concluídos
 - `/sala-de-controle *painel` → só sobe e abre o painel (sem a leitura completa da rodada): sessões, líderes e agentes trabalhando em tempo real, com a smart-memory de cada projeto navegável
 - `/sala-de-controle *painel stop` → derruba o servidor do painel
+- `/sala-de-controle *ganga` → sobe o painel, liga a **Ganga** (assistente da Sala) e abre a tela dela; `*ganga off` desliga. Ver "`*ganga`" abaixo
 
 > A Sala **mora no CT** (`0 | Centro de Treinamento`), como a `team-os-creator`: é exclusiva do CT e nunca vai para projeto destino. Dois painéis, com link cruzado no topo de cada um: **Agentes em produção** (`/sala-de-controle *painel`, `127.0.0.1:8787`, ao vivo) e **Mapa do pack** (`/team-os-creator *painel`, `127.0.0.1:8788`).
 
@@ -182,6 +183,18 @@ Mensagem de uma sessão **sem** despacho em aberto → mostre ao usuário como "
 O autopilot **nunca**: muda o destino confirmado, inventa sub-pedido fora do plano, responde `DECISÃO:` no lugar do usuário, ou executa algo em outra pasta para "adiantar".
 
 ---
+
+## `*ganga` — Ganga, a assistente da Sala
+
+A Ganga conversa com o usuário sobre todos os projetos e sessões, com os dados que o painel já lê. **Desligada por padrão**: desligada, não escuta nada e não gasta nada. Liga pelo ícone **Ganga** na barra do painel, por `*ganga` ou por `POST /api/ganga/toggle` (atalho do app Atalhos do macOS).
+
+- **Etapa 1 (pronta):** tela cheia estilo HUD com a orb (dormindo · pensando · falando · aviso), projetos ativos em volta (âmbar = precisa de você), conversa **digitada** e painel de relatórios (notas da smart-memory + `.html` em `docs/` de cada projeto; html isolado em sandbox, sem script). Modos Silencioso/Copiloto já salvos (o Copiloto passa a avisar na etapa 5).
+- **Cérebro:** `claude -p --model sonnet` sem ferramentas, só sobe com a Ganga ligada, recebe o panorama da Sala + DIGEST/relatório do projeto citado. Responde curto, em pt-BR falado, bem-humorada. Consome o plano do Claude Code do usuário.
+- **Só lê:** nunca escreve em projeto e ainda não manda pedido para sessão (etapa 4, com confirmação por voz; push, publicar, apagar e pagar nunca por voz).
+- Preferências em `~/.claude/sala-de-controle-ganga.json` (fora do git). POST só do próprio painel (Origin) e com JSON.
+- Plano completo (etapas 2–5: voz Gemini Live, palavra "Ganga", pedidos às sessões, Copiloto): `docs/smart-memory/sala-de-controle/ganga/plano-ganga.html`.
+
+Fluxo do `*ganga`: `serve.py --bg` → `curl -s -X POST -H 'Content-Type: application/json' -d '{"on":true}' http://127.0.0.1:8787/api/ganga` → abrir `http://127.0.0.1:8787` e clicar no ícone Ganga (ou pedir ao usuário). `*ganga off` → o mesmo POST com `{"on":false}`. Se a resposta vier "login do Claude expirou": o usuário roda `claude` no Terminal e faz `/login`.
 
 ## `*painel` — mapa vivo (visualização em tempo real)
 
