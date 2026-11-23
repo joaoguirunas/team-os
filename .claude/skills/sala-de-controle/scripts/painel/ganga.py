@@ -151,6 +151,10 @@ Ferramentas:
   Se voltar aberto=true, diga em 1 frase curta o que abriu. Se voltar opcoes, leia no máximo 3 pelo nome curto e
   pergunte qual; quando ele escolher, chame de novo com numero=<n da opção>.
 - procurar_arquivos(projeto, busca): lista arquivos sem abrir, quando ele quiser saber o que existe.
+- ver_sessao(nome): o que uma sessão está fazendo, objetivo, agentes e as últimas falas — use quando ele perguntar de
+  uma sessão específica ou do resultado de um pedido. ver_panorama(todas=true) inclui as paradas.
+- ler_arquivo(projeto, busca): LÊ o conteúdo (proposta, relatório, PDF, nota, código) para responder sobre ele. Resuma
+  falando; não leia texto longo em voz alta. Segredos vêm como [segredo oculto] — nunca tente descobri-los.
 - lembrar_nome(nome): quando ele disser como quer ser chamado. lembrar(fato): quando ele pedir "lembra que…" (preferência,
   apelido de projeto, contato). esquecer(palavras): quando pedir para esquecer. Confirme em 3 palavras ("Anotado, X!").
 Se a resposta disser sala_ouvindo=false, avise que a sessão da Sala não está ouvindo e que ele precisa rodar
@@ -159,7 +163,7 @@ Nunca leia em voz alta listas longas, caminhos ou ids. Se o dado não veio das f
 
 VOICE_TOOLS = [{"functionDeclarations": [
     {"name": "ver_panorama", "description": "Panorama atual de todos os projetos e sessões da Sala de Controle.",
-     "parameters": {"type": "OBJECT", "properties": {}}},
+     "parameters": {"type": "OBJECT", "properties": {"todas": {"type": "BOOLEAN", "description": "true = inclui também as sessões paradas"}}}},
     {"name": "ver_projeto", "description": "Detalhes de um projeto: etapa, sessões, resumo e último relatório.",
      "parameters": {"type": "OBJECT", "properties": {"nome": {"type": "STRING", "description": "nome ou apelido do projeto, ex.: livro, site, calendário da Claudia"}}, "required": ["nome"]}},
     {"name": "pensar_com_claude", "description": "Análise profunda feita pelo Claude com todo o contexto da Sala. Demora de 5 a 15 segundos.",
@@ -184,6 +188,12 @@ VOICE_TOOLS = [{"functionDeclarations": [
      "parameters": {"type": "OBJECT", "properties": {"id": {"type": "STRING"}}, "required": ["id"]}},
     {"name": "cancelar_pedido", "description": "Cancela um pedido pendente, quando o usuário pedir.",
      "parameters": {"type": "OBJECT", "properties": {"id": {"type": "STRING"}}, "required": ["id"]}},
+    {"name": "ver_sessao", "description": "Tudo sobre uma sessão (também as paradas): objetivo, o que faz, agentes e as últimas falas.",
+     "parameters": {"type": "OBJECT", "properties": {"nome": {"type": "STRING", "description": "nome da sessão ou do projeto"}}, "required": ["nome"]}},
+    {"name": "ler_arquivo", "description": "Lê o conteúdo de um arquivo de um projeto (documento, PDF, planilha, código, nota). Segredos vêm ocultos.",
+     "parameters": {"type": "OBJECT", "properties": {
+         "projeto": {"type": "STRING"}, "busca": {"type": "STRING", "description": "palavras do nome do arquivo"},
+         "numero": {"type": "INTEGER", "description": "n da opção, quando a busca anterior devolveu opções"}}, "required": ["projeto"]}},
     {"name": "lembrar_nome", "description": "Guarda para sempre como o usuário quer ser chamado.",
      "parameters": {"type": "OBJECT", "properties": {"nome": {"type": "STRING"}}, "required": ["nome"]}},
     {"name": "lembrar", "description": "Guarda um fato ou preferência que o usuário pediu para você lembrar (curto).",
@@ -449,7 +459,7 @@ def _words(s):
     return re.findall(r"[a-z0-9]+(?:\.[0-9]+)*", strip_acc(s).replace("_", " ").replace("-", " "))
 
 
-def find_files(project_path, query, limit=8, budget=40000):
+def find_files(project_path, query, limit=8, budget=40000, exts=None):
     """Arquivos do projeto que batem com a busca (nome + pastas), sem lixo, backup, código ou pasta oculta."""
     q = [w for w in _words(query) if w not in FILE_STOP]
     want_ext = {EXT_WORDS[w] for w in q if w in EXT_WORDS}
@@ -466,7 +476,7 @@ def find_files(project_path, query, limit=8, budget=40000):
             if seen > budget:
                 break
             ext = os.path.splitext(f)[1].lower()
-            if ext not in OPEN_EXT or f.startswith((".", "~$")):
+            if ext not in (exts or OPEN_EXT) or f.startswith((".", "~$")) or SECRET_FILE_RE.search(f):
                 continue
             name_words = set(_words(os.path.splitext(f)[0]))
             score = 0.0
@@ -513,6 +523,72 @@ def open_file(project_path, rel):
     return real
 
 
+# ---------- visibilidade ampla (só leitura, sem segredo) ----------
+# Lê texto de qualquer documento ou código dos projetos conhecidos. Nunca: .env, chaves, certificados, credenciais,
+# .git, node_modules, pastas ocultas. Todo texto passa por redact() antes de ir ao Gemini/Claude.
+READ_EXT = OPEN_EXT | {".html", ".htm", ".json", ".yaml", ".yml", ".toml", ".py", ".js", ".mjs", ".ts", ".tsx", ".jsx",
+                       ".css", ".sql", ".sh", ".xml", ".log", ".doc", ".xls", ".ppt"}
+SECRET_FILE_RE = re.compile(r"(^\.?env(\.|$)|\.env$|\.env\.|\.envrc$|secret|credential|credencia|\.pem$|\.p12$|\.pfx$|id_rsa|id_ed25519|"
+                            r"token|senha|password|keychain|\.keystore$|service[-_]?account)", re.I)
+REDACT_RE = re.compile(r"(sk-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|xox[abpr]-[A-Za-z0-9-]{10,}|"
+                       r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}|AKIA[0-9A-Z]{16}|"
+                       r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----|"
+                       r"(?i:(?:api[_-]?key|secret|token|senha|password|passwd|authorization|bearer)\s*[:=]\s*)[\"']?[^\s\"']{8,})")
+
+
+def redact(text):
+    return REDACT_RE.sub("[segredo oculto]", text or "")
+
+
+def read_file_text(project_path, rel, n=12000):
+    """Texto de um arquivo do projeto (PDF via pdftotext, Office/RTF via textutil do macOS), já sem segredos."""
+    if not rel or ".." in rel.replace("\\", "/").split("/"):
+        return None
+    full = os.path.join(project_path, rel)
+    real = os.path.realpath(full)
+    ext = os.path.splitext(real)[1].lower()
+    if (ext not in READ_EXT or SECRET_FILE_RE.search(os.path.basename(real)) or not safe_under(project_path, real)
+            or not os.path.isfile(real) or any(part.startswith(".") or part in ("node_modules",) for part in rel.split("/")[:-1])):
+        return None
+    try:
+        if ext == ".pdf":
+            out = subprocess.run(["pdftotext", "-layout", "-l", "40", real, "-"], capture_output=True, text=True, timeout=20).stdout
+        elif ext in (".docx", ".doc", ".rtf", ".odt", ".pages"):
+            out = subprocess.run(["textutil", "-convert", "txt", "-stdout", real], capture_output=True, text=True, timeout=20).stdout
+        elif ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".mp4", ".mov", ".m4v", ".mp3", ".m4a", ".wav",
+                     ".xlsx", ".xls", ".pptx", ".ppt", ".key", ".numbers", ".epub"):
+            st = os.stat(real)
+            return f"(arquivo {ext[1:]} de {st.st_size // 1024} KB, modificado em {time.strftime('%d/%m/%Y %H:%M', time.localtime(st.st_mtime))} — conteúdo não é texto; posso abrir no Mac)"
+        else:
+            out = text_of_file(real, n * 2)
+    except Exception:
+        return None
+    out = re.sub(r"[ \t]+", " ", out or "")
+    out = re.sub(r"\n\s*\n+", "\n", out).strip()
+    return redact(out)[:n] or "(arquivo vazio ou sem texto)"
+
+
+def session_context(name, state, prefs=None, n_turns=8):
+    """Tudo o que a Sala sabe de uma sessão (inclusive paradas): projeto, estado, objetivo, agentes e últimas falas."""
+    q = strip_acc(name or "")
+    ss = [s for s in state.get("sessions", []) if q and q in strip_acc(s.get("name", "") + " " + (s.get("project_name") or ""))]
+    if not ss:
+        return "Não achei sessão com esse nome. Sessões: " + ", ".join(s.get("name", "") for s in state.get("sessions", []))[:1500]
+    out = []
+    for s in ss[:3]:
+        ag = s.get("agents") or []
+        out.append(f"# Sessão '{s.get('name')}' — projeto {s.get('project_name') or '?'}; status {s.get('status')}"
+                   f"{' (precisa de você)' if s.get('state') == 'approval' else ''}{' (parada)' if s.get('stopped') else ''}")
+        for k, lab in (("goal", "objetivo"), ("doing", "fazendo agora")):
+            if s.get(k):
+                out.append(f"{lab}: {s[k][:300]}")
+        if ag:
+            out.append("agentes: " + "; ".join(f"{a.get('name')} ({a.get('state')}{': ' + a['doing'][:80] if a.get('doing') else ''})" for a in ag[:12]))
+        for t in (s.get("turns") or [])[-n_turns:]:
+            out.append(f"[{t.get('who')}] {t.get('text', '')[:700]}")
+    return redact("\n".join(out))[:9000]
+
+
 def report_path(project_path, rel):
     if not rel or ".." in rel.replace("\\", "/").split("/"):
         return None
@@ -542,13 +618,13 @@ def text_of_file(full, n=6000):
 
 
 # ---------- contexto ----------
-def panorama(state, prefs=None):
+def panorama(state, prefs=None, todas=False):
     st = {"busy": "trabalhando", "waiting": "esperando você", "idle": "parada", "stopped": "parada"}
     lines = [f"Agora: {time.strftime('%d/%m/%Y %H:%M')}"]
     sess_by_id = {s["id"]: s for s in state.get("sessions", [])}
     for p in state.get("projects", []):
         ss = [sess_by_id[i] for i in p.get("sessions", []) if i in sess_by_id]
-        recent = [s for s in ss if s.get("recent")]
+        recent = [s for s in ss if s.get("recent") or (todas and not s.get("archived"))]
         if not recent and not p.get("backlog_open"):
             continue
         head = f"\n# {alias_of(p['name'], prefs)} (pasta: {p['name']})"
@@ -557,7 +633,7 @@ def panorama(state, prefs=None):
         if p.get("backlog_open"):
             head += f" — backlog aberto: {p['backlog_open']}"
         lines.append(head)
-        for s in recent[:4]:
+        for s in recent[:12 if todas else 4]:
             if s.get("is_self"):
                 continue
             ag = s.get("agents") or []
@@ -576,7 +652,7 @@ def panorama(state, prefs=None):
             lines.append(ln)
     c = state.get("counts", {})
     lines.append(f"\nTotais: {c.get('recent', 0)} sessões recentes, {c.get('active', 0)} agentes trabalhando, {c.get('approval', 0)} pedindo o usuário.")
-    return "\n".join(lines)[:7000]
+    return redact("\n".join(lines))[:14000 if todas else 7000]
 
 
 WANTS_DOC = re.compile(r"relat|report|l[eê]\b|ler\b|leia|resum|digest|status|como (est|ta|tá)|andamento|o que falta", re.I)

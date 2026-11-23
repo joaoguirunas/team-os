@@ -640,7 +640,9 @@
     for (const fc of calls) {
       let result = '';
       try {
-        if (fc.name === 'ver_panorama') result = (await api('/api/ganga/context')).text;
+        if (fc.name === 'ver_panorama') result = (await api('/api/ganga/context' + ((fc.args || {}).todas ? '?todas=1' : ''))).text;
+        else if (fc.name === 'ver_sessao') result = (await api('/api/ganga/context?sessao=' + encodeURIComponent((fc.args || {}).nome || ''))).text;
+        else if (fc.name === 'ler_arquivo') { const a = fc.args || {}; result = JSON.stringify(await api('/api/ganga/read', {project: a.projeto || '', q: a.busca || '', numero: a.numero || 0})); }
         else if (fc.name === 'ver_projeto') result = (await api('/api/ganga/context?q=' + encodeURIComponent((fc.args || {}).nome || ''))).text;
         else if (fc.name === 'pensar_com_claude') {
           const r = await api('/api/ganga/ask', {text: (fc.args || {}).pergunta || ''});

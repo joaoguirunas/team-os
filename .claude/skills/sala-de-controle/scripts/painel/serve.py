@@ -451,7 +451,9 @@ class H(BaseHTTPRequestHandler):
                 st = json.loads(json.dumps(STATE["data"] or {}))
             name = q.get("q", "").strip()
             pr = ganga.load_prefs()
-            return self._send(200, {"text": ganga.project_context(name, st, pr) if name else ganga.panorama(st, pr)})
+            if q.get("sessao"):
+                return self._send(200, {"text": ganga.session_context(q["sessao"], st, pr)})
+            return self._send(200, {"text": ganga.project_context(name, st, pr) if name else ganga.panorama(st, pr, todas=q.get("todas") == "1")})
         if u.path == "/api/ganga/notices":
             COP.panel_at = time.time()
             try:
@@ -594,6 +596,34 @@ def do_POST(self):
         txt = str((body or {}).get("text", ""))[:300] or ("Oi, " + ganga.user_name() + ". Eu sou a Ganga.").replace("Oi, . ", "Oi! ")
         COP.say(txt, ganga.load_prefs().get("mac_voice") or "Ganga")
         return self._send(200, {"ok": True})
+    if u.path == "/api/ganga/read":
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        with LOCK:
+            st = json.loads(json.dumps(STATE["data"] or {}))
+        ph = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())
+        if not ph:
+            return self._send(200, {"error": "projeto não encontrado", "projetos": [shortp(p["name"]) for p in st.get("projects", [])][:30]})
+        if len(ph) > 1:
+            return self._send(200, {"error": "mais de um projeto com esse nome", "opcoes": [p["name"] for p in ph]})
+        proj = ph[0]
+        hits = ganga.find_files(proj.get("path", ""), str(body.get("q", "")), exts=ganga.READ_EXT)
+        if not hits:
+            return self._send(200, {"error": "nenhum arquivo encontrado com essas palavras"})
+        try:
+            pick = int(body.get("numero") or 0)
+        except (TypeError, ValueError):
+            pick = 0
+        clear = len(hits) == 1 or hits[0]["score"] >= hits[1]["score"] + 1
+        if not pick and not clear:
+            return self._send(200, {"projeto": proj["name"], "opcoes": [{"n": i + 1, "nome": x["nome"], "pasta": x["pasta"][-80:], "data": x["data"]} for i, x in enumerate(hits[:6])]})
+        if pick and not 1 <= pick <= min(len(hits), 6):
+            return self._send(200, {"error": "opção inválida"})
+        h = hits[(pick or 1) - 1]
+        txt = ganga.read_file_text(proj.get("path", ""), h["rel"])
+        if txt is None:
+            return self._send(200, {"error": "não posso ler esse arquivo (protegido ou formato não suportado)"})
+        return self._send(200, {"projeto": proj["name"], "nome": h["nome"], "pasta": h["pasta"], "data": h["data"], "texto": txt})
     if u.path in ("/api/ganga/open", "/api/ganga/files"):
         if not isinstance(body, dict):
             return self._send(400, {"error": "json inválido"})
