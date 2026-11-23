@@ -565,6 +565,7 @@ def do_POST(self):
         return self._send(200, {"ok": ok, "check": msg, "key_hint": ganga.key_hint()})
     if u.path == "/api/ganga/live":
         COP.live = bool(isinstance(body, dict) and body.get("live"))
+        COP.live_at = time.time()
         return self._send(200, {"ok": True})
     if u.path == "/api/ganga/say":
         txt = str((body or {}).get("text", ""))[:300] or "Oi, João. Eu sou a Ganga."

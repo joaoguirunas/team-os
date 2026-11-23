@@ -665,6 +665,7 @@
   setInterval(async () => {   // liga/desliga feito em outro lugar (outra aba, Sala, atalho) chega aqui
     try { const p = await api('/api/ganga'); if (p.on !== G.on || p.wake !== G.wake) { Object.assign(G, p); paint(); } } catch {}
     if (!rec && wakeWanted()) wakeSync();
+    if (G.live) api('/api/ganga/live', {live: true}).catch(() => {});   // batimento: o Copiloto fica quieto só enquanto a voz está aberta
   }, 5000);
   // atalho global: o app Atalhos chama /api/ganga/wake; o painel confere a cada 1,5 s
   let wakeT = null;

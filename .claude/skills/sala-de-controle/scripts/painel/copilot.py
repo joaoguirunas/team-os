@@ -57,6 +57,7 @@ class Copilot:
         self.recent = {}          # texto -> epoch (anti-repetição)
         self.last_hour = time.strftime("%Y-%m-%d %H")
         self.live = False         # o painel avisa quando há conversa por voz aberta
+        self.live_at = 0.0        # e repete o aviso a cada 5 s; sem aviso por 30 s, a conversa acabou (aba fechada)
         self.primed = False
 
     # ---------- leitura do estado ----------
@@ -147,7 +148,8 @@ class Copilot:
             text = " ".join(t for _, t in items)
         kind = items[0][0]
         on = p.get("on") and p.get("mode") == "copiloto"
-        speak = on and not self.live and now - self.last_spoken > 20
+        live = self.live and now - self.live_at < 30
+        speak = on and not live and now - self.last_spoken > 20
         with self.lock:
             self.seq += 1
             self.notices.append({"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": bool(speak)})
