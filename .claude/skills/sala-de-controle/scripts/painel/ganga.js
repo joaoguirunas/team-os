@@ -99,6 +99,9 @@
   };
   const paint = () => {
     btn.classList.toggle('on', G.on);
+    const hb = document.getElementById('gangaHomeBtn');
+    if (hb) { hb.classList.toggle('on', G.on); hb.querySelector('em').textContent = G.on ? 'ligada' : 'desligada';
+      hb.title = G.on ? 'Ganga ligada, ouvindo “Ganga” — clique para desligar' : 'Ganga desligada — clique para ligar'; }
     btn.title = G.on ? 'Ganga ligada — clique para abrir' : 'Ganga desligada — clique para ligar';
     hud.querySelectorAll('#ggMode button').forEach(b => b.classList.toggle('on', b.dataset.m === G.mode));
     $('#ggMic').disabled = !G.key_hint && !G.live;
@@ -117,6 +120,18 @@
   };
   $('#ggMin').onclick = minimize;
   $('#ggOff').onclick = () => { stopLive(); minimize(); wakeSync(); };   // fecha, mas segue ouvindo "Ganga"
+  // liga/desliga direto no menu do topo da home
+  (() => {
+    const cam = document.querySelector('.top.bar .vw.cam'); if (!cam) return;
+    const g = document.createElement('div'); g.className = 'vw g-home';
+    g.innerHTML = `<button id="gangaHomeBtn" type="button"><svg viewBox="0 0 84.54 136" width="9" height="14"><polygon fill="currentColor" points="69.84,0 0,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>Ganga <em>desligada</em></button>`;
+    cam.after(g);
+    g.querySelector('button').onclick = async () => {
+      if (G.on) { stopLive(); stopWake(); Object.assign(G, await api('/api/ganga', {on: false})); if (G.open) minimize(); }
+      else Object.assign(G, await api('/api/ganga', {on: true}));
+      paint(); wakeSync();
+    };
+  })();
   $('#ggPower').onclick = async () => { stopLive(); stopWake(); Object.assign(G, await api('/api/ganga', {on: false})); paint(); minimize(); };
   $('#ggPowerOff').onclick = async () => { stopLive(); Object.assign(G, await api('/api/ganga', {on: false})); closeCfg(); paint(); minimize(); };
   $('#ggMode').onclick = async e => {
