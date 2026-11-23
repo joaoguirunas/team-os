@@ -39,6 +39,17 @@ EXTERNAL_RE = re.compile(
 DANGER_RE = re.compile(SENSITIVE_RE.pattern + "|" + EXTERNAL_RE.pattern, re.I)   # compatibilidade
 
 
+ASK_RE = re.compile(r"(\?\s*$|\?\s*\n|quer que eu|posso (seguir|continuar|fazer|mandar|enviar|aplicar|subir)|prefere|"
+                    r"confirma|aprova|me (diga|avise|fala)|qual (voc[eê]|delas|deles|op[cç][aã]o)|decis[aã]o|escolh|"
+                    r"aguardo|preciso (de|que) voc|sua (resposta|aprova|decis|confirma|vez)|depende de voc)", re.I)
+
+
+def needs_reply(text):
+    """A última mensagem da sessão termina pedindo algo do João (pergunta, decisão, aprovação)?"""
+    tail = (text or "").strip()[-500:]
+    return bool(tail) and bool(ASK_RE.search(tail))
+
+
 def short(name):
     name = name or ""
     return name.split("|")[-1].strip() if "|" in name else name.replace("(casa da Sala)", "").strip()
@@ -48,6 +59,8 @@ class Copilot:
     def __init__(self, prefs_fn, tts_fn=None):
         self.prefs_fn = prefs_fn
         self.tts_fn = tts_fn      # texto → WAV com a voz da Ganga (ou None)
+        self.line_fn = None       # aviso → fala curta com a personalidade da Ganga (ou None)
+        self.panel_at = 0.0       # último contato do painel aberto no navegador
         self.prev = {}            # chave -> estado anterior
         self.notices = []         # [{seq, kind, text, epoch, spoken}]
         self.seq = 0
@@ -62,6 +75,8 @@ class Copilot:
         self.primed = False
 
     # ---------- leitura do estado ----------
+    # Só avisa quando o João precisa agir: sessão pedindo permissão, sessão que terminou PERGUNTANDO algo, ou que parou
+    # com erro. Agente, subtarefa e "terminou" sem pergunta não interessam — ficam só no painel.
     def feed(self, data):
         p = self.prefs_fn()
         out = []
@@ -72,39 +87,32 @@ class Copilot:
             proj = short(s.get("project_name") or s.get("name") or "")
             sname = short(s.get("name") or proj)
             k = "s:" + s["id"]
-            last = (s.get("turns") or [{}])[-1].get("text", "") if s.get("turns") else ""
-            st = {"status": s.get("status", ""), "state": s.get("state", ""), "last": last[:300]}
+            turns = s.get("turns") or []
+            last = next((t.get("text", "") for t in reversed(turns) if t.get("who") == "agente"), "")
+            st = {"status": s.get("status", ""), "state": s.get("state", ""), "last": last[-1500:]}
             cur[k] = st
             pv = self.prev.get(k)
+            meta = {"session": sname, "project": proj, "session_id": s["id"]}
             if pv:
                 if st["state"] == "approval" and pv["state"] != "approval":
-                    out.append(("wait", f"A sessão {sname} precisa de você."))
+                    out.append(("wait", f"A sessão {sname} está pedindo uma permissão sua no app.", {**meta, "ask": st["last"][-600:]}))
                 elif pv["status"] == "busy" and st["status"] != "busy" and st["state"] != "approval":
-                    if ERR_RE.search(st["last"]):
-                        out.append(("error", f"A sessão {sname} parou com erro."))
-                    else:
-                        out.append(("done", f"A sessão {sname} terminou."))
-            for a in s.get("agents", []):
-                ka = k + "/" + a.get("name", "")
-                cur[ka] = {"status": a.get("state", ""), "state": a.get("state", ""), "last": ""}
-                pa = self.prev.get(ka)
-                if pa and a.get("state") != pa["state"]:
-                    if a.get("state") == "approval":
-                        out.append(("wait", f"{a.get('name')}, em {sname}, precisa de você."))
-                    elif a.get("state") == "done":
-                        out.append(("done", f"{a.get('name')} concluiu em {sname}."))
+                    if ERR_RE.search(st["last"][-400:]) and not needs_reply(st["last"]):
+                        out.append(("error", f"A sessão {sname} parou com erro.", {**meta, "ask": st["last"][-600:]}))
+                    elif needs_reply(st["last"]):
+                        out.append(("ask", f"A sessão {sname} terminou e quer saber de você.", {**meta, "ask": st["last"][-900:]}))
         self.prev = cur
         if not self.primed:               # 1ª leitura só aprende o estado, não avisa
             self.primed = True
             return
         notify = p.get("notify", {})
-        for kind, text in out:
-            if notify.get(kind, True):
-                self.queue(kind, text)
+        for kind, text, meta in out:
+            if notify.get("wait" if kind == "ask" else kind, True):
+                self.queue(kind, text, meta=meta)
         hour = time.strftime("%Y-%m-%d %H")
         if hour != self.last_hour:
             self.last_hour = hour
-            if notify.get("hourly", True):
+            if notify.get("hourly", False):
                 self.queue("hourly", self.summary(data), group=False)
         self.flush(p)
 
@@ -125,12 +133,13 @@ class Copilot:
         return " ".join(parts)
 
     # ---------- avisos ----------
-    def queue(self, kind, text, group=True):
+    def queue(self, kind, text, group=True, meta=None):
         now = time.time()
-        if now - self.recent.get(text, 0) < 600:
+        key = text + (meta or {}).get("ask", "")[-200:]
+        if now - self.recent.get(key, 0) < 600:
             return
-        self.recent[text] = now
-        self.pending.append((kind, text))
+        self.recent[key] = now
+        self.pending.append((kind, text, meta or {}))
         if not self.first_at:
             self.first_at = now
         if not group:
@@ -138,26 +147,43 @@ class Copilot:
 
     def flush(self, p):
         now = time.time()
-        if not self.pending or (self.first_at and now - self.first_at < 6):
+        if not self.pending or (self.first_at and now - self.first_at < 4):
             return
         items, self.pending, self.first_at = self.pending, [], 0.0
-        order = {"wait": 0, "error": 1, "done": 2, "hourly": 3}
+        order = {"ask": 0, "wait": 1, "error": 2, "hourly": 3}
         items.sort(key=lambda x: order.get(x[0], 9))
-        if len(items) > 3:
-            text = " ".join(t for _, t in items[:2]) + f" E mais {len(items) - 2} novidades."
-        else:
-            text = " ".join(t for _, t in items)
-        kind = items[0][0]
+        kind, text, meta = items[0]
+        if len(items) > 1:
+            text += f" E mais {len(items) - 1} {'sessão precisa' if len(items) == 2 else 'sessões precisam'} de você."
         on = p.get("on") and p.get("mode") == "copiloto"
         live = self.live and now - self.live_at < 30
-        speak = on and not live and now - self.last_spoken > 20
+        speak = on and not live
         with self.lock:
             self.seq += 1
-            self.notices.append({"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": bool(speak)})
+            n = {"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": bool(speak),
+                 "session": meta.get("session"), "project": meta.get("project"), "ask": meta.get("ask", "")[-900:],
+                 "line": None, "call": False}
+            self.notices.append(n)
             self.notices = self.notices[-60:]
         if speak:
             self.last_spoken = now
-            self.say(text, p.get("mac_voice") or "Ganga", seq=self.seq)
+            threading.Thread(target=self._announce, args=(n, p), daemon=True).start()
+
+    def _announce(self, n, p):
+        """A Ganga chama o João: escreve a fala com a personalidade dela e pergunta o que fazer.
+        Com o painel aberto no Chrome, o painel abre a conversa por voz (ela fala e já escuta a resposta);
+        sem painel, ou se ele não atender em 8 s, toca a fala com a voz dela no Mac."""
+        line = (self.line_fn(n) if self.line_fn else None) or n["text"]
+        with self.lock:
+            n["line"] = line
+            n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait")
+        if n["call"]:
+            t0 = time.time()
+            while time.time() - t0 < 8:
+                if self.live and self.live_at > t0:
+                    return                      # o painel atendeu: a fala sai pela conversa ao vivo
+                time.sleep(0.5)
+        self._say(line, p.get("mac_voice") or "Ganga", n["seq"])
 
     def say(self, text, voice="Ganga", seq=None):
         """Fala o aviso. Padrão: a voz da própria Ganga (Gemini TTS) tocada no Mac; o painel anima a esfera junto.

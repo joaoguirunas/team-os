@@ -38,6 +38,7 @@ import collect  # noqa: E402
 import ganga  # noqa: E402
 import copilot  # noqa: E402
 COP = copilot.Copilot(ganga.load_prefs, ganga.tts_wav)
+COP.line_fn = ganga.copilot_line
 
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-painel.pid")
@@ -449,6 +450,7 @@ class H(BaseHTTPRequestHandler):
             pr = ganga.load_prefs()
             return self._send(200, {"text": ganga.project_context(name, st, pr) if name else ganga.panorama(st, pr)})
         if u.path == "/api/ganga/notices":
+            COP.panel_at = time.time()
             try:
                 since = int(q.get("since", "0") or 0)
             except ValueError:
