@@ -10,7 +10,11 @@ qualquer projeto e fora do git. Desligada por padrão.
 import html as htmlmod, json, os, re, time, unicodedata
 
 PREFS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-ganga.json")
-DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}}
+DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 60, "usage": {}}
+LIVE_MODEL = "gemini-3.8-live"
+FEMALE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Callirrhoe", "Autonoe", "Despina", "Erinome", "Laomedeia",
+                 "Achernar", "Gacrux", "Pulcherrima", "Vindemiatrix", "Sulafat"]
+KEYCHAIN_SERVICE = "sala-de-controle-ganga-gemini"   # chave do Gemini: só no Porta-chaves do macOS
 MODES = ("silencioso", "copiloto")
 
 SYSTEM = """Você é a GANGA, assistente da Sala de Controle do João (dono dos projetos). Você conversa com ele \
@@ -54,6 +58,15 @@ def save_prefs(upd):
         p["on"] = bool(upd["on"])
     if upd.get("mode") in MODES:
         p["mode"] = upd["mode"]
+    if isinstance(upd.get("voice"), str):
+        p["voice"] = re.sub(r"[^A-Za-z0-9_-]", "", upd["voice"])[:40]
+    if isinstance(upd.get("mic"), str):
+        p["mic"] = upd["mic"][:200]
+    if isinstance(upd.get("daily_minutes"), (int, float)):
+        p["daily_minutes"] = max(5, min(600, int(upd["daily_minutes"])))
+    if isinstance(upd.get("add_seconds"), (int, float)):
+        day = time.strftime("%Y-%m-%d")
+        p["usage"] = {day: round(p.get("usage", {}).get(day, 0) + max(0, min(7200, float(upd["add_seconds"]))), 1)}
     if isinstance(upd.get("aliases"), dict):
         p["aliases"] = {str(k)[:80]: str(v)[:60] for k, v in upd["aliases"].items()}
     os.makedirs(os.path.dirname(PREFS_FILE), exist_ok=True)
@@ -61,6 +74,92 @@ def save_prefs(upd):
     json.dump(p, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     os.replace(tmp, PREFS_FILE)
     return p
+
+
+def used_minutes_today(p=None):
+    p = p or load_prefs()
+    return round(p.get("usage", {}).get(time.strftime("%Y-%m-%d"), 0) / 60, 1)
+
+
+VOICE_SYSTEM = SYSTEM + """
+
+Você está numa conversa POR VOZ, em tempo real. Fale sempre em português do Brasil, com naturalidade, frases curtas.
+
+CONTEXTO FIXO — nunca esqueça: você existe SÓ para a Sala de Controle do João, que acompanha as sessões do Claude Code
+e os agentes de IA trabalhando nos projetos dele. Você não é assistente genérica, não controla casa, agenda nem música.
+Quando ele falar em "rotinas", "o que está rodando", "tarefas", "trabalhos", "sessões", "agentes", "o time", "como está",
+"o que está acontecendo" ou citar um projeto, ele SEMPRE se refere às sessões e agentes da Sala.
+Nunca pergunte "a que você se refere" para isso: consulte as ferramentas e responda direto.
+No fim desta instrução vai o panorama do momento em que a conversa abriu; para dado atualizado, chame ver_panorama.
+
+Ferramentas:
+- ver_panorama: o que está rolando em todos os projetos e sessões agora. Use antes de responder sobre o geral.
+- ver_projeto(nome): etapa, sessões, resumo (DIGEST) e último relatório de um projeto. Use quando ele citar um projeto.
+- pensar_com_claude(pergunta): análise profunda (o que falta, riscos, comparar, planejar). Antes de chamar, avise em poucas palavras ("deixa eu pensar nisso"); quando a resposta chegar, conte o essencial.
+Nunca leia em voz alta listas longas, caminhos ou ids. Se o dado não veio das ferramentas, não afirme."""
+
+VOICE_TOOLS = [{"functionDeclarations": [
+    {"name": "ver_panorama", "description": "Panorama atual de todos os projetos e sessões da Sala de Controle.",
+     "parameters": {"type": "OBJECT", "properties": {}}},
+    {"name": "ver_projeto", "description": "Detalhes de um projeto: etapa, sessões, resumo e último relatório.",
+     "parameters": {"type": "OBJECT", "properties": {"nome": {"type": "STRING", "description": "nome ou apelido do projeto, ex.: livro, site, calendário da Claudia"}}, "required": ["nome"]}},
+    {"name": "pensar_com_claude", "description": "Análise profunda feita pelo Claude com todo o contexto da Sala. Demora de 5 a 15 segundos.",
+     "parameters": {"type": "OBJECT", "properties": {"pergunta": {"type": "STRING"}}, "required": ["pergunta"]},
+     "behavior": "NON_BLOCKING"},
+]}]
+
+
+def project_context(name, state, prefs=None):
+    hits = match_projects(name, state.get("projects", []), prefs)
+    if not hits:
+        return "Não encontrei projeto com esse nome. Projetos: " + ", ".join(alias_of(p["name"], prefs) + " (" + p["name"] + ")" for p in state.get("projects", []))[:1500]
+    if len(hits) > 1:
+        return "Esse nome serve para mais de um projeto: " + "; ".join(p["name"] for p in hits) + ". Pergunte qual."
+    p = hits[0]
+    sub = dict(state, projects=[p])
+    out = [panorama(sub, prefs)]
+    rs = reports(p["path"])
+    for r in [next((r for r in rs if r["digest"] and r["name"] not in ("smart-memory",)), None), next((r for r in rs if r["kind"] == "html"), None)]:
+        if r:
+            full = report_path(p["path"], r["path"])
+            if full:
+                out.append(f"[{r['name']} · {r['when']}]\n{text_of_file(full, 3500)}")
+    return "\n\n".join(out)[:9000]
+
+
+# ---------- chave do Gemini (Porta-chaves) ----------
+import subprocess  # noqa: E402
+
+
+def get_key():
+    try:
+        r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga", "-w"],
+                           capture_output=True, text=True, timeout=10)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def set_key(key):
+    key = (key or "").strip()
+    if "=" in key:  # colou "GEMINI_API_KEY=..." inteiro
+        key = key.split("=", 1)[1].strip()
+    key = key.strip("\"'` \t\r\n")
+    if not re.fullmatch(r"[A-Za-z0-9_.\-]{20,300}", key):
+        return False
+    r = subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", "ganga",
+                        "-l", "Ganga — chave do Gemini", "-w", key], capture_output=True, text=True, timeout=10)
+    return r.returncode == 0
+
+
+def delete_key():
+    subprocess.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga"],
+                   capture_output=True, text=True, timeout=10)
+
+
+def key_hint():
+    k = get_key()
+    return ("••••" + k[-4:]) if k else ""
 
 
 # ---------- apelidos ----------

@@ -282,6 +282,61 @@ def ganga_ask(question):
     return 200, {"text": out.strip(), "projects": hits}
 
 
+def _gemini(method, path, body=None, timeout=15):
+    import urllib.request, urllib.error
+    key = ganga.get_key()
+    if not key:
+        return None, "sem_chave"
+    req = urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/" + path, method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"x-goog-api-key": key, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read() or b"{}"), None
+    except urllib.error.HTTPError as e:
+        try:
+            msg = json.loads(e.read()).get("error", {}).get("message", "")
+        except Exception:
+            msg = ""
+        return None, f"http_{e.code}" + (f": {msg[:160]}" if msg else "")
+    except Exception as e:
+        return None, "rede: " + str(e)[:120]
+
+
+def gemini_check():
+    d, err = _gemini("GET", "models/" + ganga.LIVE_MODEL)
+    return (True, "ok") if d else (False, err)
+
+
+def gemini_token():
+    """Token temporário (1 sessão, abrir em 1 min, vale 30 min). A chave nunca vai ao navegador."""
+    p = ganga.load_prefs()
+    if not p["on"]:
+        return 409, {"error": "desligada"}
+    if ganga.used_minutes_today(p) >= p["daily_minutes"]:
+        return 429, {"error": "limite", "used": ganga.used_minutes_today(p), "limit": p["daily_minutes"]}
+    now = time.time()
+    iso = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+    d, err = _gemini("POST", "auth_tokens", {"uses": 1, "expireTime": iso(now + 1800), "newSessionExpireTime": iso(now + 60)})
+    # sem bidiGenerateContentSetup: com ele o Google trava a sessão inteira no setup do token e ignora
+    # persona, ferramentas e voz mandadas pelo navegador. O token já é de uso único e vale 30 min.
+    if not d:
+        return 200, {"error": err}
+    tok = d.get("name") or d.get("token") or ""
+    if not tok:
+        return 200, {"error": "token_vazio", "fields": list(d.keys())}
+    voice = p.get("voice") if p.get("voice") in ganga.FEMALE_VOICES else "Kore"
+    with LOCK:
+        st = json.loads(json.dumps(STATE["data"] or {}))
+    try:
+        snap = ganga.panorama(st, p)[:6000]
+    except Exception:
+        snap = "(panorama indisponível — use ver_panorama)"
+    system = ganga.VOICE_SYSTEM + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap
+    return 200, {"token": tok, "model": "models/" + ganga.LIVE_MODEL, "voice": voice, "system": system,
+                 "tools": ganga.VOICE_TOOLS, "used": ganga.used_minutes_today(p), "limit": p["daily_minutes"]}
+
+
 def warm_brain():
     def run():
         with BRAIN_LOCK:
@@ -371,7 +426,16 @@ class H(BaseHTTPRequestHandler):
             ct = "text/javascript; charset=utf-8" if u.path.endswith(".js") else "text/css; charset=utf-8"
             return self._send(200, open(os.path.join(HERE, u.path[1:]), encoding="utf-8").read(), ct)
         if u.path == "/api/ganga":
-            return self._send(200, ganga.load_prefs())
+            pr = ganga.load_prefs()
+            return self._send(200, dict(pr, key_hint=ganga.key_hint(), used_today=ganga.used_minutes_today(pr)))
+        if u.path == "/api/ganga/context":
+            with LOCK:
+                st = json.loads(json.dumps(STATE["data"] or {}))
+            name = q.get("q", "").strip()
+            pr = ganga.load_prefs()
+            return self._send(200, {"text": ganga.project_context(name, st, pr) if name else ganga.panorama(st, pr)})
+        if u.path == "/api/ganga/voices":
+            return self._send(200, {"voices": ganga.FEMALE_VOICES, "model": ganga.LIVE_MODEL})
         if u.path == "/api/ganga/reports":
             p = nfc(q.get("p", ""))
             if p not in known_projects():
@@ -464,6 +528,23 @@ def do_POST(self):
         return self._send(400, {"error": "json inválido"})
     if u.path == "/api/ganga":
         return self._send(200, set_ganga(body if isinstance(body, dict) else {}))
+    if u.path == "/api/ganga/key":
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        if body.get("delete"):
+            ganga.delete_key()
+            return self._send(200, {"ok": True, "key_hint": ""})
+        if not ganga.set_key(body.get("key", "")):
+            return self._send(400, {"error": "chave inválida"})
+        ok, msg = gemini_check()
+        return self._send(200, {"ok": ok, "check": msg, "key_hint": ganga.key_hint()})
+    if u.path == "/api/ganga/token":
+        code, res = gemini_token()
+        return self._send(code, res)
+    if u.path == "/api/ganga/usage":
+        sec = body.get("seconds") if isinstance(body, dict) else 0
+        p = ganga.save_prefs({"add_seconds": sec if isinstance(sec, (int, float)) else 0})
+        return self._send(200, {"used_today": ganga.used_minutes_today(p)})
     if u.path == "/api/ganga/toggle":
         return self._send(200, set_ganga({"on": not ganga.load_prefs()["on"]}))
     if u.path == "/api/ganga/ask":
