@@ -389,3 +389,6 @@ body.has-ganga .feed{bottom:96px}
 .g-fcard.idle #ggWorkN{display:none}
 .g-fcard h5{letter-spacing:.04em;font-size:11px}
 @media (max-width:1100px){#ganga{--fw:0px}}
+
+.g-st.au{background:#3d8fff33;color:#cfe3ff;margin-left:2px}
+.g-msg.notice.auto{border-color:#1f2c48;background:#0b1120;color:#9fb6da;font-size:12.5px}

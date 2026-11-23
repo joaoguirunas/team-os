@@ -120,10 +120,73 @@ check("não abre link disfarçado de PDF", ganga.open_file(proj, "docs/falso.pdf
 check("abre documento", ganga.open_file(proj, "docs/proposta-acme-v2.md") is not None)
 ganga.subprocess.Popen = _popen
 
+# ---- Copiloto ativo: age sozinha no que já foi decidido, chama o usuário para decidir ----
+def sess(st, tail, sid="s1", state=""):
+    return {"projects": [{"path": "/p", "name": "X | Livro"}],
+            "sessions": [{"id": sid, "name": "X | Livro", "project": "/p", "status": st, "state": state, "tail": tail, "goal": "escrever os capítulos"}]}
+
+def cop(decide, **prefs):
+    c = copilot.Copilot(lambda: {"on": True, "mode": "copiloto", "notify": {"wait": True, "error": True}, **prefs})
+    c.decide_fn = decide
+    c.said = []
+    c._say = lambda text, voice, seq: c.said.append(text)
+    return c
+
+def settle(c, secs=1.5):
+    time.sleep(secs)
+    c.last_spoken = 0
+    c._pump(c.prefs_fn())
+    time.sleep(0.4)
+
+n0 = len([r for r in copilot.read_queue(200) if r.get("auto")])
+c1 = cop(lambda s, g, t: {"tipo": "continuar", "resposta": "Pode seguir para o capítulo 4.", "pergunta": ""})
+c1.feed(sess("busy", "x")); c1.feed(sess("idle", "Revisei o capítulo 3. Posso seguir para o capítulo 4?")); settle(c1)
+autos = [r for r in copilot.read_queue(200) if r.get("auto")]
+check("continuação: responde sozinha", len(autos) == n0 + 1 and "resposta automática" in autos[0]["text"] and "Não publique" in autos[0]["text"])
+check("continuação: não chama o usuário", not c1.said and any(n["kind"] == "auto" for n in c1.notices))
+c2 = cop(lambda s, g, t: {"tipo": "decisao", "resposta": "", "pergunta": "Prefere o título A ou B?"})
+c2.feed(sess("busy", "x", "s2")); c2.feed(sess("idle", "Fiz dois títulos. Qual você prefere, A ou B?", "s2")); settle(c2)
+check("decisão: chama o usuário", len(c2.said) == 1 and len([r for r in copilot.read_queue(200) if r.get("auto")]) == n0 + 1)
+c3 = cop(lambda s, g, t: {"tipo": "continuar", "resposta": "Pode publicar.", "pergunta": ""})
+c3.feed(sess("busy", "x", "s3")); c3.feed(sess("idle", "Página pronta. Posso publicar no ar e fazer o deploy?", "s3")); settle(c3)
+check("publicar nunca é continuação automática", len(c3.said) == 1 and not any(n["kind"] == "auto" for n in c3.notices))
+c4 = cop(lambda s, g, t: {"tipo": "decisao", "resposta": "", "pergunta": "Quer revisar?"})
+c4.feed(sess("busy", "x", "s4")); c4.feed(sess("idle", "Pronto: o PDF está em docs/builds e passou no QA.", "s4")); settle(c4)
+check("terminou sem perguntar: silêncio", not c4.said and not c4.notices)
+c5 = cop(lambda s, g, t: None)
+c5.feed(sess("busy", "x", "s5")); c5.feed(sess("idle", "Terminei, tudo passou sem erro.", "s5")); settle(c5)
+check("sem Gemini: 'sem erro' não é erro", not c5.said and not c5.notices)
+c6 = cop(lambda s, g, t: {"tipo": "continuar", "resposta": "Siga.", "pergunta": ""})
+for i in range(5):
+    c6.feed(sess("busy", "x", "s6")); c6.feed(sess("idle", f"Passo {i} pronto. Sigo com o próximo?", "s6")); time.sleep(0.5)
+settle(c6)
+check("limite de 3 ações automáticas por sessão por hora", len(c6.autos.get("s6", [])) <= 3 and len(c6.said) >= 1)
+c7 = cop(lambda s, g, t: {"tipo": "decisao", "resposta": "", "pergunta": "A ou B?"})
+c7.live, c7.live_at = True, time.time()
+c7.feed(sess("busy", "x", "s7")); c7.feed(sess("idle", "Qual você prefere, A ou B?", "s7")); settle(c7)
+held = not c7.said and len(c7.todo) == 1
+c7.live = False; settle(c7, 0.2)
+check("aviso durante conversa espera e depois é falado", held and len(c7.said) == 1)
+c8 = cop(lambda s, g, t: {"tipo": "decisao", "resposta": "", "pergunta": "?"})
+c8.feed({"sessions": [{"id": "a", "name": "A", "status": "busy", "state": "", "tail": ""}, {"id": "b", "name": "B", "status": "busy", "state": "", "tail": ""}]})
+c8.feed({"sessions": [{"id": "a", "name": "A", "status": "idle", "state": "", "tail": "Qual você prefere, A ou B?"}, {"id": "b", "name": "B", "status": "idle", "state": "", "tail": "Posso mudar o preço para 99?"}]})
+settle(c8); settle(c8, 0.3)
+check("duas sessões ao mesmo tempo: as duas são faladas, uma por vez", len(c8.said) == 2, str(c8.said))
+c9 = cop(lambda s, g, t: {"tipo": "continuar", "resposta": "Siga.", "pergunta": ""}, auto=False)
+c9.feed(sess("busy", "x", "s9")); c9.feed(sess("idle", "Sigo com a página 2?", "s9")); settle(c9)
+check("com 'age sozinha' desligado, pergunta ao usuário", len(c9.said) == 1 and not c9.autos)
+
 # ---- memória ----
 ganga.save_memory({"name": "Ana"})
 ganga.save_memory({"fact": "prefere resumo curto"})
 check("memória guarda nome e fato", ganga.user_name() == "Ana" and "prefere resumo curto" in ganga.name_rule())
+ganga.save_memory({"fact": "o projeto do livro chama Atlas"})
+ganga.save_memory({"forget": "a"})
+check("'esquece a' não apaga tudo", len(ganga.load_memory()["facts"]) == 2)
+ganga.save_memory({"forget": "livro atlas"})
+check("esquece só o fato pedido", ganga.load_memory()["facts"] == ["prefere resumo curto"])
+ganga.save_memory({"conversation": [{"who": "eu", "text": "como está o site?"}, {"who": "ganga", "text": "token=abc12345xyz está pronto"}]})
+check("memória guarda a conversa, sem segredo", "como está o site?" in ganga.name_rule() and "abc12345xyz" not in ganga.name_rule())
 
 print(f"\n{'OK' if not FAIL else 'FALHOU'}: {len(FAIL)} falha(s)")
 sys.exit(1 if FAIL else 0)

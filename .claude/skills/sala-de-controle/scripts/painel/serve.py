@@ -39,6 +39,7 @@ import ganga  # noqa: E402
 import copilot  # noqa: E402
 COP = copilot.Copilot(ganga.load_prefs, ganga.tts_wav)
 COP.line_fn = ganga.copilot_line
+COP.decide_fn = ganga.copilot_decide
 
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-painel.pid")
@@ -584,7 +585,7 @@ def do_POST(self):
     if u.path == "/api/ganga/memory":
         if not isinstance(body, dict):
             return self._send(400, {"error": "json inválido"})
-        m = ganga.save_memory({k: body[k] for k in ("name", "fact", "forget") if isinstance(body.get(k), str)})
+        m = ganga.save_memory({k: body[k] for k in ("name", "fact", "forget", "conversation") if isinstance(body.get(k), (str, list))})
         return self._send(200, {"ok": True, "name": m.get("name", ""), "facts": len(m.get("facts", []))})
     if u.path == "/api/ganga/diag":
         DIAG.update(t=time.time(), d=body if isinstance(body, dict) else {})

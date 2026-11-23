@@ -29,6 +29,8 @@ QUEUE = os.path.join(QDIR, "pedidos.jsonl")
 HEARTBEAT = os.path.join(QDIR, ".sala-ouvindo")
 
 ERR_RE = re.compile(r"\b(erro|falhou|falha|quebrou|failed|error|exception|traceback|FAIL)\b", re.I)
+NOERR_RE = re.compile(r"\b(sem|nenhum|zero|0|corrig\w+|resolv\w+|consert\w+|tratamento de|handling)\s+(o\s+|os\s+|de\s+)?(erros?|falhas?|errors?)\b|"
+                      r"\berror handling\b", re.I)
 # muito sensível: mexe em dinheiro, apaga, vai para produção ou toca em senha → OK no chat da Sala
 SENSITIVE_RE = re.compile(
     r"\b(push|deploy|merge|(em|para|na|no\s+ambiente\s+de|subir\s+(para|pra))\s+produ[cç][aã]o|"
@@ -47,15 +49,23 @@ PERSON_RE = re.compile(r"\b(?i:mand\w*|envi\w*|respond\w*|encaminh\w*|fal[ae])\b
 DANGER_RE = re.compile(SENSITIVE_RE.pattern + "|" + EXTERNAL_RE.pattern, re.I)   # compatibilidade
 
 
-ASK_RE = re.compile(r"(\?\s*$|\?\s*\n|quer que eu|posso (seguir|continuar|fazer|mandar|enviar|aplicar|subir)|prefere|"
-                    r"confirma|aprova|me (diga|avise|fala)|qual (voc[eê]|delas|deles|op[cç][aã]o)|decis[aã]o|escolh|"
-                    r"aguardo|preciso (de|que) voc|sua (resposta|aprova|decis|confirma|vez)|depende de voc)", re.I)
+ASK_RE = re.compile(r"(\?\s*$|quer que eu|posso (seguir|continuar|fazer|mandar|enviar|aplicar|subir|publicar)|voc[eê] prefere|"
+                    r"(me )?confirma[s]?\b|voc[eê] aprova|me (diga|fala)\b|qual (voc[eê]|delas|deles|op[cç][aã]o)|"
+                    r"aguardo (sua|seu|voc)|preciso (de|que) voc|sua (resposta|aprova|decis|confirma)|depende de voc)", re.I)
 
 
 def needs_reply(text):
-    """A última mensagem da sessão termina pedindo algo do usuário (pergunta, decisão, aprovação)?"""
-    tail = (text or "").strip()[-500:]
-    return bool(tail) and bool(ASK_RE.search(tail))
+    """A última mensagem da sessão termina pedindo algo do usuário (pergunta, decisão, aprovação)? Olha só o final."""
+    tail = (text or "").strip()
+    if not tail:
+        return False
+    last = re.split(r"(?<=[.!?…])\s+", tail[-400:])[-2:]        # as duas últimas frases
+    return bool(ASK_RE.search(" ".join(last)))
+
+
+def has_error(text):
+    t = (text or "")[-400:]
+    return bool(ERR_RE.search(NOERR_RE.sub(" ", t)))
 
 
 def short(name):
@@ -63,74 +73,172 @@ def short(name):
     return name.split("|")[-1].strip() if "|" in name else name.replace("(casa da Sala)", "").strip()
 
 
+AUTO_NOTE = ("[Copiloto da Ganga — resposta automática; o usuário NÃO foi consultado] ")
+AUTO_GUARD = (" Limite: siga só com o que o usuário já tinha pedido. Não publique, não envie nada para fora, não apague, "
+              "não gaste dinheiro e não decida por ele — nesses casos pare e pergunte.")
+
+
 class Copilot:
+    """Olha as sessões e mantém o trabalho andando.
+
+    · Sessão parou pedindo só licença para continuar o que o usuário já pediu → responde sozinha ("pode seguir").
+    · Sessão parou com erro que ela mesma pode corrigir → pede uma tentativa (uma vez).
+    · Pedido entregue há mais de 10 min e sem retorno → cobra a sessão (uma vez).
+    · Decisão de verdade (escolha, aprovação, publicar, enviar, apagar, gastar, permissão do app) → chama o usuário.
+    Tudo o que ela faz sozinha vira pedido na fila com `auto: true` e aparece no painel. Avisos são falados um por vez;
+    o que chega durante uma conversa por voz espera a conversa acabar.
+    """
+
     def __init__(self, prefs_fn, tts_fn=None):
         self.prefs_fn = prefs_fn
         self.tts_fn = tts_fn      # texto → WAV com a voz da Ganga (ou None)
         self.line_fn = None       # aviso → fala curta com a personalidade da Ganga (ou None)
+        self.decide_fn = None     # (sessão, objetivo, fim da fala) → {"tipo", "resposta", "pergunta"} (ou None)
         self.panel_at = 0.0       # último contato do painel aberto no navegador
         self.prev = {}            # chave -> estado anterior
-        self.notices = []         # [{seq, kind, text, epoch, spoken}]
+        self.notices = []         # [{seq, kind, text, epoch, spoken, ...}]
         self.seq = 0
         self.lock = threading.Lock()
-        self.pending = []         # avisos esperando a janela de agrupamento
-        self.first_at = 0.0
+        self.todo = []            # avisos esperando a vez de serem falados
+        self.speaking = False
         self.last_spoken = 0.0
-        self.recent = {}          # texto -> epoch (anti-repetição)
+        self.recent = {}          # chave -> epoch (anti-repetição)
+        self.autos = {}           # session_id -> [epochs das ações automáticas]
+        self.nudged = set()       # pedidos já cobrados
         self.last_hour = time.strftime("%Y-%m-%d %H")
         self.live = False         # o painel avisa quando há conversa por voz aberta
-        self.live_at = 0.0        # e repete o aviso a cada 5 s; sem aviso por 30 s, a conversa acabou (aba fechada)
+        self.live_at = 0.0        # e repete a cada 5 s; sem aviso por 30 s, a conversa acabou (aba fechada)
         self.primed = False
 
     # ---------- leitura do estado ----------
-    # Só avisa quando o usuário precisa agir: sessão pedindo permissão, sessão que terminou PERGUNTANDO algo, ou que parou
-    # com erro. Agente, subtarefa e "terminou" sem pergunta não interessam — ficam só no painel.
     def feed(self, data):
         p = self.prefs_fn()
-        out = []
-        cur = {}
+        events, cur = [], {}
+        pname = {pr.get("path"): pr.get("name") for pr in data.get("projects", [])}
         for s in data.get("sessions", []):
             if s.get("stopped") or s.get("is_self") or s.get("is_sala"):
                 continue
-            proj = short(s.get("project_name") or s.get("name") or "")
+            proj = pname.get(s.get("project")) or s.get("name") or ""
             sname = short(s.get("name") or proj)
             k = "s:" + s["id"]
-            turns = s.get("turns") or []
-            last = next((t.get("text", "") for t in reversed(turns) if t.get("who") == "agente"), "")
-            st = {"status": s.get("status", ""), "state": s.get("state", ""), "last": last[-1500:]}
+            tail = s.get("tail") or next((t.get("text", "") for t in reversed(s.get("turns") or []) if t.get("who") == "agente"), "")
+            st = {"status": s.get("status", ""), "state": s.get("state", "")}
             cur[k] = st
             pv = self.prev.get(k)
-            meta = {"session": sname, "project": proj, "session_id": s["id"]}
+            meta = {"session": sname, "project": proj, "session_id": s["id"], "session_full": s.get("name") or sname,
+                    "project_path": s.get("project") or s.get("cwd") or "", "goal": s.get("goal", ""), "ask": tail[-1200:]}
             if pv:
                 if st["state"] == "approval" and pv["state"] != "approval":
-                    out.append(("wait", f"A sessão {sname} está pedindo uma permissão sua no app.", {**meta, "ask": st["last"][-600:]}))
+                    events.append(("wait", f"A sessão {sname} está pedindo uma permissão sua no app.", meta))
                 elif pv["status"] == "busy" and st["status"] != "busy" and st["state"] != "approval":
-                    if ERR_RE.search(st["last"][-400:]) and not needs_reply(st["last"]):
-                        out.append(("error", f"A sessão {sname} parou com erro.", {**meta, "ask": st["last"][-600:]}))
-                    elif needs_reply(st["last"]):
-                        out.append(("ask", f"A sessão {sname} terminou e quer saber de você.", {**meta, "ask": st["last"][-900:]}))
-        # pedido da Ganga parado esperando o OK do usuário → a Ganga chama e pergunta "aprovo?"
-        for r in read_queue(20):
+                    events.append(("stopped", "", meta))
+        # pedido parado esperando o OK do usuário → a Ganga chama e pergunta
+        queue = read_queue(40)
+        for r in queue:
             if r.get("status") == "aguardando_ok":
-                cur["o:" + r["id"]] = {"status": "aguardando_ok", "state": "", "last": ""}
+                cur["o:" + r["id"]] = {"status": "aguardando_ok", "state": ""}
                 if "o:" + r["id"] not in self.prev:
-                    out.append(("order", f"Um pedido para {short(r.get('project', ''))} está esperando sua aprovação.",
-                                {"session": short(r.get("project", "")), "project": r.get("project", ""), "order_id": r["id"],
-                                 "ask": r.get("text", "")}))
+                    events.append(("order", f"Um pedido para {short(r.get('project', ''))} está esperando sua aprovação.",
+                                   {"session": short(r.get("project", "")), "project": r.get("project", ""), "order_id": r["id"],
+                                    "ask": (r.get("text", "") + (" — " + r["note"] if r.get("note") else ""))[:900]}))
         self.prev = cur
         if not self.primed:               # 1ª leitura só aprende o estado, não avisa
             self.primed = True
             return
+        active = bool(p.get("on")) and p.get("mode") == "copiloto"
         notify = p.get("notify", {})
-        for kind, text, meta in out:
-            if notify.get("wait" if kind in ("ask", "order") else kind, True):
-                self.queue(kind, text, meta=meta)
+        for kind, text, meta in events:
+            if kind == "stopped":
+                if active:                # decidir pode chamar o Gemini: fora do laço de coleta
+                    threading.Thread(target=self._on_stop, args=(meta, p), daemon=True).start()
+            elif notify.get("wait", True):
+                self.notify(kind, text, meta)
+        if active and p.get("auto", True):
+            self._nudge(queue, data)
         hour = time.strftime("%Y-%m-%d %H")
         if hour != self.last_hour:
             self.last_hour = hour
             if notify.get("hourly", False):
-                self.queue("hourly", self.summary(data), group=False)
-        self.flush(p)
+                self.notify("hourly", self.summary(data), {})
+        self._pump(p)
+
+    def _on_stop(self, meta, p):
+        """A sessão parou: decide se é nada, continuação (age sozinha), erro (tenta uma vez) ou decisão (chama o usuário)."""
+        try:
+            tail = meta.get("ask", "")
+            d = (self.decide_fn(meta["session"], meta.get("goal", ""), tail) if self.decide_fn else None) or {}
+            tipo = d.get("tipo")
+            if tipo not in ("nada", "continuar", "erro", "decisao"):          # sem Gemini: regra simples e conservadora
+                tipo = "decisao" if needs_reply(tail) else "erro" if has_error(tail) else "nada"
+                d = {}
+            if tipo == "decisao" and not needs_reply(tail) and not has_error(tail):
+                tipo = "nada"             # ela não perguntou nada: não incomoda o usuário
+            # continuar nunca cobre o que publica, envia, apaga ou gasta — isso é decisão do usuário
+            if tipo == "continuar" and (HARD_RE.search(tail[-500:]) or SENSITIVE_RE.search(tail[-500:]) or EXTERNAL_RE.search(tail[-500:])):
+                tipo = "decisao"
+            auto_ok = p.get("auto", True) and self._can_auto(meta["session_id"])
+            notify = p.get("notify", {})
+            if tipo == "continuar" and auto_ok:
+                txt = d.get("resposta") or "Pode seguir com o que já estava combinado."
+                if self._auto(meta, txt, "continuar"):
+                    return
+            if tipo == "continuar":       # não pôde agir sozinha (desligado, limite ou repetido): pergunta ao usuário
+                tipo = "decisao"
+            if tipo == "erro" and auto_ok and not self._did(meta["session_id"], "erro"):
+                txt = d.get("resposta") or "Tente corrigir esse erro e seguir. Se não conseguir, diga em uma frase o que falta."
+                if self._auto(meta, txt, "erro"):
+                    return
+            if tipo == "erro":
+                if notify.get("error", True):
+                    self.notify("error", f"A sessão {meta['session']} parou com erro.", meta)
+            elif tipo == "decisao":
+                if notify.get("wait", True):
+                    self.notify("ask", d.get("pergunta") or f"A sessão {meta['session']} terminou e quer saber de você.", meta)
+            elif tipo == "nada" and p.get("auto_next") and auto_ok and not self._did(meta["session_id"], "proximo"):
+                self._auto(meta, "Se o plano ou o backlog do projeto tem um próximo passo já aprovado, siga para ele. "
+                                 "Se não tem, ou se precisar de decisão, responda só com o que falta decidir.", "proximo")
+            self._pump(p)
+        except Exception:
+            pass
+
+    # ---------- ações automáticas ----------
+    def _can_auto(self, sid, per_hour=3):
+        now = time.time()
+        ts = [t for t, _ in self.autos.get(sid, []) if now - t < 3600]
+        return len(ts) < per_hour
+
+    def _did(self, sid, kind):
+        now = time.time()
+        return any(k == kind and now - t < 3600 for t, k in self.autos.get(sid, []))
+
+    def _auto(self, meta, text, kind):
+        full = AUTO_NOTE + text.strip()[:400] + AUTO_GUARD
+        if not auto_order(meta, full, kind):
+            return False
+        self.autos.setdefault(meta["session_id"], []).append((time.time(), kind))
+        label = {"continuar": "disse para seguir", "erro": "pediu uma correção", "proximo": "mandou seguir o plano",
+                 "cobrar": "cobrou o retorno"}.get(kind, "agiu")
+        self.notify("auto", f"{meta['session']}: {label} sozinha. “{text.strip()[:140]}”", meta, speak=False)
+        return True
+
+    def _nudge(self, queue, data):
+        """Pedido entregue há mais de 10 min, sessão parada e sem retorno → cobra uma vez."""
+        by_id = {s["id"]: s for s in data.get("sessions", [])}
+        for r in queue:
+            if r.get("status") != "entregue" or r.get("auto") or r["id"] in self.nudged or r.get("cobrado"):
+                continue
+            if time.time() - _epoch(r.get("updated") or r.get("confirmed")) < 600:
+                continue
+            s = by_id.get(r.get("session_id") or "")
+            if not s or s.get("status") == "busy" or s.get("state") == "approval" or s.get("stopped"):
+                continue
+            self.nudged.add(r["id"])
+            append_status(r["id"], "entregue", r.get("note", ""), cobrado=True)
+            meta = {"session": short(r.get("session") or r.get("project", "")), "project": r.get("project", ""), "session_id": s["id"],
+                    "session_full": r.get("session"), "project_path": r.get("project_path", "")}
+            if self._can_auto(s["id"]):
+                self._auto(meta, f"Como ficou este pedido: “{r.get('text', '')[:160]}”? Se terminou, responda com um resumo curto; "
+                                 f"se falta algo, diga o quê.", "cobrar")
 
     def summary(self, data):
         c = data.get("counts", {})
@@ -144,87 +252,93 @@ class Copilot:
             parts.append("Nenhuma sessão trabalhando agora.")
         if wait:
             parts.append(f"Esperando você: {', '.join(wait[:3])}.")
-        if c.get("done"):
-            parts.append(f"{c['done']} {'entrega concluída' if c['done'] == 1 else 'entregas concluídas'}.")
         return " ".join(parts)
 
-    # ---------- avisos ----------
-    def queue(self, kind, text, group=True, meta=None):
+    # ---------- avisos: um por item, falados um de cada vez ----------
+    def notify(self, kind, text, meta, speak=True):
         now = time.time()
-        key = text + (meta or {}).get("ask", "")[-200:]
-        if now - self.recent.get(key, 0) < 600:
-            return
-        self.recent[key] = now
-        self.pending.append((kind, text, meta or {}))
-        if not self.first_at:
-            self.first_at = now
-        if not group:
-            self.first_at = 0  # sai já
-
-    def flush(self, p):
-        now = time.time()
-        if not self.pending or (self.first_at and now - self.first_at < 4):
-            return
-        items, self.pending, self.first_at = self.pending, [], 0.0
-        order = {"order": 0, "ask": 0, "wait": 1, "error": 2, "hourly": 3}
-        items.sort(key=lambda x: order.get(x[0], 9))
-        kind, text, meta = items[0]
-        if len(items) > 1:
-            text += f" E mais {len(items) - 1} {'sessão precisa' if len(items) == 2 else 'sessões precisam'} de você."
-        on = p.get("on") and p.get("mode") == "copiloto"
-        live = self.live and now - self.live_at < 30
-        speak = on and not live
+        key = kind + "|" + (meta.get("session_id") or meta.get("order_id") or "") + "|" + (meta.get("ask") or text)[-200:]
         with self.lock:
+            for k in [k for k, t in self.recent.items() if now - t > 600]:
+                self.recent.pop(k, None)
+            if key in self.recent:
+                return
+            self.recent[key] = now
             self.seq += 1
-            n = {"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": bool(speak),
-                 "session": meta.get("session"), "project": meta.get("project"), "ask": meta.get("ask", "")[-900:],
+            n = {"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": False, "wants_voice": bool(speak),
+                 "session": meta.get("session"), "project": meta.get("project"), "ask": (meta.get("ask") or "")[-900:],
                  "order_id": meta.get("order_id"), "line": None, "call": False}
             self.notices.append(n)
-            self.notices = self.notices[-60:]
-        if speak:
-            self.last_spoken = now
-            threading.Thread(target=self._announce, args=(n, p), daemon=True).start()
+            self.notices = self.notices[-80:]
+            if speak:
+                self.todo.append(n)
+
+    def _pump(self, p):
+        """Fala o próximo aviso da fila, se ninguém está falando e não há conversa por voz aberta."""
+        now = time.time()
+        if not (p.get("on") and p.get("mode") == "copiloto"):
+            with self.lock:
+                self.todo.clear()
+            return
+        live = self.live and now - self.live_at < 30
+        with self.lock:
+            self.todo = [n for n in self.todo if now - n["epoch"] < 1800]       # aviso com mais de 30 min não é mais falado
+            if self.speaking or live or not self.todo or now - self.last_spoken < 6:
+                return
+            self.todo.sort(key=lambda n: {"order": 0, "ask": 0, "wait": 1, "error": 2}.get(n["kind"], 9))
+            n = self.todo.pop(0)
+            n["mais"] = len(self.todo)
+            n["spoken"] = True
+            self.speaking = True
+        threading.Thread(target=self._announce, args=(n, p), daemon=True).start()
 
     def _announce(self, n, p):
-        """A Ganga chama o usuário: escreve a fala com a personalidade dela e pergunta o que fazer.
-        Com o painel aberto no Chrome, o painel abre a conversa por voz (ela fala e já escuta a resposta);
+        """A Ganga chama o usuário. Com o painel aberto, ele abre a conversa por voz (ela fala e já escuta a resposta);
         sem painel, ou se ele não atender em 8 s, toca a fala com a voz dela no Mac."""
-        line = (self.line_fn(n) if self.line_fn else None) or n["text"]
-        with self.lock:
-            n["line"] = line
-            n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait", "order")
-        if n["call"]:
-            t0 = time.time()
-            while time.time() - t0 < 8:
-                if self.live and self.live_at > t0:
-                    return                      # o painel atendeu: a fala sai pela conversa ao vivo
-                time.sleep(0.5)
-        self._say(line, p.get("mac_voice") or "Ganga", n["seq"])
+        try:
+            line = (self.line_fn(n) if self.line_fn else None) or n["text"]
+            if n.get("mais"):
+                line += f" Depois tenho mais {n['mais']} {'ponto' if n['mais'] == 1 else 'pontos'} para você."
+            with self.lock:
+                n["line"] = line
+                n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait", "order")
+            if n["call"]:
+                t0 = time.time()
+                while time.time() - t0 < 8:
+                    if self.live and self.live_at > t0:
+                        return                      # o painel atendeu: a fala sai pela conversa ao vivo
+                    time.sleep(0.5)
+            self._say(line, p.get("mac_voice") or "Ganga", n["seq"])
+        finally:
+            self.last_spoken = time.time()
+            self.speaking = False
 
     def say(self, text, voice="Ganga", seq=None):
-        """Fala o aviso. Padrão: a voz da própria Ganga (Gemini TTS) tocada no Mac; o painel anima a esfera junto.
-        Sem chave, sem rede ou com voz do Mac escolhida em ⚙ → `say` do macOS."""
+        """Fala um texto (teste de voz no ⚙). Padrão: a voz da própria Ganga (Gemini TTS) tocada no Mac."""
         threading.Thread(target=self._say, args=(text, voice, seq), daemon=True).start()
+
+    _say_lock = threading.Lock()
 
     def _say(self, text, voice, seq):
         dur, how = 0.0, "mac"
         wav = self.tts_fn(text) if (voice == "Ganga" and self.tts_fn) else None
-        try:
-            if wav:
-                path = os.path.join(QDIR, ".aviso.wav")
-                os.makedirs(QDIR, exist_ok=True)
-                with open(path, "wb") as f:
-                    f.write(wav)
-                dur, how = max(0.5, (len(wav) - 44) / 48000), "ganga"
-                self._mark(seq, how, dur)
-                subprocess.run(["afplay", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
-            else:
-                dur = max(1.5, len(text) / 14)
-                self._mark(seq, how, dur)
-                subprocess.run(["say", "-v", voice if voice != "Ganga" else "Luciana", "-r", "190", text],
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
-        except Exception:
-            pass
+        with self._say_lock:                         # uma fala por vez, um arquivo por vez
+            try:
+                if wav:
+                    path = os.path.join(QDIR, ".aviso.wav")
+                    os.makedirs(QDIR, exist_ok=True)
+                    with open(path, "wb") as f:
+                        f.write(wav)
+                    dur, how = max(0.5, (len(wav) - 44) / 48000), "ganga"
+                    self._mark(seq, how, dur)
+                    subprocess.run(["afplay", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+                else:
+                    dur = max(1.5, len(text) / 14)
+                    self._mark(seq, how, dur)
+                    subprocess.run(["say", "-r", "190", text] if voice == "Ganga" else ["say", "-v", voice, "-r", "190", text],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+            except Exception:
+                pass
 
     def _mark(self, seq, how, dur):
         with self.lock:
@@ -234,7 +348,23 @@ class Copilot:
 
     def since(self, seq):
         with self.lock:
-            return [n for n in self.notices if n["seq"] > seq]
+            return [dict(n) for n in self.notices if n["seq"] > seq]
+
+
+def auto_order(meta, text, kind):
+    """Pedido criado pelo Copiloto (não pelo usuário): vai para a fila como normal, marcado `auto`."""
+    recent = [r for r in read_queue(40) if r.get("auto") and r.get("session_id") == meta.get("session_id")
+              and r.get("auto_kind") == kind and time.time() - _epoch(r.get("confirmed")) < 600]
+    if recent:
+        return False
+    os.makedirs(QDIR, exist_ok=True)
+    line = {"id": uuid.uuid4().hex[:8], "created": time.time(), "project": meta.get("project", ""),
+            "project_path": meta.get("project_path", ""), "session": meta.get("session_full") or meta.get("session"),
+            "session_id": meta.get("session_id"), "text": text, "nivel": "normal", "status": "na_fila", "via": "copiloto",
+            "auto": True, "auto_kind": kind, "confirmed": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    with open(QUEUE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    return True
 
 
 # ---------- etapa 4: pedidos às sessões ----------

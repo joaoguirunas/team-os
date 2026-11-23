@@ -87,12 +87,16 @@
         <small id="ggWakeInfo">Só detecta a palavra — não gasta Gemini. Funciona no Chrome com o painel aberto (pode ficar em outra aba).</small></div>
       <div class="g-f"><label>Atalho global (⌃⌥G)</label><small>No app Atalhos: novo atalho → ação “Executar script de shell” com o comando abaixo → em Detalhes, “Adicionar atalho de teclado”.</small>
         <div class="row" style="margin-top:8px"><input id="ggShortcut" readonly><button class="g-b" id="ggCopy">Copiar</button></div></div>
-      <div class="g-f"><label>Copiloto avisa quando</label>
-        <label class="g-chk"><input type="checkbox" data-n="wait"> uma sessão termina perguntando algo ou pede permissão — ela chama e já ouve sua resposta</label>
+      <div class="g-f"><label>Copiloto age sozinha</label>
+        <label class="g-chk"><input type="checkbox" id="ggAuto"> Responder “pode seguir” quando a sessão só pede licença para continuar o que você já pediu, pedir uma correção quando dá erro e cobrar pedido sem retorno</label>
+        <label class="g-chk"><input type="checkbox" id="ggAutoNext"> Quando a sessão termina, mandar seguir para o próximo passo já aprovado do plano (gasta mais créditos do Claude)</label>
+        <small>No máximo 3 ações por sessão por hora. Nunca publica, envia para fora, apaga nem gasta: nesses casos ela chama você. Tudo o que ela faz sozinha aparece em Pedidos com a marca “auto”.</small></div>
+      <div class="g-f"><label>Copiloto chama você quando</label>
+        <label class="g-chk"><input type="checkbox" data-n="wait"> uma sessão precisa de uma decisão sua ou de uma permissão — ela chama e já ouve sua resposta</label>
         <label class="g-chk"><input type="checkbox" data-n="error"> uma sessão para com erro</label>
         <label class="g-chk"><input type="checkbox" data-n="hourly"> resumo a cada hora cheia</label>
         <div class="row" style="margin-top:8px"><select id="ggMacVoice"><option value="Ganga">Voz da Ganga (a mesma da conversa)</option><option>Luciana</option><option>Flo (Português (Brasil))</option><option>Shelley (Português (Brasil))</option><option>Sandy (Português (Brasil))</option></select><button class="g-b" id="ggSayTest">Ouvir</button></div>
-        <small>Os avisos usam a voz do Mac — não gastam Gemini. Só no modo Copiloto e fora de uma conversa por voz.</small></div>
+        <small>Cada chamada usa um pouco do Gemini (decidir, escrever a fala e falar). Só no modo Copiloto; durante uma conversa por voz, ela espera a conversa acabar.</small></div>
       <div class="g-f"><label>Modo ao ligar</label><div class="row"><select id="ggModeSel"><option value="silencioso">Silencioso — só fala quando chamada</option><option value="copiloto">Copiloto — também avisa sozinha</option></select></div></div>
       <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="g-b" id="ggPowerOff" style="margin-right:auto" title="Para de ouvir a palavra e desliga tudo">Desligar a Ganga</button><button class="g-b" id="ggCfgX">Fechar</button><button class="g-b p" id="ggCfgOk">Salvar</button></div>
     </div></div>`;
@@ -216,6 +220,7 @@
     G.busy = false; $('#ggSend').disabled = false;
     if (r.error) { add('ga err', ERR[r.error] || ERR.falhou); setOrb('sleep'); return; }
     let text = r.text.replace(/^\s*ABRIR:.*$/m, m => (r.abrir = m, '')).trim(), order = null;
+    text = text.replace(/^\s*LEMBRAR:\s*(.+?)\s*$/m, (m, f) => { if (/lembr|anot|guard|sempre|nunca/i.test(q)) api('/api/ganga/memory', {fact: f}); return ''; }).trim();
     text = text.replace(/^\s*NOME:\s*(.+?)\s*$/m, (m, n) => { api('/api/ganga/memory', {name: n}).then(x => { if (x.ok) G.user_name = x.name; }); return ''; }).trim();
     const om = text.match(/^\s*PEDIDO:\s*(.+?)\s*::\s*([\s\S]+?)\s*$/m);
     if (om) { order = {project: om[1], text: om[2]}; text = text.replace(om[0], '').trim(); }
@@ -381,6 +386,7 @@
     $('#ggModeSel').value = G.mode;
     $('#ggWake').checked = G.wake !== false;
     $('#ggClap').checked = G.clap !== false;
+    $('#ggAuto').checked = G.auto !== false; $('#ggAutoNext').checked = !!G.auto_next;
     $('#ggName').value = G.user_name || '';
     hud.querySelectorAll('[data-n]').forEach(c => c.checked = (G.notify || {})[c.dataset.n] !== false);
     $('#ggMacVoice').value = G.mac_voice || 'Ganga';
@@ -420,7 +426,7 @@
     } catch { $('#ggMeter').parentElement.insertAdjacentHTML('afterend', '<small class="g-bad">Sem permissão de microfone. Libere no navegador.</small>'); }
   };
   $('#ggCfgOk').onclick = async () => {
-    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, clap: $('#ggClap').checked, name: $('#ggName').value, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
+    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, clap: $('#ggClap').checked, auto: $('#ggAuto').checked, auto_next: $('#ggAutoNext').checked, name: $('#ggName').value, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
     await loadPrefs(); closeCfg();
   };
   async function loadPrefs() { try { Object.assign(G, await api('/api/ganga')); } catch {} paint(); }
@@ -470,7 +476,7 @@
     $('#ggOrders').innerHTML = list.length ? list.slice(0, 8).map(o => { const [k, l] = OST[o.status] || ['', o.status];
       const note = o.status === 'respondido' && o.note ? `<p>${esc(o.note)}</p>` : '';
       const act = o.status === 'aguardando_ok' ? `<div class="g-oact"><button class="g-b p" data-ap="${esc(o.id)}">Aprovar</button><button class="g-b" data-cx="${esc(o.id)}">Cancelar</button></div>` : '';
-      return `<div class="g-row g-ord ${k}"><i></i><div><b>${esc(shortName(o.project))} <span class="g-st">${esc(l)}</span></b><small>${esc(o.text)}</small>${note}${act}</div><time>${esc((o.confirmed || '').slice(11, 16))}</time></div>`; }).join('')
+      return `<div class="g-row g-ord ${k}"><i></i><div><b>${esc(shortName(o.project))} <span class="g-st">${esc(l)}</span>${o.auto ? '<span class="g-st au">auto</span>' : ''}</b><small>${esc(o.text)}</small>${note}${act}</div><time>${esc((o.confirmed || '').slice(11, 16))}</time></div>`; }).join('')
       : `<div class="g-none">${G.ordTab === 'done' ? 'Nenhum pedido concluído ainda.' : 'Nada pendente. Peça algo por voz: “Ganga, pede pro…”.'}</div>`;
     if (lastState) renderLive(lastState);
   }
@@ -495,10 +501,23 @@
     for (const n of r.notices) {
       noticeSeq = Math.max(noticeSeq, n.seq);
       if (G.mode !== 'copiloto' && n.kind !== 'hourly') continue;
+      if (n.kind === 'auto') {            // o que ela fez sozinha: aparece, não fala
+        if (G.open) add('ga notice auto', '⚡ ' + n.text);
+        toast({kind: 'dispatch', who: 'Ganga', what: n.text, where: n.text});
+        loadOrders(); continue;
+      }
       G.flash && G.flash();
-      if (n.spoken && G.leader) callOrTalk(n.seq);
+      if (n.spoken && G.leader && !spokenSeen.has(n.seq)) { spokenSeen.add(n.seq); callOrTalk(n.seq); }
+      else if (n.wants_voice && !n.spoken) pendingVoice.add(n.seq);
+    }
+    // avisos que esperavam a vez (ou o fim da conversa) e agora foram falados
+    if (pendingVoice.size) {
+      const all = await api('/api/ganga/notices?since=' + (Math.min(...pendingVoice) - 1)).catch(() => null);
+      (all ? all.notices : []).forEach(n => { if (pendingVoice.has(n.seq) && n.spoken) { pendingVoice.delete(n.seq);
+        if (G.leader && !spokenSeen.has(n.seq)) { spokenSeen.add(n.seq); G.flash && G.flash(); callOrTalk(n.seq); } } });
     }
   }, 2000);
+  const pendingVoice = new Set(), spokenSeen = new Set();
   // Copiloto: a sessão precisa do usuário → a Ganga abre a voz, fala e já escuta a resposta
   async function callOrTalk(seq, tries = 0) {
     const r = await api('/api/ganga/notices?since=' + (seq - 1)).catch(() => null);
@@ -728,8 +747,16 @@
     lastAct = performance.now();
   }
 
+  let savedMsgs = 0;                                  // só as falas novas desta conversa vão para a memória
+  function saveTalk() {
+    const all = [...$('#ggLog').querySelectorAll('.g-msg.me, .g-msg.ga:not(.err):not(.notice):not(.card)')];
+    const falas = all.slice(savedMsgs).slice(-24)
+      .map(d => ({who: d.classList.contains('me') ? 'eu' : 'ganga', text: d.textContent.trim()})).filter(x => x.text && !x.text.startsWith('Fiquei quieta') && !x.text.startsWith('Fechei a voz'));
+    if (falas.length >= 2 && falas.some(f => f.who === 'eu')) { savedMsgs = all.length; api('/api/ganga/memory', {conversation: falas}).catch(() => {}); }
+  }
   function stopLive(why) {
     liveGen++; connecting = false; reconnects = 0;          // cancela conexão em andamento
+    if (G.live) saveTalk();
     if (!G.live && !ws && !micStream) { setOrb('sleep'); return; }
     ending = true;
     try { wsSend({realtimeInput: {audioStreamEnd: true}}); ws && ws.close(); } catch {}

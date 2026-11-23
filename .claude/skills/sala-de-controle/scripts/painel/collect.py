@@ -188,6 +188,7 @@ def read_transcript_state(path, n_turns=6):
     last_ts = ""
     last_ask = ""
     handback = ""
+    tail = ""
     pending_tool = False
     last_role = ""
     for line in tail_lines(path):
@@ -214,9 +215,11 @@ def read_transcript_state(path, n_turns=6):
                         if not steps or steps[-1]["text"] != act:
                             steps.append({"text": act, "ts": ts})
                         tool_here = True
-            txt = clean(text_of(content))
+            full = text_of(content)
+            txt = clean(full)
             if txt:
                 turns.append({"who": "agente", "text": txt, "ts": ts})
+                tail = re.sub(r"\s+", " ", full).strip()[-1400:]      # fim da fala, sem corte (o Copiloto lê a pergunta aqui)
             pending_tool = tool_here
             last_role = "assistant"
         else:
@@ -236,7 +239,7 @@ def read_transcript_state(path, n_turns=6):
         doing = "Respondeu: " + clean(turns[-1]["text"], 110)
     return {"last_tool": last_tool, "turns": list(turns), "last_ts": last_ts,
             "last_epoch": iso_to_epoch(last_ts), "pending_tool": pending_tool, "last_role": last_role,
-            "steps": list(steps), "last_ask": last_ask, "handback": handback, "doing": doing or (steps[-1]["text"] if steps else "")}
+            "steps": list(steps), "last_ask": last_ask, "handback": handback, "tail": tail if last_role == "assistant" else "", "doing": doing or (steps[-1]["text"] if steps else "")}
 
 
 def first_prompt(path):
@@ -523,7 +526,7 @@ def collect(root):
                 "is_sala": is_sala, "stopped": stopped, "team": team_name, "agents": agents,
                 "turns": main.get("turns", []), "tool": main.get("last_tool"), "last_epoch": main.get("last_epoch", 0),
                 "tokens": tokens.summary(tr) if tr and os.path.isfile(tr) and not stopped else None,
-                "doing": main.get("doing", ""), "goal": main.get("last_ask", ""), "steps": main.get("steps", []),
+                "doing": main.get("doing", ""), "goal": main.get("last_ask", ""), "tail": main.get("tail", ""), "steps": main.get("steps", []),
                 "age": int(now - main["last_epoch"]) if main.get("last_epoch") else None, "src": tr,
                 "project": cwd if cwd in projects else ""}
         # projeto pai por prefixo (sessão aberta numa subpasta)
