@@ -36,6 +36,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import collect  # noqa: E402
 import ganga  # noqa: E402
+import copilot  # noqa: E402
+COP = copilot.Copilot(ganga.load_prefs)
 
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-painel.pid")
@@ -109,6 +111,10 @@ def refresh_loop(root):
                     e["seq"] = STATE["seq"]
                     STATE["events"].append(e)
                 STATE["events"] = STATE["events"][-200:]
+            try:
+                COP.feed(data)
+            except Exception as e:
+                sys.stderr.write(f"copilot error: {e}\n")
         except Exception as e:  # nunca derruba o servidor
             sys.stderr.write(f"collect error: {e}\n")
         time.sleep(1.0)
@@ -308,6 +314,9 @@ def gemini_check():
     return (True, "ok") if d else (False, err)
 
 
+WAKE = {"t": 0.0, "seen": 0.0}
+
+
 def gemini_token():
     """Token temporário (1 sessão, abrir em 1 min, vale 30 min). A chave nunca vai ao navegador."""
     p = ganga.load_prefs()
@@ -434,6 +443,17 @@ class H(BaseHTTPRequestHandler):
             name = q.get("q", "").strip()
             pr = ganga.load_prefs()
             return self._send(200, {"text": ganga.project_context(name, st, pr) if name else ganga.panorama(st, pr)})
+        if u.path == "/api/ganga/notices":
+            try:
+                since = int(q.get("since", "0") or 0)
+            except ValueError:
+                since = 0
+            return self._send(200, {"notices": COP.since(since), "last": COP.seq})
+        if u.path == "/api/ganga/orders":
+            return self._send(200, {"orders": copilot.read_queue(), "sala_ouvindo": copilot.sala_listening()})
+        if u.path == "/api/ganga/wake":
+            WAKE["seen"] = time.time()
+            return self._send(200, {"t": WAKE["t"]})
         if u.path == "/api/ganga/voices":
             return self._send(200, {"voices": ganga.FEMALE_VOICES, "model": ganga.LIVE_MODEL})
         if u.path == "/api/ganga/reports":
@@ -538,6 +558,37 @@ def do_POST(self):
             return self._send(400, {"error": "chave inválida"})
         ok, msg = gemini_check()
         return self._send(200, {"ok": ok, "check": msg, "key_hint": ganga.key_hint()})
+    if u.path == "/api/ganga/live":
+        COP.live = bool(isinstance(body, dict) and body.get("live"))
+        return self._send(200, {"ok": True})
+    if u.path == "/api/ganga/say":
+        txt = str((body or {}).get("text", ""))[:300] or "Oi, João. Eu sou a Ganga."
+        COP.say(txt, ganga.load_prefs().get("mac_voice") or "Luciana")
+        return self._send(200, {"ok": True})
+    if u.path == "/api/ganga/order":
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        if not ganga.load_prefs()["on"]:
+            return self._send(409, {"error": "desligada"})
+        with LOCK:
+            st = json.loads(json.dumps(STATE["data"] or {}))
+        if body.get("confirm"):
+            return self._send(200, copilot.confirm(str(body["confirm"])))
+        hits = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())
+        if not hits:
+            return self._send(200, {"error": "projeto não encontrado", "projetos": [p["name"] for p in st.get("projects", [])][:30]})
+        if len(hits) > 1:
+            return self._send(200, {"error": "mais de um projeto com esse nome", "opcoes": [p["name"] for p in hits]})
+        d = copilot.draft(hits[0], str(body.get("text", "")), st)
+        if d.get("error"):
+            return self._send(200, d)
+        return self._send(200, {**d, "sala_ouvindo": copilot.sala_listening()})
+    if u.path == "/api/ganga/wake":
+        # chamado pelo atalho global (app Atalhos → curl). Liga a Ganga e pede ao painel abrir a voz.
+        if not ganga.load_prefs()["on"]:
+            set_ganga({"on": True})
+        WAKE["t"] = time.time()
+        return self._send(200, {"ok": True, "seen": time.time() - WAKE["seen"] < 6})
     if u.path == "/api/ganga/token":
         code, res = gemini_token()
         return self._send(code, res)

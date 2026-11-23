@@ -1,20 +1,26 @@
 /* Ganga — assistente da Sala de Controle.
-   Etapa 1: HUD, orb, conversa digitada (Claude) e relatórios.
+   Etapa 1: HUD, orb, conversa digitada (Claude) e relatórios.  Etapa 3: palavra "Ganga" + atalho global.
+   Etapa 4: pedidos às sessões (prepara → usuário confirma → fila da Sala).  Etapa 5: Copiloto (avisos com a voz do Mac).
    Etapa 2: tela Configurar (chave no Porta-chaves, voz, microfone, limite) e voz em tempo real
             pelo Gemini Live (token temporário; a chave nunca chega ao navegador), com o Claude como cérebro.
-   Desligada por padrão. Só lê: nunca escreve em projeto nem manda pedido para sessão. */
+   Desligada por padrão. Nunca escreve em projeto; pedidos só vão para a fila da Sala depois do OK do João. */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const BOLT = '<svg viewBox="0 0 84.54 136" aria-hidden="true"><polygon points="69.84,0 0,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, wakeErr = false, wakeArmed = 0;
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; } };
+  const sideW = () => innerWidth < 900 ? 0 : (G.collapsed || innerWidth < 1180 ? 68 : 300);
   const G = {on: false, mode: 'silencioso', open: false, orb: 'sleep', busy: false, speakUntil: 0, alert: null,
-    key_hint: '', voice: '', mic: '', daily_minutes: 60, used_today: 0, level: 0, live: false};
+    key_hint: '', voice: '', mic: '', daily_minutes: 60, used_today: 0, level: 0, live: false, collapsed: false};
   const api = (p, body) => fetch(p, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)}).then(r => r.json());
 
   // ---------- botão flutuante ----------
   const btn = document.createElement('button');
   btn.className = 'g-btn'; btn.id = 'gangaBtn'; btn.type = 'button';
-  btn.innerHTML = '<i></i><span>Ganga</span>';
+  btn.innerHTML = '<i>' + BOLT + '</i><span>Ganga</span>';
   btn.setAttribute('aria-label', 'Ganga');
   document.body.appendChild(btn);
   document.body.classList.add('has-ganga');
@@ -26,19 +32,23 @@
   hud.innerHTML = `
     <canvas id="ggCanvas"></canvas>
     <div class="g-top">
-      <div class="g-mark"></div>
-      <div class="g-title"><b>Ganga</b><span><i class="g-dot" id="ggPill" title="conexão com a Sala"></i><span id="ggStatus">dormindo</span></span></div>
       <div class="g-sp"></div>
       <div class="g-clock" id="ggClock"></div>
-      <div class="g-seg" id="ggMode" title="Silencioso: só fala quando você chama. Copiloto: também avisa sozinha (chega na etapa 5).">
+      <div class="g-seg" id="ggMode" title="Silencioso: só fala quando você chama. Copiloto: também avisa sozinha.">
         <button data-m="silencioso">Silencioso</button><button data-m="copiloto">Copiloto</button></div>
+      <button class="g-ico" id="ggFull" title="Tela cheia (F)">⛶</button>
       <button class="g-ico" id="ggCfg" title="Configurar">⚙</button>
       <button class="g-ico" id="ggMin" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
       <button class="g-ico pw" id="ggOff" title="Desligar a Ganga">⏻</button>
     </div>
-    <div class="g-panel l">
+    <div class="g-panel l" id="ggPanel">
+      <div class="g-brand"><div class="g-mark">${BOLT}</div>
+        <div class="g-title"><b>Ganga</b><span><i class="g-dot" id="ggPill" title="conexão com a Sala"></i><span id="ggStatus">dormindo</span></span></div>
+        <button class="g-ico g-fold" id="ggFold" title="Recolher painel ([)">‹</button></div>
+      <div class="g-rail" id="ggRail"></div>
       <section class="g-sec"><h4>Agora</h4><div class="g-kpis" id="ggKpis"></div></section>
-      <section class="g-sec"><h4>Precisam de você</h4><div class="g-rows" id="ggWait"></div></section>
+      <section class="g-sec"><h4>Precisam de você <span class="g-tag on" id="ggWaitN"></span></h4><div class="g-rows" id="ggWait"></div></section>
+      <section class="g-sec"><h4 id="ggOrdersH">Pedidos</h4><div class="g-rows" id="ggOrders"></div></section>
       <section class="g-sec grow"><h4>Atividade</h4><div class="g-rows" id="ggFeed"></div></section>
     </div>
     <div id="ggChips"></div>
@@ -65,7 +75,18 @@
       <div class="g-f"><label>Microfone</label><div class="row"><select id="ggMicSel"><option value="">Padrão do Mac</option></select><button class="g-b" id="ggMicTest">Testar</button></div>
         <div class="g-meter"><i id="ggMeter"></i></div></div>
       <div class="g-f"><label>Limite de conversa por dia</label><div class="row"><input id="ggLimit" type="number" min="5" max="600" step="5"><span style="color:#7d8aa6;font-size:13px">minutos</span></div><small id="ggLimitInfo"></small></div>
-      <div class="g-f"><label>Modo ao ligar</label><div class="row"><select id="ggModeSel"><option value="silencioso">Silencioso — só fala quando chamada</option><option value="copiloto">Copiloto — também avisa sozinha (etapa 5)</option></select></div></div>
+      <div class="g-f"><label>Palavra de ativação</label><label class="g-chk"><input type="checkbox" id="ggWake"> Ficar ouvindo a palavra “Ganga” enquanto ela estiver ligada</label>
+        <small id="ggWakeInfo">Só detecta a palavra — não gasta Gemini. Funciona no Chrome com o painel aberto (pode ficar em outra aba).</small></div>
+      <div class="g-f"><label>Atalho global (⌃⌥G)</label><small>No app Atalhos: novo atalho → ação “Executar script de shell” com o comando abaixo → em Detalhes, “Adicionar atalho de teclado”.</small>
+        <div class="row" style="margin-top:8px"><input id="ggShortcut" readonly><button class="g-b" id="ggCopy">Copiar</button></div></div>
+      <div class="g-f"><label>Copiloto avisa quando</label>
+        <label class="g-chk"><input type="checkbox" data-n="wait"> alguém precisa de você</label>
+        <label class="g-chk"><input type="checkbox" data-n="done"> uma sessão termina</label>
+        <label class="g-chk"><input type="checkbox" data-n="error"> dá erro</label>
+        <label class="g-chk"><input type="checkbox" data-n="hourly"> resumo a cada hora cheia</label>
+        <div class="row" style="margin-top:8px"><select id="ggMacVoice"><option>Luciana</option><option>Flo (Português (Brasil))</option><option>Shelley (Português (Brasil))</option><option>Sandy (Português (Brasil))</option></select><button class="g-b" id="ggSayTest">Ouvir</button></div>
+        <small>Os avisos usam a voz do Mac — não gastam Gemini. Só no modo Copiloto e fora de uma conversa por voz.</small></div>
+      <div class="g-f"><label>Modo ao ligar</label><div class="row"><select id="ggModeSel"><option value="silencioso">Silencioso — só fala quando chamada</option><option value="copiloto">Copiloto — também avisa sozinha</option></select></div></div>
       <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="g-b" id="ggCfgX">Fechar</button><button class="g-b p" id="ggCfgOk">Salvar</button></div>
     </div></div>`;
   document.body.appendChild(hud);
@@ -73,7 +94,7 @@
   const WORDS = {sleep: 'pronta', think: 'pensando…', speak: 'falando', listen: 'ouvindo', alert: 'aviso', connect: 'conectando…'};
   const SUBS = {sleep: 'toque no microfone ou escreva', think: 'consultando a Sala', speak: '', listen: 'pode falar', connect: 'abrindo a voz'};
   const setStatus = () => {
-    $('#ggStatus').innerHTML = `${esc(WORDS[G.orb])} · ${esc(G.mode)}${G.key_hint ? '' : ' · <em>voz sem chave</em>'}`;
+    $('#ggStatus').innerHTML = `${esc(WORDS[G.orb])} · ${esc(G.mode)}${G.key_hint ? '' : ' · <em>voz sem chave</em>'}${rec ? ' · escuta “Ganga”' : ''}`;
     $('#ggState').innerHTML = `<b>${esc(WORDS[G.orb])}</b><span>${esc(SUBS[G.orb] || '')}</span>`;
   };
   const paint = () => {
@@ -83,10 +104,11 @@
     $('#ggMic').disabled = !G.key_hint && !G.live;
     $('#ggMic').title = G.key_hint ? (G.live ? 'Encerrar a conversa por voz' : 'Falar com a Ganga') : 'Configure a chave do Gemini (⚙) para falar';
     setStatus();
+    wakeSync();
   };
   const setOrb = s => { G.orb = s; setStatus(); };
 
-  const open = () => { G.open = true; hud.classList.add('show'); refresh(); startFeed(); setTimeout(() => $('#ggInput').focus(), 60); };
+  const open = () => { G.open = true; hud.classList.add('show'); refresh(); loadOrders(); startFeed(); setTimeout(() => $('#ggInput').focus(), 60); };
   const minimize = () => { G.open = false; hud.classList.remove('show'); $('#ggSide').classList.remove('show'); stopFeed(); };
 
   btn.onclick = async () => {
@@ -106,6 +128,20 @@
     else if ($('#ggSide').classList.contains('show')) $('#ggSide').classList.remove('show');
     else minimize();
   }, true);
+  const setSide = () => { hud.style.setProperty('--side', sideW() + 'px'); hud.classList.toggle('folded', G.collapsed || innerWidth < 1180); };
+  addEventListener('resize', setSide);
+  const setFold = v => { G.collapsed = v; setSide(); store('ganga.fold', v ? '1' : '0');
+    $('#ggFold').textContent = v ? '›' : '‹'; $('#ggFold').title = v ? 'Expandir painel ([)' : 'Recolher painel ([)'; if (G.open) refresh(); };
+  setFold(store('ganga.fold') === '1');
+  $('#ggFold').onclick = () => setFold(!G.collapsed);
+  const toggleFull = () => document.fullscreenElement ? document.exitFullscreen() : hud.requestFullscreen?.().catch(() => {});
+  $('#ggFull').onclick = toggleFull;
+  document.addEventListener('fullscreenchange', () => hud.classList.toggle('fs', !!document.fullscreenElement));
+  document.addEventListener('keydown', e => {
+    if (!G.open || /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || '')) return;
+    if (e.key === '[') setFold(!G.collapsed);
+    else if (e.key === 'f' || e.key === 'F') toggleFull();
+  });
   setInterval(() => {
     const d = new Date();
     $('#ggClock').innerHTML = `<b>${d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</b>${d.toLocaleDateString('pt-BR', {weekday: 'short', day: '2-digit', month: 'short'})}`;
@@ -149,10 +185,14 @@
     clearTimeout(wait);
     G.busy = false; $('#ggSend').disabled = false;
     if (r.error) { add('ga err', ERR[r.error] || ERR.falhou); setOrb('sleep'); return; }
+    let text = r.text, order = null;
+    const om = text.match(/^\s*PEDIDO:\s*(.+?)\s*::\s*([\s\S]+?)\s*$/m);
+    if (om) { order = {project: om[1], text: om[2]}; text = text.replace(om[0], '').trim(); }
     const links = (r.projects || []).map(p => `<button data-p="${esc(p.path)}" data-n="${esc(p.name)}">relatórios · ${esc(p.name)}</button>`).join('');
-    const d = add('ga', r.text, links ? `<div class="lk">${links}</div>` : '');
+    const d = add('ga', text, links ? `<div class="lk">${links}</div>` : '');
+    if (order) orderCard(order);
     d.querySelectorAll('.lk button').forEach(b => b.onclick = () => openReports(b.dataset.p, b.dataset.n));
-    speakFor(Math.min(12000, Math.max(1800, r.text.length * 55)));
+    speakFor(Math.min(12000, Math.max(1800, text.length * 55)));
     $('#ggInput').focus();
   };
 
@@ -173,9 +213,8 @@
     }).filter(Boolean).slice(0, 10);
     items.forEach(it => { if (items.filter(x => x.name === it.name).length > 1) it.name = it.p.name; });
     const box = $('#ggChips'); box.innerHTML = '';
-    const W = innerWidth, H = innerHeight, cx = W / 2 + (W > 1180 ? 150 : 0), cy = H * 0.4;
-    const side = W > 1180 ? 300 : 0;
-    const rx = Math.min((W - side) * 0.38, 420), ry = Math.min(H * 0.25, 230);
+    const side = sideW(), W = innerWidth, H = innerHeight, cx = side + (W - side) / 2, cy = H * 0.42;
+    const rx = Math.min((W - side) * 0.36, 460), ry = Math.min(H * 0.27, 250);
     items.forEach((it, i) => {
       const a = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / items.length);
       const c = document.createElement('div');
@@ -190,8 +229,10 @@
     btn.classList.toggle('alert', G.on && !!G.alert);
     // KPIs
     const c = lastState.counts || {};
-    const kp = [[c.recent || 0, 'sessões ativas', 'az'], [c.active || 0, 'agentes trabalhando', ''], [c.approval || 0, 'precisam de você', 'am'], [c.done || 0, 'concluídos', 'ok']];
-    $('#ggKpis').innerHTML = kp.map(([n, l, k]) => `<div class="g-kpi ${k}"><b>${n}</b><span>${l}</span></div>`).join('');
+    const kp = [[c.recent || 0, 'sessões ativas', 's'], [c.active || 0, 'agentes trabalhando', 'a'], [c.approval || 0, 'precisam de você', 'w'], [c.done || 0, 'concluídos', 'd']];
+    const IC = {"s": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8\"/></svg>", "a": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5\"/></svg>", "w": "<svg viewBox=\"0 0 24 24\"><path d=\"M12 3v3M12 18v3M4.6 6.6l2 2M17.4 15.4l2 2M3 12h3M18 12h3\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>", "d": "<svg viewBox=\"0 0 24 24\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>"};
+    $('#ggRail').innerHTML = kp.map(([n, l, k]) => `<div class="g-rk ${k === 'w' && n ? 'hot' : ''}" title="${esc(l)}">${IC[k]}<b>${n}</b></div>`).join('');
+    $('#ggKpis').innerHTML = kp.map(([n, l, k]) => `<div class="g-kpi ${k === 'w' && n ? 'hot' : ''}"><div class="ic">${IC[k]}</div><b>${n}</b><span>${l}</span></div>`).join('');
     // precisam de você
     const waits = [];
     (lastState.sessions || []).forEach(s => {
@@ -200,7 +241,8 @@
       (s.agents || []).forEach(a => { if (a.state === 'approval') waits.push({who: a.name, what: 'em ' + s.name, p: s.project}); });
     });
     $('#ggWait').innerHTML = waits.length ? waits.slice(0, 12).map(w => `<div class="g-row wait"><i></i><div><b>${esc(w.who)}</b><small>${esc(w.what)}</small></div><time></time></div>`).join('')
-      : '<div class="g-none">Ninguém esperando por você agora.</div>';
+      : '<div class="g-none">Tudo em dia — ninguém esperando por você.</div>';
+    $('#ggWaitN').textContent = waits.length || '';
   }
   setInterval(refresh, 4000);
   addEventListener('resize', () => G.open && refresh());
@@ -216,10 +258,10 @@
       (d.events || []).filter(e => e.kind !== 'edge').forEach(e => feed.unshift(e));
       feed.splice(40);
       $('#ggFeed').innerHTML = feed.length ? feed.map(e => `<div class="g-row ${FEEDK[e.kind] || ''}"><i></i><div><b>${esc(e.who === '__main__' ? 'líder' : e.who)}</b><small>${esc(e.what)}${e.where ? ' · ' + esc(e.where) : ''}</small></div><time>${new Date(e.epoch * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</time></div>`).join('')
-        : '<div class="g-none">Aguardando movimento nas sessões…</div>';
+        : '<div class="g-none">Sem movimento nas sessões agora.</div>';
     });
     es.onerror = () => $('#ggPill').classList.add('off');
-    $('#ggFeed').innerHTML = '<div class="g-none">Aguardando movimento nas sessões…</div>';
+    $('#ggFeed').innerHTML = '<div class="g-none">Sem movimento nas sessões agora.</div>';
   }
   function stopFeed() { if (es) { es.close(); es = null; } }
 
@@ -270,6 +312,13 @@
     $('#ggLimit').value = G.daily_minutes;
     $('#ggLimitInfo').textContent = `Hoje: ${G.used_today || 0} min usados. Cerca de US$ 0,02 por minuto de conversa.`;
     $('#ggModeSel').value = G.mode;
+    $('#ggWake').checked = G.wake !== false;
+    hud.querySelectorAll('[data-n]').forEach(c => c.checked = (G.notify || {})[c.dataset.n] !== false);
+    $('#ggMacVoice').value = G.mac_voice || 'Luciana';
+    $('#ggSayTest').onclick = async () => { await api('/api/ganga', {mac_voice: $('#ggMacVoice').value}); api('/api/ganga/say', {text: 'Oi, João. A sessão do livro terminou.'}); };
+    $('#ggWakeInfo').textContent = !SR ? 'Este navegador não tem reconhecimento de fala — use o Chrome.' : wakeErr ? 'Sem permissão de microfone para ouvir a palavra. Libere no Chrome (ícone à esquerda do endereço).' : 'Só detecta a palavra — não gasta Gemini. Funciona no Chrome com o painel aberto (pode ficar em outra aba).';
+    $('#ggShortcut').value = `curl -s -X POST -H 'Content-Type: application/json' -d '{}' ${location.origin}/api/ganga/wake | grep -q '"seen": true' || open '${location.origin}/#ganga'`;
+    $('#ggCopy').onclick = () => { navigator.clipboard?.writeText($('#ggShortcut').value); $('#ggCopy').textContent = 'Copiado'; setTimeout(() => $('#ggCopy').textContent = 'Copiar', 1500); };
     try {
       const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
       $('#ggMicSel').innerHTML = '<option value="">Padrão do Mac</option>' + devs.filter(d => d.deviceId && d.deviceId !== 'default').map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === G.mic ? 'selected' : ''}>${esc(d.label || 'Microfone')}</option>`).join('');
@@ -302,10 +351,50 @@
     } catch { $('#ggMeter').parentElement.insertAdjacentHTML('afterend', '<small class="g-bad">Sem permissão de microfone. Libere no navegador.</small>'); }
   };
   $('#ggCfgOk').onclick = async () => {
-    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value}));
+    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
     await loadPrefs(); closeCfg();
   };
   async function loadPrefs() { try { Object.assign(G, await api('/api/ganga')); } catch {} paint(); }
+
+  // ---------- etapa 4: pedidos às sessões ----------
+  async function orderCard(o) {
+    const r = await api('/api/ganga/order', o).catch(() => ({error: 'rede'}));
+    if (r.error) { add('ga err', r.opcoes ? `Qual deles? ${r.opcoes.join(' · ')}` : `Não consegui preparar o pedido (${r.error}).`); return; }
+    const box = add('ga', '', `<div class="g-order"><small>Pedido para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
+      <p>${esc(r.text)}</p>${r.ok_no_chat ? '<em>Envio para fora, push, apagar ou pagar: a Sala ainda pede seu OK no chat.</em>' : ''}
+      <div class="row"><button class="g-b" data-x>Cancelar</button><button class="g-b p" data-ok>Confirmar envio</button></div></div>`);
+    box.classList.add('card');
+    box.querySelector('[data-x]').onclick = () => { box.querySelector('.row').innerHTML = '<span class="g-none">Cancelado.</span>'; };
+    box.querySelector('[data-ok]').onclick = async () => {
+      const c = await api('/api/ganga/order', {confirm: r.id}).catch(() => ({error: 'rede'}));
+      box.querySelector('.row').innerHTML = c.error ? `<span class="g-bad">${esc(c.error)}</span>`
+        : `<span class="g-ok">Na fila da Sala.</span>${c.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle *ganga no Centro de Treinamento.</span>'}`;
+      loadOrders();
+    };
+  }
+  const OST = {na_fila: ['wait', 'na fila'], entregue: ['busy', 'entregue'], respondido: ['done', 'respondido'], aguardando_ok: ['wait', 'esperando seu OK no chat'], erro: ['', 'erro'], cancelado: ['', 'cancelado']};
+  async function loadOrders() {
+    const r = await api('/api/ganga/orders').catch(() => null); if (!r) return;
+    $('#ggOrdersH').innerHTML = `Pedidos <span class="g-tag ${r.sala_ouvindo ? 'on' : ''}" title="sessão da Sala ouvindo a fila">${r.sala_ouvindo ? 'Sala ouvindo' : 'Sala não ouve'}</span>`;
+    $('#ggOrders').innerHTML = r.orders.length ? r.orders.slice(0, 6).map(o => { const [k, l] = OST[o.status] || ['', o.status];
+      return `<div class="g-row ${k}"><i></i><div><b>${esc(shortName(o.project))}</b><small>${esc(l)} · ${esc(o.text)}</small></div><time>${esc((o.confirmed || '').slice(11, 16))}</time></div>`; }).join('')
+      : '<div class="g-none">Nenhum pedido ainda.</div>';
+  }
+  setInterval(() => G.open && loadOrders(), 5000);
+
+  // ---------- etapa 5: Copiloto (avisos vêm do servidor, que fala com a voz do Mac) ----------
+  let noticeSeq = null;
+  setInterval(async () => {
+    if (!G.on) return;
+    const r = await api('/api/ganga/notices?since=' + (noticeSeq ?? 0)).catch(() => null); if (!r) return;
+    if (noticeSeq === null) { noticeSeq = r.last; return; }
+    for (const n of r.notices) {
+      noticeSeq = Math.max(noticeSeq, n.seq);
+      if (G.mode !== 'copiloto' && n.kind !== 'hourly') continue;
+      G.flash && G.flash();
+      if (G.open) { add('ga notice ' + n.kind, n.text); if (!G.live) speakFor(Math.min(9000, n.text.length * 60)); }
+    }
+  }, 3000);
 
   // ---------- voz em tempo real (Gemini Live) ----------
   const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=';
@@ -316,8 +405,11 @@
 
   $('#ggMic').onclick = () => G.live ? stopLive('você encerrou') : startLive();
 
-  async function startLive(reconnect = false) {
+  let firstText = null;
+  async function startLive(reconnect = false, first = null) {
     if (G.live && !reconnect) return;
+    if (!reconnect) firstText = first;
+    stopWake();
     setOrb('connect');
     const t = await api('/api/ganga/token', {}).catch(() => ({error: 'rede'}));
     if (t.error) {
@@ -393,9 +485,10 @@
   async function onServer(m) {
     if (m.setupComplete !== undefined) {
       if (!G.live) {
-        G.live = true; $('#ggMic').classList.add('live'); paint();
+        G.live = true; $('#ggMic').classList.add('live'); paint(); api('/api/ganga/live', {live: true}).catch(() => {});
         try { await startMic(); } catch { add('ga err', 'Não consegui ligar o microfone.'); stopLive(); return; }
-        if (!resumeHandle) wsSend({realtimeInput: {text: '(O João acabou de abrir a conversa por voz. Cumprimente em uma frase curta e pergunte como pode ajudar.)'}});
+        if (!resumeHandle) wsSend({realtimeInput: {text: firstText || '(O João acabou de abrir a conversa por voz. Cumprimente em uma frase curta e pergunte como pode ajudar.)'}});
+        if (firstText) add('me', firstText); firstText = null;
       }
       setOrb('listen'); lastAct = performance.now(); return;
     }
@@ -427,6 +520,16 @@
         else if (fc.name === 'pensar_com_claude') {
           const r = await api('/api/ganga/ask', {text: (fc.args || {}).pergunta || ''});
           result = r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error));
+        } else if (fc.name === 'pedir_a_sessao') {
+          const a = fc.args || {}, r = await api('/api/ganga/order', {project: a.projeto || '', text: a.pedido || ''});
+          result = JSON.stringify(r.error ? r : {id: r.id, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, ok_no_chat: r.ok_no_chat, sala_ouvindo: r.sala_ouvindo});
+        } else if (fc.name === 'confirmar_pedido') {
+          const r = await api('/api/ganga/order', {confirm: (fc.args || {}).id || ''});
+          result = JSON.stringify(r); loadOrders();
+          if (!r.error) add('ga', 'Pedido confirmado e na fila da Sala.');
+        } else if (fc.name === 'ver_pedidos') {
+          const r = await api('/api/ganga/orders');
+          result = JSON.stringify({sala_ouvindo: r.sala_ouvindo, pedidos: r.orders.slice(0, 6).map(o => ({projeto: o.project, pedido: o.text, status: o.status, resposta: o.note || ''}))});
         } else result = 'ferramenta desconhecida';
       } catch { result = 'falhou ao consultar a Sala'; }
       const resp = {result: String(result).slice(0, 12000)};
@@ -452,6 +555,52 @@
       if (why) add('ga', why === 'dormiu' ? 'Fiquei quieta um tempo e fechei a voz para não gastar. É só tocar no microfone.' : 'Fechei a voz. Até já, João.');
     }
     G.live = false; $('#ggMic').classList.remove('live'); setOrb('sleep'); paint();
+    api('/api/ganga/live', {live: false}).catch(() => {});
+    setTimeout(wakeSync, 800);
+  }
+
+  // ---------- etapa 3: palavra "Ganga" + atalho global ----------
+  // A escuta da palavra usa o reconhecimento de fala do Chrome (no próprio Mac quando ele oferece) — não abre o
+  // Gemini nem gasta minutos. Só a frase depois de "Ganga" vira a 1ª fala da conversa.
+  const WAKE_RE = /\b(ganga|ganja|gangá|gangue|granja|manga)\b[\s,.!?:-]*(.*)$/i;
+  function wakeWanted() { return !!SR && G.on && G.wake !== false && !G.live && !wakeErr && !!G.ready; }
+  function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); }
+  function stopWake() { if (!rec) return; const r = rec; rec = null; r.onend = null; try { r.abort(); } catch {} setStatus(); }
+  function startWake() {
+    if (rec) return;
+    try { rec = new SR(); } catch { rec = null; return; }
+    rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+    try { if ('processLocally' in rec) rec.processLocally = true; } catch {}
+    rec.onresult = e => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const txt = e.results[i][0].transcript.trim(), m = txt.match(WAKE_RE);
+        if (!m || (m[1].toLowerCase() === 'manga' && !/^manga\b/i.test(txt))) continue;
+        if (!e.results[i].isFinal) { if (performance.now() > wakeArmed) { wakeArmed = performance.now() + 4000; G.flash && G.flash(); } continue; }
+        const rest = m[2].trim();
+        stopWake();
+        if (!G.open) open();
+        G.flash && G.flash();
+        startLive(false, rest.length > 2 ? rest : null);
+        return;
+      }
+    };
+    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { wakeErr = true; stopWake(); } };
+    rec.onend = () => { rec = null; setTimeout(wakeSync, 300); };
+    try { rec.start(); } catch { rec = null; }
+    setStatus();
+  }
+  // atalho global: o app Atalhos chama /api/ganga/wake; o painel confere a cada 1,5 s
+  let wakeT = null;
+  setInterval(async () => {
+    try {
+      const r = await api('/api/ganga/wake');
+      if (wakeT === null) { wakeT = r.t; return; }
+      if (r.t > wakeT) { wakeT = r.t; await loadPrefs(); if (!G.open) open(); G.flash && G.flash(); if (!G.live) startLive(); }
+    } catch {}
+  }, 1500);
+  if (location.hash === '#ganga') {
+    history.replaceState(null, '', location.pathname);
+    setTimeout(async () => { await loadPrefs(); if (!G.on) Object.assign(G, await api('/api/ganga', {on: true})); open(); startLive(); }, 600);
   }
 
   // nível de áudio para a orb + dormir sozinha no silêncio
@@ -468,49 +617,109 @@
   }, 200);
 
   // ---------- a orb ----------
+  // núcleo de vidro escuro com o raio do João no centro; anel de espectro reage à voz;
+  // dois arcos de luz giram em velocidades diferentes; ondas saem quando ela fala.
   const cv = $('#ggCanvas'), cx2 = cv.getContext('2d');
-  let amp = 0, rot = 0, last = performance.now();
+  const BOLT_PTS = [[69.84, 0], [0, 78.66], [36.76, 79.39], [11.76, 135.26], [83.81, 60.28], [43.37, 58.81]];
+  const NB = 96, bars = new Float32Array(NB), fbuf = new Uint8Array(256);
+  let amp = 0, rot = 0, last = performance.now(), ripples = [], nextRip = 0, flash = 0;
+  function spectrum(an, t) {
+    if (an) { an.getByteFrequencyData(fbuf); }
+    for (let i = 0; i < NB; i++) {
+      const k = i < NB / 2 ? i : NB - 1 - i;           // espelhado: simétrico
+      let v = an ? fbuf[2 + Math.floor(k * 1.6)] / 255 : 0;
+      v = Math.max(v, 0.08 + 0.06 * Math.sin(t * 1.7 + i * 0.35) * Math.sin(t * 0.9 + i * 0.11));
+      bars[i] += (v - bars[i]) * 0.25;
+    }
+  }
   function frame(now) {
     requestAnimationFrame(frame);
     if (!G.open) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!G.live && G.orb === 'speak' && now > G.speakUntil) setOrb('sleep');
     const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
-    if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const c = cx2; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-    const cx = W / 2 + (W > 1180 ? 150 : 0), cy = H * 0.4, R = Math.min(W - (W > 1180 ? 300 : 0), H) * 0.11;
+    const side = sideW(), cx = side + (W - side) / 2, cy = H * 0.42, R = Math.min(W - side, H) * 0.13;
     const t = now / 1000;
+    const thinking = G.orb === 'think' || G.orb === 'connect';
     let target;
-    if (G.live && G.orb === 'speak') target = 0.2 + Math.min(0.6, lvl(outAn) * 1.4);
-    else if (G.live && G.orb === 'listen') target = 0.06 + Math.min(0.5, lvl(inAn) * 1.2);
-    else target = G.orb === 'speak' ? 0.35 + 0.25 * Math.abs(Math.sin(t * 9) * Math.sin(t * 3.7)) : (G.orb === 'think' || G.orb === 'connect') ? 0.18 : 0.05 + 0.03 * Math.sin(t * 1.3);
-    amp += (target - amp) * Math.min(1, dt * 12);
-    const speed = reduce ? 0.1 : (G.orb === 'think' || G.orb === 'connect') ? 1.6 : G.orb === 'speak' ? 0.7 : G.orb === 'listen' ? 0.45 : 0.25;
-    rot += dt * speed;
-    const col = G.alert === 'wait' && G.orb === 'sleep' ? [240, 163, 94] : G.orb === 'listen' ? [80, 200, 255] : [61, 143, 255];
+    if (G.live && G.orb === 'speak') target = 0.25 + Math.min(0.6, lvl(outAn) * 1.4);
+    else if (G.live && G.orb === 'listen') target = 0.08 + Math.min(0.5, lvl(inAn) * 1.2);
+    else target = G.orb === 'speak' ? 0.35 + 0.2 * Math.abs(Math.sin(t * 7) * Math.sin(t * 2.9)) : thinking ? 0.2 : 0.06 + 0.03 * Math.sin(t * 1.2);
+    amp += (target - amp) * Math.min(1, dt * 10);
+    rot += dt * (reduce ? 0.1 : thinking ? 2.2 : G.orb === 'speak' ? 0.8 : 0.35);
+    const col = G.alert === 'wait' && G.orb === 'sleep' ? [110, 190, 255] : G.orb === 'listen' ? [90, 200, 255] : [61, 143, 255];
     const rgba = a => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-    const g = c.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 3.4);
-    g.addColorStop(0, rgba(0.16 + amp * 0.4)); g.addColorStop(0.35, rgba(0.04 + amp * 0.1)); g.addColorStop(1, rgba(0));
-    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, R * 3.4, 0, 6.283); c.fill();
-    c.lineWidth = 1; c.strokeStyle = rgba(0.18 + amp * 0.3);
-    c.beginPath(); c.arc(cx, cy, R * (1.5 + amp * 0.25), 0, 6.283); c.stroke();
-    if (G.orb === 'think' || G.orb === 'connect') {
-      c.strokeStyle = rgba(0.7); c.lineWidth = 1.5;
-      c.beginPath(); c.arc(cx, cy, R * 1.5, rot * 2, rot * 2 + 1.2); c.stroke();
+
+    // halo
+    const g = c.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 4);
+    g.addColorStop(0, rgba(0.14 + amp * 0.25)); g.addColorStop(0.4, rgba(0.03 + amp * 0.05)); g.addColorStop(1, rgba(0));
+    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, R * 4, 0, 6.283); c.fill();
+
+    // ondas quando fala
+    if (G.orb === 'speak' && now > nextRip && !reduce) { ripples.push({r: R * 1.05, a: 0.35 + amp * 0.3}); nextRip = now + 700 - amp * 300; }
+    ripples = ripples.filter(rp => (rp.r += dt * R * 0.9, rp.a -= dt * 0.28) > 0);
+    c.lineWidth = 1;
+    for (const rp of ripples) { c.strokeStyle = rgba(rp.a); c.beginPath(); c.arc(cx, cy, rp.r, 0, 6.283); c.stroke(); }
+
+    // anel de espectro
+    spectrum(G.live ? (G.orb === 'listen' ? inAn : outAn) : null, t);
+    const r0 = R * 1.42; c.lineCap = 'round';
+    for (let i = 0; i < NB; i++) {
+      const a = -Math.PI / 2 + i / NB * 6.283 + (reduce ? 0 : rot * 0.05);
+      const len = R * (0.04 + bars[i] * (0.18 + amp * 0.55));
+      c.strokeStyle = rgba(0.22 + bars[i] * 0.7); c.lineWidth = Math.max(1.2, R * 0.018);
+      c.beginPath(); c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      c.lineTo(cx + Math.cos(a) * (r0 + len), cy + Math.sin(a) * (r0 + len)); c.stroke();
     }
-    if (G.live) {
-      c.strokeStyle = rgba(0.85); c.lineWidth = 2.5;
-      c.beginPath(); c.arc(cx, cy, R * 1.25, -Math.PI / 2, -Math.PI / 2 + Math.min(1, amp * 1.4) * 6.283); c.stroke();
+
+    // arcos de luz (cometas)
+    const comet = (rr, a0, span, w, alpha) => {
+      const steps = 24;
+      for (let k = 0; k < steps; k++) {
+        const f = k / steps; c.strokeStyle = rgba(alpha * f * f); c.lineWidth = w * (0.4 + f * 0.6);
+        c.beginPath(); c.arc(cx, cy, rr, a0 + span * f, a0 + span * (f + 1 / steps)); c.stroke();
+      }
+    };
+    comet(R * 1.22, rot, thinking ? 2.4 : 1.6, 2, 0.9);
+    comet(R * 1.22, rot + Math.PI, thinking ? 2.4 : 1.6, 2, 0.5);
+    c.strokeStyle = rgba(0.12); c.lineWidth = 1; c.beginPath(); c.arc(cx, cy, R * 1.22, 0, 6.283); c.stroke();
+    if (G.live) {   // tempo de conversa
+      c.strokeStyle = rgba(0.18); c.beginPath(); c.arc(cx, cy, R * 1.32, 0, 6.283); c.stroke();
     }
-    const rCore = R * (0.82 + amp * 0.45);
-    const core = c.createRadialGradient(cx - rCore * 0.3, cy - rCore * 0.35, rCore * 0.1, cx, cy, rCore);
-    core.addColorStop(0, 'rgba(225,238,255,0.95)'); core.addColorStop(0.45, rgba(0.9)); core.addColorStop(1, 'rgba(10,10,51,0.9)');
-    c.fillStyle = core; c.beginPath(); c.arc(cx, cy, rCore, 0, 6.283); c.fill();
-    const st = $('#ggState'); const top = (cy + R * 1.9 + 22) + 'px'; if (st.style.top !== top) st.style.top = top;
+
+    // núcleo de vidro
+    const rc = R * (1 + amp * 0.06);
+    const body = c.createRadialGradient(cx, cy - rc * 0.4, rc * 0.1, cx, cy, rc);
+    body.addColorStop(0, '#13203f'); body.addColorStop(0.7, '#0a1022'); body.addColorStop(1, '#060a16');
+    c.fillStyle = body; c.beginPath(); c.arc(cx, cy, rc, 0, 6.283); c.fill();
+    const inner = c.createRadialGradient(cx, cy, 0, cx, cy, rc);
+    inner.addColorStop(0, rgba(0.28 + amp * 0.5)); inner.addColorStop(0.6, rgba(0.05 + amp * 0.1)); inner.addColorStop(1, rgba(0));
+    c.fillStyle = inner; c.beginPath(); c.arc(cx, cy, rc, 0, 6.283); c.fill();
+    c.strokeStyle = rgba(0.55); c.lineWidth = 1.2; c.beginPath(); c.arc(cx, cy, rc, 0, 6.283); c.stroke();
+    const spec = c.createLinearGradient(cx, cy - rc, cx, cy);    // reflexo
+    spec.addColorStop(0, 'rgba(255,255,255,0.10)'); spec.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = spec; c.beginPath(); c.ellipse(cx, cy - rc * 0.45, rc * 0.7, rc * 0.42, 0, 0, 6.283); c.fill();
+
+    // o raio
+    flash = Math.max(0, flash - dt * 2);
+    const bh = rc * 0.98, sc = bh / 136, bx = cx - 84.54 * sc / 2, by = cy - bh / 2;
+    c.save(); c.shadowColor = rgba(0.9); c.shadowBlur = R * (0.25 + amp * 0.6 + flash * 0.6);
+    const bg = c.createLinearGradient(cx, by, cx, by + bh);
+    bg.addColorStop(0, '#d6e6ff'); bg.addColorStop(0.5, `rgb(${col[0] + 40},${col[1] + 40},255)`); bg.addColorStop(1, rgba(1));
+    c.fillStyle = bg; c.globalAlpha = 0.85 + Math.min(0.15, amp * 0.4 + flash);
+    c.beginPath(); BOLT_PTS.forEach(([x, y], i) => i ? c.lineTo(bx + x * sc, by + y * sc) : c.moveTo(bx + x * sc, by + y * sc)); c.closePath(); c.fill();
+    c.restore();
+
+    const st = $('#ggState'); const top = (cy + R * 2.05 + 18) + 'px'; if (st.style.top !== top) st.style.top = top;
+    const left = cx + 'px'; if (st.style.left !== left) st.style.left = left;
   }
+  G.flash = () => { flash = 1; };
   requestAnimationFrame(frame);
 
   // ---------- estado inicial ----------
+  G.ready = true;
   loadPrefs();
   setInterval(() => api('/api/ganga').then(p => { const was = G.on; Object.assign(G, p); paint(); if (!G.on && was) { stopLive(); minimize(); } }).catch(() => {}), 5000);
   addEventListener('beforeunload', () => stopLive());
