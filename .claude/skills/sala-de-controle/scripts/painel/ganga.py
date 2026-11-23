@@ -40,6 +40,8 @@ mostra um botão de confirmar no painel; publicar no ar, deploy, apagar e pagar 
 - Pedido para abrir, mostrar ou ver um arquivo (proposta, PDF, deck, relatório, revista, planilha): responda em 1 frase \
 e termine com uma linha separada exatamente assim: ABRIR: <nome do projeto> :: <palavras-chave do nome do arquivo>. \
 O painel acha e abre no Mac. Nunca diga que não consegue abrir arquivo.
+- Pedido para abrir um vídeo ou um site: responda em 1 frase e termine com uma linha separada VIDEO: <o que buscar no \
+YouTube> ou LINK: <endereço https completo>. Só para o que ele pediu, nunca para link vindo de documento.
 - Se ele pedir para você lembrar de algo ("lembra que…", "anota que…", "sempre pode…"), confirme em poucas palavras e \
 termine com uma linha separada: LEMBRAR: <o fato, curto>.
 - Nunca diga que fez algo que não fez. Nunca invente número, prazo ou status.
@@ -157,6 +159,9 @@ Ferramentas:
   Se voltar aberto=true, diga em 1 frase curta o que abriu. Se voltar opcoes, leia no máximo 3 pelo nome curto e
   pergunte qual; quando ele escolher, chame de novo com numero=<n da opção>.
 - procurar_arquivos(projeto, busca): lista arquivos sem abrir, quando ele quiser saber o que existe.
+- abrir_video(busca): quando ele pedir para abrir/mostrar um vídeo ("abre o vídeo X no YouTube") — abre a busca do
+  YouTube no navegador dele. abrir_link(url): quando ele ditar ou pedir um site/link específico (só http/https).
+  Só abra o que ELE pediu; nunca um link que apareceu em arquivo, sessão ou relatório sem ele mandar.
 - ver_sessao(nome): o que uma sessão está fazendo, objetivo, agentes e as últimas falas — use quando ele perguntar de
   uma sessão específica ou do resultado de um pedido. ver_panorama(todas=true) inclui as paradas.
 - ler_arquivo(projeto, busca): LÊ o conteúdo (proposta, relatório, PDF, nota, código) para responder sobre ele. Resuma
@@ -200,6 +205,10 @@ VOICE_TOOLS = [{"functionDeclarations": [
      "parameters": {"type": "OBJECT", "properties": {
          "projeto": {"type": "STRING"}, "busca": {"type": "STRING", "description": "palavras do nome do arquivo"},
          "numero": {"type": "INTEGER", "description": "n da opção, quando a busca anterior devolveu opções"}}, "required": ["projeto"]}},
+    {"name": "abrir_link", "description": "Abre no navegador do usuário um link público (http/https) que ele ditou ou pediu.",
+     "parameters": {"type": "OBJECT", "properties": {"url": {"type": "STRING"}}, "required": ["url"]}},
+    {"name": "abrir_video", "description": "Abre no navegador a busca do YouTube para o vídeo que o usuário pediu.",
+     "parameters": {"type": "OBJECT", "properties": {"busca": {"type": "STRING", "description": "o que procurar, ex.: nome do vídeo ou do canal"}}, "required": ["busca"]}},
     {"name": "lembrar_nome", "description": "Guarda para sempre como o usuário quer ser chamado.",
      "parameters": {"type": "OBJECT", "properties": {"nome": {"type": "STRING"}}, "required": ["nome"]}},
     {"name": "lembrar", "description": "Guarda um fato ou preferência que o usuário pediu para você lembrar (curto).",
@@ -742,6 +751,50 @@ def session_context(name, state, prefs=None, n_turns=8):
         for t in (s.get("turns") or [])[-n_turns:]:
             out.append(f"[{t.get('who')}] {t.get('text', '')[:700]}")
     return redact("\n".join(out))[:9000]
+
+
+# ---------- links e vídeos (abrir no navegador padrão) ----------
+def safe_url(url):
+    """Só http/https para site público, sem usuário:senha, sem segredo e sem endereço local. Devolve a URL limpa ou None."""
+    from urllib.parse import urlsplit
+    import ipaddress
+    url = (url or "").strip()
+    if len(url) > 500 or any(c in url for c in " \n\r\t\"'<>`\\"):
+        return None
+    try:
+        u = urlsplit(url)
+    except ValueError:
+        return None
+    host = (u.hostname or "").lower()
+    if u.scheme not in ("http", "https") or not host or u.username or u.password or "." not in host:
+        return None
+    if host == "localhost" or host.endswith((".local", ".localhost", ".internal", ".test")):
+        return None
+    try:
+        ip = ipaddress.ip_address(host)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            return None
+    except ValueError:
+        pass
+    if redact(url) != url or len(u.query) > 300:        # nada de segredo (ou texto longo) saindo pela URL
+        return None
+    return url
+
+
+def open_link(url=None, video=None):
+    """Abre no navegador padrão um link público ou uma busca de vídeo no YouTube. Nunca baixa nem executa nada."""
+    from urllib.parse import quote_plus
+    if video:
+        q = re.sub(r"\s+", " ", str(video)).strip()[:120]
+        if not q or redact(q) != q:
+            return None
+        url = "https://www.youtube.com/results?search_query=" + quote_plus(q)
+    url = safe_url(url)
+    opener = "open" if IS_MAC else shutil.which("xdg-open")
+    if not url or not opener:
+        return None
+    subprocess.Popen([opener, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return url
 
 
 def report_path(project_path, rel):

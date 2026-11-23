@@ -220,6 +220,8 @@
     G.busy = false; $('#ggSend').disabled = false;
     if (r.error) { add('ga err', ERR[r.error] || ERR.falhou); setOrb('sleep'); return; }
     let text = r.text.replace(/^\s*ABRIR:.*$/m, m => (r.abrir = m, '')).trim(), order = null;
+    text = text.replace(/^\s*(VIDEO|LINK):\s*(.+?)\s*$/m, (m, k, v) => { if (/abr|mostr|v[ií]deo|youtube|link|site|toca|assist/i.test(q))
+      api('/api/ganga/link', k === 'VIDEO' ? {video: v} : {url: v}).then(r => add(r.aberto ? 'ga' : 'ga err', r.aberto ? (k === 'VIDEO' ? `Abri a busca do YouTube: ${v}` : `Abri ${r.url}`) : 'Não abri: ' + r.error)); return ''; }).trim();
     text = text.replace(/^\s*LEMBRAR:\s*(.+?)\s*$/m, (m, f) => { if (/lembr|anot|guard|sempre|nunca/i.test(q)) api('/api/ganga/memory', {fact: f}); return ''; }).trim();
     text = text.replace(/^\s*NOME:\s*(.+?)\s*$/m, (m, n) => { api('/api/ganga/memory', {name: n}).then(x => { if (x.ok) G.user_name = x.name; }); return ''; }).trim();
     const om = text.match(/^\s*PEDIDO:\s*(.+?)\s*::\s*([\s\S]+?)\s*$/m);
@@ -701,7 +703,7 @@
         else if (n === 'ver_projeto') { result = (await api('/api/ganga/context?q=' + encodeURIComponent(a.nome || ''))).text; untrustedAt = performance.now(); }
         else if (n === 'pensar_com_claude') {
           const r = await api('/api/ganga/ask', {text: a.pergunta || ''});
-          result = (r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error))).replace(/^\s*(PEDIDO|ABRIR|NOME):.*$/gm, '').trim();
+          result = (r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error))).replace(/^\s*(PEDIDO|ABRIR|NOME|LEMBRAR|VIDEO|LINK):.*$/gm, '').trim();
           untrustedAt = performance.now();
         } else if (n === 'mandar_para_sessao' || n === 'pedir_a_sessao') {
           // pedido comum sai direto — a não ser que tenha entrado conteúdo de fora depois da última fala do usuário
@@ -723,6 +725,10 @@
           const r = await api(n === 'abrir_arquivo' ? '/api/ganga/open' : '/api/ganga/files', {project: a.projeto || '', q: a.busca || '', numero: a.numero || 0});
           result = JSON.stringify(r);
           if (r.aberto) add('ga', `Abri ${r.nome}.`);
+        } else if (n === 'abrir_link' || n === 'abrir_video') {
+          if (!fresh()) result = JSON.stringify({error: 'só abro link que o próprio usuário pediu — pergunte a ele se quer abrir'});
+          else { const r = await api('/api/ganga/link', n === 'abrir_link' ? {url: a.url || ''} : {video: a.busca || ''});
+            result = JSON.stringify(r); if (r.aberto) add('ga', n === 'abrir_video' ? `Abri a busca do YouTube: ${a.busca}` : `Abri ${r.url}`); }
         } else if (n === 'lembrar_nome' || n === 'lembrar' || n === 'esquecer') {
           if (!fresh() || performance.now() - userSaidAt > 30000) result = JSON.stringify({error: 'só guardo ou apago memória quando o próprio usuário pede, falando — pergunte a ele'});
           else {

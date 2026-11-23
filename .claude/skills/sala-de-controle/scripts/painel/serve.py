@@ -613,6 +613,16 @@ def do_POST(self):
         txt = str((body or {}).get("text", ""))[:300] or ("Oi, " + ganga.user_name() + ". Eu sou a Ganga.").replace("Oi, . ", "Oi! ")
         COP.say(txt, ganga.load_prefs().get("mac_voice") or "Ganga")
         return self._send(200, {"ok": True})
+    if u.path == "/api/ganga/link":
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        if not ganga.load_prefs()["on"]:
+            return self._send(409, {"error": "desligada"})
+        url = ganga.open_link(url=body.get("url") if isinstance(body.get("url"), str) else None,
+                              video=body.get("video") if isinstance(body.get("video"), str) else None)
+        if not url:
+            return self._send(200, {"error": "não abro esse endereço — só link público http/https, sem dados sensíveis"})
+        return self._send(200, {"aberto": True, "url": url})
     if u.path == "/api/ganga/read":
         if not isinstance(body, dict):
             return self._send(400, {"error": "json inválido"})

@@ -176,6 +176,17 @@ c9 = cop(lambda s, g, t: {"tipo": "continuar", "resposta": "Siga.", "pergunta": 
 c9.feed(sess("busy", "x", "s9")); c9.feed(sess("idle", "Sigo com a página 2?", "s9")); settle(c9)
 check("com 'age sozinha' desligado, pergunta ao usuário", len(c9.said) == 1 and not c9.autos)
 
+# ---- links e vídeos ----
+for u, ok in [("https://www.youtube.com/watch?v=abc123", 1), ("http://example.com/pagina", 1), ("file:///etc/passwd", 0),
+              ("javascript:alert(1)", 0), ("https://localhost:8787/api", 0), ("http://127.0.0.1:8787/", 0), ("http://192.168.0.1/", 0),
+              ("https://user:senha@site.com/", 0), ("https://evil.com/?k=sk-ant-abcdefghijklmnopqrstuv", 0), ("https://site.com/a b", 0),
+              ("ftp://site.com/x", 0), ("https://intranet/", 0), ("https://evil.com/?" + "a" * 400, 0)]:
+    check(f"link {'aceito' if ok else 'recusado'}: {u[:40]}", (ganga.safe_url(u) is not None) == bool(ok))
+_popen, ganga.subprocess.Popen = ganga.subprocess.Popen, lambda *a, **k: None
+check("vídeo vira busca do YouTube", (ganga.open_link(video="aula de piano 1") or "").startswith("https://www.youtube.com/results?search_query=aula+de+piano+1"))
+check("vídeo com segredo é recusado", ganga.open_link(video="token=abc12345xyz") is None)
+ganga.subprocess.Popen = _popen
+
 # ---- memória ----
 ganga.save_memory({"name": "Ana"})
 ganga.save_memory({"fact": "prefere resumo curto"})
