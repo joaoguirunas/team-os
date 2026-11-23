@@ -39,7 +39,7 @@
       <button class="g-ico" id="ggFull" title="Tela cheia (F)">⛶</button>
       <button class="g-ico" id="ggCfg" title="Configurar">⚙</button>
       <button class="g-ico" id="ggMin" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
-      <button class="g-ico pw" id="ggOff" title="Desligar a Ganga">⏻</button>
+      <button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
     </div>
     <div class="g-panel l" id="ggPanel">
       <div class="g-brand"><div class="g-mark">${BOLT}</div>
@@ -87,7 +87,7 @@
         <div class="row" style="margin-top:8px"><select id="ggMacVoice"><option>Luciana</option><option>Flo (Português (Brasil))</option><option>Shelley (Português (Brasil))</option><option>Sandy (Português (Brasil))</option></select><button class="g-b" id="ggSayTest">Ouvir</button></div>
         <small>Os avisos usam a voz do Mac — não gastam Gemini. Só no modo Copiloto e fora de uma conversa por voz.</small></div>
       <div class="g-f"><label>Modo ao ligar</label><div class="row"><select id="ggModeSel"><option value="silencioso">Silencioso — só fala quando chamada</option><option value="copiloto">Copiloto — também avisa sozinha</option></select></div></div>
-      <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="g-b" id="ggCfgX">Fechar</button><button class="g-b p" id="ggCfgOk">Salvar</button></div>
+      <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="g-b" id="ggPowerOff" style="margin-right:auto" title="Para de ouvir a palavra e desliga tudo">Desligar a Ganga</button><button class="g-b" id="ggCfgX">Fechar</button><button class="g-b p" id="ggCfgOk">Salvar</button></div>
     </div></div>`;
   document.body.appendChild(hud);
 
@@ -116,7 +116,8 @@
     open();
   };
   $('#ggMin').onclick = minimize;
-  $('#ggOff').onclick = async () => { stopLive(); Object.assign(G, await api('/api/ganga', {on: false})); paint(); minimize(); };
+  $('#ggOff').onclick = () => { stopLive(); minimize(); wakeSync(); };   // fecha, mas segue ouvindo "Ganga"
+  $('#ggPowerOff').onclick = async () => { stopLive(); Object.assign(G, await api('/api/ganga', {on: false})); closeCfg(); paint(); minimize(); };
   $('#ggMode').onclick = async e => {
     const m = e.target.dataset.m; if (!m) return;
     Object.assign(G, await api('/api/ganga', {mode: m})); paint();
@@ -318,7 +319,7 @@
     hud.querySelectorAll('[data-n]').forEach(c => c.checked = (G.notify || {})[c.dataset.n] !== false);
     $('#ggMacVoice').value = G.mac_voice || 'Luciana';
     $('#ggSayTest').onclick = async () => { await api('/api/ganga', {mac_voice: $('#ggMacVoice').value}); api('/api/ganga/say', {text: 'Oi, João. A sessão do livro terminou.'}); };
-    $('#ggWakeInfo').textContent = !SR ? 'Este navegador não tem reconhecimento de fala — use o Chrome.' : wakeErr ? 'Sem permissão de microfone para ouvir a palavra. Libere no Chrome (ícone à esquerda do endereço).' : 'Só detecta a palavra — não gasta Gemini. Funciona no Chrome com o painel aberto (pode ficar em outra aba).';
+    paintWake();
     $('#ggShortcut').value = `curl -s -X POST -H 'Content-Type: application/json' -d '{}' ${location.origin}/api/ganga/wake | grep -q '"seen": true' || open '${location.origin}/#ganga'`;
     $('#ggCopy').onclick = () => { navigator.clipboard?.writeText($('#ggShortcut').value); $('#ggCopy').textContent = 'Copiado'; setTimeout(() => $('#ggCopy').textContent = 'Copiar', 1500); };
     try {
@@ -583,20 +584,41 @@
   // ---------- etapa 3: palavra "Ganga" + atalho global ----------
   // A escuta da palavra usa o reconhecimento de fala do Chrome (no próprio Mac quando ele oferece) — não abre o
   // Gemini nem gasta minutos. Só a frase depois de "Ganga" vira a 1ª fala da conversa.
-  const WAKE_RE = /\b(ganga|ganja|gangá|gangue|granja|manga)\b[\s,.!?:-]*(.*)$/i;
+  // "Ganga" em qualquer ponto da frase; variações que o reconhecedor costuma devolver só no começo da frase.
+  const WAKE_RE = /\b(ganga|gangá)\b[\s,.!?:-]*(.*)$/i;
+  const WAKE_START = /^\s*(ganja|gangue|granja|manga|canga|kanga|gang|gangar|vanga)\b[\s,.!?:-]*(.*)$/i;
+  const W = window.__gangaWake = {state: 'parada', erro: '', ouvido: '', local: true, falhas: 0};
   function wakeWanted() { return !!SR && G.on && G.wake !== false && !G.live && !wakeErr && !!G.ready; }
-  function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); }
-  function stopWake() { if (!rec) return; const r = rec; rec = null; r.onend = null; try { r.abort(); } catch {} setStatus(); }
+  function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); paintWake(); }
+  function stopWake() { if (!rec) return; const r = rec; rec = null; r.onend = null; try { r.abort(); } catch {} W.state = 'parada'; setStatus(); paintWake(); }
+  function paintWake() {
+    const b = document.getElementById('gangaBtn');
+    if (b) b.classList.toggle('hear', !!rec && W.state === 'ouvindo');
+    const i = $('#ggWakeInfo'); if (!i) return;
+    i.textContent = !SR ? 'Este navegador não tem reconhecimento de fala — use o Chrome.'
+      : wakeErr ? 'Sem permissão de microfone para ouvir a palavra. Libere no Chrome (ícone à esquerda do endereço) e recarregue.'
+      : `Agora: ${W.state}${W.erro ? ' · último erro: ' + W.erro : ''}${W.ouvido ? ' · ouvi: “' + W.ouvido.slice(-60) + '”' : ''}`;
+  }
   function startWake() {
     if (rec) return;
-    try { rec = new SR(); } catch { rec = null; return; }
-    rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
-    try { if ('processLocally' in rec) rec.processLocally = true; } catch {}
+    try { rec = new SR(); } catch { rec = null; W.erro = 'sem reconhecimento'; return; }
+    const me = rec, t0 = performance.now();
+    rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 3;
+    if (W.local) { try { if ('processLocally' in rec) rec.processLocally = true; } catch {} }
+    rec.onstart = () => { W.state = 'ouvindo'; paintWake(); };
     rec.onresult = e => {
+      W.falhas = 0;
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const txt = e.results[i][0].transcript.trim(), m = txt.match(WAKE_RE);
-        if (!m || (m[1].toLowerCase() === 'manga' && !/^manga\b/i.test(txt))) continue;
-        if (!e.results[i].isFinal) { if (performance.now() > wakeArmed) { wakeArmed = performance.now() + 4000; G.flash && G.flash(); } continue; }
+        const alts = [...e.results[i]].map(a => a.transcript.trim());
+        W.ouvido = alts[0]; paintWake();
+        let m = null;
+        for (const txt of alts) { m = txt.match(WAKE_RE) || txt.match(WAKE_START); if (m) break; }
+        if (!m) continue;
+        if (!e.results[i].isFinal) {
+          if (performance.now() > wakeArmed) { wakeArmed = performance.now() + 4000; G.flash && G.flash(); }
+          if (!m[2].trim()) continue;          // só "Ganga": espera o final para pegar o resto da frase
+          continue;
+        }
         const rest = m[2].trim();
         stopWake();
         if (!G.open) open();
@@ -605,11 +627,29 @@
         return;
       }
     };
-    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { wakeErr = true; stopWake(); } };
-    rec.onend = () => { rec = null; setTimeout(wakeSync, 300); };
-    try { rec.start(); } catch { rec = null; }
-    setStatus();
+    rec.onerror = e => {
+      W.erro = e.error; paintWake();
+      if ((e.error === 'language-not-supported' || e.error === 'service-not-allowed') && W.local) { W.local = false; stopWake(); setTimeout(wakeSync, 300); return; }  // sem pacote local: usa o do Chrome
+      if (e.error === 'not-allowed') { wakeErr = true; stopWake(); }
+    };
+    rec.onend = () => {
+      if (rec !== me) return;
+      rec = null; W.state = 'reiniciando';
+      W.falhas = performance.now() - t0 < 1500 ? W.falhas + 1 : 0;
+      setTimeout(wakeSync, Math.min(10000, 300 * 2 ** W.falhas));
+      paintWake();
+    };
+    try { rec.start(); } catch (err) { rec = null; W.erro = String(err.message || err).slice(0, 80); }
+    setStatus(); paintWake();
   }
+  // voltou para a aba ou ganhou foco: tenta de novo (o Chrome pode recusar o microfone com a aba escondida)
+  const retryWake = () => { if (wakeErr && document.visibilityState === 'visible') { wakeErr = false; W.erro = ''; } wakeSync(); };
+  document.addEventListener('visibilitychange', retryWake);
+  window.addEventListener('focus', retryWake);
+  setInterval(async () => {   // liga/desliga feito em outro lugar (outra aba, Sala, atalho) chega aqui
+    try { const p = await api('/api/ganga'); if (p.on !== G.on || p.wake !== G.wake) { Object.assign(G, p); paint(); } } catch {}
+    if (!rec && wakeWanted()) wakeSync();
+  }, 5000);
   // atalho global: o app Atalhos chama /api/ganga/wake; o painel confere a cada 1,5 s
   let wakeT = null;
   setInterval(async () => {
