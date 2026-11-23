@@ -84,7 +84,7 @@
         <label class="g-chk"><input type="checkbox" data-n="done"> uma sessão termina</label>
         <label class="g-chk"><input type="checkbox" data-n="error"> dá erro</label>
         <label class="g-chk"><input type="checkbox" data-n="hourly"> resumo a cada hora cheia</label>
-        <div class="row" style="margin-top:8px"><select id="ggMacVoice"><option>Luciana</option><option>Flo (Português (Brasil))</option><option>Shelley (Português (Brasil))</option><option>Sandy (Português (Brasil))</option></select><button class="g-b" id="ggSayTest">Ouvir</button></div>
+        <div class="row" style="margin-top:8px"><select id="ggMacVoice"><option value="Ganga">Voz da Ganga (a mesma da conversa)</option><option>Luciana</option><option>Flo (Português (Brasil))</option><option>Shelley (Português (Brasil))</option><option>Sandy (Português (Brasil))</option></select><button class="g-b" id="ggSayTest">Ouvir</button></div>
         <small>Os avisos usam a voz do Mac — não gastam Gemini. Só no modo Copiloto e fora de uma conversa por voz.</small></div>
       <div class="g-f"><label>Modo ao ligar</label><div class="row"><select id="ggModeSel"><option value="silencioso">Silencioso — só fala quando chamada</option><option value="copiloto">Copiloto — também avisa sozinha</option></select></div></div>
       <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="g-b" id="ggPowerOff" style="margin-right:auto" title="Para de ouvir a palavra e desliga tudo">Desligar a Ganga</button><button class="g-b" id="ggCfgX">Fechar</button><button class="g-b p" id="ggCfgOk">Salvar</button></div>
@@ -333,7 +333,7 @@
     $('#ggModeSel').value = G.mode;
     $('#ggWake').checked = G.wake !== false;
     hud.querySelectorAll('[data-n]').forEach(c => c.checked = (G.notify || {})[c.dataset.n] !== false);
-    $('#ggMacVoice').value = G.mac_voice || 'Luciana';
+    $('#ggMacVoice').value = G.mac_voice || 'Ganga';
     $('#ggSayTest').onclick = async () => { await api('/api/ganga', {mac_voice: $('#ggMacVoice').value}); api('/api/ganga/say', {text: 'Oi, João. A sessão do livro terminou.'}); };
     paintWake();
     $('#ggShortcut').value = `curl -s -X POST -H 'Content-Type: application/json' -d '{}' ${location.origin}/api/ganga/wake | grep -q '"seen": true' || open '${location.origin}/#ganga'`;
@@ -425,9 +425,19 @@
       noticeSeq = Math.max(noticeSeq, n.seq);
       if (G.mode !== 'copiloto' && n.kind !== 'hourly') continue;
       G.flash && G.flash();
-      if (G.open) { add('ga notice ' + n.kind, n.text); if (!G.live) speakFor(Math.min(9000, n.text.length * 60)); }
+      if (G.open) add('ga notice ' + n.kind, n.text);
+      if (n.spoken) talkWhen(n.seq);
     }
-  }, 3000);
+  }, 2000);
+  // a fala do aviso sai da Ganga: esfera e botão do raio animam enquanto o Mac toca a voz dela
+  async function talkWhen(seq, tries = 0) {
+    const r = await api('/api/ganga/notices?since=' + (seq - 1)).catch(() => null);
+    const n = r && r.notices.find(x => x.seq === seq);
+    if (!n || !n.speak_at) { if (tries < 20) setTimeout(() => talkWhen(seq, tries + 1), 500); return; }
+    const left = (n.speak_at + n.dur) * 1000 - Date.now(); if (left <= 0 || G.live) return;
+    speakFor(left);
+    const b = document.getElementById('gangaBtn'); b.classList.add('talk'); setTimeout(() => b.classList.remove('talk'), left);
+  }
 
   // ---------- voz em tempo real (Gemini Live) ----------
   const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=';

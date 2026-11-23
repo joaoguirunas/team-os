@@ -37,7 +37,7 @@ sys.path.insert(0, HERE)
 import collect  # noqa: E402
 import ganga  # noqa: E402
 import copilot  # noqa: E402
-COP = copilot.Copilot(ganga.load_prefs)
+COP = copilot.Copilot(ganga.load_prefs, ganga.tts_wav)
 
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-painel.pid")
@@ -569,7 +569,7 @@ def do_POST(self):
         return self._send(200, {"ok": True})
     if u.path == "/api/ganga/say":
         txt = str((body or {}).get("text", ""))[:300] or "Oi, João. Eu sou a Ganga."
-        COP.say(txt, ganga.load_prefs().get("mac_voice") or "Luciana")
+        COP.say(txt, ganga.load_prefs().get("mac_voice") or "Ganga")
         return self._send(200, {"ok": True})
     if u.path in ("/api/ganga/open", "/api/ganga/files"):
         if not isinstance(body, dict):

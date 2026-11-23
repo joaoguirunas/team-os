@@ -10,7 +10,7 @@ qualquer projeto e fora do git. Desligada por padrão.
 import html as htmlmod, json, os, re, time, unicodedata
 
 PREFS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-ganga.json")
-DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 60, "usage": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": True}, "mac_voice": "Luciana"}
+DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 60, "usage": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": True}, "mac_voice": "Ganga"}
 LIVE_MODEL = "gemini-3.8-live"
 FEMALE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Callirrhoe", "Autonoe", "Despina", "Erinome", "Laomedeia",
                  "Achernar", "Gacrux", "Pulcherrima", "Vindemiatrix", "Sulafat"]
@@ -179,6 +179,32 @@ def project_context(name, state, prefs=None):
 
 # ---------- chave do Gemini (Porta-chaves) ----------
 import subprocess  # noqa: E402
+
+
+TTS_MODEL = "gemini-3.8-flash-tts"
+
+
+def tts_wav(text, voice=None, timeout=25):
+    """Fala curta com a MESMA voz da Ganga (Gemini TTS). Devolve bytes WAV ou None (sem chave, rede, cota)."""
+    key = get_key()
+    if not key or not text:
+        return None
+    import base64, urllib.request
+    v = voice if voice in FEMALE_VOICES else (load_prefs().get("voice") if load_prefs().get("voice") in FEMALE_VOICES else "Kore")
+    body = {"contents": [{"parts": [{"text": text[:600]}]}],
+            "generationConfig": {"responseModalities": ["AUDIO"], "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": v}}}}}
+    try:
+        req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{TTS_MODEL}:generateContent",
+                                     data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": key})
+        d = json.load(urllib.request.urlopen(req, timeout=timeout))
+        part = d["candidates"][0]["content"]["parts"][0]["inlineData"]
+        raw = base64.b64decode(part["data"])
+    except Exception:
+        return None
+    if raw[:4] == b"RIFF":
+        return raw
+    import struct   # PCM 16-bit 24 kHz mono cru → WAV
+    return b"RIFF" + struct.pack("<I", 36 + len(raw)) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, 1, 1, 24000, 48000, 2, 16) + b"data" + struct.pack("<I", len(raw)) + raw
 
 
 def get_key():

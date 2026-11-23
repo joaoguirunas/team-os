@@ -45,8 +45,9 @@ def short(name):
 
 
 class Copilot:
-    def __init__(self, prefs_fn):
+    def __init__(self, prefs_fn, tts_fn=None):
         self.prefs_fn = prefs_fn
+        self.tts_fn = tts_fn      # texto → WAV com a voz da Ganga (ou None)
         self.prev = {}            # chave -> estado anterior
         self.notices = []         # [{seq, kind, text, epoch, spoken}]
         self.seq = 0
@@ -156,14 +157,38 @@ class Copilot:
             self.notices = self.notices[-60:]
         if speak:
             self.last_spoken = now
-            self.say(text, p.get("mac_voice") or "Luciana")
+            self.say(text, p.get("mac_voice") or "Ganga", seq=self.seq)
 
-    @staticmethod
-    def say(text, voice="Luciana"):
+    def say(self, text, voice="Ganga", seq=None):
+        """Fala o aviso. Padrão: a voz da própria Ganga (Gemini TTS) tocada no Mac; o painel anima a esfera junto.
+        Sem chave, sem rede ou com voz do Mac escolhida em ⚙ → `say` do macOS."""
+        threading.Thread(target=self._say, args=(text, voice, seq), daemon=True).start()
+
+    def _say(self, text, voice, seq):
+        dur, how = 0.0, "mac"
+        wav = self.tts_fn(text) if (voice == "Ganga" and self.tts_fn) else None
         try:
-            subprocess.Popen(["say", "-v", voice, "-r", "190", text], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if wav:
+                path = os.path.join(QDIR, ".aviso.wav")
+                os.makedirs(QDIR, exist_ok=True)
+                with open(path, "wb") as f:
+                    f.write(wav)
+                dur, how = max(0.5, (len(wav) - 44) / 48000), "ganga"
+                self._mark(seq, how, dur)
+                subprocess.run(["afplay", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+            else:
+                dur = max(1.5, len(text) / 14)
+                self._mark(seq, how, dur)
+                subprocess.run(["say", "-v", voice if voice != "Ganga" else "Luciana", "-r", "190", text],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
         except Exception:
             pass
+
+    def _mark(self, seq, how, dur):
+        with self.lock:
+            for n in self.notices:
+                if n["seq"] == seq:
+                    n.update(voz=how, speak_at=time.time(), dur=round(dur, 1))
 
     def since(self, seq):
         with self.lock:
