@@ -40,6 +40,7 @@ for t, exp in [("faz o deploy", "sensivel"), ("sobe para produção", "sensivel"
                ("manda o Comercial revisar a proposta", "normal"), ("continua o capítulo 4", "normal")]:
     check(f"regex {exp}: {t}", copilot.level(t, "Scalify | Comercial") == exp, copilot.level(t, "Scalify | Comercial"))
 # ---- classificador decide, piso não rebaixa ----
+check("voz sem limite diário por padrão", ganga.DEFAULT_PREFS["daily_minutes"] == 0)
 check("classificador decide", copilot.level("sobe o site", "", lambda t: "sensivel") == "sensivel")
 check("classificador libera falso positivo", copilot.level("revisa o token de design", "", lambda t: "normal") == "normal")
 check("piso vence o classificador", copilot.level("paga o boleto", "", lambda t: "normal") == "sensivel")

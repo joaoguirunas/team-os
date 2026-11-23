@@ -14,7 +14,7 @@
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; } };
   const sideW = () => innerWidth < 900 ? 0 : (G.collapsed || innerWidth < 1180 ? 68 : 300);
   const G = {on: false, mode: 'silencioso', open: false, orb: 'sleep', busy: false, speakUntil: 0, alert: null,
-    key_hint: '', voice: '', mic: '', daily_minutes: 60, used_today: 0, level: 0, live: false, collapsed: false};
+    key_hint: '', voice: '', mic: '', daily_minutes: 0, used_today: 0, level: 0, live: false, collapsed: false};
   const api = (p, body) => fetch(p, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)}).then(r => r.json());
 
   // ---------- botão flutuante ----------
@@ -79,7 +79,7 @@
       <div class="g-f"><label>Voz</label><div class="row"><select id="ggVoiceSel"></select></div><small>Você ouve a voz escolhida na próxima conversa.</small></div>
       <div class="g-f"><label>Microfone</label><div class="row"><select id="ggMicSel"><option value="">Padrão do Mac</option></select><button class="g-b" id="ggMicTest">Testar</button></div>
         <div class="g-meter"><i id="ggMeter"></i></div></div>
-      <div class="g-f"><label>Limite de conversa por dia</label><div class="row"><input id="ggLimit" type="number" min="5" max="600" step="5"><span style="color:#7d8aa6;font-size:13px">minutos</span></div><small id="ggLimitInfo"></small></div>
+      <div class="g-f"><label>Limite de conversa por dia (opcional)</label><div class="row"><input id="ggLimit" type="number" min="0" max="1440" step="5" placeholder="sem limite"><span style="color:#7d8aa6;font-size:13px">minutos</span></div><small id="ggLimitInfo"></small></div>
       <div class="g-f"><label>Como ela te chama</label><input id="ggName" maxlength="40" placeholder="seu nome (vazio = sem nome)"></div>
       <div class="g-f"><label>Palmas</label><label class="g-chk"><input type="checkbox" id="ggClap"> Abrir a Ganga com 2 palmas seguidas</label>
         <small id="ggClapInfo">Detecta 2 palmas curtas no microfone — não gasta Gemini, funciona com a Ganga fechada.</small></div>
@@ -383,8 +383,8 @@
     $('#ggVoiceSel').innerHTML = v.voices.map(n => `<option ${n === (G.voice || 'Kore') ? 'selected' : ''}>${esc(n)}</option>`).join('');
     $('#ggKeyInfo').innerHTML = G.key_hint ? `Chave salva no Porta-chaves: <b>${esc(G.key_hint)}</b> · <a href="#" id="ggKeyDel" style="color:#ff9f92">remover</a>` : 'Crie em aistudio.google.com → Get API key. Ela fica no Porta-chaves do Mac, nunca no navegador.';
     const del = $('#ggKeyDel'); if (del) del.onclick = async e => { e.preventDefault(); await api('/api/ganga/key', {delete: true}); await loadPrefs(); openCfg(); };
-    $('#ggLimit').value = G.daily_minutes;
-    $('#ggLimitInfo').textContent = `Hoje: ${G.used_today || 0} min usados. Cerca de US$ 0,02 por minuto de conversa.`;
+    $('#ggLimit').value = G.daily_minutes || '';
+    $('#ggLimitInfo').textContent = `Vazio ou 0 = sem limite. Hoje: ${G.used_today || 0} min usados. Cerca de US$ 0,02 por minuto de conversa.`;
     $('#ggModeSel').value = G.mode;
     $('#ggWake').checked = G.wake !== false;
     $('#ggClap').checked = G.clap !== false;
@@ -428,7 +428,7 @@
     } catch { $('#ggMeter').parentElement.insertAdjacentHTML('afterend', '<small class="g-bad">Sem permissão de microfone. Libere no navegador.</small>'); }
   };
   $('#ggCfgOk').onclick = async () => {
-    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, clap: $('#ggClap').checked, auto: $('#ggAuto').checked, auto_next: $('#ggAutoNext').checked, name: $('#ggName').value, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
+    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 0, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, clap: $('#ggClap').checked, auto: $('#ggAuto').checked, auto_next: $('#ggAutoNext').checked, name: $('#ggName').value, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
     await loadPrefs(); closeCfg();
   };
   async function loadPrefs() { try { Object.assign(G, await api('/api/ganga')); } catch {} paint(); }

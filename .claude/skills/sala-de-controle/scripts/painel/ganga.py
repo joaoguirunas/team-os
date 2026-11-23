@@ -12,7 +12,7 @@ Modelos trocáveis por variável de ambiente: GANGA_LIVE_MODEL, GANGA_TTS_MODEL,
 import html as htmlmod, json, os, re, shutil, sys, threading, time, unicodedata
 
 PREFS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-ganga.json")
-DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 60, "usage": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": False}, "mac_voice": "Ganga", "clap": True, "auto": True, "auto_next": False}
+DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 0, "usage": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": False}, "mac_voice": "Ganga", "clap": True, "auto": True, "auto_next": False}
 LIVE_MODEL = os.environ.get("GANGA_LIVE_MODEL") or "gemini-3.8-live"
 FEMALE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Callirrhoe", "Autonoe", "Despina", "Erinome", "Laomedeia",
                  "Achernar", "Gacrux", "Pulcherrima", "Vindemiatrix", "Sulafat"]
@@ -92,7 +92,7 @@ def _save_prefs(upd):
     if isinstance(upd.get("mic"), str):
         p["mic"] = upd["mic"][:200]
     if isinstance(upd.get("daily_minutes"), (int, float)):
-        p["daily_minutes"] = max(5, min(600, int(upd["daily_minutes"])))
+        p["daily_minutes"] = max(0, min(1440, int(upd["daily_minutes"])))   # 0 = sem limite
     if isinstance(upd.get("add_seconds"), (int, float)):
         day = time.strftime("%Y-%m-%d")
         p["usage"] = {day: round(p.get("usage", {}).get(day, 0) + max(0, min(7200, float(upd["add_seconds"]))), 1)}

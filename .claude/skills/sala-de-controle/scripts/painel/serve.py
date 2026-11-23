@@ -333,7 +333,7 @@ def gemini_token():
     p = ganga.load_prefs()
     if not p["on"]:
         return 409, {"error": "desligada"}
-    if ganga.used_minutes_today(p) >= p["daily_minutes"]:
+    if p["daily_minutes"] and ganga.used_minutes_today(p) >= p["daily_minutes"]:
         return 429, {"error": "limite", "used": ganga.used_minutes_today(p), "limit": p["daily_minutes"]}
     now = time.time()
     iso = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
