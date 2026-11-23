@@ -1,6 +1,6 @@
 /* Ganga — assistente da Sala de Controle.
    Etapa 1: HUD, orb, conversa digitada (Claude) e relatórios.  Etapa 3: palavra "Ganga" + atalho global.
-   Etapa 4: pedidos às sessões (prepara → usuário confirma → fila da Sala).  Etapa 5: Copiloto (avisos com a voz do Mac).
+   Etapa 4: pedidos às sessões (vai direto para a fila da Sala; só o perigoso pede confirmação).  Etapa 5: Copiloto (avisos com a voz do Mac).
    Etapa 2: tela Configurar (chave no Porta-chaves, voz, microfone, limite) e voz em tempo real
             pelo Gemini Live (token temporário; a chave nunca chega ao navegador), com o Claude como cérebro.
    Desligada por padrão. Nunca escreve em projeto; pedidos só vão para a fila da Sala depois do OK do João. */
@@ -358,8 +358,13 @@
 
   // ---------- etapa 4: pedidos às sessões ----------
   async function orderCard(o) {
-    const r = await api('/api/ganga/order', o).catch(() => ({error: 'rede'}));
-    if (r.error) { add('ga err', r.opcoes ? `Qual deles? ${r.opcoes.join(' · ')}` : `Não consegui preparar o pedido (${r.error}).`); return; }
+    const r = await api('/api/ganga/order', {...o, send: true}).catch(() => ({error: 'rede'}));
+    if (r.error) { add('ga err', r.opcoes ? `Qual deles? ${r.opcoes.join(' · ')}` : `Não consegui mandar o pedido (${r.error}).`); return; }
+    if (r.sent) {
+      const b = add('ga', '', `<div class="g-order"><small>Mandado para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
+        <p>${esc(r.text)}</p><div class="row"><span class="g-ok">Na fila da Sala.</span>${r.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle *ganga no Centro de Treinamento.</span>'}</div></div>`);
+      b.classList.add('card'); loadOrders(); return;
+    }
     const box = add('ga', '', `<div class="g-order"><small>Pedido para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
       <p>${esc(r.text)}</p>${r.ok_no_chat ? '<em>Envio para fora, push, apagar ou pagar: a Sala ainda pede seu OK no chat.</em>' : ''}
       <div class="row"><button class="g-b" data-x>Cancelar</button><button class="g-b p" data-ok>Confirmar envio</button></div></div>`);
@@ -520,9 +525,10 @@
         else if (fc.name === 'pensar_com_claude') {
           const r = await api('/api/ganga/ask', {text: (fc.args || {}).pergunta || ''});
           result = r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error));
-        } else if (fc.name === 'pedir_a_sessao') {
-          const a = fc.args || {}, r = await api('/api/ganga/order', {project: a.projeto || '', text: a.pedido || ''});
-          result = JSON.stringify(r.error ? r : {id: r.id, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, ok_no_chat: r.ok_no_chat, sala_ouvindo: r.sala_ouvindo});
+        } else if (fc.name === 'mandar_para_sessao' || fc.name === 'pedir_a_sessao') {
+          const a = fc.args || {}, r = await api('/api/ganga/order', {project: a.projeto || '', text: a.pedido || '', send: true});
+          result = JSON.stringify(r.error ? r : {id: r.id, enviado: !!r.sent, precisa_sim: !!r.precisa_sim, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, sala_ouvindo: r.sala_ouvindo});
+          if (r.sent) { add('ga', `Mandei para ${shortName(r.project)}: ${r.text}`); loadOrders(); }
         } else if (fc.name === 'confirmar_pedido') {
           const r = await api('/api/ganga/order', {confirm: (fc.args || {}).id || ''});
           result = JSON.stringify(r); loadOrders();
