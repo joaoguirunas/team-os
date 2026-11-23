@@ -46,11 +46,16 @@
         <div class="g-title"><b>Ganga</b><span><i class="g-dot" id="ggPill" title="conexão com a Sala"></i><span id="ggStatus">dormindo</span></span></div>
         <button class="g-ico g-fold" id="ggFold" title="Recolher painel ([)">‹</button></div>
       <div class="g-rail" id="ggRail"></div>
-      <section class="g-sec"><h4>Agora</h4><div class="g-kpis" id="ggKpis"></div></section>
+      <section class="g-sec"><div class="g-kpis g-kpis3" id="ggKpis"></div></section>
       <section class="g-sec"><h4>Precisam de você <span class="g-tag on" id="ggWaitN"></span></h4><div class="g-rows" id="ggWait"></div></section>
-      <section class="g-sec"><h4 id="ggOrdersH">Pedidos</h4><div class="g-rows" id="ggOrders"></div></section>
-      <section class="g-sec grow"><h4>Atividade</h4><div class="g-rows" id="ggFeed"></div></section>
+      <section class="g-sec grow g-orders"><h4 id="ggOrdersH">Pedidos</h4>
+        <div class="g-seg" id="ggOrdSeg"><button data-o="pend" class="on">Pendentes <em id="ggOrdP">0</em></button><button data-o="done">Concluídos <em id="ggOrdD">0</em></button></div>
+        <div class="g-rows" id="ggOrders"></div></section>
     </div>
+    <aside class="g-float" id="ggFloat">
+      <div class="g-fcard" id="ggWork"><h5><i class="g-live"></i>Trabalhando agora <em id="ggWorkN">0</em></h5><div id="ggWorkL"></div></div>
+      <div class="g-toasts" id="ggToasts"></div>
+    </aside>
     <div id="ggChips"></div>
     <div class="g-state" id="ggState"><b>Pronta</b><span>toque no microfone ou escreva</span></div>
     <div class="g-talk">
@@ -222,7 +227,7 @@
 
   // ---------- panorama, projetos em volta da orb ----------
   let lastState = null;
-  const shortName = n => n.includes('|') ? n.split('|').pop().trim() : n.replace(/\(casa da Sala\)/, '').replace(/^\d+\s*\|\s*/, '').trim();
+  const shortName = n => (n.includes('|') ? n.split('|').pop() : n).replace(/\(casa da Sala\)/, '').replace(/^\d+\s*\|\s*/, '').trim();
   async function refresh() {
     if (!G.open) return;
     try { lastState = await api('/api/state'); $('#ggPill').classList.remove('off'); } catch { $('#ggPill').classList.add('off'); return; }
@@ -251,15 +256,32 @@
     });
     G.alert = items.some(i => i.cls === 'wait') ? 'wait' : null;
     btn.classList.toggle('alert', G.on && !!G.alert);
-    // KPIs
-    const c = lastState.counts || {};
-    const kp = [[c.recent || 0, 'sessões ativas', 's'], [c.active || 0, 'agentes trabalhando', 'a'], [c.approval || 0, 'precisam de você', 'w'], [c.done || 0, 'concluídos', 'd']];
-    const IC = {"s": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8\"/></svg>", "a": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5\"/></svg>", "w": "<svg viewBox=\"0 0 24 24\"><path d=\"M12 3v3M12 18v3M4.6 6.6l2 2M17.4 15.4l2 2M3 12h3M18 12h3\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>", "d": "<svg viewBox=\"0 0 24 24\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>"};
+    renderLive(lastState);
+  }
+  // ---------- ao vivo: KPIs, "trabalhando agora" e precisam de você (a cada atualização do SSE, ~1 s) ----------
+  const ORD = {pend: 0, done: 0};
+  function renderLive(st) {
+    if (!st || !G.open) return;
+    const ss = (st.sessions || []).filter(s => s.recent && !s.stopped);
+    const work = [];
+    ss.forEach(s => {
+      const nm = shortName(s.name || '');
+      if (s.status === 'busy') work.push({who: nm, what: s.doing || 'trabalhando', lead: true});
+      (s.agents || []).forEach(a => { if (a.state === 'active') work.push({who: a.name, what: (a.doing || 'trabalhando') + ' · ' + nm}); });
+    });
+    const waitsN = ss.filter(s => s.state === 'approval').length + ss.reduce((n, s) => n + (s.agents || []).filter(a => a.state === 'approval').length, 0);
+    const kp = [[work.length, 'trabalhando agora', 'a'], [waitsN, 'precisam de você', 'w'], [ORD.pend, 'pedidos pendentes', 'p']];
+    const IC = {"p": "<svg viewBox=\"0 0 24 24\"><path d=\"M4 6h16M4 12h10M4 18h7\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/></svg>", "s": "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8\"/></svg>", "a": "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5\"/></svg>", "w": "<svg viewBox=\"0 0 24 24\"><path d=\"M12 3v3M12 18v3M4.6 6.6l2 2M17.4 15.4l2 2M3 12h3M18 12h3\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>", "d": "<svg viewBox=\"0 0 24 24\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>"};
     $('#ggRail').innerHTML = kp.map(([n, l, k]) => `<div class="g-rk ${k === 'w' && n ? 'hot' : ''}" title="${esc(l)}">${IC[k]}<b>${n}</b></div>`).join('');
-    $('#ggKpis').innerHTML = kp.map(([n, l, k]) => `<div class="g-kpi ${k === 'w' && n ? 'hot' : ''}"><div class="ic">${IC[k]}</div><b>${n}</b><span>${l}</span></div>`).join('');
+    $('#ggKpis').innerHTML = kp.map(([n, l, k]) => `<div class="g-kpi ${(k === 'w' || k === 'a') && n ? 'hot' : ''} ${k === 'a' && n ? 'pulse' : ''}"><div class="ic">${IC[k]}</div><b>${n}</b><span>${l}</span></div>`).join('');
+    $('#ggWorkN').textContent = work.length;
+    $('#ggWork').classList.toggle('idle', !work.length);
+    $('#ggWorkL').innerHTML = work.length ? work.slice(0, 6).map(w => `<div class="g-wk ${w.lead ? 'lead' : ''}"><i></i><div><b>${esc(w.who)}</b><small>${esc(w.what)}</small></div></div>`).join('')
+      + (work.length > 6 ? `<div class="g-more">+${work.length - 6}</div>` : '') : '<div class="g-none">Ninguém trabalhando agora.</div>';
+    const st2 = st;
     // precisam de você
     const waits = [];
-    (lastState.sessions || []).forEach(s => {
+    (st2.sessions || []).forEach(s => {
       if (!s.recent || s.is_self) return;
       if (s.state === 'approval') waits.push({who: s.name, what: 'sessão esperando sua resposta', p: s.project});
       (s.agents || []).forEach(a => { if (a.state === 'approval') waits.push({who: a.name, what: 'em ' + s.name, p: s.project}); });
@@ -279,15 +301,23 @@
     es = new EventSource('/events');
     es.addEventListener('state', ev => {
       let d; try { d = JSON.parse(ev.data); } catch { return; }
-      (d.events || []).filter(e => e.kind !== 'edge').forEach(e => feed.unshift(e));
-      feed.splice(40);
-      $('#ggFeed').innerHTML = feed.length ? feed.map(e => `<div class="g-row ${FEEDK[e.kind] || ''}"><i></i><div><b>${esc(e.who === '__main__' ? 'líder' : e.who)}</b><small>${esc(e.what)}${e.where ? ' · ' + esc(e.where) : ''}</small></div><time>${new Date(e.epoch * 1000).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</time></div>`).join('')
-        : '<div class="g-none">Sem movimento nas sessões agora.</div>';
+      if (d.state) { lastState = d.state; renderLive(d.state); $('#ggPill').classList.remove('off'); }
+      // caixas flutuantes: só o que muda de verdade (começou, concluiu, precisa de você, despachou) — nada de micro-passo
+      (d.events || []).filter(e => ['start', 'done', 'approval', 'dispatch'].includes(e.kind)).slice(-3).forEach(toast);
     });
     es.onerror = () => $('#ggPill').classList.add('off');
-    $('#ggFeed').innerHTML = '<div class="g-none">Sem movimento nas sessões agora.</div>';
   }
   function stopFeed() { if (es) { es.close(); es = null; } }
+  const TK = {start: 'começou', done: 'concluiu', approval: 'precisa de você', dispatch: 'recebeu pedido'};
+  function toast(e) {
+    const box = $('#ggToasts'); if (!box) return;
+    const t = document.createElement('div');
+    t.className = 'g-toast ' + (FEEDK[e.kind] || '');
+    t.innerHTML = `<i></i><div><b>${esc(e.who === '__main__' ? 'líder' : e.who)} <em>${TK[e.kind] || ''}</em></b><small>${esc(e.where || e.what || '')}</small></div>`;
+    box.prepend(t);
+    [...box.children].slice(4).forEach(x => x.remove());
+    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, e.kind === 'approval' ? 15000 : 7000);
+  }
 
   // ---------- relatórios ----------
   let curP = null;
@@ -416,10 +446,20 @@
   async function loadOrders() {
     const r = await api('/api/ganga/orders').catch(() => null); if (!r) return;
     $('#ggOrdersH').innerHTML = `Pedidos <span class="g-tag ${r.sala_ouvindo ? 'on' : ''}" title="sessão da Sala ouvindo a fila">${r.sala_ouvindo ? 'Sala ouvindo' : 'Sala não ouve'}</span>`;
-    $('#ggOrders').innerHTML = r.orders.length ? r.orders.slice(0, 6).map(o => { const [k, l] = OST[o.status] || ['', o.status];
-      return `<div class="g-row ${k}"><i></i><div><b>${esc(shortName(o.project))}</b><small>${esc(l)} · ${esc(o.text)}</small></div><time>${esc((o.confirmed || '').slice(11, 16))}</time></div>`; }).join('')
-      : '<div class="g-none">Nenhum pedido ainda.</div>';
+    const DONE = new Set(['respondido', 'cancelado', 'erro']);
+    const pend = r.orders.filter(o => !DONE.has(o.status)), done = r.orders.filter(o => DONE.has(o.status));
+    ORD.pend = pend.length; ORD.done = done.length;
+    $('#ggOrdP').textContent = pend.length; $('#ggOrdD').textContent = done.length;
+    const list = G.ordTab === 'done' ? done : pend;
+    $('#ggOrders').innerHTML = list.length ? list.slice(0, 8).map(o => { const [k, l] = OST[o.status] || ['', o.status];
+      const note = o.status === 'respondido' && o.note ? `<p>${esc(o.note)}</p>` : '';
+      return `<div class="g-row g-ord ${k}"><i></i><div><b>${esc(shortName(o.project))} <span class="g-st">${esc(l)}</span></b><small>${esc(o.text)}</small>${note}</div><time>${esc((o.confirmed || '').slice(11, 16))}</time></div>`; }).join('')
+      : `<div class="g-none">${G.ordTab === 'done' ? 'Nenhum pedido concluído ainda.' : 'Nada pendente. Peça algo por voz: “Ganga, pede pro…”.'}</div>`;
+    if (lastState) renderLive(lastState);
   }
+  G.ordTab = 'pend';
+  $('#ggOrdSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; G.ordTab = b.dataset.o;
+    $('#ggOrdSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); loadOrders(); };
   setInterval(() => G.open && loadOrders(), 5000);
 
   // ---------- etapa 5: Copiloto (avisos vêm do servidor, que fala com a voz do Mac) ----------

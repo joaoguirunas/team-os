@@ -315,3 +315,48 @@ body.has-ganga .feed{bottom:96px}
 .g-btn.talk{border-color:rgba(110,190,255,.9);box-shadow:0 0 0 0 rgba(61,143,255,.55);animation:gTalk 1.1s ease-out infinite}
 @keyframes gTalk{0%{box-shadow:0 0 0 0 rgba(61,143,255,.5)}100%{box-shadow:0 0 0 18px rgba(61,143,255,0)}}
 @media (prefers-reduced-motion:reduce){.g-btn.talk{animation:none}}
+
+/* v7 — barra lateral de tarefas macro + caixas flutuantes ao vivo (só azul) */
+.g-kpis.g-kpis3{grid-template-columns:repeat(3,1fr);gap:8px}
+.g-kpis3 .g-kpi{padding:10px 10px 9px}
+.g-kpis3 .g-kpi b{font-size:20px}
+.g-kpis3 .g-kpi span{font-size:10.5px;line-height:1.25}
+.g-kpi.pulse::after{content:"";position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:50%;background:#3d8fff;
+  box-shadow:0 0 0 0 #3d8fff88;animation:gPulse 1.4s ease-out infinite}
+@keyframes gPulse{0%{box-shadow:0 0 0 0 #3d8fff99}100%{box-shadow:0 0 0 9px #3d8fff00}}
+.g-seg{display:flex;gap:2px;padding:3px;margin:0 0 10px;border-radius:9px;background:#0b0f19;border:1px solid #161d2d}
+.g-seg button{flex:1;border:0;background:none;color:#7c8496;font:500 11.5px/1 var(--sans);padding:7px 8px;border-radius:7px;cursor:pointer;display:flex;gap:6px;justify-content:center;align-items:center}
+.g-seg button em{font-style:normal;font-family:var(--mono);font-size:10.5px;opacity:.8}
+.g-seg button.on{background:#3d8fff1f;color:#cfe3ff}
+.g-ord b{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.g-st{font:500 10px/1 var(--sans);padding:3px 6px;border-radius:5px;background:#3d8fff1a;color:#8fbaff;letter-spacing:.02em}
+.g-row.done .g-st{background:#2f6fd61a;color:#6f9ee8}
+.g-ord small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.g-ord p{margin:5px 0 0;font-size:11.5px;color:#9cb3d6;border-left:2px solid #3d8fff55;padding-left:7px}
+.g-orders .g-rows{overflow:auto;max-height:calc(100vh - 430px)}
+/* caixas flutuantes à direita */
+.g-float{position:absolute;right:20px;top:76px;width:280px;z-index:3;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.g-float>*{pointer-events:auto}
+.g-fcard{border-radius:14px;background:#0b0f1ae6;border:1px solid #1a2338;backdrop-filter:blur(10px);padding:12px 14px;box-shadow:0 10px 30px #0006;transition:opacity .3s}
+.g-fcard.idle{opacity:.55}
+.g-fcard h5{margin:0 0 8px;display:flex;align-items:center;gap:8px;font:500 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:#7c8aa6}
+.g-fcard h5 em{margin-left:auto;font-style:normal;font-family:var(--mono);color:#9cc4ff}
+.g-live{width:7px;height:7px;border-radius:50%;background:#3d8fff;animation:gPulse 1.4s ease-out infinite}
+.g-fcard.idle .g-live{animation:none;background:#3a4256}
+.g-wk{display:grid;grid-template-columns:8px 1fr;gap:9px;padding:6px 0;border-top:1px solid #131a2a;font-size:12px}
+.g-wk:first-child{border-top:0}
+.g-wk i{width:6px;height:6px;border-radius:50%;margin-top:5px;background:#3d8fff;animation:gPulse 1.4s ease-out infinite}
+.g-wk.lead b{color:#cfe3ff}
+.g-wk b{display:block;color:#c3ccdc;font-weight:500}.g-wk small{display:block;color:#7c8496;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-more{font-size:11px;color:#7c8496;padding-top:6px}
+.g-toasts{display:flex;flex-direction:column;gap:8px}
+.g-toast{display:grid;grid-template-columns:8px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;background:#0b0f1ae6;
+  border:1px solid #1a2338;backdrop-filter:blur(10px);font-size:12px;animation:gIn .35s var(--e,ease) both;box-shadow:0 8px 24px #0005}
+.g-toast i{width:7px;height:7px;border-radius:50%;margin-top:4px;background:#5b6b8a}
+.g-toast.busy i{background:#3d8fff}.g-toast.done i{background:#2f6fd6}.g-toast.wait{border-color:#3d8fff66}.g-toast.wait i{background:#8fc4ff;box-shadow:0 0 0 3px #3d8fff33}
+.g-toast b{display:block;color:#c3ccdc;font-weight:500}.g-toast b em{font-style:normal;color:#8fbaff;font-weight:400}
+.g-toast small{display:block;color:#7c8496;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-toast.out{opacity:0;transform:translateX(12px);transition:.35s}
+@keyframes gIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@media (max-width:1100px){.g-float{display:none}}
+@media (prefers-reduced-motion:reduce){.g-kpi.pulse::after,.g-live,.g-wk i{animation:none}.g-toast{animation:none}}
