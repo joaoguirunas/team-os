@@ -8,7 +8,7 @@ Copiloto: compara cada leitura do painel com a anterior e gera avisos curtos —
 Só fala (voz do Mac, `say`) com a Ganga ligada no modo Copiloto e fora de uma conversa por voz.
 Agrupa avisos próximos, nunca fala mais de uma vez a cada 20 s e nunca repete o mesmo aviso em 10 min.
 
-Pedidos: a Ganga só PREPARA o pedido (rascunho) e, depois do "sim" do João, grava na fila
+Pedidos: a Ganga só PREPARA o pedido (rascunho) e, depois do "sim" do usuário, grava na fila
 `docs/smart-memory/sala-de-controle/ganga/pedidos.jsonl` do CT. Quem entrega é a sessão da Sala,
 que escuta a fila com `ganga-fila.py --wait` e despacha pelas regras dela. Nada perigoso sai direto:
 envio para fora (WhatsApp, e-mail, cliente, publicar) pede um "sim" falado na Ganga e sai com `ok_por_voz`;
@@ -31,11 +31,16 @@ HEARTBEAT = os.path.join(QDIR, ".sala-ouvindo")
 ERR_RE = re.compile(r"\b(erro|falhou|falha|quebrou|failed|error|exception|traceback|FAIL)\b", re.I)
 # muito sensível: mexe em dinheiro, apaga, vai para produção ou toca em senha → OK no chat da Sala
 SENSITIVE_RE = re.compile(
-    r"\b(push|deploy|apag|delet|exclu|remov|pag(a|ue|ar|amento)|transf|pix|boleto|merge|produ[cç][aã]o|rotacion|senha|"
-    r"credencia|token|cancel(a|ar)\s+(contrato|assinatura))", re.I)
+    r"\b(push|deploy|apag|delet|exclu|remov|limp[ae]|descart|jog(a|ue)\s+fora|reset|rm\s|drop\b|sobrescrev|--force|force|"
+    r"instal[ae]|execut[ae]|rod(a|e|ar)\s+(o\s+|um\s+)?(script|comando|\.sh)|pag(a|ue|ar|amento)|transf|pix|boleto|merge|"
+    r"produ[cç][aã]o|rotacion|senha|credencia|token|cancel(a|ar)\s+(contrato|assinatura))", re.I)
 # sai para fora (WhatsApp, e-mail, cliente, publicar): basta o "sim" falado na Ganga, depois de ela ler destino e texto
 EXTERNAL_RE = re.compile(
-    r"\b(publi(ca|que|car)|post(a|e|ar)\b|whats|zap|e-?mail|sms|envi(a|e|ar)\b.*\b(cliente|mensagem|fora|n[uú]mero|contato))", re.I)
+    r"\b(publi(ca|que|car)|post(a|e|ar)\b|whats|zap|e-?mail|sms|instagram|telegram|linkedin|slack|\bdm\b|direct|"
+    r"dispar(a|e|ar)|cliente|contato|n[uú]mero\s+\d|\+?\d{10,}|"
+    r"(envi|mand|respond|encaminh)\w*\b.{0,50}\b(mensagem|fora|cliente|contato|n[uú]mero))", re.I)
+# "manda pro Carlos" / "responde a Ana": verbo de envio + pessoa (nome com maiúscula) → externo
+PERSON_RE = re.compile(r"\b(?i:mand\w*|envi\w*|respond\w*|encaminh\w*|fal[ae])\b.{0,40}\b(?i:pr[oa]|para|ao|à|a)\s+([A-ZÁ-Ú][a-zá-ú]+)")
 DANGER_RE = re.compile(SENSITIVE_RE.pattern + "|" + EXTERNAL_RE.pattern, re.I)   # compatibilidade
 
 
@@ -45,7 +50,7 @@ ASK_RE = re.compile(r"(\?\s*$|\?\s*\n|quer que eu|posso (seguir|continuar|fazer|
 
 
 def needs_reply(text):
-    """A última mensagem da sessão termina pedindo algo do João (pergunta, decisão, aprovação)?"""
+    """A última mensagem da sessão termina pedindo algo do usuário (pergunta, decisão, aprovação)?"""
     tail = (text or "").strip()[-500:]
     return bool(tail) and bool(ASK_RE.search(tail))
 
@@ -75,7 +80,7 @@ class Copilot:
         self.primed = False
 
     # ---------- leitura do estado ----------
-    # Só avisa quando o João precisa agir: sessão pedindo permissão, sessão que terminou PERGUNTANDO algo, ou que parou
+    # Só avisa quando o usuário precisa agir: sessão pedindo permissão, sessão que terminou PERGUNTANDO algo, ou que parou
     # com erro. Agente, subtarefa e "terminou" sem pergunta não interessam — ficam só no painel.
     def feed(self, data):
         p = self.prefs_fn()
@@ -170,7 +175,7 @@ class Copilot:
             threading.Thread(target=self._announce, args=(n, p), daemon=True).start()
 
     def _announce(self, n, p):
-        """A Ganga chama o João: escreve a fala com a personalidade dela e pergunta o que fazer.
+        """A Ganga chama o usuário: escreve a fala com a personalidade dela e pergunta o que fazer.
         Com o painel aberto no Chrome, o painel abre a conversa por voz (ela fala e já escuta a resposta);
         sem painel, ou se ele não atender em 8 s, toca a fala com a voz dela no Mac."""
         line = (self.line_fn(n) if self.line_fn else None) or n["text"]
@@ -232,6 +237,18 @@ def _sessions_of(project, data):
     return ss
 
 
+def level(text, project_name=""):
+    if SENSITIVE_RE.search(text):
+        return "sensivel"
+    if EXTERNAL_RE.search(text):
+        return "externo"
+    words = {w.lower() for w in re.findall(r"[A-Za-zÀ-ÿ]+", project_name or "")}
+    for m in PERSON_RE.finditer(text):
+        if m.group(1).lower() not in words:      # "manda pro Comercial" é o projeto; "manda pro Carlos" é pessoa
+            return "externo"
+    return "normal"
+
+
 def draft(project, text, data):
     text = re.sub(r"\s+", " ", (text or "")).strip()[:1500]
     if not text:
@@ -242,7 +259,7 @@ def draft(project, text, data):
     d = {"id": did, "created": time.time(), "project": project["name"], "project_path": project.get("path", ""),
          "session": sess["name"] if sess else None, "session_id": sess["id"] if sess else None,
          "session_status": (sess.get("status") if sess else None), "text": text,
-         "nivel": "sensivel" if SENSITIVE_RE.search(text) else "externo" if EXTERNAL_RE.search(text) else "normal"}
+         "nivel": level(text, project.get("name", ""))}
     d["ok_no_chat"] = d["nivel"] == "sensivel"      # só o muito sensível ainda pede OK no chat da Sala
     DRAFTS[did] = d
     for k in [k for k, v in DRAFTS.items() if time.time() - v["created"] > 600]:
@@ -256,12 +273,23 @@ def confirm(did):
         return {"error": "rascunho não encontrado ou expirado — prepare de novo"}
     if time.time() - d["created"] > 300:
         return {"error": "rascunho expirou (5 min) — prepare de novo"}
+    dup = [r for r in read_queue(30) if r.get("project") == d["project"] and r.get("text") == d["text"]
+           and r.get("status") in ("na_fila", "entregue") and time.time() - _epoch(r.get("confirmed")) < 120]
+    if dup:
+        return {"ok": True, "id": dup[0]["id"], "duplicado": True, "sala_ouvindo": sala_listening(), "ok_no_chat": d["ok_no_chat"]}
     os.makedirs(QDIR, exist_ok=True)
     line = {**d, "status": "na_fila", "confirmed": time.strftime("%Y-%m-%dT%H:%M:%S"), "via": "ganga",
-            "ok_por_voz": d["nivel"] == "externo"}   # o "sim" falado do João para ESTE envio já é o OK
+            "ok_por_voz": d["nivel"] == "externo"}   # o "sim" falado do usuário para ESTE envio já é o OK
     with open(QUEUE, "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
     return {"ok": True, "id": d["id"], "sala_ouvindo": sala_listening(), "ok_no_chat": d["ok_no_chat"]}
+
+
+def _epoch(stamp):
+    try:
+        return time.mktime(time.strptime((stamp or "")[:19], "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return 0.0
 
 
 def read_queue(limit=20):

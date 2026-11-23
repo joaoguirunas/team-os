@@ -3,7 +3,7 @@
    Etapa 4: pedidos às sessões (vai direto para a fila da Sala; só o perigoso pede confirmação).  Etapa 5: Copiloto (avisos com a voz do Mac).
    Etapa 2: tela Configurar (chave no Porta-chaves, voz, microfone, limite) e voz em tempo real
             pelo Gemini Live (token temporário; a chave nunca chega ao navegador), com o Claude como cérebro.
-   Desligada por padrão. Nunca escreve em projeto; pedidos só vão para a fila da Sala depois do OK do João. */
+   Desligada por padrão. Nunca escreve em projeto; pedidos só vão para a fila da Sala depois do OK do usuário. */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -75,6 +75,9 @@
       <div class="g-f"><label>Microfone</label><div class="row"><select id="ggMicSel"><option value="">Padrão do Mac</option></select><button class="g-b" id="ggMicTest">Testar</button></div>
         <div class="g-meter"><i id="ggMeter"></i></div></div>
       <div class="g-f"><label>Limite de conversa por dia</label><div class="row"><input id="ggLimit" type="number" min="5" max="600" step="5"><span style="color:#7d8aa6;font-size:13px">minutos</span></div><small id="ggLimitInfo"></small></div>
+      <div class="g-f"><label>Como ela te chama</label><input id="ggName" maxlength="40" placeholder="seu nome (vazio = sem nome)"></div>
+      <div class="g-f"><label>Palmas</label><label class="g-chk"><input type="checkbox" id="ggClap"> Abrir a Ganga com 2 palmas seguidas</label>
+        <small id="ggClapInfo">Detecta 2 palmas curtas no microfone — não gasta Gemini, funciona com a Ganga fechada.</small></div>
       <div class="g-f"><label>Palavra de ativação</label><label class="g-chk"><input type="checkbox" id="ggWake"> Ficar ouvindo a palavra “Ganga” enquanto ela estiver ligada</label>
         <small id="ggWakeInfo">Só detecta a palavra — não gasta Gemini. Funciona no Chrome com o painel aberto (pode ficar em outra aba).</small></div>
       <div class="g-f"><label>Atalho global (⌃⌥G)</label><small>No app Atalhos: novo atalho → ação “Executar script de shell” com o comando abaixo → em Detalhes, “Adicionar atalho de teclado”.</small>
@@ -178,13 +181,13 @@
     if (greeted) return; greeted = true;
     const h = new Date().getHours();
     const oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-    add('ga', `${oi}, João. Tô ligada e de olho em tudo. ${G.key_hint ? 'Toca no microfone para falar comigo, ou escreve.' : 'Escreve o que quiser — e, se quiser me ouvir, coloca a chave do Gemini no ⚙.'}`);
+    add('ga', `${oi}${G.user_name ? ', ' + G.user_name : ''}. Tô ligada e de olho em tudo. ${G.key_hint ? 'Toca no microfone para falar comigo, ou escreve.' : 'Escreve o que quiser — e, se quiser me ouvir, coloca a chave do Gemini no ⚙.'}`);
     speakFor(2500);
   }
   function speakFor(ms) { G.speakUntil = performance.now() + ms; setOrb('speak'); }
 
-  const ERR = {sem_claude: 'Não achei o Claude neste Mac, João. Sem ele eu não consigo pensar.',
-    login: 'O login do Claude no terminal expirou, João. Abre o Terminal, roda claude e faz /login. Depois me chama de novo.',
+  const ERR = {sem_claude: 'Não achei o Claude neste Mac. Sem ele eu não consigo pensar.',
+    login: 'O login do Claude no terminal expirou. Abre o Terminal, roda claude e faz /login. Depois me chama de novo.',
     desligada: 'Estou desligada. Liga pelo botão da Ganga.',
     falhou: 'Travei nessa. Tenta de novo em alguns segundos.'};
 
@@ -193,7 +196,7 @@
     const inp = $('#ggInput'), q = inp.value.trim();
     if (!q || G.busy) return;
     inp.value = ''; add('me', q);
-    if (G.live && ws && ws.readyState === 1) { wsSend({realtimeInput: {text: q}}); return; }
+    if (G.live && ws && ws.readyState === 1) { userSaidAt = performance.now(); wsSend({realtimeInput: {text: q}}); return; }
     G.busy = true; $('#ggSend').disabled = true; setOrb('think');
     const wait = setTimeout(() => { if (G.busy) add('ga', 'Deixa eu ver…'); }, 4000);
     let r;
@@ -202,13 +205,16 @@
     G.busy = false; $('#ggSend').disabled = false;
     if (r.error) { add('ga err', ERR[r.error] || ERR.falhou); setOrb('sleep'); return; }
     let text = r.text.replace(/^\s*ABRIR:.*$/m, m => (r.abrir = m, '')).trim(), order = null;
+    text = text.replace(/^\s*NOME:\s*(.+?)\s*$/m, (m, n) => { api('/api/ganga/memory', {name: n}).then(x => { if (x.ok) G.user_name = x.name; }); return ''; }).trim();
     const om = text.match(/^\s*PEDIDO:\s*(.+?)\s*::\s*([\s\S]+?)\s*$/m);
     if (om) { order = {project: om[1], text: om[2]}; text = text.replace(om[0], '').trim(); }
     const links = (r.projects || []).map(p => `<button data-p="${esc(p.path)}" data-n="${esc(p.name)}">relatórios · ${esc(p.name)}</button>`).join('');
     const d = add('ga', text, links ? `<div class="lk">${links}</div>` : '');
-    if (order) orderCard(order);
+    // linhas PEDIDO/ABRIR podem vir de texto injetado em relatório/sessão: só agem sozinhas se o usuário pediu isso
+    const askedOrder = /\b(pe[cdç]\w*|mand\w*|fal[ae] (pro|pra|com)|diz (pro|pra)|avis\w*|envi\w*|solicit\w*|fa[zç]\w*|rod[ae]\w*|cri[ae]\w*|ger[ae]\w*|revis\w*|atualiz\w*|continu\w*|sig[ae]\w*)\b/i.test(q);
+    if (order) orderCard(order, askedOrder);
     const fm = (r.abrir || '').match(/ABRIR:\s*(.+?)\s*::\s*(.+?)\s*$/);
-    if (fm) openFile(fm[1], fm[2]);
+    if (fm && /\b(abr\w*|mostr\w*|ver|v[eê]|exib\w*|pdf|arquivo)\b/i.test(q)) openFile(fm[1], fm[2]);
     d.querySelectorAll('.lk button').forEach(b => b.onclick = () => openReports(b.dataset.p, b.dataset.n));
     speakFor(Math.min(12000, Math.max(1800, text.length * 55)));
     $('#ggInput').focus();
@@ -331,9 +337,11 @@
     $('#ggLimitInfo').textContent = `Hoje: ${G.used_today || 0} min usados. Cerca de US$ 0,02 por minuto de conversa.`;
     $('#ggModeSel').value = G.mode;
     $('#ggWake').checked = G.wake !== false;
+    $('#ggClap').checked = G.clap !== false;
+    $('#ggName').value = G.user_name || '';
     hud.querySelectorAll('[data-n]').forEach(c => c.checked = (G.notify || {})[c.dataset.n] !== false);
     $('#ggMacVoice').value = G.mac_voice || 'Ganga';
-    $('#ggSayTest').onclick = async () => { await api('/api/ganga', {mac_voice: $('#ggMacVoice').value}); api('/api/ganga/say', {text: 'Oi, João. A sessão do livro terminou.'}); };
+    $('#ggSayTest').onclick = async () => { await api('/api/ganga', {mac_voice: $('#ggMacVoice').value}); api('/api/ganga/say', {text: 'Oi! Esta é a minha voz para os avisos.'}); };
     paintWake();
     $('#ggShortcut').value = `curl -s -X POST -H 'Content-Type: application/json' -d '{}' ${location.origin}/api/ganga/wake | grep -q '"seen": true' || open '${location.origin}/#ganga'`;
     $('#ggCopy').onclick = () => { navigator.clipboard?.writeText($('#ggShortcut').value); $('#ggCopy').textContent = 'Copiado'; setTimeout(() => $('#ggCopy').textContent = 'Copiar', 1500); };
@@ -369,7 +377,7 @@
     } catch { $('#ggMeter').parentElement.insertAdjacentHTML('afterend', '<small class="g-bad">Sem permissão de microfone. Libere no navegador.</small>'); }
   };
   $('#ggCfgOk').onclick = async () => {
-    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
+    Object.assign(G, await api('/api/ganga', {voice: $('#ggVoiceSel').value, mic: $('#ggMicSel').value, daily_minutes: +$('#ggLimit').value || 60, mode: $('#ggModeSel').value, wake: $('#ggWake').checked, clap: $('#ggClap').checked, name: $('#ggName').value, mac_voice: $('#ggMacVoice').value, notify: Object.fromEntries([...hud.querySelectorAll('[data-n]')].map(c => [c.dataset.n, c.checked]))}));
     await loadPrefs(); closeCfg();
   };
   async function loadPrefs() { try { Object.assign(G, await api('/api/ganga')); } catch {} paint(); }
@@ -384,8 +392,8 @@
   }
 
   // ---------- etapa 4: pedidos às sessões ----------
-  async function orderCard(o) {
-    const r = await api('/api/ganga/order', {...o, send: true}).catch(() => ({error: 'rede'}));
+  async function orderCard(o, auto = false) {
+    const r = await api('/api/ganga/order', {...o, send: auto}).catch(() => ({error: 'rede'}));
     if (r.error) { add('ga err', r.opcoes ? `Qual deles? ${r.opcoes.join(' · ')}` : `Não consegui mandar o pedido (${r.error}).`); return; }
     if (r.sent) {
       const b = add('ga', '', `<div class="g-order"><small>Mandado para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
@@ -393,7 +401,7 @@
       b.classList.add('card'); loadOrders(); return;
     }
     const box = add('ga', '', `<div class="g-order"><small>Pedido para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
-      <p>${esc(r.text)}</p>${r.ok_no_chat ? '<em>Muito sensível (dinheiro, apagar, produção): a Sala ainda confirma com você no chat.</em>' : '<em>Sai para fora — confirme uma vez e a Sala envia.</em>'}
+      <p>${esc(r.text)}</p>${r.nivel === 'sensivel' ? '<em>Muito sensível (dinheiro, apagar, produção): a Sala ainda confirma com você no chat.</em>' : r.nivel === 'externo' ? '<em>Sai para fora — confirme uma vez e a Sala envia.</em>' : '<em>Confira e confirme.</em>'}
       <div class="row"><button class="g-b" data-x>Cancelar</button><button class="g-b p" data-ok>Confirmar envio</button></div></div>`);
     box.classList.add('card');
     box.querySelector('[data-x]').onclick = () => { box.querySelector('.row').innerHTML = '<span class="g-none">Cancelado.</span>'; };
@@ -424,15 +432,16 @@
       noticeSeq = Math.max(noticeSeq, n.seq);
       if (G.mode !== 'copiloto' && n.kind !== 'hourly') continue;
       G.flash && G.flash();
-      if (n.spoken) callOrTalk(n.seq);
+      if (n.spoken && G.leader) callOrTalk(n.seq);
     }
   }, 2000);
-  // Copiloto: a sessão precisa do João → a Ganga abre a voz, fala e já escuta a resposta
+  // Copiloto: a sessão precisa do usuário → a Ganga abre a voz, fala e já escuta a resposta
   async function callOrTalk(seq, tries = 0) {
     const r = await api('/api/ganga/notices?since=' + (seq - 1)).catch(() => null);
     const n = r && r.notices.find(x => x.seq === seq);
     if (!n || !n.line) { if (tries < 30) setTimeout(() => callOrTalk(seq, tries + 1), 500); return; }
-    if (n.call && !G.live) {
+    const canSound = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+    if (n.call && !G.live && canSound) {
       if (!G.open) open();
       add('ga notice ' + n.kind, n.line);
       startLive(false, `[AVISO DA SALA] Sessão: ${n.session} (projeto ${n.project}). Fala sugerida: "${n.line}" ` +
@@ -462,8 +471,14 @@
   $('#ggMic').onclick = () => G.live ? stopLive('você encerrou') : startLive();
 
   let firstText = null;
+  let connecting = false, reconnects = 0, liveGen = 0;
+  let userSaidAt = 0; const draftAt = {};   // ações com consequência só valem com fala do usuário DEPOIS do rascunho
   async function startLive(reconnect = false, first = null) {
-    if (G.live && !reconnect) return;
+    if ((G.live || connecting) && !reconnect) return;      // um gatilho só por vez (palavra, palmas, atalho, Copiloto)
+    connecting = true; const gen = ++liveGen;
+    try { await startLiveInner(reconnect, first, gen); } finally { if (gen === liveGen) connecting = false; }
+  }
+  async function startLiveInner(reconnect, first, gen) {
     if (!reconnect) firstText = first;
     stopWake();
     setOrb('connect');
@@ -473,16 +488,19 @@
       const msg = t.error === 'limite' ? `Bati o limite de hoje (${t.limit} min). Dá para aumentar no ⚙.` : t.error === 'sem_chave' ? 'Falta a chave do Gemini. Coloca no ⚙ que eu ganho voz.' : t.error === 'desligada' ? ERR.desligada : `Não consegui abrir a voz (${t.error}).`;
       add('ga err', msg); if (reconnect) stopLive(); return;
     }
+    if (gen !== liveGen) return;                            // cancelado enquanto pegava o token
     G.voice = t.voice;
     if (!reconnect) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: G.mic ? {exact: G.mic} : undefined, echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
       } catch { setOrb('sleep'); add('ga err', 'Não tenho permissão do microfone. Libera no navegador e toca de novo.'); return; }
+      if (gen !== liveGen) { micStream.getTracks().forEach(t => t.stop()); micStream = null; return; }
       outCtx = new AudioContext({sampleRate: 24000}); outAn = outCtx.createAnalyser(); outAn.fftSize = 512; outAn.connect(outCtx.destination);
+      if (outCtx.state === 'suspended') { outCtx.resume().catch(() => {}); setTimeout(() => { if (outCtx && outCtx.state === 'suspended') add('ga err', 'O Chrome bloqueou meu som até você clicar na página. Clica em qualquer lugar — ou, para nunca mais precisar: cadeado ao lado do endereço → Configurações do site → Som: Permitir.'); }, 800); }
       liveStart = performance.now(); nextT = 0;
     }
     ending = false;
-    ws = new WebSocket(WS_URL + encodeURIComponent(t.token));
+    const me = ws = new WebSocket(WS_URL + encodeURIComponent(t.token));
     ws.onopen = () => wsSend({setup: {
       model: t.model,
       generationConfig: {responseModalities: ['AUDIO'], speechConfig: {voiceConfig: {prebuiltVoiceConfig: {voiceName: t.voice}}}},
@@ -497,8 +515,11 @@
       onServer(m);
     };
     ws.onclose = ev => {
-      if (ending) return;
-      if (G.live && resumeHandle && ev.code !== 1008) { startLive(true); return; }
+      if (ending || ws !== me) return;                      // evento de uma conexão antiga
+      if (G.live && resumeHandle && ev.code !== 1008 && reconnects < 3) {
+        reconnects++; setTimeout(() => { if (ws === me) startLive(true); }, 600 * reconnects); return;
+      }
+      resumeHandle = null;
       add('ga err', `A voz caiu${ev.reason ? ' (' + ev.reason.slice(0, 160) + ')' : ''}. Toca no microfone de novo.`);
       stopLive();
     };
@@ -543,7 +564,7 @@
       if (!G.live) {
         G.live = true; $('#ggMic').classList.add('live'); paint(); api('/api/ganga/live', {live: true}).catch(() => {});
         try { await startMic(); } catch { add('ga err', 'Não consegui ligar o microfone.'); stopLive(); return; }
-        if (!resumeHandle) wsSend({realtimeInput: {text: firstText || '(O João acabou de abrir a conversa por voz. Cumprimente em uma frase curta e pergunte como pode ajudar.)'}});
+        if (!resumeHandle) wsSend({realtimeInput: {text: firstText || '(O usuário acabou de abrir a conversa por voz. Cumprimente em uma frase curta e pergunte como pode ajudar.)'}});
         if (firstText && !firstText.startsWith('[AVISO DA SALA]')) add('me', firstText); firstText = null;
       }
       setOrb('listen'); lastAct = performance.now(); return;
@@ -555,7 +576,7 @@
     if (sc.interrupted) { flushAudio(); curGa = null; }
     if (sc.inputTranscription && sc.inputTranscription.text) {
       if (!curMe) { curMe = add('me', ''); curMe._t = ''; }
-      curMe._t += sc.inputTranscription.text; curMe.textContent = curMe._t.trim(); lastAct = performance.now();
+      curMe._t += sc.inputTranscription.text; curMe.textContent = curMe._t.trim(); lastAct = userSaidAt = performance.now();
     }
     (sc.modelTurn && sc.modelTurn.parts || []).forEach(p => { if (p.inlineData && p.inlineData.data) playPcm(p.inlineData.data); });
     if (sc.outputTranscription && sc.outputTranscription.text) {
@@ -575,11 +596,14 @@
         else if (fc.name === 'ver_projeto') result = (await api('/api/ganga/context?q=' + encodeURIComponent((fc.args || {}).nome || ''))).text;
         else if (fc.name === 'pensar_com_claude') {
           const r = await api('/api/ganga/ask', {text: (fc.args || {}).pergunta || ''});
-          result = r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error));
+          result = (r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error))).replace(/^\s*(PEDIDO|ABRIR|NOME):.*$/gm, '').trim();
         } else if (fc.name === 'mandar_para_sessao' || fc.name === 'pedir_a_sessao') {
           const a = fc.args || {}, r = await api('/api/ganga/order', {project: a.projeto || '', text: a.pedido || '', send: true});
-          result = JSON.stringify(r.error ? r : {id: r.id, enviado: !!r.sent, precisa_sim: !!r.precisa_sim, nivel: r.nivel, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, sala_ouvindo: r.sala_ouvindo});
+          result = JSON.stringify(r.error ? r : {id: r.id, enviado: !!r.sent, precisa_sim: !!r.precisa_sim, nivel: r.nivel, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do usuário', status_da_sessao: r.session_status, pedido: r.text, sala_ouvindo: r.sala_ouvindo});
           if (r.sent) { add('ga', `Mandei para ${shortName(r.project)}: ${r.text}`); loadOrders(); }
+          if (r.precisa_sim && r.id) draftAt[r.id] = performance.now();
+        } else if (fc.name === 'confirmar_pedido' && !(userSaidAt > (draftAt[(fc.args || {}).id] || Infinity))) {
+          result = JSON.stringify({error: 'o usuário ainda não respondeu a este pedido — leia o destino e o texto, pergunte "confirma?" e espere o sim dele'});
         } else if (fc.name === 'confirmar_pedido') {
           const r = await api('/api/ganga/order', {confirm: (fc.args || {}).id || ''});
           result = JSON.stringify(r); loadOrders();
@@ -588,6 +612,12 @@
           const a = fc.args || {}, r = await api(fc.name === 'abrir_arquivo' ? '/api/ganga/open' : '/api/ganga/files', {project: a.projeto || '', q: a.busca || '', numero: a.numero || 0});
           result = JSON.stringify(r);
           if (r.aberto) add('ga', `Abri ${r.nome}.`);
+        } else if ((fc.name === 'lembrar_nome' || fc.name === 'lembrar' || fc.name === 'esquecer') && performance.now() - userSaidAt > 30000) {
+          result = JSON.stringify({error: 'só guardo ou apago memória quando o próprio usuário pede, falando'});
+        } else if (fc.name === 'lembrar_nome' || fc.name === 'lembrar' || fc.name === 'esquecer') {
+          const a = fc.args || {};
+          const r = await api('/api/ganga/memory', fc.name === 'lembrar_nome' ? {name: a.nome || ''} : fc.name === 'lembrar' ? {fact: a.fato || ''} : {forget: a.palavras || ''});
+          result = JSON.stringify(r); if (fc.name === 'lembrar_nome' && r.ok) G.user_name = r.name;
         } else if (fc.name === 'ver_pedidos') {
           const r = await api('/api/ganga/orders');
           result = JSON.stringify({sala_ouvindo: r.sala_ouvindo, pedidos: r.orders.slice(0, 6).map(o => ({projeto: o.project, pedido: o.text, status: o.status, resposta: o.note || ''}))});
@@ -602,6 +632,7 @@
   }
 
   function stopLive(why) {
+    liveGen++; connecting = false; reconnects = 0;          // cancela conexão em andamento
     if (!G.live && !ws && !micStream) { setOrb('sleep'); return; }
     ending = true;
     try { wsSend({realtimeInput: {audioStreamEnd: true}}); ws && ws.close(); } catch {}
@@ -613,7 +644,7 @@
     if (G.live) {
       const sec = (performance.now() - liveStart) / 1000;
       api('/api/ganga/usage', {seconds: sec}).then(r => { G.used_today = r.used_today; paint(); }).catch(() => {});
-      if (why) add('ga', why === 'dormiu' ? 'Fiquei quieta um tempo e fechei a voz para não gastar. É só tocar no microfone.' : 'Fechei a voz. Até já, João.');
+      if (why) add('ga', why === 'dormiu' ? 'Fiquei quieta um tempo e fechei a voz para não gastar. É só tocar no microfone.' : 'Fechei a voz. Até já.');
     }
     G.live = false; $('#ggMic').classList.remove('live'); setOrb('sleep'); paint();
     api('/api/ganga/live', {live: false}).catch(() => {});
@@ -627,8 +658,10 @@
   const WAKE_RE = /\b(ganga|gangá)\b[\s,.!?:-]*(.*)$/i;
   const WAKE_START = /^\s*(ganja|gangue|granja|manga|canga|kanga|gang|gangar|vanga)\b[\s,.!?:-]*(.*)$/i;
   const W = window.__gangaWake = {state: 'parada', erro: '', ouvido: '', local: true, falhas: 0};
-  function wakeWanted() { return !!SR && G.on && G.wake !== false && !G.live && !wakeErr && !!G.ready; }
-  function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); paintWake(); }
+  G.leader = !navigator.locks;   // sem Web Locks (navegador antigo): cada aba se vira
+  if (navigator.locks) navigator.locks.request('ganga-lider', () => { G.leader = true; W.lider = true; setTimeout(wakeSync, 50); return new Promise(() => {}); });
+  function wakeWanted() { return !!SR && G.on && G.wake !== false && !G.live && !wakeErr && !!G.ready && G.leader; }
+  function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); paintWake(); if (typeof clapSync === 'function') clapSync(); }
   function stopWake() { if (!rec) return; const r = rec; rec = null; r.onend = null; try { r.abort(); } catch {} W.state = 'parada'; setStatus(); paintWake(); }
   function paintWake() {
     const b = document.getElementById('gangaBtn');
@@ -690,13 +723,53 @@
     if (!rec && wakeWanted()) wakeSync();
     if (G.live) api('/api/ganga/live', {live: true}).catch(() => {});   // batimento: o Copiloto fica quieto só enquanto a voz está aberta
   }, 5000);
+  // ---------- 2 palmas: detector no próprio áudio (AudioWorklet roda mesmo com a aba em segundo plano) ----------
+  const CLAP_WORKLET = `class C extends AudioWorkletProcessor{constructor(){super();this.bg=.004;this.t=0;this.cand=null;this.claps=[];this.hold=0}
+  process(i){const x=i[0]&&i[0][0];if(!x)return true;const dt=x.length/sampleRate;this.t+=dt;let pk=0,s=0,z=0;for(let k=0;k<x.length;k++){const v=Math.abs(x[k]);if(v>pk)pk=v;s+=v*v;if(k&&(x[k]>0)!==(x[k-1]>0))z++}
+  const r=Math.sqrt(s/x.length),zc=z/x.length,pr=Math.min(this.pr||0,this.pr2||0);this.pr2=this.pr||0;this.pr=r;
+  if(this.cand){const a=this.t-this.cand.t;if(a>.06&&a<.16&&r<this.cand.r*.3){this.claps.push(this.cand.t);this.cand=null;
+      this.claps=this.claps.filter(c=>this.t-c<1.2);const n=this.claps.length;
+      if(n>=2){const g=this.claps[n-1]-this.claps[n-2];if(g>.15&&g<.85&&this.t>this.hold){this.port.postMessage('double');this.hold=this.t+2;this.claps=[]}}}
+    else if(a>=.16){this.cand=null}}
+  else if(pk>Math.max(.018,this.bg*25)&&r>Math.max(.004,this.bg*8)&&pr<r*.35&&zc>.04){this.cand={t:this.t,r}}
+  if(pk>.06&&this.t-(this.lp||0)>.15){this.lp=this.t;this.port.postMessage({pk:+pk.toFixed(3),r:+r.toFixed(3),pr:+pr.toFixed(3),zc:+zc.toFixed(2),bg:+this.bg.toFixed(4),c:!!this.cand})}
+  if(!this.cand)this.bg=this.bg*.995+r*.005;return true}}registerProcessor('clap',C)`;
+  const CL = window.__gangaClap = {state: 'parada', erro: '', ctx: ''};
+  let clapCtx = null, clapStream = null, clapStarting = false;
+  async function clapSync() {
+    const want = G.on && G.clap !== false && !G.live && !!G.ready && G.leader;
+    if (clapStarting) return;
+    if (!want) { if (clapCtx) { try { clapCtx.close(); } catch {} clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; CL.state = 'parada'; } return; }
+    if (clapCtx) { if (clapCtx.state === 'suspended') clapCtx.resume().catch(() => {}); CL.ctx = clapCtx.state; return; }
+    clapStarting = true;
+    try {
+      clapStream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: G.mic ? {exact: G.mic} : undefined, echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+      if (!(G.on && G.clap !== false && !G.live)) { clapStream.getTracks().forEach(t => t.stop()); clapStream = null; return; }
+      clapCtx = new AudioContext();
+      await clapCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([CLAP_WORKLET], {type: 'text/javascript'})));
+      const node = new AudioWorkletNode(clapCtx, 'clap');
+      clapCtx.createMediaStreamSource(clapStream).connect(node);
+      node.port.onmessage = ev => { if (ev.data !== 'double') { CL.picos = [...(CL.picos || []), ev.data].slice(-12); return; } if (G.live) return; CL.ultima = new Date().toLocaleTimeString(); if (!G.open) open(); G.flash && G.flash(); startLive(); };
+      if (clapCtx.state === 'suspended') clapCtx.resume().catch(() => {});
+      CL.state = 'ouvindo'; CL.ctx = clapCtx.state; CL.erro = '';
+    } catch (e) { CL.state = 'erro'; CL.erro = String(e && (e.name || e.message) || e).slice(0, 80); clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; }
+    finally { clapStarting = false; }
+  }
+  // o Chrome só libera som/áudio depois de 1 clique na página: o 1º clique ou tecla destrava tudo
+  const unlock = () => { [clapCtx, outCtx, inCtx].forEach(c => c && c.state === 'suspended' && c.resume().catch(() => {})); };
+  ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, {capture: true}));
+  setInterval(() => {
+    clapSync();
+    api('/api/ganga/diag', {nav: /Edg\//.test(navigator.userAgent) ? 'Edge' : /Chrome\//.test(navigator.userAgent) ? 'Chrome' : /Safari\//.test(navigator.userAgent) ? 'Safari' : 'outro', lider: !!G.leader, wake: window.__gangaWake, clap: CL, visivel: document.visibilityState, ativado: !!(navigator.userActivation && navigator.userActivation.hasBeenActive), on: G.on, live: G.live, aberta: G.open}).catch(() => {});
+  }, 4000);
+
   // atalho global: o app Atalhos chama /api/ganga/wake; o painel confere a cada 1,5 s
   let wakeT = null;
   setInterval(async () => {
     try {
       const r = await api('/api/ganga/wake');
       if (wakeT === null) { wakeT = r.t; return; }
-      if (r.t > wakeT) { wakeT = r.t; await loadPrefs(); if (!G.open) open(); G.flash && G.flash(); if (!G.live) startLive(); }
+      if (r.t > wakeT) { wakeT = r.t; if (!G.leader) return; await loadPrefs(); if (!G.open) open(); G.flash && G.flash(); if (!G.live) startLive(); }
     } catch {}
   }, 1500);
   if (location.hash === '#ganga') {
@@ -718,7 +791,7 @@
   }, 200);
 
   // ---------- a orb ----------
-  // núcleo de vidro escuro com o raio do João no centro; anel de espectro reage à voz;
+  // núcleo de vidro escuro com o raio no centro; anel de espectro reage à voz;
   // dois arcos de luz giram em velocidades diferentes; ondas saem quando ela fala.
   const cv = $('#ggCanvas'), cx2 = cv.getContext('2d');
   const BOLT_PTS = [[69.84, 0], [0, 78.66], [36.76, 79.39], [11.76, 135.26], [83.81, 60.28], [43.37, 58.81]];

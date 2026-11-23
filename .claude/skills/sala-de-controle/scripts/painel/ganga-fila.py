@@ -7,8 +7,8 @@
   ganga-fila.py --mark ID STATUS [NOTA]
                                   STATUS: entregue | respondido | aguardando_ok | erro | cancelado
 
-Os pedidos foram confirmados pelo João por voz ou por clique no painel. Mesmo assim, push, deploy, publicar,
-Envio para fora (WhatsApp, e-mail, cliente, publicar) vem com `ok_por_voz: true`: o João ouviu destino e texto e disse
+Os pedidos foram confirmados pelo usuário por voz ou por clique no painel. Mesmo assim, push, deploy, publicar,
+Envio para fora (WhatsApp, e-mail, cliente, publicar) vem com `ok_por_voz: true`: o usuário ouviu destino e texto e disse
 "sim" — a Sala despacha sem perguntar de novo. Só o muito sensível (pagar, apagar, push, deploy, produção, senha) vem
 com `ok_no_chat: true` e a Sala pergunta no chat.
 """
@@ -41,6 +41,10 @@ def mark(pid, status, note=""):
 
 
 def wait():
+    # pedido parado há mais de 15 min (a Sala estava fora) não sai sozinho: volta a pedir o OK no chat
+    for r in copilot.read_queue(500):
+        if r.get("status") == "na_fila" and time.time() - copilot._epoch(r.get("confirmed")) > 900:
+            mark(r["id"], "aguardando_ok", "pedido antigo — confirmar no chat antes de despachar")
     seen = {r["id"] for r in copilot.read_queue(500) if r.get("status") != "na_fila"}
     announced = set()
     last_beat = 0

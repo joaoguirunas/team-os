@@ -317,6 +317,7 @@ def gemini_check():
 
 WAKE = {"t": 0.0, "seen": 0.0}
 FILES = {"last": None, "opts": []}
+DIAG = {"t": 0, "d": {}}
 
 
 def shortp(n):
@@ -347,7 +348,7 @@ def gemini_token():
         snap = ganga.panorama(st, p)[:6000]
     except Exception:
         snap = "(panorama indisponível — use ver_panorama)"
-    system = ganga.VOICE_SYSTEM + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap
+    system = ganga.VOICE_SYSTEM + ganga.name_rule(p) + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap
     return 200, {"token": tok, "model": "models/" + ganga.LIVE_MODEL, "voice": voice, "system": system,
                  "tools": ganga.VOICE_TOOLS, "used": ganga.used_minutes_today(p), "limit": p["daily_minutes"]}
 
@@ -433,6 +434,8 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if not _host_ok(self):
+            return self._send(403, {"error": "host recusado"})
         u = urlparse(self.path)
         q = {k: v[0] for k, v in parse_qs(u.query).items()}
         if u.path == "/":
@@ -442,7 +445,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, open(os.path.join(HERE, u.path[1:]), encoding="utf-8").read(), ct)
         if u.path == "/api/ganga":
             pr = ganga.load_prefs()
-            return self._send(200, dict(pr, key_hint=ganga.key_hint(), used_today=ganga.used_minutes_today(pr)))
+            return self._send(200, dict(pr, key_hint=ganga.key_hint(), used_today=ganga.used_minutes_today(pr), user_name=ganga.user_name(pr)))
         if u.path == "/api/ganga/context":
             with LOCK:
                 st = json.loads(json.dumps(STATE["data"] or {}))
@@ -456,6 +459,8 @@ class H(BaseHTTPRequestHandler):
             except ValueError:
                 since = 0
             return self._send(200, {"notices": COP.since(since), "last": COP.seq})
+        if u.path == "/api/ganga/diag":
+            return self._send(200, {"idade_s": round(time.time() - DIAG["t"], 1), **DIAG["d"]})
         if u.path == "/api/ganga/orders":
             return self._send(200, {"orders": copilot.read_queue(), "sala_ouvindo": copilot.sala_listening()})
         if u.path == "/api/ganga/wake":
@@ -535,11 +540,19 @@ class H(BaseHTTPRequestHandler):
         return self._send(404, {"error": "rota desconhecida"})
 
 
+def _host_ok(h):
+    """Anti DNS rebinding: só aceita o Host do próprio painel (127.0.0.1/localhost na porta dele)."""
+    port = h.server.server_address[1]
+    return (h.headers.get("Host") or "") in (f"127.0.0.1:{port}", f"localhost:{port}")
+
+
 def _post_ok(h):
     """Só aceita POST do próprio painel (ou de curl local sem Origin) e com corpo JSON."""
+    if not _host_ok(h):
+        return False
+    port = h.server.server_address[1]
     origin = h.headers.get("Origin")
-    host = h.headers.get("Host", "")
-    if origin and origin not in (f"http://{host}", f"http://127.0.0.1:{host.split(':')[-1]}", f"http://localhost:{host.split(':')[-1]}"):
+    if origin and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
         return False
     return (h.headers.get("Content-Type") or "").startswith("application/json")
 
@@ -565,12 +578,20 @@ def do_POST(self):
             return self._send(400, {"error": "chave inválida"})
         ok, msg = gemini_check()
         return self._send(200, {"ok": ok, "check": msg, "key_hint": ganga.key_hint()})
+    if u.path == "/api/ganga/memory":
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        m = ganga.save_memory({k: body[k] for k in ("name", "fact", "forget") if isinstance(body.get(k), str)})
+        return self._send(200, {"ok": True, "name": m.get("name", ""), "facts": len(m.get("facts", []))})
+    if u.path == "/api/ganga/diag":
+        DIAG.update(t=time.time(), d=body if isinstance(body, dict) else {})
+        return self._send(200, {"ok": True})
     if u.path == "/api/ganga/live":
         COP.live = bool(isinstance(body, dict) and body.get("live"))
         COP.live_at = time.time()
         return self._send(200, {"ok": True})
     if u.path == "/api/ganga/say":
-        txt = str((body or {}).get("text", ""))[:300] or "Oi, João. Eu sou a Ganga."
+        txt = str((body or {}).get("text", ""))[:300] or ("Oi, " + ganga.user_name() + ". Eu sou a Ganga.").replace("Oi, . ", "Oi! ")
         COP.say(txt, ganga.load_prefs().get("mac_voice") or "Ganga")
         return self._send(200, {"ok": True})
     if u.path in ("/api/ganga/open", "/api/ganga/files"):
@@ -581,12 +602,17 @@ def do_POST(self):
         with LOCK:
             st = json.loads(json.dumps(STATE["data"] or {}))
         pick = body.get("numero")
-        if pick and FILES["last"]:
+        try:
+            pick = int(pick or 0)
+        except (TypeError, ValueError):
+            pick = 0
+        last_ok = FILES["last"] and (not body.get("project") or FILES["last"][0] in ganga.match_projects(
+            str(body.get("project", "")), st.get("projects", []), ganga.load_prefs()))
+        if pick and last_ok:
             proj, hits = FILES["last"]
-            try:
-                h = hits[int(pick) - 1]
-            except (ValueError, IndexError):
+            if not 1 <= pick <= min(len(hits), 6):
                 return self._send(200, {"error": "opção inválida", "opcoes": FILES["opts"]})
+            h = hits[pick - 1]
         else:
             ph = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())
             if not ph:
