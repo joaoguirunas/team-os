@@ -464,7 +464,8 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/api/ganga/diag":
             return self._send(200, {"idade_s": round(time.time() - DIAG["t"], 1), **DIAG["d"]})
         if u.path == "/api/ganga/orders":
-            return self._send(200, {"orders": copilot.read_queue(), "sala_ouvindo": copilot.sala_listening()})
+            rows = [dict(r, text=ganga.redact(r.get("text", "")), note=ganga.redact(r.get("note", ""))) for r in copilot.read_queue()]
+            return self._send(200, {"orders": rows, "sala_ouvindo": copilot.sala_listening()})
         if u.path == "/api/ganga/wake":
             WAKE["seen"] = time.time()
             return self._send(200, {"t": WAKE["t"]})
@@ -680,7 +681,7 @@ def do_POST(self):
             return self._send(200, {"error": "projeto não encontrado", "projetos": [p["name"] for p in st.get("projects", [])][:30]})
         if len(hits) > 1:
             return self._send(200, {"error": "mais de um projeto com esse nome", "opcoes": [p["name"] for p in hits]})
-        d = copilot.draft(hits[0], str(body.get("text", "")), st)
+        d = copilot.draft(hits[0], str(body.get("text", "")), st, ganga.classify_level)
         if d.get("error"):
             return self._send(200, d)
         if body.get("send") and d["nivel"] == "normal":   # pedido comum: vai direto para a fila da Sala

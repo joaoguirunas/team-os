@@ -24,7 +24,7 @@ import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CT = os.path.abspath(os.path.join(HERE, "..", "..", "..", "..", ".."))
-QDIR = os.path.join(CT, "docs", "smart-memory", "sala-de-controle", "ganga")
+QDIR = os.environ.get("GANGA_QDIR") or os.path.join(CT, "docs", "smart-memory", "sala-de-controle", "ganga")
 QUEUE = os.path.join(QDIR, "pedidos.jsonl")
 HEARTBEAT = os.path.join(QDIR, ".sala-ouvindo")
 
@@ -248,7 +248,19 @@ def _sessions_of(project, data):
     return ss
 
 
-def level(text, project_name=""):
+# piso que nenhum classificador rebaixa: dinheiro, apagar por comando, forçar, segredo
+HARD_RE = re.compile(r"\b(pag(a|ue|ar|amento)\b|\bpix\b|boleto|transfer[eê]ncia|transf(ira|erir)|rm\s+-|drop\s+(table|database)|"
+                     r"reset\s+--hard|force[- ]push|senha|credencia)|--force|\.env\b", re.I)
+RANK = {"normal": 0, "externo": 1, "sensivel": 2}
+
+
+def level(text, project_name="", classify=None):
+    """Nível do pedido. Com classificador (Gemini), ele decide; a regex fica de reserva e HARD_RE é o piso."""
+    if HARD_RE.search(text):
+        return "sensivel"
+    lv = classify(text) if classify else None
+    if lv in RANK:
+        return lv
     if SENSITIVE_RE.search(text):
         return "sensivel"
     if EXTERNAL_RE.search(text):
@@ -260,7 +272,7 @@ def level(text, project_name=""):
     return "normal"
 
 
-def draft(project, text, data):
+def draft(project, text, data, classify=None):
     text = re.sub(r"\s+", " ", (text or "")).strip()[:1500]
     if not text:
         return {"error": "pedido vazio"}
@@ -270,8 +282,8 @@ def draft(project, text, data):
     d = {"id": did, "created": time.time(), "project": project["name"], "project_path": project.get("path", ""),
          "session": sess["name"] if sess else None, "session_id": sess["id"] if sess else None,
          "session_status": (sess.get("status") if sess else None), "text": text,
-         "nivel": level(text, project.get("name", ""))}
-    d["ok_no_chat"] = d["nivel"] == "sensivel"      # só o muito sensível ainda pede OK no chat da Sala
+         "nivel": level(text, project.get("name", ""), classify), "passo": 0}
+    d["ok_no_chat"] = False       # toda aprovação é dada na Ganga (voz ou botão); a Sala não pergunta de novo no chat
     DRAFTS[did] = d
     for k in [k for k, v in DRAFTS.items() if time.time() - v["created"] > 600]:
         DRAFTS.pop(k, None)
@@ -279,21 +291,30 @@ def draft(project, text, data):
 
 
 def confirm(did):
-    d = DRAFTS.pop(did or "", None)
+    """1 "sim" para externo. Para sensível, 2: o primeiro devolve precisa_segunda; o segundo envia."""
+    d = DRAFTS.get(did or "")
     if not d:
         return {"error": "rascunho não encontrado ou expirado — prepare de novo"}
     if time.time() - d["created"] > 300:
+        DRAFTS.pop(did, None)
         return {"error": "rascunho expirou (5 min) — prepare de novo"}
+    if d["nivel"] == "sensivel" and not d.get("passo"):
+        d["passo"] = 1
+        return {"ok": True, "id": did, "enviado": False, "precisa_segunda": True, "nivel": "sensivel",
+                "instrucao": "Ação sensível (vai ao ar, apaga ou mexe com dinheiro). Diga em 1 frase exatamente o que vai "
+                             "acontecer e pergunte de novo: \"Confirma mesmo?\". Só com o segundo sim chame confirmar_pedido outra vez."}
+    DRAFTS.pop(did, None)
     dup = [r for r in read_queue(30) if r.get("project") == d["project"] and r.get("text") == d["text"]
-           and r.get("status") in ("na_fila", "entregue") and time.time() - _epoch(r.get("confirmed")) < 120]
+           and r.get("status") in ("na_fila", "anunciado", "entregue") and time.time() - _epoch(r.get("confirmed")) < 120]
     if dup:
-        return {"ok": True, "id": dup[0]["id"], "duplicado": True, "sala_ouvindo": sala_listening(), "ok_no_chat": d["ok_no_chat"]}
+        return {"ok": True, "id": dup[0]["id"], "enviado": True, "duplicado": True, "sala_ouvindo": sala_listening()}
     os.makedirs(QDIR, exist_ok=True)
+    # o "sim" do usuário na Ganga (2 para sensível) É a aprovação dele para ESTE pedido
     line = {**d, "status": "na_fila", "confirmed": time.strftime("%Y-%m-%dT%H:%M:%S"), "via": "ganga",
-            "ok_por_voz": d["nivel"] == "externo"}   # o "sim" falado do usuário para ESTE envio já é o OK
+            "ok_por_voz": d["nivel"] != "normal", "aprovado_pelo_usuario": d["nivel"] != "normal"}
     with open(QUEUE, "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
-    return {"ok": True, "id": d["id"], "sala_ouvindo": sala_listening(), "ok_no_chat": d["ok_no_chat"]}
+    return {"ok": True, "id": d["id"], "enviado": True, "nivel": d["nivel"], "sala_ouvindo": sala_listening()}
 
 
 def _epoch(stamp):
@@ -312,22 +333,35 @@ def read_queue(limit=20):
             r = json.loads(ln)
         except Exception:
             continue
+        if not isinstance(r, dict) or not r.get("id"):
+            continue
         rows[r["id"]] = {**rows.get(r["id"], {}), **r}   # linhas de status atualizam o pedido
     return sorted(rows.values(), key=lambda r: r.get("confirmed", ""), reverse=True)[:limit]
 
 
+def append_status(pid, status, note="", **extra):
+    with open(QUEUE, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"id": pid, "status": status, "note": (note or "")[:500],
+                            "updated": time.strftime("%Y-%m-%dT%H:%M:%S"), **extra}, ensure_ascii=False) + "\n")
+
+
+OPEN_STATES = ("na_fila", "anunciado", "aguardando_ok", "aprovado", "entregue")
+
+
 def set_status(pid, status, note=""):
-    """Aprovar ou cancelar pela Ganga um pedido que espera o OK do usuário."""
+    """Aprovar ou cancelar pela Ganga (voz ou botão). Aprovar só o que espera OK; cancelar só o que ainda está aberto."""
     rows = {r["id"]: r for r in read_queue(500)}
     r = rows.get(pid or "")
     if not r:
         return {"error": "pedido não encontrado"}
-    if status == "aprovado" and r.get("status") not in ("aguardando_ok", "na_fila"):
-        return {"error": f"esse pedido está {r.get('status')}, não espera aprovação"}
-    with open(QUEUE, "a", encoding="utf-8") as f:
-        f.write(json.dumps({"id": pid, "status": status, "note": note[:300], "updated": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                            **({"aprovado_pelo_usuario": True} if status == "aprovado" else {})}, ensure_ascii=False) + "\n")
-    return {"ok": True, "id": pid, "status": status, "sala_ouvindo": sala_listening()}
+    cur = r.get("status")
+    if status == "aprovado" and cur != "aguardando_ok":
+        return {"error": f"esse pedido está {cur}, não espera aprovação"}
+    if status == "cancelado" and cur not in OPEN_STATES:
+        return {"error": f"esse pedido já está {cur}"}
+    append_status(pid, status, note, **({"aprovado_pelo_usuario": True, "aprovado_em": time.strftime("%Y-%m-%dT%H:%M:%S")}
+                                        if status == "aprovado" else {}))
+    return {"ok": True, "id": pid, "status": status, "ja_estava_com_a_sessao": cur == "entregue", "sala_ouvindo": sala_listening()}
 
 
 def sala_listening():

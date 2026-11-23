@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Fila de pedidos da Ganga — lida pela sessão da Sala de Controle (etapa 4).
+"""Fila de pedidos da Ganga — lida pela sessão da Sala de Controle.
 
-  ganga-fila.py --wait            fica ouvindo: imprime 1 linha JSON por pedido novo `na_fila` (para o Monitor
-                                  da sessão da Sala) e marca o batimento "Sala ouvindo" a cada 20 s
+  ganga-fila.py --wait            fica ouvindo: imprime `PEDIDO_GANGA {json}` por pedido a despachar e
+                                  `CANCELADO_GANGA {id}` se o usuário cancelar um já anunciado; marca o batimento
+                                  "Sala ouvindo" a cada 20 s
   ganga-fila.py --list            pedidos recentes (todos os status)
   ganga-fila.py --mark ID STATUS [NOTA]
                                   STATUS: entregue | respondido | aguardando_ok | erro | cancelado
 
-Os pedidos foram confirmados pelo usuário por voz ou por clique no painel. Mesmo assim, push, deploy, publicar,
-Envio para fora (WhatsApp, e-mail, cliente, publicar) vem com `ok_por_voz: true`: o usuário ouviu destino e texto e disse
-"sim" — a Sala despacha sem perguntar de novo. Só o muito sensível (pagar, apagar, push, deploy, produção, senha) vem
-com `ok_no_chat: true` e a Sala pergunta no chat.
+Toda aprovação é dada pelo usuário NA GANGA (voz ou botão): pedido comum sai direto; envio para fora leva 1 "sim";
+ação sensível (publicar no ar, deploy, apagar, pagar) leva 2. O que chega aqui já está aprovado — a Sala despacha
+sem perguntar de novo no chat. Cada pedido é anunciado UMA vez (vira `anunciado`); se ficar mais de 15 min sem ser
+entregue, volta para `aguardando_ok` e a Ganga pergunta de novo ao usuário.
 """
 import json
 import os
@@ -34,32 +35,39 @@ def mark(pid, status, note=""):
         sys.exit(f"status inválido: {status} (use {', '.join(sorted(STATUSES))})")
     if not any(r["id"] == pid for r in copilot.read_queue(500)):
         sys.exit(f"pedido não encontrado: {pid}")
-    with open(copilot.QUEUE, "a", encoding="utf-8") as f:
-        f.write(json.dumps({"id": pid, "status": status, "note": note[:500], "updated": time.strftime("%Y-%m-%dT%H:%M:%S")},
-                           ensure_ascii=False) + "\n")
+    copilot.append_status(pid, status, note)
     print(f"OK {pid} → {status}")
 
 
+STALE = 900   # 15 min
+
+
 def wait():
-    # pedido parado há mais de 15 min (a Sala estava fora) não sai sozinho: volta a pedir o OK no chat
-    for r in copilot.read_queue(500):
-        if r.get("status") == "na_fila" and time.time() - copilot._epoch(r.get("confirmed")) > 900:
-            mark(r["id"], "aguardando_ok", "pedido antigo — confirmar no chat antes de despachar")
-    seen = {r["id"] for r in copilot.read_queue(500) if r.get("status") != "na_fila"}
-    announced = set()
+    def age(r, k="confirmed"):
+        return time.time() - copilot._epoch(r.get(k) or r.get("updated") or r.get("confirmed"))
+    told = set()        # anunciados por ESTE processo (para avisar cancelamento)
     last_beat = 0
     print("GANGA_FILA=ouvindo", flush=True)
     while True:
         if time.time() - last_beat > 20:
             beat()
             last_beat = time.time()
-        for r in reversed(copilot.read_queue(50)):
-            key = r["id"] + (":ok" if r.get("status") == "aprovado" else "")
-            if r.get("status") in ("na_fila", "aprovado") and key not in announced and (r["id"] not in seen or r.get("status") == "aprovado"):
-                announced.add(key)
+        for r in reversed(copilot.read_queue(80)):
+            st, pid = r.get("status"), r["id"]
+            if st in ("na_fila", "aprovado"):
+                if age(r, "aprovado_em" if st == "aprovado" else "confirmed") > STALE:
+                    copilot.append_status(pid, "aguardando_ok", "pedido antigo — a Ganga confirma de novo com o usuário")
+                    continue
+                copilot.append_status(pid, "anunciado")          # grava ANTES de imprimir: nunca anuncia duas vezes
+                told.add(pid)
                 out = {k: r.get(k) for k in ("id", "project", "project_path", "session", "session_id", "session_status",
-                                              "text", "nivel", "ok_por_voz", "ok_no_chat", "aprovado_pelo_usuario", "status", "confirmed")}
+                                              "text", "nivel", "ok_por_voz", "aprovado_pelo_usuario", "confirmed")}
                 print("PEDIDO_GANGA " + json.dumps(out, ensure_ascii=False), flush=True)
+            elif st == "anunciado" and age(r, "updated") > STALE:
+                copilot.append_status(pid, "aguardando_ok", "anunciado e não entregue — a Ganga confirma de novo com o usuário")
+            elif st == "cancelado" and pid in told:
+                told.discard(pid)
+                print("CANCELADO_GANGA " + json.dumps({"id": pid}), flush=True)
         time.sleep(2)
 
 

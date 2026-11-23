@@ -30,6 +30,9 @@ jobs:
       - name: Testar o *install/*propagate (herméticos, sem perder edição do usuário)
         run: bash .claude/skills/team-os-creator/scripts/test-propagate.sh
 
+      - name: Testes da Ganga (Sala de Controle)
+        run: python3 .claude/skills/sala-de-controle/scripts/painel/test_ganga.py
+
       - name: Testar a migração da social para squads por plataforma (hermético)
         run: bash .claude/skills/team-os-creator/scripts/test-migrate-social.sh
 
