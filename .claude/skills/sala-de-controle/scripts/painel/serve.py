@@ -639,6 +639,10 @@ def do_POST(self):
             return self._send(409, {"error": "desligada"})
         with LOCK:
             st = json.loads(json.dumps(STATE["data"] or {}))
+        if body.get("approve"):
+            return self._send(200, copilot.set_status(str(body["approve"]), "aprovado", "aprovado pelo usuário na Ganga"))
+        if body.get("cancel"):
+            return self._send(200, copilot.set_status(str(body["cancel"]), "cancelado", "cancelado pelo usuário na Ganga"))
         if body.get("confirm"):
             return self._send(200, copilot.confirm(str(body["confirm"])))
         hits = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())

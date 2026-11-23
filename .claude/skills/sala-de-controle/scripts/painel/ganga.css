@@ -360,3 +360,5 @@ body.has-ganga .feed{bottom:96px}
 @keyframes gIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 @media (max-width:1100px){.g-float{display:none}}
 @media (prefers-reduced-motion:reduce){.g-kpi.pulse::after,.g-live,.g-wk i{animation:none}.g-toast{animation:none}}
+
+.g-oact{display:flex;gap:6px;margin-top:7px}.g-oact .g-b{padding:5px 10px;font-size:11px}

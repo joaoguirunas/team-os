@@ -31,12 +31,15 @@ HEARTBEAT = os.path.join(QDIR, ".sala-ouvindo")
 ERR_RE = re.compile(r"\b(erro|falhou|falha|quebrou|failed|error|exception|traceback|FAIL)\b", re.I)
 # muito sensível: mexe em dinheiro, apaga, vai para produção ou toca em senha → OK no chat da Sala
 SENSITIVE_RE = re.compile(
-    r"\b(push|deploy|apag|delet|exclu|remov|limp[ae]|descart|jog(a|ue)\s+fora|reset|rm\s|drop\b|sobrescrev|--force|force|"
-    r"instal[ae]|execut[ae]|rod(a|e|ar)\s+(o\s+|um\s+)?(script|comando|\.sh)|pag(a|ue|ar|amento)|transf|pix|boleto|merge|"
-    r"produ[cç][aã]o|rotacion|senha|credencia|token|cancel(a|ar)\s+(contrato|assinatura))", re.I)
+    r"\b(push|deploy|merge|(em|para|na|no\s+ambiente\s+de|subir\s+(para|pra))\s+produ[cç][aã]o|"
+    r"apag(a|ue|ar|ando)|delet(a|e|ar)|exclu(a|i|ir|indo|s[aã]o)\b|drop\b|rm\s+-|reset\s+--hard|--force|force[- ]push|"
+    r"descart(a|e|ar)\s+(as\s+|os\s+)?(mudan|altera)|limp(a|e|ar)\s+(a\s+|o\s+)?(pasta|banco|base|tabela|disco|dados)|"
+    r"instal(a|e|ar)\s+(o\s+|um\s+)?(pacote|programa|app)|execut(a|e|ar)\s+(o\s+|um\s+)?(script|comando)|"
+    r"rod(a|e|ar)\s+(o\s+|um\s+)?(script|comando|\.sh)|pag(a|ue|ar|amento)\b|transfer[eê]ncia|transf(ira|erir)|\bpix\b|boleto|"
+    r"rotacion|senha|credencia|token|cancel(a|ar)\s+(o\s+)?(contrato|assinatura))", re.I)
 # sai para fora (WhatsApp, e-mail, cliente, publicar): basta o "sim" falado na Ganga, depois de ela ler destino e texto
 EXTERNAL_RE = re.compile(
-    r"\b(publi(ca|que|car)|post(a|e|ar)\b|whats|zap|e-?mail|sms|instagram|telegram|linkedin|slack|\bdm\b|direct|"
+    r"\b(publi(ca|que|car)|post(a|e|ar)\b|github|whats|zap|e-?mail|sms|instagram|telegram|linkedin|slack|\bdm\b|direct|"
     r"dispar(a|e|ar)|cliente|contato|n[uú]mero\s+\d|\+?\d{10,}|"
     r"(envi|mand|respond|encaminh)\w*\b.{0,50}\b(mensagem|fora|cliente|contato|n[uú]mero))", re.I)
 # "manda pro Carlos" / "responde a Ana": verbo de envio + pessoa (nome com maiúscula) → externo
@@ -106,13 +109,21 @@ class Copilot:
                         out.append(("error", f"A sessão {sname} parou com erro.", {**meta, "ask": st["last"][-600:]}))
                     elif needs_reply(st["last"]):
                         out.append(("ask", f"A sessão {sname} terminou e quer saber de você.", {**meta, "ask": st["last"][-900:]}))
+        # pedido da Ganga parado esperando o OK do usuário → a Ganga chama e pergunta "aprovo?"
+        for r in read_queue(20):
+            if r.get("status") == "aguardando_ok":
+                cur["o:" + r["id"]] = {"status": "aguardando_ok", "state": "", "last": ""}
+                if "o:" + r["id"] not in self.prev:
+                    out.append(("order", f"Um pedido para {short(r.get('project', ''))} está esperando sua aprovação.",
+                                {"session": short(r.get("project", "")), "project": r.get("project", ""), "order_id": r["id"],
+                                 "ask": r.get("text", "")}))
         self.prev = cur
         if not self.primed:               # 1ª leitura só aprende o estado, não avisa
             self.primed = True
             return
         notify = p.get("notify", {})
         for kind, text, meta in out:
-            if notify.get("wait" if kind == "ask" else kind, True):
+            if notify.get("wait" if kind in ("ask", "order") else kind, True):
                 self.queue(kind, text, meta=meta)
         hour = time.strftime("%Y-%m-%d %H")
         if hour != self.last_hour:
@@ -155,7 +166,7 @@ class Copilot:
         if not self.pending or (self.first_at and now - self.first_at < 4):
             return
         items, self.pending, self.first_at = self.pending, [], 0.0
-        order = {"ask": 0, "wait": 1, "error": 2, "hourly": 3}
+        order = {"order": 0, "ask": 0, "wait": 1, "error": 2, "hourly": 3}
         items.sort(key=lambda x: order.get(x[0], 9))
         kind, text, meta = items[0]
         if len(items) > 1:
@@ -167,7 +178,7 @@ class Copilot:
             self.seq += 1
             n = {"seq": self.seq, "kind": kind, "text": text, "epoch": now, "spoken": bool(speak),
                  "session": meta.get("session"), "project": meta.get("project"), "ask": meta.get("ask", "")[-900:],
-                 "line": None, "call": False}
+                 "order_id": meta.get("order_id"), "line": None, "call": False}
             self.notices.append(n)
             self.notices = self.notices[-60:]
         if speak:
@@ -181,7 +192,7 @@ class Copilot:
         line = (self.line_fn(n) if self.line_fn else None) or n["text"]
         with self.lock:
             n["line"] = line
-            n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait")
+            n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait", "order")
         if n["call"]:
             t0 = time.time()
             while time.time() - t0 < 8:
@@ -303,6 +314,20 @@ def read_queue(limit=20):
             continue
         rows[r["id"]] = {**rows.get(r["id"], {}), **r}   # linhas de status atualizam o pedido
     return sorted(rows.values(), key=lambda r: r.get("confirmed", ""), reverse=True)[:limit]
+
+
+def set_status(pid, status, note=""):
+    """Aprovar ou cancelar pela Ganga um pedido que espera o OK do usuário."""
+    rows = {r["id"]: r for r in read_queue(500)}
+    r = rows.get(pid or "")
+    if not r:
+        return {"error": "pedido não encontrado"}
+    if status == "aprovado" and r.get("status") not in ("aguardando_ok", "na_fila"):
+        return {"error": f"esse pedido está {r.get('status')}, não espera aprovação"}
+    with open(QUEUE, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"id": pid, "status": status, "note": note[:300], "updated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                            **({"aprovado_pelo_usuario": True} if status == "aprovado" else {})}, ensure_ascii=False) + "\n")
+    return {"ok": True, "id": pid, "status": status, "sala_ouvindo": sala_listening()}
 
 
 def sala_listening():

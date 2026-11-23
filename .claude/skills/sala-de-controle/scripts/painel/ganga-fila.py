@@ -20,7 +20,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import copilot  # noqa: E402
 
-STATUSES = {"entregue", "respondido", "aguardando_ok", "erro", "cancelado"}
+STATUSES = {"entregue", "respondido", "aguardando_ok", "aprovado", "erro", "cancelado"}
 
 
 def beat():
@@ -54,10 +54,11 @@ def wait():
             beat()
             last_beat = time.time()
         for r in reversed(copilot.read_queue(50)):
-            if r.get("status") == "na_fila" and r["id"] not in announced and r["id"] not in seen:
-                announced.add(r["id"])
+            key = r["id"] + (":ok" if r.get("status") == "aprovado" else "")
+            if r.get("status") in ("na_fila", "aprovado") and key not in announced and (r["id"] not in seen or r.get("status") == "aprovado"):
+                announced.add(key)
                 out = {k: r.get(k) for k in ("id", "project", "project_path", "session", "session_id", "session_status",
-                                              "text", "nivel", "ok_por_voz", "ok_no_chat", "confirmed")}
+                                              "text", "nivel", "ok_por_voz", "ok_no_chat", "aprovado_pelo_usuario", "status", "confirmed")}
                 print("PEDIDO_GANGA " + json.dumps(out, ensure_ascii=False), flush=True)
         time.sleep(2)
 
