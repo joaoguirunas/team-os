@@ -394,7 +394,7 @@
       b.classList.add('card'); loadOrders(); return;
     }
     const box = add('ga', '', `<div class="g-order"><small>Pedido para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
-      <p>${esc(r.text)}</p>${r.ok_no_chat ? '<em>Envio para fora, push, apagar ou pagar: a Sala ainda pede seu OK no chat.</em>' : ''}
+      <p>${esc(r.text)}</p>${r.ok_no_chat ? '<em>Muito sensível (dinheiro, apagar, produção): a Sala ainda confirma com você no chat.</em>' : '<em>Sai para fora — confirme uma vez e a Sala envia.</em>'}
       <div class="row"><button class="g-b" data-x>Cancelar</button><button class="g-b p" data-ok>Confirmar envio</button></div></div>`);
     box.classList.add('card');
     box.querySelector('[data-x]').onclick = () => { box.querySelector('.row').innerHTML = '<span class="g-none">Cancelado.</span>'; };
@@ -555,7 +555,7 @@
           result = r.text || ('O Claude não respondeu: ' + (ERR[r.error] || r.error));
         } else if (fc.name === 'mandar_para_sessao' || fc.name === 'pedir_a_sessao') {
           const a = fc.args || {}, r = await api('/api/ganga/order', {project: a.projeto || '', text: a.pedido || '', send: true});
-          result = JSON.stringify(r.error ? r : {id: r.id, enviado: !!r.sent, precisa_sim: !!r.precisa_sim, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, sala_ouvindo: r.sala_ouvindo});
+          result = JSON.stringify(r.error ? r : {id: r.id, enviado: !!r.sent, precisa_sim: !!r.precisa_sim, nivel: r.nivel, projeto: r.project, sessao: r.session || 'nenhuma aberta — a Sala abre uma nova com OK do João', status_da_sessao: r.session_status, pedido: r.text, sala_ouvindo: r.sala_ouvindo});
           if (r.sent) { add('ga', `Mandei para ${shortName(r.project)}: ${r.text}`); loadOrders(); }
         } else if (fc.name === 'confirmar_pedido') {
           const r = await api('/api/ganga/order', {confirm: (fc.args || {}).id || ''});

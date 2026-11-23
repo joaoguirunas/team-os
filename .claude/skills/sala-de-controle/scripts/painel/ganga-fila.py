@@ -8,7 +8,9 @@
                                   STATUS: entregue | respondido | aguardando_ok | erro | cancelado
 
 Os pedidos foram confirmados pelo João por voz ou por clique no painel. Mesmo assim, push, deploy, publicar,
-apagar, pagar ou enviar para fora vêm com `ok_no_chat: true` — a Sala pergunta no chat antes de despachar.
+Envio para fora (WhatsApp, e-mail, cliente, publicar) vem com `ok_por_voz: true`: o João ouviu destino e texto e disse
+"sim" — a Sala despacha sem perguntar de novo. Só o muito sensível (pagar, apagar, push, deploy, produção, senha) vem
+com `ok_no_chat: true` e a Sala pergunta no chat.
 """
 import json
 import os
@@ -51,7 +53,7 @@ def wait():
             if r.get("status") == "na_fila" and r["id"] not in announced and r["id"] not in seen:
                 announced.add(r["id"])
                 out = {k: r.get(k) for k in ("id", "project", "project_path", "session", "session_id", "session_status",
-                                              "text", "ok_no_chat", "confirmed")}
+                                              "text", "nivel", "ok_por_voz", "ok_no_chat", "confirmed")}
                 print("PEDIDO_GANGA " + json.dumps(out, ensure_ascii=False), flush=True)
         time.sleep(2)
 

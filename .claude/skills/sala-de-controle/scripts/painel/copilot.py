@@ -11,7 +11,8 @@ Agrupa avisos próximos, nunca fala mais de uma vez a cada 20 s e nunca repete o
 Pedidos: a Ganga só PREPARA o pedido (rascunho) e, depois do "sim" do João, grava na fila
 `docs/smart-memory/sala-de-controle/ganga/pedidos.jsonl` do CT. Quem entrega é a sessão da Sala,
 que escuta a fila com `ganga-fila.py --wait` e despacha pelas regras dela. Nada perigoso sai direto:
-push, deploy, publicar, apagar, pagar ou enviar para fora fica marcado `ok_no_chat` e a Sala pergunta no chat.
+envio para fora (WhatsApp, e-mail, cliente, publicar) pede um "sim" falado na Ganga e sai com `ok_por_voz`;
+só o muito sensível (pagar, apagar, push, deploy, produção, senha) fica `ok_no_chat` e a Sala pergunta no chat.
 """
 import json
 import os
@@ -28,9 +29,14 @@ QUEUE = os.path.join(QDIR, "pedidos.jsonl")
 HEARTBEAT = os.path.join(QDIR, ".sala-ouvindo")
 
 ERR_RE = re.compile(r"\b(erro|falhou|falha|quebrou|failed|error|exception|traceback|FAIL)\b", re.I)
-DANGER_RE = re.compile(
-    r"\b(push|deploy|publi(ca|que|car)|post(a|e|ar)\b|apag|delet|exclu|remov|pag(a|ue|ar)|transf|pix|"
-    r"envi(a|e|ar)\b.*\b(cliente|whats|e-?mail|mensagem|fora)|whats|e-?mail|merge|produ[cç][aã]o|rotacion|senha)", re.I)
+# muito sensível: mexe em dinheiro, apaga, vai para produção ou toca em senha → OK no chat da Sala
+SENSITIVE_RE = re.compile(
+    r"\b(push|deploy|apag|delet|exclu|remov|pag(a|ue|ar|amento)|transf|pix|boleto|merge|produ[cç][aã]o|rotacion|senha|"
+    r"credencia|token|cancel(a|ar)\s+(contrato|assinatura))", re.I)
+# sai para fora (WhatsApp, e-mail, cliente, publicar): basta o "sim" falado na Ganga, depois de ela ler destino e texto
+EXTERNAL_RE = re.compile(
+    r"\b(publi(ca|que|car)|post(a|e|ar)\b|whats|zap|e-?mail|sms|envi(a|e|ar)\b.*\b(cliente|mensagem|fora|n[uú]mero|contato))", re.I)
+DANGER_RE = re.compile(SENSITIVE_RE.pattern + "|" + EXTERNAL_RE.pattern, re.I)   # compatibilidade
 
 
 def short(name):
@@ -183,7 +189,8 @@ def draft(project, text, data):
     d = {"id": did, "created": time.time(), "project": project["name"], "project_path": project.get("path", ""),
          "session": sess["name"] if sess else None, "session_id": sess["id"] if sess else None,
          "session_status": (sess.get("status") if sess else None), "text": text,
-         "ok_no_chat": bool(DANGER_RE.search(text))}
+         "nivel": "sensivel" if SENSITIVE_RE.search(text) else "externo" if EXTERNAL_RE.search(text) else "normal"}
+    d["ok_no_chat"] = d["nivel"] == "sensivel"      # só o muito sensível ainda pede OK no chat da Sala
     DRAFTS[did] = d
     for k in [k for k, v in DRAFTS.items() if time.time() - v["created"] > 600]:
         DRAFTS.pop(k, None)
@@ -197,7 +204,8 @@ def confirm(did):
     if time.time() - d["created"] > 300:
         return {"error": "rascunho expirou (5 min) — prepare de novo"}
     os.makedirs(QDIR, exist_ok=True)
-    line = {**d, "status": "na_fila", "confirmed": time.strftime("%Y-%m-%dT%H:%M:%S"), "via": "ganga"}
+    line = {**d, "status": "na_fila", "confirmed": time.strftime("%Y-%m-%dT%H:%M:%S"), "via": "ganga",
+            "ok_por_voz": d["nivel"] == "externo"}   # o "sim" falado do João para ESTE envio já é o OK
     with open(QUEUE, "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
     return {"ok": True, "id": d["id"], "sala_ouvindo": sala_listening(), "ok_no_chat": d["ok_no_chat"]}

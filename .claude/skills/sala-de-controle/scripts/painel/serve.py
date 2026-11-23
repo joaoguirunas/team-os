@@ -620,10 +620,10 @@ def do_POST(self):
         d = copilot.draft(hits[0], str(body.get("text", "")), st)
         if d.get("error"):
             return self._send(200, d)
-        if body.get("send") and not d["ok_no_chat"]:   # pedido comum: vai direto para a fila da Sala
+        if body.get("send") and d["nivel"] == "normal":   # pedido comum: vai direto para a fila da Sala
             c = copilot.confirm(d["id"])
             return self._send(200, {**d, **c, "sent": not c.get("error"), "precisa_sim": False})
-        return self._send(200, {**d, "sent": False, "precisa_sim": bool(d["ok_no_chat"]), "sala_ouvindo": copilot.sala_listening()})
+        return self._send(200, {**d, "sent": False, "precisa_sim": True, "sala_ouvindo": copilot.sala_listening()})
     if u.path == "/api/ganga/wake":
         # chamado pelo atalho global (app Atalhos → curl). Liga a Ganga e pede ao painel abrir a voz.
         if not ganga.load_prefs()["on"]:
