@@ -185,12 +185,14 @@
     clearTimeout(wait);
     G.busy = false; $('#ggSend').disabled = false;
     if (r.error) { add('ga err', ERR[r.error] || ERR.falhou); setOrb('sleep'); return; }
-    let text = r.text, order = null;
+    let text = r.text.replace(/^\s*ABRIR:.*$/m, m => (r.abrir = m, '')).trim(), order = null;
     const om = text.match(/^\s*PEDIDO:\s*(.+?)\s*::\s*([\s\S]+?)\s*$/m);
     if (om) { order = {project: om[1], text: om[2]}; text = text.replace(om[0], '').trim(); }
     const links = (r.projects || []).map(p => `<button data-p="${esc(p.path)}" data-n="${esc(p.name)}">relatórios · ${esc(p.name)}</button>`).join('');
     const d = add('ga', text, links ? `<div class="lk">${links}</div>` : '');
     if (order) orderCard(order);
+    const fm = (r.abrir || '').match(/ABRIR:\s*(.+?)\s*::\s*(.+?)\s*$/);
+    if (fm) openFile(fm[1], fm[2]);
     d.querySelectorAll('.lk button').forEach(b => b.onclick = () => openReports(b.dataset.p, b.dataset.n));
     speakFor(Math.min(12000, Math.max(1800, text.length * 55)));
     $('#ggInput').focus();
@@ -355,6 +357,15 @@
     await loadPrefs(); closeCfg();
   };
   async function loadPrefs() { try { Object.assign(G, await api('/api/ganga')); } catch {} paint(); }
+
+  // ---------- abrir arquivos dos projetos (no Mac) ----------
+  async function openFile(project, q, numero) {
+    const r = await api('/api/ganga/open', {project, q, numero: numero || 0}).catch(() => ({error: 'rede'}));
+    if (r.aberto) { add('ga', `Abri ${r.nome}.`); return; }
+    if (r.error) { add('ga err', r.opcoes ? `Qual projeto? ${r.opcoes.join(' · ')}` : `Não achei: ${r.error}.`); return; }
+    const box = add('ga', 'Achei mais de um. Qual abro?', `<div class="lk">${r.opcoes.map(o => `<button data-n="${o.n}" title="${esc(o.pasta)}">${esc(o.nome)} · ${esc(o.data.slice(0, 5))}</button>`).join('')}</div>`);
+    box.querySelectorAll('[data-n]').forEach(b => b.onclick = () => openFile(project, q, +b.dataset.n));
+  }
 
   // ---------- etapa 4: pedidos às sessões ----------
   async function orderCard(o) {
@@ -533,6 +544,10 @@
           const r = await api('/api/ganga/order', {confirm: (fc.args || {}).id || ''});
           result = JSON.stringify(r); loadOrders();
           if (!r.error) add('ga', 'Pedido confirmado e na fila da Sala.');
+        } else if (fc.name === 'abrir_arquivo' || fc.name === 'procurar_arquivos') {
+          const a = fc.args || {}, r = await api(fc.name === 'abrir_arquivo' ? '/api/ganga/open' : '/api/ganga/files', {project: a.projeto || '', q: a.busca || '', numero: a.numero || 0});
+          result = JSON.stringify(r);
+          if (r.aberto) add('ga', `Abri ${r.nome}.`);
         } else if (fc.name === 'ver_pedidos') {
           const r = await api('/api/ganga/orders');
           result = JSON.stringify({sala_ouvindo: r.sala_ouvindo, pedidos: r.orders.slice(0, 6).map(o => ({projeto: o.project, pedido: o.text, status: o.status, resposta: o.note || ''}))});

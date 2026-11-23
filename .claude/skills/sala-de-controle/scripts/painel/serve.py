@@ -315,6 +315,11 @@ def gemini_check():
 
 
 WAKE = {"t": 0.0, "seen": 0.0}
+FILES = {"last": None, "opts": []}
+
+
+def shortp(n):
+    return n.split("|")[-1].strip() if "|" in n else n
 
 
 def gemini_token():
@@ -565,6 +570,39 @@ def do_POST(self):
         txt = str((body or {}).get("text", ""))[:300] or "Oi, João. Eu sou a Ganga."
         COP.say(txt, ganga.load_prefs().get("mac_voice") or "Luciana")
         return self._send(200, {"ok": True})
+    if u.path in ("/api/ganga/open", "/api/ganga/files"):
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "json inválido"})
+        if not ganga.load_prefs()["on"]:
+            return self._send(409, {"error": "desligada"})
+        with LOCK:
+            st = json.loads(json.dumps(STATE["data"] or {}))
+        pick = body.get("numero")
+        if pick and FILES["last"]:
+            proj, hits = FILES["last"]
+            try:
+                h = hits[int(pick) - 1]
+            except (ValueError, IndexError):
+                return self._send(200, {"error": "opção inválida", "opcoes": FILES["opts"]})
+        else:
+            ph = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())
+            if not ph:
+                return self._send(200, {"error": "projeto não encontrado", "projetos": [shortp(p["name"]) for p in st.get("projects", [])][:30]})
+            if len(ph) > 1:
+                return self._send(200, {"error": "mais de um projeto com esse nome", "opcoes": [p["name"] for p in ph]})
+            proj = ph[0]
+            hits = ganga.find_files(proj.get("path", ""), str(body.get("q", "")))
+            if not hits:
+                return self._send(200, {"error": "nenhum arquivo encontrado com essas palavras", "projeto": proj["name"]})
+            FILES["last"] = (proj, hits)
+            FILES["opts"] = [{"n": i + 1, "nome": x["nome"], "pasta": x["pasta"][-80:], "tipo": x["tipo"], "data": x["data"]} for i, x in enumerate(hits[:6])]
+            clear = len(hits) == 1 or hits[0]["score"] >= hits[1]["score"] + 1
+            if u.path == "/api/ganga/files" or not clear:
+                return self._send(200, {"aberto": False, "projeto": proj["name"], "opcoes": FILES["opts"]})
+            h = hits[0]
+        if not ganga.open_file(proj.get("path", ""), h["rel"]):
+            return self._send(200, {"error": "não consegui abrir esse arquivo"})
+        return self._send(200, {"aberto": True, "projeto": proj["name"], "nome": h["nome"], "tipo": h["tipo"], "data": h["data"]})
     if u.path == "/api/ganga/order":
         if not isinstance(body, dict):
             return self._send(400, {"error": "json inválido"})

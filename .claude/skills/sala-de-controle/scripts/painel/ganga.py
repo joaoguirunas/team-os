@@ -35,6 +35,9 @@ executa nada — você MANDA o pedido para a Sala, que entrega na sessão. Respo
 para qual projeto, e termine com uma linha separada exatamente assim: PEDIDO: <nome do projeto> :: <o pedido, claro e \
 completo, em 1 a 3 frases>. O painel envia direto, sem confirmação. Só push, deploy, publicar, apagar, pagar ou enviar \
 algo para fora (WhatsApp, e-mail, cliente) param para o João confirmar — avise isso nesses casos.
+- Pedido para abrir, mostrar ou ver um arquivo (proposta, PDF, deck, relatório, revista, planilha): responda em 1 frase \
+e termine com uma linha separada exatamente assim: ABRIR: <nome do projeto> :: <palavras-chave do nome do arquivo>. \
+O painel acha e abre no Mac. Nunca diga que não consegue abrir arquivo.
 - Nunca diga que fez algo que não fez. Nunca invente número, prazo ou status.
 - Se o nome que ele usou serve para mais de um projeto, pergunte qual."""
 
@@ -93,6 +96,8 @@ def used_minutes_today(p=None):
 VOICE_SYSTEM = SYSTEM + """
 
 Você está numa conversa POR VOZ, em tempo real. Fale sempre em português do Brasil, com naturalidade, frases curtas.
+Na voz, NUNCA fale nem escreva as linhas "PEDIDO:" ou "ABRIR:" (são só do chat digitado): para pedir algo a uma sessão
+use a ferramenta mandar_para_sessao; para abrir arquivo use abrir_arquivo.
 
 CONTEXTO FIXO — nunca esqueça: você existe SÓ para a Sala de Controle do João, que acompanha as sessões do Claude Code
 e os agentes de IA trabalhando nos projetos dele. Você não é assistente genérica, não controla casa, agenda nem música.
@@ -113,6 +118,12 @@ Ferramentas:
 - confirmar_pedido(id): só para precisa_sim=true, e só depois de um "sim", "confirma", "pode mandar" claro do João
   para AQUELE pedido. Mesmo assim a Sala pede o OK dele no chat antes de executar — avise.
 - ver_pedidos: situação dos últimos pedidos (na fila, entregue, respondido, erro).
+- abrir_arquivo(projeto, busca): ABRE no Mac do João (PDF, apresentação, página, planilha, imagem, vídeo) um arquivo
+  do projeto. Use SEMPRE que ele pedir para abrir, mostrar ou ver um arquivo, proposta, relatório, revista, deck, PDF.
+  Nunca diga que não consegue abrir. Em "busca" ponha as palavras-chave do nome (ex.: "mkt os scalify v2.1 revista pdf").
+  Se voltar aberto=true, diga em 1 frase curta o que abriu. Se voltar opcoes, leia no máximo 3 pelo nome curto e
+  pergunte qual; quando ele escolher, chame de novo com numero=<n da opção>.
+- procurar_arquivos(projeto, busca): lista arquivos sem abrir, quando ele quiser saber o que existe.
 Se a resposta disser sala_ouvindo=false, avise que a sessão da Sala não está ouvindo e que ele precisa rodar
 /sala-de-controle *ganga no Centro de Treinamento. Nunca diga que ele precisa clicar ou confirmar um pedido comum.
 Nunca leia em voz alta listas longas, caminhos ou ids. Se o dado não veio das ferramentas, não afirme."""
@@ -134,6 +145,15 @@ VOICE_TOOLS = [{"functionDeclarations": [
      "parameters": {"type": "OBJECT", "properties": {"id": {"type": "STRING"}}, "required": ["id"]}},
     {"name": "ver_pedidos", "description": "Situação dos últimos pedidos enviados pela Ganga.",
      "parameters": {"type": "OBJECT", "properties": {}}},
+    {"name": "abrir_arquivo", "description": "Abre no Mac do João um arquivo de um projeto (PDF, proposta, deck, relatório, planilha, imagem, vídeo).",
+     "parameters": {"type": "OBJECT", "properties": {
+         "projeto": {"type": "STRING", "description": "nome ou apelido do projeto"},
+         "busca": {"type": "STRING", "description": "palavras-chave do nome do arquivo"},
+         "numero": {"type": "INTEGER", "description": "n da opção escolhida, quando a busca anterior devolveu opções"}},
+         "required": ["projeto"]}},
+    {"name": "procurar_arquivos", "description": "Lista arquivos de um projeto que batem com a busca, sem abrir.",
+     "parameters": {"type": "OBJECT", "properties": {
+         "projeto": {"type": "STRING"}, "busca": {"type": "STRING"}}, "required": ["projeto", "busca"]}},
 ]}]
 
 
@@ -257,6 +277,86 @@ def reports(project_path, limit=40):
                             "when": time.strftime("%d/%m %H:%M", time.localtime(mt))})
     out.sort(key=lambda r: (not r["kind"] == "html" and not r["digest"], -r["mtime"]))
     return out[:limit]
+
+
+# ---------- arquivos dos projetos (abrir no Mac) ----------
+OPEN_EXT = {".pdf", ".html", ".htm", ".md", ".txt", ".csv", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic",
+            ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".key", ".pages", ".numbers", ".odt", ".rtf",
+            ".mp4", ".mov", ".m4v", ".mp3", ".m4a", ".wav", ".epub"}
+FILE_SKIP = SKIP_DIRS | {"_lixo", "lixo", "_backup", "backup", "_old", "old", "Trash", "agent-memory"}
+KIND = {".pdf": "PDF", ".html": "página", ".htm": "página", ".md": "nota", ".docx": "Word", ".xlsx": "planilha",
+        ".pptx": "apresentação", ".key": "Keynote", ".png": "imagem", ".jpg": "imagem", ".jpeg": "imagem",
+        ".mp4": "vídeo", ".mov": "vídeo", ".mp3": "áudio", ".m4a": "áudio", ".epub": "livro"}
+SYN = {"marketing": ["mkt"], "mkt": ["marketing"], "apresentacao": ["deck", "apresent"], "deck": ["apresentacao"],
+       "planilha": ["xlsx", "csv"], "imagem": ["png", "jpg"], "foto": ["png", "jpg"], "video": ["mp4", "mov"],
+       "livro": ["book", "manuscrito"], "revista": ["revista", "magazine"]}
+EXT_WORDS = {"pdf": ".pdf", "html": ".html", "pagina": ".html", "planilha": ".xlsx", "word": ".docx", "video": ".mp4"}
+FILE_STOP = {"a", "o", "as", "os", "de", "da", "do", "das", "dos", "e", "em", "no", "na", "um", "uma", "que", "pra",
+             "para", "arquivo", "abre", "abrir", "abra", "mostra", "ver", "esse", "essa", "aquele", "aquela", "ultimo",
+             "ultima", "nova", "novo", "por", "favor"}
+
+
+def _words(s):
+    return re.findall(r"[a-z0-9]+(?:\.[0-9]+)*", strip_acc(s).replace("_", " ").replace("-", " "))
+
+
+def find_files(project_path, query, limit=8, budget=40000):
+    """Arquivos do projeto que batem com a busca (nome + pastas), sem lixo, backup, código ou pasta oculta."""
+    q = [w for w in _words(query) if w not in FILE_STOP]
+    want_ext = {EXT_WORDS[w] for w in q if w in EXT_WORDS}
+    base = os.path.realpath(project_path)
+    hits, seen = [], 0
+    for dp, dn, fn in os.walk(base):
+        dn[:] = [d for d in dn if d not in FILE_SKIP and not d.startswith(".") and "lixo" not in d.lower()]
+        if dp.count(os.sep) - base.count(os.sep) > 8:
+            dn[:] = []
+        rel_dir = os.path.relpath(dp, base)
+        dir_words = set(_words(rel_dir)) if rel_dir != "." else set()
+        for f in fn:
+            seen += 1
+            if seen > budget:
+                break
+            ext = os.path.splitext(f)[1].lower()
+            if ext not in OPEN_EXT or f.startswith((".", "~$")):
+                continue
+            name_words = set(_words(os.path.splitext(f)[0]))
+            score = 0.0
+            for w in q:
+                alts = [w] + SYN.get(w, [])
+                if any(a in name_words for a in alts):
+                    score += 2
+                elif any(a in dir_words for a in alts):
+                    score += 1
+                elif len(w) >= 4 and any(n.startswith(w) or (len(n) >= 4 and w.startswith(n)) for n in name_words):
+                    score += 1
+            if want_ext and ext in want_ext:
+                score += 1.5
+            if q and score <= 0:
+                continue
+            full = os.path.join(dp, f)
+            try:
+                mt = os.path.getmtime(full)
+            except OSError:
+                continue
+            score += {".pdf": .6, ".html": .4, ".pptx": .4, ".key": .4, ".docx": .3}.get(ext, 0)
+            hits.append({"score": round(score, 2), "nome": f, "pasta": rel_dir if rel_dir != "." else "",
+                         "tipo": KIND.get(ext, ext[1:]), "data": time.strftime("%d/%m/%Y %H:%M", time.localtime(mt)),
+                         "mtime": mt, "rel": os.path.relpath(full, base)})
+        if seen > budget:
+            break
+    hits.sort(key=lambda h: (-h["score"], -h["mtime"]))
+    return hits[:limit]
+
+
+def open_file(project_path, rel):
+    """Abre no Mac (app padrão) um arquivo de documento de dentro do projeto. Nunca executável."""
+    if not rel or ".." in rel.replace("\\", "/").split("/"):
+        return None
+    full = os.path.join(project_path, rel)
+    if os.path.splitext(full)[1].lower() not in OPEN_EXT or not safe_under(project_path, full) or not os.path.isfile(full):
+        return None
+    subprocess.Popen(["open", os.path.realpath(full)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return full
 
 
 def report_path(project_path, rel):
