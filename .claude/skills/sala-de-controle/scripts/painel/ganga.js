@@ -769,7 +769,8 @@
     setStatus(); paintWake();
   }
   // voltou para a aba ou ganhou foco: tenta de novo (o Chrome pode recusar o microfone com a aba escondida)
-  const retryWake = () => { if (wakeErr && document.visibilityState === 'visible') { wakeErr = false; W.erro = ''; } wakeSync(); };
+  const retryWake = () => wakeSync();
+  document.addEventListener('pointerdown', () => { if (wakeErr) { wakeErr = false; W.erro = ''; wakeSync(); } }, {capture: true});
   document.addEventListener('visibilitychange', retryWake);
   window.addEventListener('focus', retryWake);
   setInterval(async () => {   // liga/desliga feito em outro lugar (outra aba, Sala, atalho) chega aqui
@@ -789,10 +790,10 @@
   if(pk>.06&&this.t-(this.lp||0)>.15){this.lp=this.t;this.port.postMessage({pk:+pk.toFixed(3),r:+r.toFixed(3),pr:+pr.toFixed(3),zc:+zc.toFixed(2),bg:+this.bg.toFixed(4),c:!!this.cand})}
   if(!this.cand)this.bg=this.bg*.995+r*.005;return true}}registerProcessor('clap',C)`;
   const CL = window.__gangaClap = {state: 'parada', erro: '', ctx: ''};
-  let clapCtx = null, clapStream = null, clapStarting = false;
+  let clapCtx = null, clapStream = null, clapStarting = false, micBlocked = false;   // microfone recusado: não pede de novo até um clique
   async function clapSync() {
     const want = G.on && G.clap !== false && !G.live && !!G.ready && G.leader;
-    if (clapStarting) return;
+    if (clapStarting || micBlocked) return;
     if (!want) { if (clapCtx) { try { clapCtx.close(); } catch {} clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; CL.state = 'parada'; } return; }
     if (clapCtx) { if (clapCtx.state === 'suspended') clapCtx.resume().catch(() => {}); CL.ctx = clapCtx.state; return; }
     clapStarting = true;
@@ -806,11 +807,11 @@
       node.port.onmessage = ev => { if (ev.data !== 'double') { CL.picos = [...(CL.picos || []), ev.data].slice(-12); return; } if (G.live) return; CL.ultima = new Date().toLocaleTimeString(); if (!G.open) open(); G.flash && G.flash(); startLive(); };
       if (clapCtx.state === 'suspended') clapCtx.resume().catch(() => {});
       CL.state = 'ouvindo'; CL.ctx = clapCtx.state; CL.erro = '';
-    } catch (e) { CL.state = 'erro'; CL.erro = String(e && (e.name || e.message) || e).slice(0, 80); clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; }
+    } catch (e) { CL.state = 'erro'; CL.erro = String(e && (e.name || e.message) || e).slice(0, 80); if (/NotAllowed|Security|NotFound/.test(CL.erro)) micBlocked = true; clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; }
     finally { clapStarting = false; }
   }
   // o Chrome só libera som/áudio depois de 1 clique na página: o 1º clique ou tecla destrava tudo
-  const unlock = () => { [clapCtx, outCtx, inCtx].forEach(c => c && c.state === 'suspended' && c.resume().catch(() => {})); };
+  const unlock = () => { micBlocked = false; [clapCtx, outCtx, inCtx].forEach(c => c && c.state === 'suspended' && c.resume().catch(() => {})); };
   ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, {capture: true}));
   setInterval(() => {
     clapSync();
