@@ -7,7 +7,7 @@
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rmq = matchMedia('(prefers-reduced-motion: reduce)'); let reduce = rmq.matches; rmq.addEventListener?.('change', e => { reduce = e.matches; });
   const BOLT = '<svg viewBox="0 0 84.54 136" aria-hidden="true"><polygon points="69.84,0 0,78.66 36.76,79.39 11.76,135.26 83.81,60.28 43.37,58.81"/></svg>';
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null, wakeErr = false, wakeArmed = 0;
@@ -36,15 +36,15 @@
       <div class="g-clock" id="ggClock"></div>
       <div class="g-seg" id="ggMode" title="Silencioso: só fala quando você chama. Copiloto: também avisa sozinha.">
         <button data-m="silencioso">Silencioso</button><button data-m="copiloto">Copiloto</button></div>
-      <button class="g-ico" id="ggFull" title="Tela cheia (F)">⛶</button>
-      <button class="g-ico" id="ggCfg" title="Configurar">⚙</button>
-      <button class="g-ico" id="ggMin" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
-      <button class="g-off" id="ggPower" title="Desliga a Ganga: ela para de ouvir “Ganga”">⏻ Desligar</button><button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
+      <button class="g-ico" id="ggFull" aria-label="Tela cheia" title="Tela cheia (F)">⛶</button>
+      <button class="g-ico" id="ggCfg" aria-label="Configurar" title="Configurar">⚙</button>
+      <button class="g-ico" id="ggMin" aria-label="Minimizar" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
+      <button class="g-off" id="ggPower" title="Desliga a Ganga: ela para de ouvir “Ganga”">⏻ Desligar</button><button class="g-ico pw" id="ggOff" aria-label="Fechar a tela da Ganga" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
     </div>
     <div class="g-panel l" id="ggPanel">
       <div class="g-brand"><div class="g-mark">${BOLT}</div>
         <div class="g-title"><b>Ganga</b><span><i class="g-dot" id="ggPill" title="conexão com a Sala"></i><span id="ggStatus">dormindo</span></span></div>
-        <button class="g-ico g-fold" id="ggFold" title="Recolher painel ([)">‹</button></div>
+        <button class="g-ico g-fold" id="ggFold" aria-label="Recolher ou expandir o painel lateral" title="Recolher painel ([)">‹</button></div>
       <div class="g-rail" id="ggRail"></div>
       <section class="g-sec"><div class="g-kpis g-kpis3" id="ggKpis"></div></section>
       <section class="g-sec"><h4>Precisam de você <span class="g-tag on" id="ggWaitN"></span></h4><div class="g-rows" id="ggWait"></div></section>
@@ -67,11 +67,11 @@
       <div class="g-hint" id="ggHint">Esc minimiza</div>
     </div>
     <aside class="g-side" id="ggSide">
-      <header><h3 id="ggSideT">Relatórios<small></small></h3><button class="g-ico" id="ggBack" title="Voltar para a lista" hidden>←</button><button class="g-ico" id="ggSideX" title="Fechar">×</button></header>
+      <header><h3 id="ggSideT">Relatórios<small></small></h3><button class="g-ico" id="ggBack" aria-label="Voltar para a lista" title="Voltar para a lista" hidden>←</button><button class="g-ico" id="ggSideX" aria-label="Fechar relatórios" title="Fechar">×</button></header>
       <div class="g-list" id="ggList"></div>
       <div class="g-view" id="ggView"></div>
     </aside>
-    <div class="g-modal" id="ggModal"><div class="g-dlg" role="dialog" aria-label="Configurar a Ganga">
+    <div class="g-modal" id="ggModal"><div class="g-dlg" role="dialog" aria-modal="true" aria-label="Configurar a Ganga">
       <h3>Configurar a Ganga</h3><p class="s">Tudo fica só neste Mac.</p>
       <div class="g-f"><label>Chave do Gemini</label>
         <div class="row"><input id="ggKey" type="password" autocomplete="off" placeholder="cole a chave do Google AI Studio"><button class="g-b p" id="ggKeySave">Salvar</button></div>
@@ -555,7 +555,7 @@
   $('#ggMic').onclick = () => G.live ? stopLive('você encerrou') : startLive();
 
   let firstText = null;
-  let connecting = false, reconnects = 0, liveGen = 0;
+  let connecting = false, reconnects = 0, liveGen = 0, noiseSince = 0;
   let userSaidAt = 0;   // ações com consequência só valem com fala do usuário DEPOIS do rascunho
   async function startLive(reconnect = false, first = null) {
     if ((G.live || connecting) && !reconnect) return;      // um gatilho só por vez (palavra, palmas, atalho, Copiloto)
@@ -569,7 +569,7 @@
     const t = await api('/api/ganga/token', {}).catch(() => ({error: 'rede'}));
     if (t.error) {
       setOrb('sleep');
-      const msg = t.error === 'limite' ? `Bati o limite de hoje (${t.limit} min). Dá para aumentar no ⚙.` : t.error === 'sem_chave' ? 'Falta a chave do Gemini. Coloca no ⚙ que eu ganho voz.' : t.error === 'desligada' ? ERR.desligada : `Não consegui abrir a voz (${t.error}).`;
+      const msg = t.error === 'limite' ? `Bati o limite de hoje (${t.limit} min). Dá para aumentar no ⚙.` : t.error === 'sem_chave' ? (G.mac === false ? 'A voz da Ganga hoje só funciona no macOS (a chave fica no Porta-chaves). O chat digitado segue funcionando.' : 'Falta a chave do Gemini. Coloca no ⚙ que eu ganho voz.') : t.error === 'desligada' ? ERR.desligada : `Não consegui abrir a voz (${t.error}).`;
       add('ga err', msg); if (reconnect) stopLive(); return;
     }
     if (gen !== liveGen) return;                            // cancelado enquanto pegava o token
@@ -581,7 +581,7 @@
       if (gen !== liveGen) { micStream.getTracks().forEach(t => t.stop()); micStream = null; return; }
       outCtx = new AudioContext({sampleRate: 24000}); outAn = outCtx.createAnalyser(); outAn.fftSize = 512; outAn.connect(outCtx.destination);
       if (outCtx.state === 'suspended') { outCtx.resume().catch(() => {}); setTimeout(() => { if (outCtx && outCtx.state === 'suspended') add('ga err', 'O Chrome bloqueou meu som até você clicar na página. Clica em qualquer lugar — ou, para nunca mais precisar: cadeado ao lado do endereço → Configurações do site → Som: Permitir.'); }, 800); }
-      liveStart = performance.now(); nextT = 0;
+      liveStart = performance.now(); nextT = 0; usedSent = 0; noiseSince = 0;
     }
     ending = false;
     const me = ws = new WebSocket(WS_URL + encodeURIComponent(t.token));
@@ -645,6 +645,7 @@
 
   async function onServer(m) {
     if (m.setupComplete !== undefined) {
+      reconnects = 0;
       if (!G.live) {
         G.live = true; $('#ggMic').classList.add('live'); paint(); api('/api/ganga/live', {live: true}).catch(() => {});
         try { await startMic(); } catch { add('ga err', 'Não consegui ligar o microfone.'); stopLive(); return; }
@@ -747,6 +748,16 @@
     lastAct = performance.now();
   }
 
+  // minutos de voz: manda o que ainda não foi contado (a cada 30 s e ao fechar, mesmo se a aba for fechada)
+  let usedSent = 0;
+  function reportUse(last) {
+    const total = (performance.now() - liveStart) / 1000, delta = total - usedSent;
+    if (delta < 1) return;
+    usedSent = total;
+    fetch('/api/ganga/usage', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({seconds: delta}), keepalive: !!last})
+      .then(r => r.json()).then(r => { G.used_today = r.used_today; paint();
+        if (!last && G.live && G.daily_minutes && r.used_today >= G.daily_minutes) { add('ga', `Bati o limite de hoje (${G.daily_minutes} min) e fechei a voz. Dá para aumentar no ⚙.`); stopLive(); } }).catch(() => {});
+  }
   let savedMsgs = 0;                                  // só as falas novas desta conversa vão para a memória
   function saveTalk() {
     const all = [...$('#ggLog').querySelectorAll('.g-msg.me, .g-msg.ga:not(.err):not(.notice):not(.card)')];
@@ -766,8 +777,7 @@
     micStream = inCtx = outCtx = outAn = inAn = capNode = null;
     flushAudio(); resumeHandle = null; curMe = curGa = null; pendingTools = 0;
     if (G.live) {
-      const sec = (performance.now() - liveStart) / 1000;
-      api('/api/ganga/usage', {seconds: sec}).then(r => { G.used_today = r.used_today; paint(); }).catch(() => {});
+      reportUse(true);
       if (why) add('ga', why === 'dormiu' ? 'Fiquei quieta um tempo e fechei a voz para não gastar. É só tocar no microfone.' : 'Fechei a voz. Até já.');
     }
     G.live = false; $('#ggMic').classList.remove('live'); setOrb('sleep'); paint();
@@ -782,8 +792,12 @@
   const WAKE_RE = /\b(ganga|gangá)\b[\s,.!?:-]*(.*)$/i;
   const WAKE_START = /^\s*(ganja|gangue|granja|manga|canga|kanga|gang|gangar|vanga)\b[\s,.!?:-]*(.*)$/i;
   const W = window.__gangaWake = {state: 'parada', erro: '', ouvido: '', local: true, falhas: 0};
-  G.leader = !navigator.locks;   // sem Web Locks (navegador antigo): cada aba se vira
-  if (navigator.locks) navigator.locks.request('ganga-lider', () => { G.leader = true; W.lider = true; setTimeout(wakeSync, 50); return new Promise(() => {}); });
+  // uma aba só escuta e atende: Web Locks resolve abas do mesmo navegador; o servidor resolve navegadores diferentes
+  const TAB = Math.random().toString(36).slice(2, 10);
+  let lockLead = !navigator.locks, srvLead = true;
+  const setLead = () => { const v = lockLead && srvLead; if (v !== G.leader) { G.leader = v; W.lider = v; setTimeout(wakeSync, 50); } };
+  G.leader = false; setLead();
+  if (navigator.locks) navigator.locks.request('ganga-lider', () => { lockLead = true; setLead(); return new Promise(() => {}); });
   function wakeWanted() { return !!SR && G.on && G.wake !== false && !G.live && !wakeErr && !!G.ready && G.leader; }
   function wakeSync() { wakeWanted() ? startWake() : stopWake(); setStatus(); paintWake(); if (typeof clapSync === 'function') clapSync(); }
   function stopWake() { if (!rec) return; const r = rec; rec = null; r.onend = null; try { r.abort(); } catch {} W.state = 'parada'; setStatus(); paintWake(); }
@@ -793,7 +807,7 @@
     const i = $('#ggWakeInfo'); if (!i) return;
     i.textContent = !SR ? 'Este navegador não tem reconhecimento de fala — use o Chrome.'
       : wakeErr ? 'Sem permissão de microfone para ouvir a palavra. Libere no Chrome (ícone à esquerda do endereço) e recarregue.'
-      : `Agora: ${W.state}${W.erro ? ' · último erro: ' + W.erro : ''}${W.ouvido ? ' · ouvi: “' + W.ouvido.slice(-60) + '”' : ''}`;
+      : `Agora: ${W.state}${G.leader ? '' : ' (outra aba ou navegador está escutando)'} · reconhecimento ${W.local ? 'neste Mac' : 'do navegador, pela nuvem dele — o áudio do ambiente sai do Mac enquanto escuta'}${W.erro ? ' · último erro: ' + W.erro : ''}`;
   }
   function startWake() {
     if (rec) return;
@@ -844,7 +858,8 @@
   document.addEventListener('visibilitychange', retryWake);
   window.addEventListener('focus', retryWake);
   setInterval(async () => {   // liga/desliga feito em outro lugar (outra aba, Sala, atalho) chega aqui
-    try { const p = await api('/api/ganga'); if (p.on !== G.on || p.wake !== G.wake) { Object.assign(G, p); paint(); } } catch {}
+    try { const p = await api('/api/ganga'); const was = G.on, ch = p.on !== G.on || p.wake !== G.wake || p.mode !== G.mode || p.used_today !== G.used_today;
+      Object.assign(G, p); if (ch) paint(); if (!G.on && was) { stopLive(); minimize(); } } catch {}
     if (!rec && wakeWanted()) wakeSync();
     if (G.live) api('/api/ganga/live', {live: true}).catch(() => {});   // batimento: o Copiloto fica quieto só enquanto a voz está aberta
   }, 5000);
@@ -857,7 +872,6 @@
       if(n>=2){const g=this.claps[n-1]-this.claps[n-2];if(g>.15&&g<.85&&this.t>this.hold){this.port.postMessage('double');this.hold=this.t+2;this.claps=[]}}}
     else if(a>=.16){this.cand=null}}
   else if(pk>Math.max(.018,this.bg*25)&&r>Math.max(.004,this.bg*8)&&pr<r*.35&&zc>.04){this.cand={t:this.t,r}}
-  if(pk>.06&&this.t-(this.lp||0)>.15){this.lp=this.t;this.port.postMessage({pk:+pk.toFixed(3),r:+r.toFixed(3),pr:+pr.toFixed(3),zc:+zc.toFixed(2),bg:+this.bg.toFixed(4),c:!!this.cand})}
   if(!this.cand)this.bg=this.bg*.995+r*.005;return true}}registerProcessor('clap',C)`;
   const CL = window.__gangaClap = {state: 'parada', erro: '', ctx: ''};
   let clapCtx = null, clapStream = null, clapStarting = false, micBlocked = false;   // microfone recusado: não pede de novo até um clique
@@ -874,7 +888,7 @@
       await clapCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([CLAP_WORKLET], {type: 'text/javascript'})));
       const node = new AudioWorkletNode(clapCtx, 'clap');
       clapCtx.createMediaStreamSource(clapStream).connect(node);
-      node.port.onmessage = ev => { if (ev.data !== 'double') { CL.picos = [...(CL.picos || []), ev.data].slice(-12); return; } if (G.live) return; CL.ultima = new Date().toLocaleTimeString(); if (!G.open) open(); G.flash && G.flash(); startLive(); };
+      node.port.onmessage = ev => { if (ev.data !== 'double') return; if (G.live) return; CL.ultima = new Date().toLocaleTimeString(); if (!G.open) open(); G.flash && G.flash(); startLive(); };
       if (clapCtx.state === 'suspended') clapCtx.resume().catch(() => {});
       CL.state = 'ouvindo'; CL.ctx = clapCtx.state; CL.erro = '';
     } catch (e) { CL.state = 'erro'; CL.erro = String(e && (e.name || e.message) || e).slice(0, 80); if (/NotAllowed|Security|NotFound/.test(CL.erro)) micBlocked = true; clapStream && clapStream.getTracks().forEach(t => t.stop()); clapCtx = clapStream = null; }
@@ -885,7 +899,10 @@
   ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, {capture: true}));
   setInterval(() => {
     clapSync();
-    api('/api/ganga/diag', {nav: /Edg\//.test(navigator.userAgent) ? 'Edge' : /Chrome\//.test(navigator.userAgent) ? 'Chrome' : /Safari\//.test(navigator.userAgent) ? 'Safari' : 'outro', lider: !!G.leader, wake: window.__gangaWake, clap: CL, visivel: document.visibilityState, ativado: !!(navigator.userActivation && navigator.userActivation.hasBeenActive), on: G.on, live: G.live, aberta: G.open}).catch(() => {});
+    api('/api/ganga/diag', {tab: TAB, quer: lockLead, mic: !micBlocked && !wakeErr, nav: /Edg\//.test(navigator.userAgent) ? 'Edge' : /Chrome\//.test(navigator.userAgent) ? 'Chrome' : /Safari\//.test(navigator.userAgent) ? 'Safari' : 'outro', lider: !!G.leader,
+      wake: {state: W.state, erro: W.erro, local: W.local}, clap: {state: CL.state, erro: CL.erro, ctx: CL.ctx, ultima: CL.ultima}, visivel: document.visibilityState,
+      ativado: !!(navigator.userActivation && navigator.userActivation.hasBeenActive), on: G.on, live: G.live, aberta: G.open})
+      .then(r => { if (typeof r.leader === 'boolean') { srvLead = r.leader; setLead(); } }).catch(() => {});
   }, 4000);
 
   // atalho global: o app Atalhos chama /api/ganga/wake; o painel confere a cada 1,5 s
@@ -908,7 +925,9 @@
     if (!G.live) return;
     const now = performance.now();
     const playing = sources.length > 0, inL = lvl(inAn);
-    if (inL > 0.12) lastAct = now;
+    // som alto por mais de 20 s seguidos sem nenhuma fala transcrita é ruído (TV, música): não segura a conversa aberta
+    if (inL > 0.12) { if (!noiseSince) noiseSince = now; if (now - noiseSince < 20000 || now - userSaidAt < 20000) lastAct = now; } else if (inL < 0.05) noiseSince = 0;
+    if (now - liveStart - usedSent * 1000 > 30000) reportUse(false);
     if (pendingTools > 0) { if (G.orb !== 'think') setOrb('think'); }
     else if (playing) { if (G.orb !== 'speak') setOrb('speak'); }
     else if (G.orb !== 'listen') setOrb('listen');
@@ -1025,6 +1044,5 @@
   // ---------- estado inicial ----------
   G.ready = true;
   loadPrefs();
-  setInterval(() => api('/api/ganga').then(p => { const was = G.on; Object.assign(G, p); paint(); if (!G.on && was) { stopLive(); minimize(); } }).catch(() => {}), 5000);
   addEventListener('beforeunload', () => stopLive());
 })();

@@ -219,7 +219,7 @@ body.has-ganga .feed{bottom:96px}
 .g-in .g-mic:hover{background:#141823;color:var(--bone)}
 .g-in .g-mic.live{background:#3d8fff;color:#fff}
 
-/* ===== v4 — tela cheia, painel recolhível, raio do João ===== */
+/* ===== v4 — tela cheia, painel recolhível, raio da marca ===== */
 #ganga{--side:300px;background:radial-gradient(ellipse 60% 55% at calc(var(--side) + (100% - var(--side)) / 2) 42%,#0a1224 0%,#06080d 60%,#040508 100%)}
 .g-top{left:var(--side);height:60px;border:0;background:none;padding:0 20px;gap:10px;transition:left .3s var(--e)}
 .g-panel{top:0;bottom:0;width:var(--side);padding:0;overflow:hidden;transition:width .3s var(--e);display:flex!important}
@@ -392,3 +392,7 @@ body.has-ganga .feed{bottom:96px}
 
 .g-st.au{background:#3d8fff33;color:#cfe3ff;margin-left:2px}
 .g-msg.notice.auto{border-color:#1f2c48;background:#0b1120;color:#9fb6da;font-size:12.5px}
+
+/* acessibilidade: contraste mínimo nos textos de apoio e foco visível */
+.g-hint{color:#7f8799}.g-state span{color:#8a93a8}.g-none{color:#8089a0}
+#ganga button:focus-visible,#ganga input:focus-visible,#ganga select:focus-visible,.g-btn:focus-visible{outline:2px solid #6ea8ff;outline-offset:2px}

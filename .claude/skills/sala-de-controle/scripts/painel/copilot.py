@@ -227,7 +227,8 @@ class Copilot:
         for r in queue:
             if r.get("status") != "entregue" or r.get("auto") or r["id"] in self.nudged or r.get("cobrado"):
                 continue
-            if time.time() - _epoch(r.get("updated") or r.get("confirmed")) < 600:
+            age = time.time() - _epoch(r.get("updated") or r.get("confirmed"))
+            if age < 600 or age > 7200:          # só cobra o que foi entregue entre 10 min e 2 h atrás
                 continue
             s = by_id.get(r.get("session_id") or "")
             if not s or s.get("status") == "busy" or s.get("state") == "approval" or s.get("stopped"):
@@ -236,7 +237,7 @@ class Copilot:
             append_status(r["id"], "entregue", r.get("note", ""), cobrado=True)
             meta = {"session": short(r.get("session") or r.get("project", "")), "project": r.get("project", ""), "session_id": s["id"],
                     "session_full": r.get("session"), "project_path": r.get("project_path", "")}
-            if self._can_auto(s["id"]):
+            if self._can_auto(s["id"]) and not self._did(s["id"], "cobrar"):     # uma cobrança por sessão por hora
                 self._auto(meta, f"Como ficou este pedido: “{r.get('text', '')[:160]}”? Se terminou, responda com um resumo curto; "
                                  f"se falta algo, diga o quê.", "cobrar")
 
@@ -454,9 +455,17 @@ def _epoch(stamp):
         return 0.0
 
 
+_QCACHE = {"key": None, "rows": []}
+
+
 def read_queue(limit=20):
-    if not os.path.exists(QUEUE):
+    try:
+        st = os.stat(QUEUE)
+    except OSError:
         return []
+    key = (QUEUE, st.st_mtime_ns, st.st_size)
+    if _QCACHE["key"] == key:                 # a fila é lida várias vezes por segundo: só relê se o arquivo mudou
+        return [dict(r) for r in _QCACHE["rows"][:limit]]
     rows = {}
     for ln in open(QUEUE, encoding="utf-8"):
         try:
@@ -466,7 +475,9 @@ def read_queue(limit=20):
         if not isinstance(r, dict) or not r.get("id"):
             continue
         rows[r["id"]] = {**rows.get(r["id"], {}), **r}   # linhas de status atualizam o pedido
-    return sorted(rows.values(), key=lambda r: r.get("confirmed", ""), reverse=True)[:limit]
+    out = sorted(rows.values(), key=lambda r: r.get("confirmed", ""), reverse=True)
+    _QCACHE.update(key=key, rows=out)
+    return [dict(r) for r in out[:limit]]
 
 
 def append_status(pid, status, note="", **extra):

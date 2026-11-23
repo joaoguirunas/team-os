@@ -1,17 +1,19 @@
-"""ganga.py — Ganga, a assistente da Sala de Controle (etapa 1: conversa digitada).
+"""ganga.py — Ganga, a assistente de voz da Sala de Controle.
 
-Lê o estado do painel (sessões, projetos, etapa), a smart-memory e os relatórios HTML dos projetos
-conhecidos e responde pelo Claude (`claude -p`, sem ferramentas). Só lê: nunca escreve em projeto,
-nunca executa nada: pedidos vão para a fila e quem entrega é a sessão da Sala (etapa 4).
+Prompts e ferramentas da conversa (digitada pelo Claude local, falada pelo Gemini Live), busca/abertura/leitura de
+arquivos dos projetos conhecidos, filtro de segredos, memória (nome, fatos, últimas conversas), fala (Gemini TTS) e
+as decisões rápidas do Copiloto (nível de pedido, o que fazer quando uma sessão para).
 
-Preferências da Ganga (liga/desliga, modo) em ~/.claude/sala-de-controle-ganga.json — fora de
-qualquer projeto e fora do git. Desligada por padrão.
+A Ganga nunca escreve em projeto nem executa nada: pedidos vão para a fila e quem entrega é a sessão da Sala.
+Preferências em ~/.claude/sala-de-controle-ganga.json e chave do Gemini no Porta-chaves — fora de qualquer projeto
+e fora do git. Desligada por padrão. Hoje só macOS (Porta-chaves, `open`, `afplay`, `say`, `textutil`).
+Modelos trocáveis por variável de ambiente: GANGA_LIVE_MODEL, GANGA_TTS_MODEL, GANGA_LINE_MODEL.
 """
-import html as htmlmod, json, os, re, threading, time, unicodedata
+import html as htmlmod, json, os, re, shutil, sys, threading, time, unicodedata
 
 PREFS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-ganga.json")
 DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 60, "usage": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": False}, "mac_voice": "Ganga", "clap": True, "auto": True, "auto_next": False}
-LIVE_MODEL = "gemini-3.8-live"
+LIVE_MODEL = os.environ.get("GANGA_LIVE_MODEL") or "gemini-3.8-live"
 FEMALE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Callirrhoe", "Autonoe", "Despina", "Erinome", "Laomedeia",
                  "Achernar", "Gacrux", "Pulcherrima", "Vindemiatrix", "Sulafat"]
 KEYCHAIN_SERVICE = "sala-de-controle-ganga-gemini"   # chave do Gemini: só no Porta-chaves do macOS
@@ -151,7 +153,7 @@ Ferramentas:
   Seja proativa: quando ele perguntar como estão as coisas, ou se um pedido "não andou", confira ver_pedidos primeiro.
 - abrir_arquivo(projeto, busca): ABRE no Mac do usuário (PDF, apresentação, página, planilha, imagem, vídeo) um arquivo
   do projeto. Use SEMPRE que ele pedir para abrir, mostrar ou ver um arquivo, proposta, relatório, revista, deck, PDF.
-  Nunca diga que não consegue abrir. Em "busca" ponha as palavras-chave do nome (ex.: "mkt os scalify v2.1 revista pdf").
+  Nunca diga que não consegue abrir. Em "busca" ponha as palavras-chave do nome (ex.: "proposta acme v2 pdf").
   Se voltar aberto=true, diga em 1 frase curta o que abriu. Se voltar opcoes, leia no máximo 3 pelo nome curto e
   pergunte qual; quando ele escolher, chame de novo com numero=<n da opção>.
 - procurar_arquivos(projeto, busca): lista arquivos sem abrir, quando ele quiser saber o que existe.
@@ -232,7 +234,7 @@ def project_context(name, state, prefs=None):
 import subprocess  # noqa: E402
 
 
-TTS_MODEL = "gemini-3.8-flash-tts"
+TTS_MODEL = os.environ.get("GANGA_TTS_MODEL") or "gemini-3.8-flash-tts"
 
 
 def tts_wav(text, voice=None, timeout=25):
@@ -258,7 +260,7 @@ def tts_wav(text, voice=None, timeout=25):
     return b"RIFF" + struct.pack("<I", 36 + len(raw)) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, 1, 1, 24000, 48000, 2, 16) + b"data" + struct.pack("<I", len(raw)) + raw
 
 
-LINE_MODEL = "gemini-flash-lite-latest"
+LINE_MODEL = os.environ.get("GANGA_LINE_MODEL") or "gemini-flash-lite-latest"
 
 
 def copilot_line(n, timeout=12):
@@ -442,13 +444,25 @@ def classify_level(text, timeout=6):
     return lv
 
 
+IS_MAC = sys.platform == "darwin"
+_KEY = {"v": None, "t": 0.0}       # a chave lida do Porta-chaves fica 60 s em memória (o painel pergunta a cada 5 s)
+
+
 def get_key():
-    try:
-        r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga", "-w"],
-                           capture_output=True, text=True, timeout=10)
-        return r.stdout.strip() if r.returncode == 0 else ""
-    except Exception:
-        return ""
+    """Chave do Gemini: Porta-chaves do macOS; em outros sistemas (ou para testes), a variável GEMINI_API_KEY."""
+    if _KEY["v"] is not None and time.time() - _KEY["t"] < 60:
+        return _KEY["v"]
+    k = ""
+    if IS_MAC:
+        try:
+            r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga", "-w"],
+                               capture_output=True, text=True, timeout=10)
+            k = r.stdout.strip() if r.returncode == 0 else ""
+        except Exception:
+            k = ""
+    k = k or os.environ.get("GEMINI_API_KEY", "").strip()
+    _KEY.update(v=k, t=time.time())
+    return k
 
 
 def set_key(key):
@@ -456,16 +470,26 @@ def set_key(key):
     if "=" in key:  # colou "GEMINI_API_KEY=..." inteiro
         key = key.split("=", 1)[1].strip()
     key = key.strip("\"'` \t\r\n")
-    if not re.fullmatch(r"[A-Za-z0-9_.\-]{20,300}", key):
+    if not re.fullmatch(r"[A-Za-z0-9_.\-]{20,300}", key) or not IS_MAC:
         return False
-    r = subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", "ganga",
-                        "-l", "Ganga — chave do Gemini", "-w", key], capture_output=True, text=True, timeout=10)
+    try:
+        r = subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", "ganga",
+                            "-l", "Ganga — chave do Gemini", "-w", key], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return False
+    _KEY.update(v=None, t=0.0)
     return r.returncode == 0
 
 
 def delete_key():
-    subprocess.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga"],
-                   capture_output=True, text=True, timeout=10)
+    _KEY.update(v=None, t=0.0)
+    if not IS_MAC:
+        return
+    try:
+        subprocess.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", "ganga"],
+                       capture_output=True, text=True, timeout=10)
+    except Exception:
+        pass
 
 
 def key_hint():
@@ -624,7 +648,10 @@ def open_file(project_path, rel):
     if (os.path.islink(full) or os.path.splitext(real)[1].lower() not in OPEN_EXT or not safe_under(project_path, real)
             or not os.path.isfile(real)):
         return None
-    subprocess.Popen(["open", real], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    opener = "open" if IS_MAC else shutil.which("xdg-open")
+    if not opener:
+        return None
+    subprocess.Popen([opener, real], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return real
 
 
@@ -676,11 +703,15 @@ def read_file_text(project_path, rel, n=12000):
         return None
     try:
         if ext == ".pdf":
+            if not shutil.which("pdftotext"):
+                return "(é um PDF, mas falta o leitor de PDF neste computador. Para eu ler PDFs: `brew install poppler`. Posso abrir o arquivo na tela.)"
             out = subprocess.run(["pdftotext", "-layout", "-l", "40", real, "-"], capture_output=True, text=True, timeout=20).stdout
-        elif ext in (".docx", ".doc", ".rtf", ".odt", ".pages"):
+        elif ext in (".docx", ".doc", ".rtf", ".odt"):
+            if not shutil.which("textutil"):
+                return "(documento do Word: só consigo ler o texto no macOS. Posso abrir o arquivo na tela.)"
             out = subprocess.run(["textutil", "-convert", "txt", "-stdout", real], capture_output=True, text=True, timeout=20).stdout
         elif ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".mp4", ".mov", ".m4v", ".mp3", ".m4a", ".wav",
-                     ".xlsx", ".xls", ".pptx", ".ppt", ".key", ".numbers", ".epub"):
+                     ".xlsx", ".xls", ".pptx", ".ppt", ".key", ".numbers", ".pages", ".epub"):
             st = os.stat(real)
             return f"(arquivo {ext[1:]} de {st.st_size // 1024} KB, modificado em {time.strftime('%d/%m/%Y %H:%M', time.localtime(st.st_mtime))} — conteúdo não é texto; posso abrir no Mac)"
         else:

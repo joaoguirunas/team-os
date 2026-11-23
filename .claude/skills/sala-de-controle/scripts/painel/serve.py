@@ -318,7 +318,10 @@ def gemini_check():
 
 WAKE = {"t": 0.0, "seen": 0.0}
 FILES = {"last": None, "opts": []}
+READS = {}      # pasta do projeto -> (quando, lista mostrada)
 DIAG = {"t": 0, "d": {}}
+LEAD = {"tab": "", "t": 0.0, "mic": False}
+LEAD_LOCK = threading.Lock()
 
 
 def shortp(n):
@@ -446,7 +449,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, open(os.path.join(HERE, u.path[1:]), encoding="utf-8").read(), ct)
         if u.path == "/api/ganga":
             pr = ganga.load_prefs()
-            return self._send(200, dict(pr, key_hint=ganga.key_hint(), used_today=ganga.used_minutes_today(pr), user_name=ganga.user_name(pr)))
+            return self._send(200, dict(pr, key_hint=ganga.key_hint(), used_today=ganga.used_minutes_today(pr), user_name=ganga.user_name(pr), mac=ganga.IS_MAC))
         if u.path == "/api/ganga/context":
             with LOCK:
                 st = json.loads(json.dumps(STATE["data"] or {}))
@@ -527,7 +530,10 @@ class H(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.send_header("Connection", "keep-alive")
             self.end_headers()
-            last_seq = int(q.get("since", STATE["seq"]))
+            try:
+                last_seq = int(q.get("since", STATE["seq"]))
+            except (TypeError, ValueError):
+                last_seq = STATE["seq"]
             try:
                 while True:
                     with LOCK:
@@ -566,7 +572,7 @@ def do_POST(self):
     if not _post_ok(self):
         return self._send(403, {"error": "origem ou formato recusado"})
     try:
-        n = min(int(self.headers.get("Content-Length") or 0), 20000)
+        n = max(0, min(int(self.headers.get("Content-Length") or 0), 20000))
         body = json.loads(self.rfile.read(n) or b"{}")
     except Exception:
         return self._send(400, {"error": "json inválido"})
@@ -588,8 +594,17 @@ def do_POST(self):
         m = ganga.save_memory({k: body[k] for k in ("name", "fact", "forget", "conversation") if isinstance(body.get(k), (str, list))})
         return self._send(200, {"ok": True, "name": m.get("name", ""), "facts": len(m.get("facts", []))})
     if u.path == "/api/ganga/diag":
-        DIAG.update(t=time.time(), d=body if isinstance(body, dict) else {})
-        return self._send(200, {"ok": True})
+        b = body if isinstance(body, dict) else {}
+        now, tab = time.time(), str(b.get("tab", ""))[:16]
+        with LEAD_LOCK:
+            stale = now - LEAD["t"] > 10
+            # vira líder quem pede e: não há líder vivo, ou é o próprio, ou tem microfone e o líder atual não
+            if tab and b.get("quer") and (stale or LEAD["tab"] == tab or (b.get("mic") and not LEAD["mic"])):
+                LEAD.update(tab=tab, t=now, mic=bool(b.get("mic")))
+            leader = bool(tab) and LEAD["tab"] == tab
+        if leader or not tab:
+            DIAG.update(t=now, d=b)
+        return self._send(200, {"ok": True, "leader": leader})
     if u.path == "/api/ganga/live":
         COP.live = bool(isinstance(body, dict) and body.get("live"))
         COP.live_at = time.time()
@@ -601,6 +616,8 @@ def do_POST(self):
     if u.path == "/api/ganga/read":
         if not isinstance(body, dict):
             return self._send(400, {"error": "json inválido"})
+        if not ganga.load_prefs()["on"]:
+            return self._send(409, {"error": "desligada"})
         with LOCK:
             st = json.loads(json.dumps(STATE["data"] or {}))
         ph = ganga.match_projects(str(body.get("project", "")), st.get("projects", []), ganga.load_prefs())
@@ -609,19 +626,24 @@ def do_POST(self):
         if len(ph) > 1:
             return self._send(200, {"error": "mais de um projeto com esse nome", "opcoes": [p["name"] for p in ph]})
         proj = ph[0]
-        hits = ganga.find_files(proj.get("path", ""), str(body.get("q", "")), exts=ganga.READ_EXT)
-        if not hits:
-            return self._send(200, {"error": "nenhum arquivo encontrado com essas palavras"})
         try:
             pick = int(body.get("numero") or 0)
         except (TypeError, ValueError):
             pick = 0
-        clear = len(hits) == 1 or hits[0]["score"] >= hits[1]["score"] + 1
-        if not pick and not clear:
-            return self._send(200, {"projeto": proj["name"], "opcoes": [{"n": i + 1, "nome": x["nome"], "pasta": x["pasta"][-80:], "data": x["data"]} for i, x in enumerate(hits[:6])]})
-        if pick and not 1 <= pick <= min(len(hits), 6):
-            return self._send(200, {"error": "opção inválida"})
-        h = hits[(pick or 1) - 1]
+        last = READS.get(proj.get("path", ""))
+        if pick and last and time.time() - last[0] < 180:      # "o número 2" vale para a lista que ela acabou de mostrar
+            hits = last[1]
+            if not 1 <= pick <= len(hits):
+                return self._send(200, {"error": "opção inválida"})
+            h = hits[pick - 1]
+        else:
+            hits = ganga.find_files(proj.get("path", ""), str(body.get("q", "")), exts=ganga.READ_EXT)[:6]
+            if not hits:
+                return self._send(200, {"error": "nenhum arquivo encontrado com essas palavras"})
+            if not (len(hits) == 1 or hits[0]["score"] >= hits[1]["score"] + 1):
+                READS[proj.get("path", "")] = (time.time(), hits)
+                return self._send(200, {"projeto": proj["name"], "opcoes": [{"n": i + 1, "nome": x["nome"], "pasta": x["pasta"][-80:], "data": x["data"]} for i, x in enumerate(hits)]})
+            h = hits[0]
         txt = ganga.read_file_text(proj.get("path", ""), h["rel"])
         if txt is None:
             return self._send(200, {"error": "não posso ler esse arquivo (protegido ou formato não suportado)"})
@@ -710,7 +732,23 @@ def do_POST(self):
     return self._send(404, {"error": "rota desconhecida"})
 
 
-H.do_POST = do_POST
+def _safe(fn):
+    """Erro numa rota não derruba a conexão sem resposta: devolve 500 em JSON."""
+    def wrapped(self):
+        try:
+            return fn(self)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception as e:
+            try:
+                self._send(500, {"error": "erro interno: " + type(e).__name__})
+            except Exception:
+                pass
+    return wrapped
+
+
+H.do_POST = _safe(do_POST)
+H.do_GET = _safe(H.do_GET)
 
 
 def home_is_ct():
