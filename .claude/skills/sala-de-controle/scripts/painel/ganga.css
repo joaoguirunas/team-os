@@ -298,3 +298,8 @@ body.has-ganga .feed{bottom:96px}
   animation:gHear 2.4s ease-in-out infinite;pointer-events:none}
 @keyframes gHear{0%,100%{opacity:.25;transform:scale(.96)}50%{opacity:.9;transform:scale(1.04)}}
 @media (prefers-reduced-motion:reduce){.g-btn.hear::after{animation:none;opacity:.7}}
+
+/* botão Desligar visível no topo */
+.g-off{height:30px;padding:0 12px;border-radius:15px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);
+  color:var(--bone,#e8e6e1);font:500 12px/1 inherit;letter-spacing:.02em;cursor:pointer;margin:0 4px;transition:.15s}
+.g-off:hover{border-color:rgba(255,110,110,.6);color:#ff8a8a;background:rgba(255,90,90,.08)}

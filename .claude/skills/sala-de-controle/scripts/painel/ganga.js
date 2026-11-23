@@ -39,7 +39,7 @@
       <button class="g-ico" id="ggFull" title="Tela cheia (F)">⛶</button>
       <button class="g-ico" id="ggCfg" title="Configurar">⚙</button>
       <button class="g-ico" id="ggMin" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
-      <button class="g-ico" id="ggPower" title="Desligar a Ganga (para de ouvir “Ganga”)">⏻</button><button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
+      <button class="g-off" id="ggPower" title="Desliga a Ganga: ela para de ouvir “Ganga”">⏻ Desligar</button><button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
     </div>
     <div class="g-panel l" id="ggPanel">
       <div class="g-brand"><div class="g-mark">${BOLT}</div>
