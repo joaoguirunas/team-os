@@ -39,7 +39,7 @@
       <button class="g-ico" id="ggFull" title="Tela cheia (F)">⛶</button>
       <button class="g-ico" id="ggCfg" title="Configurar">⚙</button>
       <button class="g-ico" id="ggMin" title="Minimizar (Esc) — a Ganga continua ligada">—</button>
-      <button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
+      <button class="g-ico" id="ggPower" title="Desligar a Ganga (para de ouvir “Ganga”)">⏻</button><button class="g-ico pw" id="ggOff" title="Fechar (ela continua ouvindo “Ganga”)">✕</button>
     </div>
     <div class="g-panel l" id="ggPanel">
       <div class="g-brand"><div class="g-mark">${BOLT}</div>
@@ -117,6 +117,7 @@
   };
   $('#ggMin').onclick = minimize;
   $('#ggOff').onclick = () => { stopLive(); minimize(); wakeSync(); };   // fecha, mas segue ouvindo "Ganga"
+  $('#ggPower').onclick = async () => { stopLive(); stopWake(); Object.assign(G, await api('/api/ganga', {on: false})); paint(); minimize(); };
   $('#ggPowerOff').onclick = async () => { stopLive(); Object.assign(G, await api('/api/ganga', {on: false})); closeCfg(); paint(); minimize(); };
   $('#ggMode').onclick = async e => {
     const m = e.target.dataset.m; if (!m) return;
