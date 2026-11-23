@@ -152,7 +152,13 @@
     else if ($('#ggSide').classList.contains('show')) $('#ggSide').classList.remove('show');
     else minimize();
   }, true);
-  const setSide = () => { hud.style.setProperty('--side', sideW() + 'px'); hud.classList.toggle('folded', G.collapsed || innerWidth < 1180); };
+  // palco = área entre a barra lateral e a coluna flutuante da direita; tudo (esfera, cartões, conversa) usa o mesmo centro
+  const floatW = () => innerWidth >= 1100 ? 312 : 0;
+  const stageGeo = (W = innerWidth, H = innerHeight) => { const side = sideW(), fw = floatW(), w = W - side - fw;
+    const R = Math.max(54, Math.min(w, H) * 0.115), cy = Math.max(R * 2.4 + 96, H * 0.36);
+    return {side, fw, w, cx: side + w / 2, cy, R, W, H}; };
+  const setSide = () => { hud.style.setProperty('--side', sideW() + 'px'); hud.style.setProperty('--fw', floatW() + 'px');
+    const g = stageGeo(); hud.style.setProperty('--logmax', Math.max(110, g.H - (g.cy + g.R * 2.05 + 64) - 118) + 'px'); hud.classList.toggle('folded', G.collapsed || innerWidth < 1180); };
   addEventListener('resize', setSide);
   const setFold = v => { G.collapsed = v; setSide(); store('ganga.fold', v ? '1' : '0');
     $('#ggFold').textContent = v ? '›' : '‹'; $('#ggFold').title = v ? 'Expandir painel ([)' : 'Recolher painel ([)'; if (G.open) refresh(); };
@@ -243,17 +249,22 @@
     }).filter(Boolean).slice(0, 10);
     items.forEach(it => { if (items.filter(x => x.name === it.name).length > 1) it.name = it.p.name; });
     const box = $('#ggChips'); box.innerHTML = '';
-    const side = sideW(), W = innerWidth, H = innerHeight, cx = side + (W - side) / 2, cy = H * 0.42;
-    const rx = Math.min((W - side) * 0.36, 460), ry = Math.min(H * 0.27, 250);
+    // cartões das sessões: só no arco de cima e nas laterais da esfera — embaixo fica livre para a conversa
+    const g = stageGeo(), n = items.length;
+    const rx = Math.max(150, Math.min(g.w / 2 - 112, 430)), ry = Math.max(90, Math.min(g.cy - 100, g.R * 2.6 + 40));
+    const a0 = -Math.PI - 0.30, span = Math.PI + 0.60;
+    G.chips = [];
     items.forEach((it, i) => {
-      const a = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / items.length);
-      const c = document.createElement('div');
-      c.className = 'g-chip ' + it.cls;
-      c.style.left = (cx + Math.cos(a) * rx) + 'px'; c.style.top = (cy + Math.sin(a) * ry) + 'px';
+      const a = n === 1 ? -Math.PI / 2 : a0 + (i + 0.5) * span / n;
+      const x = g.cx + Math.cos(a) * rx, y = g.cy + Math.sin(a) * ry;
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'g-chip ' + it.cls;
+      c.style.left = x + 'px'; c.style.top = y + 'px';
       c.innerHTML = `<b>${esc(it.name)}</b><small>${esc(it.sub)}</small>`;
-      c.title = it.p.name + ' — clique para ver os relatórios';
+      c.title = it.p.name + ' — ' + it.sub + ' (clique para ver os relatórios)';
       c.onclick = () => openReports(it.p.path, it.name);
       box.appendChild(c);
+      G.chips.push({x, y, cls: it.cls});
     });
     G.alert = items.some(i => i.cls === 'wait') ? 'wait' : null;
     btn.classList.toggle('alert', G.on && !!G.alert);
@@ -278,7 +289,8 @@
     $('#ggWorkN').textContent = work.length;
     $('#ggWork').classList.toggle('idle', !work.length);
     $('#ggWorkL').innerHTML = work.length ? work.slice(0, 6).map(w => `<div class="g-wk ${w.lead ? 'lead' : ''}"><i></i><div><b>${esc(w.who)}</b><small>${esc(w.what)}</small></div></div>`).join('')
-      + (work.length > 6 ? `<div class="g-more">+${work.length - 6}</div>` : '') : '<div class="g-none">Ninguém trabalhando agora.</div>';
+      + (work.length > 6 ? `<div class="g-more">+${work.length - 6}</div>` : '') : '';
+    $('#ggWork').querySelector('h5').firstChild.nextSibling.textContent = work.length ? 'Trabalhando agora ' : 'Ninguém trabalhando agora ';
     const st2 = st;
     // precisam de você
     const waits = [];
@@ -900,7 +912,12 @@
     const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
     if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const c = cx2; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-    const side = sideW(), cx = side + (W - side) / 2, cy = H * 0.42, R = Math.min(W - side, H) * 0.13;
+    const {side, cx, cy, R} = stageGeo(W, H);
+    // fios finos da esfera até cada sessão (mais vivos em quem trabalha ou precisa de você)
+    (G.chips || []).forEach(k => { const dx = k.x - cx, dy = k.y - cy, d = Math.hypot(dx, dy) || 1, r0 = R * 1.62;
+      if (d < r0 + 30) return;
+      c.beginPath(); c.moveTo(cx + dx / d * r0, cy + dy / d * r0); c.lineTo(k.x - dx / d * 18, k.y - dy / d * 18);
+      c.strokeStyle = k.cls ? 'rgba(61,143,255,.32)' : 'rgba(120,140,180,.10)'; c.lineWidth = 1; c.stroke(); });
     const t = now / 1000;
     const thinking = G.orb === 'think' || G.orb === 'connect';
     let target;
@@ -972,7 +989,7 @@
     c.beginPath(); BOLT_PTS.forEach(([x, y], i) => i ? c.lineTo(bx + x * sc, by + y * sc) : c.moveTo(bx + x * sc, by + y * sc)); c.closePath(); c.fill();
     c.restore();
 
-    const st = $('#ggState'); const top = (cy + R * 2.05 + 18) + 'px'; if (st.style.top !== top) st.style.top = top;
+    const st = $('#ggState'); const top = (cy + R * 2.05 + 14) + 'px'; if (st.style.top !== top) st.style.top = top;
     const left = cx + 'px'; if (st.style.left !== left) st.style.left = left;
   }
   G.flash = () => { flash = 1; };
