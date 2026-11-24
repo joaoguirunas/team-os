@@ -349,7 +349,7 @@ def gemini_token():
     with LOCK:
         st = json.loads(json.dumps(STATE["data"] or {}))
     try:
-        snap = ganga.panorama(st, p)[:6000]
+        snap = ganga.panorama(st, p)[:3000]   # vai em toda fala da conversa; o detalhe vem do ver_panorama
     except Exception:
         snap = "(panorama indisponível — use ver_panorama)"
     system = ganga.VOICE_SYSTEM + ganga.name_rule(p) + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap
@@ -732,7 +732,7 @@ def do_POST(self):
         return self._send(code, res)
     if u.path == "/api/ganga/usage":
         sec = body.get("seconds") if isinstance(body, dict) else 0
-        p = ganga.save_prefs({"add_seconds": sec if isinstance(sec, (int, float)) else 0})
+        p = ganga.save_prefs({"add_seconds": sec if isinstance(sec, (int, float)) else 0, "why": body.get("why") if isinstance(body, dict) else ""})
         return self._send(200, {"used_today": ganga.used_minutes_today(p)})
     if u.path == "/api/ganga/toggle":
         return self._send(200, set_ganga({"on": not ganga.load_prefs()["on"]}))

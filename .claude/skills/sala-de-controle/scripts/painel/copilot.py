@@ -302,7 +302,9 @@ class Copilot:
                 line += f" Depois tenho mais {n['mais']} {'ponto' if n['mais'] == 1 else 'pontos'} para você."
             with self.lock:
                 n["line"] = line
-                n["call"] = time.time() - self.panel_at < 8 and n["kind"] in ("ask", "error", "wait", "order")
+                # só pedido parado esperando o OK dele abre a voz ao vivo (cara: minutos de Gemini Live); o resto ela fala
+                # pelo Mac e, se ele disser "Ganga" logo depois, a conversa já começa no assunto do aviso
+                n["call"] = time.time() - self.panel_at < 8 and n["kind"] == "order"
             if n["call"]:
                 t0 = time.time()
                 while time.time() - t0 < 8:

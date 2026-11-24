@@ -4,6 +4,13 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 
 ## [Não lançado]
 
+### Corrigido
+- **Ganga — "Centro de Treinamento" ambíguo em loop:** sessão parada numa cópia antiga de um projeto (ex.: o CT antigo no Google Drive) não vira mais projeto "fora da raiz" no painel (`collect.py`); a Ganga acha o projeto também pelo nome da sessão aberta, entende "CT" (nomes curtos deixam de ser descartados), nome ou caminho idêntico vence e, no empate, a Sala nunca é destino e o projeto da raiz ganha da cópia de fora (`match_projects`).
+
+### Alterado
+- **Ganga gasta bem menos Gemini Live:** silêncio não é mais enviado (só perto de fala, com 300 ms antes e 1,2 s depois, limiar pelo ruído da sala); barulho não segura a conversa aberta; fecha com 20 s sem voz no microfone (8 s depois de um aviso; voz detectada mantém aberta, mesmo antes da transcrição chegar) e em 10 min no máximo; compressão de contexto em 24k → 12k tokens; panorama de abertura, respostas de ferramenta e memória menores. Aviso do Copiloto sai falado pelo Mac sem abrir a voz (só pedido esperando aprovação abre); dizer "Ganga" logo depois já começa no assunto do aviso. Minutos registrados por motivo (`usage_why`: botão, palavra, palmas, atalho, aviso).
+- **Ganga menos repetitiva:** nome do usuário no máximo uma vez por conversa (tirado das falas antigas dela antes de entrar no contexto), sem começar por "desculpe", pergunta de desambiguação uma vez só; variações da palavra "Ganga" que disparavam com conversa comum (manga, granja, canga…) removidas.
+
 ## [2.8.0] — 2026-11-17
 
 ### Adicionado

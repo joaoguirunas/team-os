@@ -537,7 +537,8 @@ def collect(root):
                     break
         # sessão numa pasta fora da raiz (ex.: outro negócio no Drive): vira projeto "fora da raiz"
         # para os agentes dela aparecerem no mapa em vez de sumirem
-        if not sess["project"] and cwd and not is_sala and os.path.isdir(cwd):
+        # (só sessão viva: uma sessão parada numa cópia antiga de um projeto não vira projeto duplicado)
+        if not sess["project"] and cwd and not is_sala and not stopped and os.path.isdir(cwd):
             sm = os.path.isfile(os.path.join(cwd, "docs", "smart-memory", "INDEX.md"))
             projects[cwd] = {"path": cwd, "name": os.path.basename(cwd), "business": os.path.basename(os.path.dirname(cwd)),
                              "kind": "external", "squads": [], "agents_installed": 0, "smart_memory": sm,
@@ -556,6 +557,8 @@ def collect(root):
                               or (sess["age"] is not None and sess["age"] < RECENT) or is_sala)
         if sess["project"]:
             projects[sess["project"]]["sessions"].append(sid)
+            if not stopped and sess["name"]:   # a Ganga acha o projeto pelo nome da sessão aberta (ex.: "CT")
+                projects[sess["project"]].setdefault("session_names", []).append(sess["name"])
         out_sessions.append(sess)
 
     events.sort(key=lambda e: e["epoch"], reverse=True)

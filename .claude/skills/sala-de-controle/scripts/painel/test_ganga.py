@@ -200,5 +200,30 @@ check("esquece só o fato pedido", ganga.load_memory()["facts"] == ["prefere res
 ganga.save_memory({"conversation": [{"who": "eu", "text": "como está o site?"}, {"who": "ganga", "text": "token=abc12345xyz está pronto"}]})
 check("memória guarda a conversa, sem segredo", "como está o site?" in ganga.name_rule() and "abc12345xyz" not in ganga.name_rule())
 
+# ---- menos repetição e minutos por motivo ----
+ganga.save_memory({"name": "João"})
+ganga.save_memory({"conversation": [{"who": "eu", "text": "como está o livro?"}, {"who": "ganga", "text": "João, o livro está no capítulo 3."}]})
+rule = ganga.name_rule()
+check("fala antiga dela entra sem o nome na frente", "você: o livro está no capítulo 3." in rule and "você: João," not in rule, rule[-300:])
+check("regra do nome: no máximo uma vez", "no máximo uma vez" in rule)
+ganga.save_prefs({"add_seconds": 30, "why": "palmas"})
+ganga.save_prefs({"add_seconds": 12, "why": "aviso"})
+uw = ganga.load_prefs()["usage_why"].get(time.strftime("%Y-%m-%d"), {})
+check("minutos separados por motivo", uw.get("palmas") == 30 and uw.get("aviso") == 12, str(uw))
+
+# ---- qual projeto ele quis dizer ----
+PJ = [{"name": "0 | Centro de Treinamento (casa da Sala)", "kind": "ct", "path": "/r/0 | Centro de Treinamento", "session_names": ["CT"]},
+      {"name": "0 | Centro de Treinamento", "kind": "external", "path": "/drive/0 | Centro de Treinamento"},
+      {"name": "Claudia Guirunas | Calendário", "kind": "project", "path": "/r/Claudia Guirunas/Claudia Guirunas | Calendário"},
+      {"name": "Scalify | Comercial", "kind": "project", "path": "/r/Scalify/Scalify | Comercial", "session_names": ["Propostas"]}]
+mp = lambda q: [p["path"] for p in ganga.match_projects(q, PJ)]
+check("'centro de treinamento' vai para o CT da raiz, sem perguntar", mp("centro de treinamento") == [PJ[0]["path"]], str(mp("centro de treinamento")))
+check("'CT' é o Centro de Treinamento", mp("CT") == [PJ[0]["path"]], str(mp("CT")))
+check("'manda pro CT instalar' acha o CT", mp("manda pro CT instalar os agentes de livro") == [PJ[0]["path"]])
+check("nome idêntico da cópia fora da raiz ainda resolve pelo caminho", mp(PJ[1]["path"]) == [PJ[1]["path"]])
+check("nome da sessão aberta acha o projeto", mp("propostas") == [PJ[3]["path"]])
+check("nome do projeto continua valendo", mp("calendário da claudia") == [PJ[2]["path"]])
+check("nada citado → nada", mp("bom dia") == [])
+
 print(f"\n{'OK' if not FAIL else 'FALHOU'}: {len(FAIL)} falha(s)")
 sys.exit(1 if FAIL else 0)
