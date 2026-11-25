@@ -9,10 +9,10 @@ Preferências em ~/.claude/sala-de-controle-ganga.json e chave do Gemini no Port
 e fora do git. Desligada por padrão. Hoje só macOS (Porta-chaves, `open`, `afplay`, `say`, `textutil`).
 Modelos trocáveis por variável de ambiente: GANGA_LIVE_MODEL, GANGA_TTS_MODEL, GANGA_LINE_MODEL.
 """
-import html as htmlmod, json, os, re, shutil, sys, threading, time, unicodedata
+import html as htmlmod, json, os, re, shutil, subprocess, sys, threading, time, unicodedata
 
 PREFS_FILE = os.path.join(os.path.expanduser("~"), ".claude", "sala-de-controle-ganga.json")
-DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 0, "usage": {}, "usage_why": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": False}, "mac_voice": "Ganga", "clap": True, "auto": True, "auto_next": False}
+DEFAULT_PREFS = {"on": False, "mode": "silencioso", "aliases": {}, "voice": "", "mic": "", "daily_minutes": 0, "usage": {}, "usage_why": {}, "wake": True, "notify": {"wait": True, "done": True, "error": True, "hourly": False}, "mac_voice": "Ganga", "clap": True, "auto": True, "auto_next": False, "pause_music": True}
 LIVE_MODEL = os.environ.get("GANGA_LIVE_MODEL") or "gemini-3.8-live"
 FEMALE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Callirrhoe", "Autonoe", "Despina", "Erinome", "Laomedeia",
                  "Achernar", "Gacrux", "Pulcherrima", "Vindemiatrix", "Sulafat"]
@@ -109,7 +109,7 @@ def _save_prefs(upd):
         p["notify"] = {k: bool(upd["notify"].get(k, p.get("notify", {}).get(k, True))) for k in ("wait", "done", "error", "hourly")}
     if isinstance(upd.get("name"), str):
         save_memory({"name": upd["name"]})
-    for k in ("clap", "auto", "auto_next"):
+    for k in ("clap", "auto", "auto_next", "pause_music"):
         if isinstance(upd.get(k), bool):
             p[k] = upd[k]
     if isinstance(upd.get("mac_voice"), str):
@@ -120,6 +120,50 @@ def _save_prefs(upd):
     return p
 
 
+# ---------- música: pausa o Spotify/Música enquanto a voz está aberta ----------
+# O microfone pega de volta o que as caixas do Mac tocam (o navegador só cancela o som dele mesmo).
+# Só pausa o que estava tocando e só retoma o que ela pausou. Nunca abre o app se ele não estiver aberto.
+MUSIC_APPS = ("Spotify", "Music")
+_music_paused = set()
+
+
+def _osa(script, timeout=5):
+    try:
+        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=timeout)
+        return r.stdout.strip(), r.stderr.strip()
+    except Exception as e:
+        return "", type(e).__name__
+
+
+def music_pause():
+    """Pausa os players que estão tocando. Devolve a lista do que pausou (e erros, ex.: falta de permissão)."""
+    if not IS_MAC or not load_prefs().get("pause_music", True):
+        return {"paused": [], "skipped": True}
+    done, errs = [], {}
+    for app in MUSIC_APPS:
+        out, err = _osa(f'if application "{app}" is running then\n tell application "{app}"\n'
+                        f'  if player state is playing then\n   pause\n   return "paused"\n  end if\n end tell\nend if\nreturn "no"')
+        if out == "paused":
+            _music_paused.add(app)
+            done.append(app)
+        elif err:
+            errs[app] = err[:160]
+    return {"paused": done, "errors": errs}
+
+
+def music_resume():
+    """Retoma só o que music_pause pausou."""
+    if not IS_MAC:
+        return {"resumed": []}
+    done = []
+    for app in list(_music_paused):
+        _music_paused.discard(app)
+        out, err = _osa(f'if application "{app}" is running then tell application "{app}" to play')
+        if not err:
+            done.append(app)
+    return {"resumed": done}
+
+
 def used_minutes_today(p=None):
     p = p or load_prefs()
     return round(p.get("usage", {}).get(time.strftime("%Y-%m-%d"), 0) / 60, 1)
@@ -127,7 +171,18 @@ def used_minutes_today(p=None):
 
 VOICE_SYSTEM = SYSTEM + """
 
-Você está numa conversa POR VOZ, em tempo real. Fale sempre em português do Brasil, com naturalidade, frases curtas.
+Você está numa conversa POR VOZ, em tempo real. Fale SEMPRE em português do Brasil, com naturalidade, frases curtas —
+nunca em outra língua, mesmo que a fala dele chegue truncada, com ruído ou pareça outro idioma (nesse caso, peça para repetir).
+SOM DE FUNDO: o microfone pode captar música (Spotify), TV, vídeo ou gente conversando longe. Letra de música, fala de
+vídeo ou frase que não é dirigida a você NÃO é o usuário: não responda, não comente, fique calada e espere. Só responda
+quando ele falar com você (assunto da Sala, projeto, sessão, pedido, pergunta para você ou seu nome).
+Quando ele pedir para fechar, desligar ou "fechar o microfone", ou disser "tchau"/"era só isso": chame encerrar_conversa
+e despeça-se em no máximo 3 palavras. Não continue a conversa depois disso.
+AVISOS DO COPILOTO: no fim desta instrução vão os avisos que VOCÊ MESMA já falou para ele pelo Copiloto (pela voz do Mac).
+São a sua conversa com ele: lembre deles. Se ele abrir a conversa ou falar algo que responde a um desses avisos
+(ex.: "pode seguir", "aprova", "manda ela fazer X"), entenda que é a resposta ao aviso mais recente que combina e mande
+para AQUELA sessão com mandar_para_sessao (projeto do aviso) como pedido normal, sem perguntar "confirma?" de novo
+(pedido parado com id → aprovar_pedido/cancelar_pedido). Nunca repita um aviso que ele acabou de ouvir.
 Mensagem que começa com [AVISO DA SALA] NÃO é fala do usuário: é o Copiloto avisando que uma sessão precisa dele.
 Fale para ele, com suas palavras, a fala sugerida (curta, calorosa, terminando na pergunta) e ESPERE a resposta.
 O que ele responder sobre aquilo, mande para AQUELA sessão com mandar_para_sessao (projeto indicado no aviso), como
@@ -180,6 +235,8 @@ Se a resposta disser sala_ouvindo=false, avise que a sessão da Sala não está 
 Nunca leia em voz alta listas longas, caminhos ou ids. Se o dado não veio das ferramentas, não afirme."""
 
 VOICE_TOOLS = [{"functionDeclarations": [
+    {"name": "encerrar_conversa", "description": "Fecha a conversa por voz e o microfone. Use quando o usuário pedir para fechar, desligar, parar de ouvir ou se despedir.",
+     "parameters": {"type": "OBJECT", "properties": {}}},
     {"name": "ver_panorama", "description": "Panorama atual de todos os projetos e sessões da Sala de Controle.",
      "parameters": {"type": "OBJECT", "properties": {"todas": {"type": "BOOLEAN", "description": "true = inclui também as sessões paradas"}}}},
     {"name": "ver_projeto", "description": "Detalhes de um projeto: etapa, sessões, resumo e último relatório.",
@@ -354,6 +411,21 @@ def _save_memory(upd):
 def user_name(p=None):
     """Como a Ganga chama o usuário — ela pergunta na 1ª conversa e guarda na memória dela. Nada fica no código."""
     return (load_memory().get("name") or "").strip()
+
+
+def notices_context(notices, now=None, window=1800, limit=6):
+    """Avisos que a própria Ganga já falou pelo Copiloto (últimos 30 min), para a conversa por voz lembrar deles."""
+    import time as _t
+    now = now or _t.time()
+    rows = [n for n in notices if n.get("spoken") and n.get("line") and now - (n.get("speak_at") or n.get("epoch") or 0) < window]
+    if not rows:
+        return ""
+    out = []
+    for n in rows[-limit:]:
+        hora = _t.strftime("%H:%M", _t.localtime(n.get("speak_at") or n.get("epoch") or now))
+        extra = f" · pedido parado id {n['order_id']}" if n.get("order_id") else ""
+        out.append(f'- {hora} · sessão {n.get("session") or "?"} (projeto {n.get("project") or "?"}){extra}: "{redact(n["line"])[:300]}"')
+    return "\n\nAVISOS QUE VOCÊ JÁ FALOU PELO COPILOTO (mais recente por último):\n" + "\n".join(out)
 
 
 def name_rule(p=None):

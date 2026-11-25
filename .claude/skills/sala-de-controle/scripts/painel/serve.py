@@ -26,8 +26,8 @@ Link cruzado: o mapa do pack (/team-os-creator *painel) fica em http://127.0.0.1
 
 Usage: serve.py [--root <raiz>] [--port 8787] [--bg [--ganga] | --stop | --status]
   --bg    sobe em segundo plano (pid em ~/.claude/sala-de-controle-painel.pid) e imprime a URL
-  --ganga (com --bg) liga a Ganga e, se nenhuma aba do painel estiver viva, abre o painel no Chrome
-          (microfone só funciona lá). Não abre a voz: a Ganga fica ligada, ouvindo a palavra e as palmas.
+  --ganga (com --bg) liga a Ganga e, se nenhuma aba do painel estiver viva, abre o painel no navegador padrão
+          (Chrome ou Safari; o navegador embutido do app não libera o microfone). Não abre a voz: a Ganga fica ligada, ouvindo a palavra e as palmas.
   --stop  derruba o servidor de segundo plano
 """
 import json, os, re, signal, socket, subprocess, sys, threading, time, unicodedata
@@ -280,6 +280,12 @@ def ganga_ask(question):
     with LOCK:
         st = json.loads(json.dumps(STATE["data"] or {}))
     prompt, hits = ganga.build_prompt(q, st, ganga.load_prefs())
+    try:
+        av = ganga.notices_context(COP.since(0))   # o chat digitado também lembra do que o Copiloto falou
+    except Exception:
+        av = ""
+    if av:
+        prompt += av + "\nSe a mensagem dele responde a um desses avisos, trate como resposta àquela sessão (PEDIDO: para o projeto do aviso)."
     with BRAIN_LOCK:
         try:
             out, err = BRAIN.ask(prompt, timeout=120)
@@ -354,7 +360,11 @@ def gemini_token():
         snap = ganga.panorama(st, p)[:3000]   # vai em toda fala da conversa; o detalhe vem do ver_panorama
     except Exception:
         snap = "(panorama indisponível — use ver_panorama)"
-    system = ganga.VOICE_SYSTEM + ganga.name_rule(p) + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap
+    try:
+        avisos = ganga.notices_context(COP.since(0))     # o que ela já falou pelo Copiloto: a voz lembra e entende a resposta
+    except Exception:
+        avisos = ""
+    system = ganga.VOICE_SYSTEM + ganga.name_rule(p) + "\n\nPANORAMA NA ABERTURA DA CONVERSA:\n" + snap + avisos
     return 200, {"token": tok, "model": "models/" + ganga.LIVE_MODEL, "voice": voice, "system": system,
                  "tools": ganga.VOICE_TOOLS, "used": ganga.used_minutes_today(p), "limit": p["daily_minutes"]}
 
@@ -729,6 +739,10 @@ def do_POST(self):
             set_ganga({"on": True})
         WAKE["t"] = time.time()
         return self._send(200, {"ok": True, "seen": time.time() - WAKE["seen"] < 6})
+    if u.path == "/api/ganga/music":
+        # voz abriu → pausa Spotify/Música; voz fechou → retoma o que ela pausou
+        b = body if isinstance(body, dict) else {}
+        return self._send(200, ganga.music_resume() if b.get("resume") else ganga.music_pause())
     if u.path == "/api/ganga/token":
         code, res = gemini_token()
         return self._send(code, res)
@@ -778,8 +792,8 @@ def port_open(port):
 
 
 def ganga_up(port):
-    """Liga a Ganga no servidor que já está no ar e garante uma aba do painel no Chrome.
-    A aba líder manda /api/ganga/diag a cada 4 s: diag recente com microfone = já há painel no Chrome, não abre outro."""
+    """Liga a Ganga no servidor que já está no ar e garante uma aba do painel no navegador do usuário.
+    A aba líder manda /api/ganga/diag a cada 4 s: diag recente com microfone = já há painel aberto, não abre outro."""
     import urllib.request
     base = f"http://127.0.0.1:{port}"
     try:
@@ -789,24 +803,22 @@ def ganga_up(port):
     except Exception as e:
         print(f"GANGA=erro|{type(e).__name__}")
         return
-    try:
-        d = json.loads(urllib.request.urlopen(base + "/api/ganga/diag", timeout=5).read() or b"{}")
-    except Exception:
-        d = {}
-    # aba com microfone liberado (= Chrome; o navegador embutido do app não tem) e viva há pouco.
-    # 30 s de folga: o Chrome espaça os timers de aba em segundo plano.
-    if d.get("idade_s", 1e9) < 30 and d.get("mic"):
-        print("CHROME=already")
-        return
+    # aba do painel viva = diag recente com microfone liberado (Chrome ou Safari; o navegador embutido do app não tem).
+    # As abas avisam a cada 4 s (o navegador espaça timers de aba em segundo plano): espera até 9 s antes de abrir outra.
+    for _ in range(10):
+        try:
+            d = json.loads(urllib.request.urlopen(base + "/api/ganga/diag", timeout=5).read() or b"{}")
+        except Exception:
+            d = {}
+        if d.get("idade_s", 1e9) < 30 and d.get("mic"):
+            print(f"BROWSER=already|{d.get('nav', '?')}")
+            return
+        time.sleep(1)
     if not ganga.IS_MAC:
-        print(f"CHROME=manual|abra {base} no Chrome")
+        print(f"BROWSER=manual|abra {base} no navegador")
         return
-    ok = subprocess.run(["open", "-a", "Google Chrome", base], capture_output=True).returncode == 0
-    if not ok:
-        ok = subprocess.run(["open", base], capture_output=True).returncode == 0
-        print("CHROME=" + ("opened_default|Chrome não encontrado: abri no navegador padrão (microfone só no Chrome)" if ok else f"manual|abra {base} no Chrome"))
-        return
-    print("CHROME=opened")
+    ok = subprocess.run(["open", base], capture_output=True).returncode == 0     # navegador padrão do usuário
+    print("BROWSER=opened" if ok else f"BROWSER=manual|abra {base} no navegador")
 
 
 def main():

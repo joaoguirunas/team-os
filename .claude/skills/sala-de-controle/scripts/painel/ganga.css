@@ -382,7 +382,7 @@ body.has-ganga .feed{bottom:96px}
 .g-chip.busy small{color:#8fbaff}.g-chip.wait small{color:#b9d6ff}
 .g-chip:hover,.g-chip:focus-visible{border-color:#3d8fff;outline:0}
 /* coluna flutuante */
-.g-float{width:280px;top:72px;right:16px}
+.g-float{width:320px;top:72px;right:16px}
 .g-fcard{padding:11px 13px;border-radius:12px}
 .g-fcard.idle{opacity:1;background:#0b0f1a99;border-color:#141b2b;box-shadow:none}
 .g-fcard.idle h5{margin:0;color:#5d6577}
@@ -396,3 +396,17 @@ body.has-ganga .feed{bottom:96px}
 /* acessibilidade: contraste mínimo nos textos de apoio e foco visível */
 .g-hint{color:#7f8799}.g-state span{color:#8a93a8}.g-none{color:#8089a0}
 #ganga button:focus-visible,#ganga input:focus-visible,#ganga select:focus-visible,.g-btn:focus-visible{outline:2px solid #6ea8ff;outline-offset:2px}
+
+/* "Trabalhando agora" agrupado por sessão: título da sessão, o que ela faz (2 linhas) e os agentes ativos */
+.g-wg{padding:8px 0;border-top:1px solid #131a2a}
+.g-wg:first-child{border-top:0;padding-top:2px}
+.g-wh{display:grid;grid-template-columns:8px 1fr;gap:8px;align-items:center}
+.g-wh i{width:6px;height:6px;border-radius:50%;background:#3d8fff;animation:gPulse 1.4s ease-out infinite}
+.g-wh b{color:#cfe3ff;font:600 12.5px/1.3 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-wd{margin:4px 0 0 16px;color:#8d96a8;font-size:12px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.g-wa{margin:5px 0 0 16px;padding-left:9px;border-left:1px solid #1d2740;font-size:11.5px;line-height:1.35}
+.g-wa b{display:block;color:#b7c2d6;font-weight:500}
+.g-wa span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#7c8496;overflow-wrap:anywhere}
+.g-wa.more{color:#6b7488;font-style:italic;border-left-color:transparent}
+.g-more{font-size:11.5px;color:#7c8496;padding-top:8px;border-top:1px solid #131a2a}
+@media (prefers-reduced-motion:reduce){.g-wh i{animation:none}}
