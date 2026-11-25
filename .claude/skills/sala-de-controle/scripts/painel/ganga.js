@@ -903,14 +903,16 @@ const WAKE_START = /^\s*(ganja|gangue|gangá)\b[\s,.!?:-]*(.*)$/i;
     if (G.live) api('/api/ganga/live', {live: true}).catch(() => {});   // batimento: o Copiloto fica quieto só enquanto a voz está aberta
   }, 5000);
   // ---------- 2 palmas: detector no próprio áudio (AudioWorklet roda mesmo com a aba em segundo plano) ----------
+  // Limiar relativo ao ruído, mas com teto: em sala barulhenta (bg ~0,04) o antigo bg*25 pedia pico ~1,0 e nenhuma palma passava.
+  // Quem segura falso positivo é a forma da palma: subida brusca (pr<r*.5) + queda em 60–160 ms + par em 0,15–0,85 s.
   const CLAP_WORKLET = `class C extends AudioWorkletProcessor{constructor(){super();this.bg=.004;this.t=0;this.cand=null;this.claps=[];this.hold=0}
   process(i){const x=i[0]&&i[0][0];if(!x)return true;const dt=x.length/sampleRate;this.t+=dt;let pk=0,s=0,z=0;for(let k=0;k<x.length;k++){const v=Math.abs(x[k]);if(v>pk)pk=v;s+=v*v;if(k&&(x[k]>0)!==(x[k-1]>0))z++}
   const r=Math.sqrt(s/x.length),zc=z/x.length,pr=Math.min(this.pr||0,this.pr2||0);this.pr2=this.pr||0;this.pr=r;
-  if(this.cand){const a=this.t-this.cand.t;if(a>.06&&a<.16&&r<this.cand.r*.3){this.claps.push(this.cand.t);this.cand=null;
+  if(this.cand){const a=this.t-this.cand.t;if(a>.06&&a<.16&&r<Math.max(this.cand.r*.3,this.bg*1.6)){this.claps.push(this.cand.t);this.cand=null;
       this.claps=this.claps.filter(c=>this.t-c<1.2);const n=this.claps.length;
       if(n>=2){const g=this.claps[n-1]-this.claps[n-2];if(g>.15&&g<.85&&this.t>this.hold){this.port.postMessage('double');this.hold=this.t+2;this.claps=[]}}}
     else if(a>=.16){this.cand=null}}
-  else if(pk>Math.max(.018,this.bg*25)&&r>Math.max(.004,this.bg*8)&&pr<r*.35&&zc>.04){this.cand={t:this.t,r}}
+  else if(pk>Math.max(.018,Math.min(.25,this.bg*6))&&r>Math.max(.004,Math.min(.06,this.bg*2.5))&&pr<r*.5&&zc>.04){this.cand={t:this.t,r}}
   if(!this.cand)this.bg=this.bg*.995+r*.005;if(pk>(this.mx||0))this.mx=pk;if(this.t>(this.nx||0)){this.nx=this.t+1;this.port.postMessage({bg:this.bg,mx:this.mx||0});this.mx=0}return true}}registerProcessor('clap',C)`;
   const CL = window.__gangaClap = {state: 'parada', erro: '', ctx: ''};
   let clapCtx = null, clapStream = null, clapStarting = false, micBlocked = false;   // microfone recusado: não pede de novo até um clique

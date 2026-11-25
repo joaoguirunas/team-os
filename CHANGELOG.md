@@ -5,6 +5,7 @@ Todas as mudanças relevantes deste repositório. Formato baseado em [Keep a Cha
 ## [Não lançado]
 
 ### Corrigido
+- **Ganga — 2 palmas não disparavam em sala com ruído:** o limiar do detector crescia sem teto com o ruído de fundo (pico > 25× o ruído); com ruído ~0,04 ele pedia pico ~1,0 e nenhuma palma passava. Agora o limiar tem teto (pico ≤ 0,25, energia ≤ 0,06), a subida brusca aceita 50% e a queda considera o ruído; quem segura falso positivo continua sendo a forma da palma (subida brusca, queda em 60–160 ms, par em 0,15–0,85 s). Simulado com ruído de 0,003 a 0,039: 2 palmas disparam, ruído sozinho e 1 palma não (`ganga.js`). Confirmado no Safari.
 - **Ganga — "Centro de Treinamento" ambíguo em loop:** sessão parada numa cópia antiga de um projeto (ex.: o CT antigo no Google Drive) não vira mais projeto "fora da raiz" no painel (`collect.py`); a Ganga acha o projeto também pelo nome da sessão aberta, entende "CT" (nomes curtos deixam de ser descartados), nome ou caminho idêntico vence e, no empate, a Sala nunca é destino e o projeto da raiz ganha da cópia de fora (`match_projects`).
 
 ### Alterado
