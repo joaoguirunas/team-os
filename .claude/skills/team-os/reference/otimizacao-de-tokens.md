@@ -73,7 +73,7 @@ Regras que seguem disso:
 2. **Lead compacta cedo.** O hook `context-watch.sh` avisa em 200 mil e 400 mil. Ao avisar: grave o ledger, rode `/compact` (ou feche a rodada e abra sessão nova). `TEAM_OS_CTX_WARN` / `TEAM_OS_CTX_HIGH` ajustam os limites; `TEAM_OS_CTX_WATCH=0` desliga.
 3. **Passe o path, não o conteúdo.** Spawn prompt e `SendMessage` levam o caminho do arquivo e o que fazer com ele — nunca o texto colado.
 4. **Leia o trecho, não o arquivo.** `sed -n`, `grep -n`, `head`; capturas de tela, PDFs e imagens só quando o texto não responde (cada uma fica no contexto para sempre).
-5. **Acompanhe no painel.** `/sala-de-controle *painel` mostra por sessão o consumo (líder + agentes), o ritmo por minuto e a barra de contexto (amarelo >200 mil, vermelho >400 mil).
+5. **Acompanhe no painel.** O painel da Sala de Controle (`/sala-de-controle`, numa sessão do CT) mostra por sessão o consumo (líder + agentes), o ritmo por minuto e a barra de contexto (amarelo >200 mil, vermelho >400 mil).
 
 ## Escrever curto sem perder sentido
 

@@ -69,8 +69,8 @@ Scripts em `.claude/skills/team-os-creator/scripts/`. O CI (`.github/workflows/a
 /team-os-creator *feedback  → juntar as correções [skill-feedback] dos projetos e propor melhoria no CT
 /team-os-creator *install   → instalar squads em projeto novo
 /team-os-creator *painel    → mapa do pack (squads, agentes, skills) em 127.0.0.1:8788
-/sala-de-controle           → Sala de Controle no CT: lê sessões/projetos e abre o painel ao vivo (127.0.0.1:8787)
-/sala-de-controle *painel   → reabre o painel ao vivo dos agentes em produção, no CT (*painel stop derruba)
+/sala-de-controle           → Sala de Controle no CT: lê sessões/projetos e abre o painel ao vivo (127.0.0.1:8787) e liga a Ganga
+/sala-de-controle *ganga off → desliga a Ganga (painel e Ganga sobem sozinhos com /sala-de-controle; *painel stop derruba o painel)
 ```
 
 > Para qualquer dúvida de uso, agentes, skills ou fluxo: **[README.md](./README.md)** é a referência completa. Licença MIT — [LICENSE](./LICENSE); terceiros em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md); contribuição em [CONTRIBUTING.md](./CONTRIBUTING.md); mantenedor em [MAINTAINERS.md](./MAINTAINERS.md).

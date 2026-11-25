@@ -24,8 +24,10 @@ A Sala mora no CT: rode a partir da raiz do CT (raiz dos projetos = pasta-mãe d
 Fora do CT o painel sobe mesmo assim, com WARN=sala_fora_do_ct.
 Link cruzado: o mapa do pack (/team-os-creator *painel) fica em http://127.0.0.1:8788.
 
-Usage: serve.py [--root <raiz>] [--port 8787] [--bg | --stop | --status]
+Usage: serve.py [--root <raiz>] [--port 8787] [--bg [--ganga] | --stop | --status]
   --bg    sobe em segundo plano (pid em ~/.claude/sala-de-controle-painel.pid) e imprime a URL
+  --ganga (com --bg) liga a Ganga e, se nenhuma aba do painel estiver viva, abre o painel no Chrome
+          (microfone só funciona lá). Não abre a voz: a Ganga fica ligada, ouvindo a palavra e as palmas.
   --stop  derruba o servidor de segundo plano
 """
 import json, os, re, signal, socket, subprocess, sys, threading, time, unicodedata
@@ -775,6 +777,38 @@ def port_open(port):
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
+def ganga_up(port):
+    """Liga a Ganga no servidor que já está no ar e garante uma aba do painel no Chrome.
+    A aba líder manda /api/ganga/diag a cada 4 s: diag recente com microfone = já há painel no Chrome, não abre outro."""
+    import urllib.request
+    base = f"http://127.0.0.1:{port}"
+    try:
+        req = urllib.request.Request(base + "/api/ganga", data=b'{"on": true}', headers={"Content-Type": "application/json"}, method="POST")
+        on = json.loads(urllib.request.urlopen(req, timeout=5).read() or b"{}").get("on")
+        print(f"GANGA={'on' if on else 'off'}")
+    except Exception as e:
+        print(f"GANGA=erro|{type(e).__name__}")
+        return
+    try:
+        d = json.loads(urllib.request.urlopen(base + "/api/ganga/diag", timeout=5).read() or b"{}")
+    except Exception:
+        d = {}
+    # aba com microfone liberado (= Chrome; o navegador embutido do app não tem) e viva há pouco.
+    # 30 s de folga: o Chrome espaça os timers de aba em segundo plano.
+    if d.get("idade_s", 1e9) < 30 and d.get("mic"):
+        print("CHROME=already")
+        return
+    if not ganga.IS_MAC:
+        print(f"CHROME=manual|abra {base} no Chrome")
+        return
+    ok = subprocess.run(["open", "-a", "Google Chrome", base], capture_output=True).returncode == 0
+    if not ok:
+        ok = subprocess.run(["open", base], capture_output=True).returncode == 0
+        print("CHROME=" + ("opened_default|Chrome não encontrado: abri no navegador padrão (microfone só no Chrome)" if ok else f"manual|abra {base} no Chrome"))
+        return
+    print("CHROME=opened")
+
+
 def main():
     a = sys.argv[1:]
     root = a[a.index("--root") + 1] if "--root" in a else default_root()
@@ -798,6 +832,8 @@ def main():
             print("WARN=sala_fora_do_ct|a Sala de Controle mora no CT (0 | Centro de Treinamento) — abra a sessão da Sala no CT")
         if port_open(port):
             print(f"ALREADY=1 URL=http://127.0.0.1:{port}")
+            if "--ganga" in a:
+                ganga_up(port)
             return
         cmd = [sys.executable, os.path.abspath(__file__), "--root", root, "--port", str(port)]
         log = open(LOG_FILE, "ab")
@@ -808,6 +844,8 @@ def main():
                 break
             time.sleep(0.25)
         print(f"STARTED=1 PID={p.pid} URL=http://127.0.0.1:{port} ROOT={root}")
+        if "--ganga" in a:
+            ganga_up(port)
         return
     threading.Thread(target=refresh_loop, args=(root,), daemon=True).start()
 

@@ -448,7 +448,7 @@
     if (r.error) { add('ga err', r.opcoes ? `Qual deles? ${r.opcoes.join(' · ')}` : `Não consegui mandar o pedido (${r.error}).`); return; }
     if (r.sent) {
       const b = add('ga', '', `<div class="g-order"><small>Mandado para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
-        <p>${esc(r.text)}</p><div class="row"><span class="g-ok">Na fila da Sala.</span>${r.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle *ganga no Centro de Treinamento.</span>'}</div></div>`);
+        <p>${esc(r.text)}</p><div class="row"><span class="g-ok">Na fila da Sala.</span>${r.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle no Centro de Treinamento.</span>'}</div></div>`);
       b.classList.add('card'); loadOrders(); return;
     }
     const box = add('ga', '', `<div class="g-order"><small>Pedido para</small><b>${esc(shortName(r.project))}${r.session ? ' · sessão ' + esc(r.session) : ' · sem sessão aberta (a Sala abre uma com seu OK)'}</b>
@@ -462,7 +462,7 @@
       const c = await api('/api/ganga/order', {confirm: r.id}).catch(() => ({error: 'rede'}));
       if (c.precisa_segunda) { ok.disabled = false; ok.textContent = 'Confirmar de verdade'; return; }
       box.querySelector('.row').innerHTML = c.error ? `<span class="g-bad">${esc(c.error)}</span>`
-        : `<span class="g-ok">Na fila da Sala.</span>${c.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle *ganga no Centro de Treinamento.</span>'}`;
+        : `<span class="g-ok">Na fila da Sala.</span>${c.sala_ouvindo ? '' : ' <span class="g-bad">A sessão da Sala não está ouvindo — rode /sala-de-controle no Centro de Treinamento.</span>'}`;
       loadOrders();
     };
   }
@@ -487,7 +487,7 @@
     const b = e.target.closest('[data-ap],[data-cx]'); if (!b) return;
     b.disabled = true;
     const r = await api('/api/ganga/order', b.dataset.ap ? {approve: b.dataset.ap} : {cancel: b.dataset.cx}).catch(() => ({error: 'rede'}));
-    if (r.error) add('ga err', 'Não consegui: ' + r.error); else if (b.dataset.ap && !r.sala_ouvindo) add('ga err', 'Aprovado, mas a sessão da Sala não está ouvindo — rode /sala-de-controle *ganga no Centro de Treinamento.');
+    if (r.error) add('ga err', 'Não consegui: ' + r.error); else if (b.dataset.ap && !r.sala_ouvindo) add('ga err', 'Aprovado, mas a sessão da Sala não está ouvindo — rode /sala-de-controle no Centro de Treinamento.');
     loadOrders();
   });
   $('#ggOrdSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; G.ordTab = b.dataset.o;

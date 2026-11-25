@@ -3,8 +3,8 @@ name: team-os
 description: "Bootstrap e orquestração de sessão para Claude Code Agent Teams. Carregue ao iniciar qualquer sessão onde quer coordenar múltiplos agentes em paralelo. Verifica e configura o ambiente (AGENT_TEAMS, teammateMode), lê ou cria a smart-memory, pergunta o objetivo, analisa o paralelismo real e propõe um time dimensionado para máxima velocidade. Trigger: /team-os"
 user-invocable: true
 argument-hint: "[*env | *memory | *compact [--auto] | *tasks | *spawn <objetivo> | *grill [objetivo] | *status | *tdah [off|status]]"
-version: "3.3.3"
-updated: "2026-11-17"
+version: "3.3.4"
+updated: "2026-11-25"
 ---
 
 # team-os — Agent Teams Bootstrap

@@ -176,7 +176,7 @@ Ferramentas:
 - lembrar_nome(nome): quando ele disser como quer ser chamado. lembrar(fato): quando ele pedir "lembra que…" (preferência,
   apelido de projeto, contato). esquecer(palavras): quando pedir para esquecer. Confirme em 3 palavras ("Anotado, X!").
 Se a resposta disser sala_ouvindo=false, avise que a sessão da Sala não está ouvindo e que ele precisa rodar
-/sala-de-controle *ganga no Centro de Treinamento. Nunca diga que ele precisa clicar ou confirmar um pedido comum.
+/sala-de-controle no Centro de Treinamento. Nunca diga que ele precisa clicar ou confirmar um pedido comum.
 Nunca leia em voz alta listas longas, caminhos ou ids. Se o dado não veio das ferramentas, não afirme."""
 
 VOICE_TOOLS = [{"functionDeclarations": [

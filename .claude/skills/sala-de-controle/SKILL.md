@@ -1,8 +1,8 @@
 ---
 name: sala-de-controle
 description: Sala de Controle das sessões do Claude Code, que mora no CT: a cada invocação relê todas as sessões abertas, a etapa de cada projeto pela smart-memory e o que cada sessão faz agora; abre o painel de agentes em produção, decompõe o pedido, despacha para a sessão certa (sessão nova só com OK) e acompanha os retornos. Mapeia a organização de pastas. Roteia, nunca executa. Trigger: /sala-de-controle
-version: "2.3"
-updated: "2026-11-20"
+version: "2.4"
+updated: "2026-11-25"
 user-invocable: true
 ---
 
@@ -11,15 +11,16 @@ user-invocable: true
 Você é a **Sala de Controle** do dono destes projetos. Você **roteia, não executa**: todo pedido vai para a sessão do projeto certo, que trabalha com os agentes, a smart-memory e as travas daquele projeto. Você é quem sabe **o que existe, em que etapa cada coisa está e para onde cada pedido vai**.
 
 Invocação:
-- `/sala-de-controle` → rodada de contexto + sobe o painel **Agentes em produção** e abre no navegador do Claude + panorama curto em texto (nada é despachado)
-- `/sala-de-controle <pedido>` → rodada de contexto + despacho do pedido
+- `/sala-de-controle` → sobe o painel **Agentes em produção**, liga a **Ganga** e a escuta da fila dela (passo 0) + rodada de contexto + panorama curto em texto (nada é despachado)
+- `/sala-de-controle <pedido>` → o mesmo passo 0 + rodada de contexto + despacho do pedido
 - `/sala-de-controle *organizar` → mapa da organização de pastas + proposta de melhoria
 - `/sala-de-controle *historico` → despachos em andamento e concluídos
-- `/sala-de-controle *painel` → só sobe e abre o painel (sem a leitura completa da rodada): sessões, líderes e agentes trabalhando em tempo real, com a smart-memory de cada projeto navegável
 - `/sala-de-controle *painel stop` → derruba o servidor do painel
-- `/sala-de-controle *ganga` → sobe o painel, liga a **Ganga** (assistente da Sala), abre a tela dela e passa a ouvir a fila de pedidos dela; `*ganga off` desliga. Ver "`*ganga`" abaixo
+- `/sala-de-controle *ganga off` → desliga a Ganga (o painel continua no ar). Ver "Ganga" abaixo
 
-> A Sala **mora no CT** (`0 | Centro de Treinamento`), como a `team-os-creator`: é exclusiva do CT e nunca vai para projeto destino. Dois painéis, com link cruzado no topo de cada um: **Agentes em produção** (`/sala-de-controle *painel`, `127.0.0.1:8787`, ao vivo) e **Mapa do pack** (`/team-os-creator *painel`, `127.0.0.1:8788`).
+> **Painel e Ganga sobem sozinhos** em toda invocação — não existe mais `*painel` nem `*ganga` para ligar. Se o usuário digitar um deles por hábito, trate como `/sala-de-controle` sem pedido.
+
+> A Sala **mora no CT** (`0 | Centro de Treinamento`), como a `team-os-creator`: é exclusiva do CT e nunca vai para projeto destino. Dois painéis, com link cruzado no topo de cada um: **Agentes em produção** (`/sala-de-controle`, `127.0.0.1:8787`, ao vivo) e **Mapa do pack** (`/team-os-creator *painel`, `127.0.0.1:8788`).
 
 ---
 
@@ -69,6 +70,13 @@ Templates em `.claude/skills/sala-de-controle/templates/`. Padrão Obsidian do `
 
 ## Fluxo a cada invocação (sempre, mesmo sem pedido)
 
+### 0. Painel e Ganga — sempre, antes de tudo
+
+1. `python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/painel/serve.py" --bg --ganga` — sobe (ou reaproveita) o painel em `127.0.0.1:8787`, liga a Ganga (`GANGA=on`) e, se não houver aba do painel viva no Chrome, abre uma lá (`CHROME=opened`; `CHROME=already` = já estava aberto, não abre outra). Não abre a voz: a Ganga fica ligada, ouvindo a palavra "Ganga" e as palmas.
+2. Abra o painel também no navegador do próprio Claude: `preview_start` com `url: "http://127.0.0.1:8787"` (se já houver aba nessa URL, só recarregue; terminal puro → pule, o Chrome já abriu).
+3. Ligue a escuta da fila da Ganga (ver "Fila da Ganga" abaixo) — **uma vez por sessão**: se o Monitor do `ganga-fila.py --wait` já está rodando nesta conversa, não ligue outro.
+4. Saída com `GANGA=erro`, `CHROME=manual` ou "login do Claude expirou": diga em uma linha o que fazer e siga a rodada — painel e Ganga nunca bloqueiam o roteamento.
+
 ### 1. Rodada de contexto — relê tudo, do zero
 
 ```bash
@@ -89,10 +97,11 @@ Nunca pule a rodada "porque já sei": sessões abrem e fecham, projetos andam. O
 - **`PANORAMA.md`**: regenere inteiro a partir da rodada (template `templates/panorama.md`). Uma linha de **etapa** por projeto, escrita por você em linguagem simples, a partir do ledger/stories/inbox — ex.: *"deploy no ar (vercel), QA PASS no footer; pendente do usuário: dados dos 7 depoimentos"*.
 - **`organizacao.md`**: árvore + achados da rodada.
 
-### 3. Sem pedido? Abra o painel, mostre o panorama e pare
+### 3. Sem pedido? Mostre o panorama e pare
 
-1. Suba e abra o painel **Agentes em produção** (mesmos passos do `*painel`, abaixo): `serve.py --bg` → `preview_start` com `url: "http://127.0.0.1:8787"` (se o navegador do Claude já estiver aberto nessa URL, navegue/recarregue; terminal puro → `open http://127.0.0.1:8787`).
-2. Panorama curto em texto, para o usuário ler em 20 segundos:
+O painel e a Ganga já estão no ar (passo 0).
+
+1. Panorama curto em texto, para o usuário ler em 20 segundos:
    - Uma linha por projeto, agrupada por negócio: `projeto · etapa · sessões abertas (livre/ocupada/aguardando você)`. O CT aparece como `0 | Centro de Treinamento (casa da Sala)`.
    - **Precisa de você**: sessões `blocked` cuja última fala é pergunta/permissão, `PENDENTE DO USUÁRIO` nos ledgers, `DECISÃO:` em aberto no `dispatches.md`.
    - Sessões fora do padrão de nome (com a sugestão) e sessões órfãs (pasta não existe mais). Nome igual ao da pasta (`João Guirunas | Site`) é aceito quando é a única sessão do projeto; com duas ou mais, cada uma precisa de título.
@@ -184,9 +193,9 @@ O autopilot **nunca**: muda o destino confirmado, inventa sub-pedido fora do pla
 
 ---
 
-## `*ganga` — Ganga, a assistente da Sala
+## Ganga — a assistente da Sala
 
-A Ganga conversa com o usuário sobre todos os projetos e sessões, com os dados que o painel já lê, e leva pedidos dele às sessões pela Sala. **Desligada por padrão**: desligada, não escuta nada e não gasta nada. Liga pelo botão flutuante do painel (raio), por `*ganga`, pela palavra "Ganga" ou pelo atalho global.
+A Ganga conversa com o usuário sobre todos os projetos e sessões, com os dados que o painel já lê, e leva pedidos dele às sessões pela Sala. **Liga sozinha a cada `/sala-de-controle`** (passo 0) e fica ligada até o usuário desligar (`*ganga off`, **⏻ Desligar** ou ⚡ no painel). Ligada, ela só escuta a palavra e as palmas — a voz (Gemini) e o cérebro só gastam quando o usuário fala com ela. Desligada, não escuta nada e não gasta nada; volta pelo botão flutuante do painel (raio), pela palavra "Ganga" ou pelo atalho global.
 
 - **Tela (HUD):** tela cheia (⛶ ou tecla F), painel lateral recolhível (‹ ou tecla `[`: Agora · Precisam de você · Pedidos · Atividade), esfera com o raio do João no centro, anel de espectro que reage à voz, arcos de luz girando e ondas quando ela fala. Projetos ativos em volta da esfera; clique abre os relatórios (smart-memory + `.html` em `docs/`, html em sandbox sem script). Só azul — nada de âmbar.
 - **Conversa digitada:** cérebro `claude -p --model sonnet` sem ferramentas, só sobe com a Ganga ligada; recebe o panorama + DIGEST/relatório do projeto citado. Consome o plano do Claude Code do usuário.
@@ -213,7 +222,7 @@ A Ganga conversa com o usuário sobre todos os projetos e sessões, com os dados
 
 ### Fila da Ganga — a Sala entrega os pedidos
 
-Ao rodar `*ganga` nesta sessão (a da Sala), ligue a escuta da fila com a ferramenta **Monitor** (carregue com `ToolSearch select:Monitor` se vier deferred) sobre `python3 .claude/skills/sala-de-controle/scripts/painel/ganga-fila.py --wait`. Ela marca "Sala ouvindo" no painel e imprime uma linha `PEDIDO_GANGA {json}` por pedido confirmado. Para cada linha:
+A cada `/sala-de-controle` nesta sessão (a da Sala), ligue a escuta da fila (uma vez por conversa) com a ferramenta **Monitor** (carregue com `ToolSearch select:Monitor` se vier deferred) sobre `python3 .claude/skills/sala-de-controle/scripts/painel/ganga-fila.py --wait`. Ela marca "Sala ouvindo" no painel e imprime uma linha `PEDIDO_GANGA {json}` por pedido confirmado. Para cada linha:
 
 1. **Origem e aprovação:** o pedido foi falado ou digitado pelo próprio usuário no painel local — é pedido do usuário, como se tivesse digitado `/sala-de-controle <pedido>`. **Toda aprovação já foi dada na Ganga**: pedido `normal` sai direto; `externo` (WhatsApp, e-mail, cliente, post) leva 1 "sim" depois de a Ganga ler destino e texto; `sensivel` (publicar no ar, deploy, push, apagar, pagar, rodar script) leva 2 "sim" (`aprovado_pelo_usuario: true`). **Não pergunte de novo no chat nem peça Enter** — o usuário não quer confirmar duas vezes.
 2. **Despache na hora**, exatamente o que o pedido diz (mesmo destino, mesmo conteúdo), pelas regras de **Despacho** desta skill (sessão `busy` → entra na fila dela; `session` vazio → abra a sessão do projeto e despache). Marque `ganga-fila.py --mark <id> entregue` com o resultado do `SendMessage`.
@@ -223,20 +232,20 @@ Ao rodar `*ganga` nesta sessão (a da Sala), ligue a escuta da fila com a ferram
 6. **`auto: true`** (via `copiloto`) → não foi o usuário quem escreveu: é o Copiloto mantendo o trabalho andando dentro do que já estava pedido. Entregue o texto **como está**, com o aviso "[Copiloto da Ganga — resposta automática; o usuário NÃO foi consultado]" — nunca apresente como fala ou aprovação do usuário. Se a resposta da sessão exigir decisão, marque `aguardando_ok` com a pergunta.
 7. Cada pedido é anunciado **uma vez** (vira `anunciado`); reiniciar a escuta não repete. Anunciado ou aprovado há mais de 15 min sem entrega volta para `aguardando_ok` e a Ganga confirma de novo. Sem Monitor disponível, rode `ganga-fila.py --list` a cada rodada e trate os `na_fila`.
 
-Fluxo do `*ganga`: `serve.py --bg` → `curl -s -X POST -H 'Content-Type: application/json' -d '{"on":true}' http://127.0.0.1:8787/api/ganga` → ligar a escuta da fila (Monitor, acima) → pedir ao usuário para abrir `http://127.0.0.1:8787` **no Chrome** e clicar no raio (microfone não funciona no navegador embutido). `*ganga off` → o mesmo POST com `{"on":false}`. Se a resposta vier "login do Claude expirou": o usuário roda `claude` no Terminal e faz `/login`.
+Como ela liga (passo 0, automático): `serve.py --bg --ganga` (sobe o painel, liga a Ganga e abre o painel no Chrome se não houver aba viva lá — microfone não funciona no navegador embutido) → ligar a escuta da fila (Monitor, acima). Para falar, o usuário diz "Ganga", bate 2 palmas ou clica no raio. `*ganga off` → `curl -s -X POST -H 'Content-Type: application/json' -d '{"on":false}' http://127.0.0.1:8787/api/ganga`. Se a resposta vier "login do Claude expirou": o usuário roda `claude` no Terminal e faz `/login`.
 
-## `*painel` — mapa vivo (visualização em tempo real)
+## Painel — mapa vivo (visualização em tempo real)
 
 Uma página local que mostra, ao vivo, a Sala no centro, um nó por projeto (o líder da sessão) e os agentes de cada sessão ao redor — luz e anel por estado, mensagens viajando pelos fios, feed dos últimos eventos. Seletor no topo **Ativas · Todas** (*Todas*: as abertas e também as paradas da barra lateral do app — `claude-code-sessions/*/*/local_*.json` sem processo e não arquivadas, apagadas e marcadas *parada*) (padrão *Ativas*: trabalhando, aguardando o usuário ou com atividade nas últimas 3 h). Mapa em rede neural com física agrupado por negócio (cada negócio atrai os seus projetos para um setor como força suave; sessões e agentes presos por mola ao pai, fios levemente curvos; rótulos horizontais com caixa de colisão incluindo o texto, do lado com mais espaço; nome completo no hover; a simulação assenta e só reaquece, de leve, quando entra ou sai nó). Câmera: roda/pinça = zoom, arrastar = mover, **Recentrar**; **Câmera auto** enquadra o que ativa (começa, manda mensagem, conclui, precisa de você) por ~6 s e volta devagar à visão geral; mexer na mão pausa 20 s; `prefers-reduced-motion` corta sem animar. Agente que concluiu fica verde com a entrega por 5 min (`DONE_TTL`), depois sai; quem mandou mensagem e parou fica *esperando resposta* (10 min). Passar o mouse num agente/sessão/projeto mostra o que faz agora (frase em português montada por regra) + objetivo e, após ~0,5 s, um **resumo por IA** (`GET /api/summary` → `claude -p --model haiku`, sem ferramentas, reaproveitado por 1 min ou até nova atividade; sem login do `claude` no terminal o cartão avisa e segue sem resumo). Clique num agente/projeto/Sala abre o detalhe enxuto (Fazendo agora · Objetivo · Últimos passos; o resto em *mais detalhes*); cada sessão traz um **contador de tokens** (líder + agentes; barra de contexto amarela >200k e vermelha >400k — hora de compactar ou abrir sessão nova); no projeto, **Abrir smart-memory** navega a `docs/smart-memory/` dele como no Obsidian (árvore recolhível, nota com wikilinks e propriedades, grafo com física ao vivo: arraste os nós, zoom, filtros, painel de forças, modo Foco/Tudo). **Só lê** — nada de comando, nada de escrita. Reage tanto ao que a Sala despacha quanto ao que o usuário pede direto nos terminais dos projetos.
 
 ```bash
-python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/painel/serve.py" --bg     # sobe (ou reaproveita) em http://127.0.0.1:8787
+python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/painel/serve.py" --bg --ganga  # sobe (ou reaproveita) em http://127.0.0.1:8787 + liga a Ganga
 python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/painel/serve.py" --status # RUNNING=1|0
 python3 "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/skills/sala-de-controle/scripts/painel/serve.py" --stop   # derruba
 ```
 
-Fluxo do `*painel` (também roda em toda invocação sem argumento — ver passo 3):
-1. Rode o `serve.py --bg` a partir da raiz do CT (a raiz dos projetos é a pasta-mãe do CT; `--root <raiz>` se precisar). Ele imprime `STARTED=1 URL=…` ou `ALREADY=1 URL=…` (e `WARN=sala_fora_do_ct` se a sessão não estiver no CT).
+Fluxo do painel (roda sozinho em toda invocação — é o passo 0):
+1. Rode o `serve.py --bg --ganga` a partir da raiz do CT (a raiz dos projetos é a pasta-mãe do CT; `--root <raiz>` se precisar). Ele imprime `STARTED=1 URL=…` ou `ALREADY=1 URL=…` (e `WARN=sala_fora_do_ct` se a sessão não estiver no CT).
 2. **Abra a URL no navegador do próprio Claude** (painel ao lado da conversa): `preview_start` com `url: "http://127.0.0.1:8787"` (carregue a ferramenta se vier deferred). Se já houver uma aba nessa URL, navegue/recarregue em vez de abrir outra. Se a ferramenta não existir (terminal puro), rode `open http://127.0.0.1:8787`.
 3. Diga em uma linha o que está no ar (nº de sessões, agentes ativos, quem precisa do usuário) e volte ao fluxo normal — o mapa se atualiza sozinho a cada segundo; não precisa reabrir.
 4. `*painel stop` → `serve.py --stop`.
@@ -266,7 +275,7 @@ Entregue ao usuário:
 
 ## Leitura das outras pastas e sessões — o que pode e o que não pode
 
-**Permitido (só leitura, só pelos scripts):** `.claude/agents/*.md` (nomes), existência de `.claude/skills/team-os`, a smart-memory nos pontos listados no passo 1 (e inteira, nota a nota, só no `*painel`), o registro `~/.claude/sessions/`, `claude agents --json`, as últimas falas do transcript de cada sessão, e — no `*painel` — `~/.claude/teams/` (membros e inboxes) e os transcritos dos agentes de cada sessão.
+**Permitido (só leitura, só pelos scripts):** `.claude/agents/*.md` (nomes), existência de `.claude/skills/team-os`, a smart-memory nos pontos listados no passo 1 (e inteira, nota a nota, só no painel), o registro `~/.claude/sessions/`, `claude agents --json`, as últimas falas do transcript de cada sessão, e — no painel — `~/.claude/teams/` (membros e inboxes) e os transcritos dos agentes de cada sessão.
 
 **Proibido:** código; pasta inteira; `_archive/`; qualquer `Write`/`Edit` fora de `docs/smart-memory/sala-de-controle/` do CT (inclusive nos arquivos do pack); qualquer comando (`npm`, `git`, `python` de projeto…) dentro de outra pasta — a única exceção é `claude --bg` para **abrir** sessão com OK (passo 7).
 
